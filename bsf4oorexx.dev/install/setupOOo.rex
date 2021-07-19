@@ -85,13 +85,32 @@
             2017-08-13, ---rgf, - make sure to determine MACOSX correctly by honoring the new name DARWIN as well
             2018-12-19, ---rgf, - adding "BSF_OnTheFly.cls rgf_util2.rex" to cmd.e4OOoPrograms (copying to LO/AOO program directory)
             2020-08-17, ---rgf, - changed Linux installation from "/usr" dir to "/usr/local"
+            2021-07-13, ---rgf, - on Unix: - added: add/remove to/from $HOME/.zshenv
+                                           - correct needle test for conditionally setting environment from ~/.bashrc
+                                           - make real user the owner of the created un/install scripts
+                                           - removed unused "cmd.eSetOwner"
+                                           - added "cmd.eChown"
+                                           - on Unix add "cmd.eChownUserGroup", new routine "determineGroupName(defGroup)";
+                                             new routine "determineHomeDir(userName, isMacOS)", result stored
+                                             in new "cmd.eHomeDir"
+            2021-07-15, ---rgf, - on Unix: - only copy UNO-related programs & chown /usr/local/bin/UNO*
+                                           - make sure owner gets set accordingly on Unix
+            2021-07-17, ---rgf, - on Unix: - added cmd.eUseSymbolicLink?, cmd.eSymbolicLink, cmd.eChownOfSymbolicLink
+                                           - now using symbolic links for /usr/local/{bin|lib}
+                                             - apply owner:group
+                                             - making sure symbolic links get owner:group set (must use "-h")
+                                           - instead of copying the files physically, now only
+                                             symbolic links get created; to change this behaviour back to copying
+                                             change: "cmd.eUseSymbolicLink?=.false" below
+                                           - little cleanup of code
+
 
    last svn check-in: $Revision: 916 $ $Author: Administrator $ $Date: 2010-08-24 16:30:15 +0200 (Tue, 24 Aug 2010) $
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2006-2020 Rony G. Flatscher
+       Copyright (C) 2006-2021 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -134,7 +153,6 @@ do
                            W8.1 & Server 2012 R2= 6.3
    */
    parse value sysVersion() with . cmd.eWinVersion
-   -- cmd.eElevation.exe="windows\Elevate"cmd.eBitness".exe"   -- define elevate exe to use
    cmd.eElevation.exe="windows\elevate.rex"  -- 2015-08-24: Gil Barmwater's elevate.rex, works on all Windows versions so far
 end
 else
@@ -253,12 +271,12 @@ path.=""
 call parsePath
 
 cp=value("CLASSPATH", , "ENVIRONMENT") /* try to get the CLASSPATH value   */
+say "CLASSPATH in effect:   ["cp"]"
+
 cmd.eSupportInfos=qc("Support: Internet newsgroup <news:comp.lang.rexx>, <http://www.OpenOffice.org> or via <http://www.RexxLA.org>")
 
 -- 2010-03-19: create a unique needle (e.g. to allow deleting lines with sed from profiles later)
 cmd.eInstallationNeedle="BSF4ooRexxNeedle - OpenOffice support" -- .dateTime~new~string
-
--- cmd.eIsUnix=.true -- rgf-DEBUG
 
 if cmd.eIsUnix then
 do
@@ -276,17 +294,21 @@ do
    else
       cmd.eRealUserName=cmd.eLogName
 
-   cmd.eSetOwner="chown" cmd.eRealUserName":admin"   -- newly created files, also assigned to "admin" group
-
+   cmd.eChownUserGroup = cmd.eRealUserName":"determineGroupName(cmd.eRealUserName)
 
    nl="0a"x                      /* Unix new-line character sequence (\n)  */
    cmd.eNullDevice = "/dev/null" /* null device  */
 
    cmd.eLeadIn="#!/bin/sh"nl     /* command to execute this file           */
    cmd.eEcho="echo"
-   -- cmd.eCopy="cp -plfv"          /* preserve, hard-link, force, verbose: source target(dir)  */
    cmd.eCopy="cp -fv"            /* force, verbose: source target(dir) [works on FAT32/NTFS systems from Linux as well] */
+   cmd.eUseSymbolicLink? = .true /* 2021-07-17, rgf: controls whether to copy or to create a symbolic link to/in /usr/local/{bin|lib}*/
+   cmd.eSymbolicLink="ln -sfv"   /* symbolic, force, verbose: sourceFilePath targetFilePath (= symbolic link)  */
+
    cmd.eDelete="rm -fv"
+   cmd.eChown="chown" cmd.eChownUserGroup   -- command to change the owner of the generated un/install scripts
+   cmd.eChownOfSymbolicLink="chown -h" cmd.eChownUserGroup -- command to change the owner of the generated un/install scripts
+
    cmd.eSetOOoHome = 'OOO_pgms='cmd.ePath2OOoPrograms
    cmd.eSetOOoJars = 'OOO_jars=$OOO_pgms' || cmd.eFile.sep || "classes"
    cmd.eJarVar = cmd.ePath.sep"$OOO_jars"cmd.eFile.sep   /* variable to use                        */
@@ -309,8 +331,7 @@ do
    cmd.eInstallScriptName.RunAsAdmin="installOOo_sudo.sh"
    cmd.eUninstallScriptName.RunAsAdmin="uninstallOOo_sudo.sh"
 
-   if cmd.eBinDir="" then
-      cmd.eBinDir="/usr/local/bin"     /* directory where executables reside     */
+   cmd.eBinDir="/usr/local/bin"  /* directory where executables reside     */
 
    cmd.eSetEnvironmentScriptName=cmd.eThisDirectory || "setEnvironment4OOo.sh"
    cmd.eExecuteEnvironmentScript=". "cmd.eSetEnvironmentScriptName
@@ -328,18 +349,21 @@ do
                                              supported by the Linux distribution;
                                              if .false, install into user's profile ~/.bashrc else */
 
-   cmd.eAdd2BashRc   = "$HOME/.bashrc"    /* user's bash profile to add entry to       */
+   cmd.eHomeDir      = determineHomeDir(cmd.eRealUserName, cmd.eIsMacOSX)
+
+   cmd.eAdd2BashRc   = cmd.eHomeDir"/.bashrc"   /* user's bash profile to add entry to       */
    cmd.eAdd2Profile  = "/etc/profile"     /* system wide setting                       */
+   cmd.eAdd2Zshenv   = cmd.eHomeDir"/.zshenv"   /* user's zsh environment for all sessions   */
 
       /* prolog and epilog used for ".bashrc" to make sure that CLASSPATH gets only extended, if
          "/etc/profile" has not run yet (and set CLASSPATH already to our needs) */
    cmd.eAdd2BashRcProlog = "if [ -z `echo $CLASSPATH | grep ""jurt.jar""` ] ; then" "#" cmd.eInstallationNeedle
    cmd.eAdd2BashRcEpilog = "fi" "#" cmd.eInstallationNeedle
 
-   cmd.eAdd2BashRc.0 = 2
-   cmd.eAdd2BashRc.1 = "    #" cmd.eInstallationNeedle "(created by" cmd.eUser || ")"
+   cmd.eAdd2setEnvironment.0 = 2
+   cmd.eAdd2setEnvironment.1 = "    #" cmd.eInstallationNeedle "(created by" cmd.eUser || ")"
 
-   cmd.eAdd2BashRc.2="if [ -f" cmd.eSetEnvironmentScriptName "];" -
+   cmd.eAdd2setEnvironment.2="if [ -f" cmd.eSetEnvironmentScriptName "];" -
                      "then ." cmd.eSetEnvironmentScriptName "; fi #" cmd.eInstallationNeedle
    if cmd.eIsMacOSX then --rgf, 2011-03-01: sed on MacOSX works differently, cf. <http://blog.mpdaugherty.com/2010/05/27/difference-with-sed-in-place-editing-on-mac-os-x-vs-linux/>
       cmd.e_sed_delete ="sed -i '' '/"cmd.eInstallationNeedle"/d'"
@@ -376,8 +400,7 @@ do
    cmd.eInstallScriptName.RunAsAdmin="installOOo_runAsAdministrator.cmd"
    cmd.eUninstallScriptName.RunAsAdmin="uninstallOOo_runAsAdministrator.cmd"
 
-   if cmd.eBinDir="" then
-      cmd.eBinDir=getRexxDir()   /* directory where executables reside     */
+   cmd.eBinDir=getRexxDir()   /* directory where executables reside     */
 
    cmd.eSetEnvironmentScriptName="setEnvironment4OOo.cmd"
    cmd.eExecuteEnvironmentScript="  " cmd.eSetEnvironmentScriptName
@@ -426,14 +449,8 @@ end
 cmd.eSetCP=cmd.eSetCP || cmd.ePath.sep || cmd.eSetCPWithFullPath
 
 
-/* determine files to copy to "OOo/program": needed for macros, we can point PATH there too!  */
-if cmd.eIsMacOSX then  -- rgf, 2011-02-28, initially for MacOSX: do not copy dylib
-   cmd.e4OOoPrograms=         "BSF.CLS UNO.CLS UNO_XINTERFACES.RXO UNO_CREATE_INTERFACE_LIST.RXO UNO_API_info.rxo UNO_ReflectionUtil.cls"
-else
-   cmd.e4OOoPrograms=cmd.eDLL "BSF.CLS UNO.CLS UNO_XINTERFACES.RXO UNO_CREATE_INTERFACE_LIST.RXO UNO_API_info.rxo UNO_ReflectionUtil.cls"
-
-
-cmd.e4OOoPrograms=cmd.e4OOoPrograms "BSF_OnTheFly.cls rgf_util2.rex"    -- rgf, 20181219: possibly needed
+/* determine files to copy to "/usr/local/bin; on Windows PATH points to them already */
+cmd.e4OOoPrograms="UNO.CLS UNO_XINTERFACES.RXO UNO_CREATE_INTERFACE_LIST.RXO UNO_API_info.rxo UNO_ReflectionUtil.cls"
 
    /* create the scripts   */
 call createEnvironmentScript
@@ -499,56 +516,55 @@ createInstallScript: procedure expose cmd. path.
   call lineout ui, cmd.eEcho qe(" ")
   call lineout ui, ""
 
-   /* 2007-02-03, ---rgf: copy OOo-Files to OOo directory; this way macros work without any
-                          global changes to the environment */
-  iw=words(cmd.e4OOoPrograms)
-  if iw>0 then       /* if programs to copy to the appropriate OOo directory */
+   /* 2021-07-15, ---rgf: macros work on Windows and Unix without any BSF4ooRexx-related files in the OOo
+                          directory */
+  if cmd.eIsUnix=.true then   -- copy UNO* Rexx programs to /usr/local/bin; on Windows PATH points to BSF4ooRexx directory (containing the UNO*files) already
   do
-     if cmd.eIsUnix=.true then
+     iw=words(cmd.e4OOoPrograms)
+     if iw>0 then       /* if programs to copy to the appropriate OOo directory */
      do
         tmpTargetDir=q(cmd.eBinDir)
-        tmpTitleCopy="copying OOo-support Rexx programs to" tmpTargetDir "..."
+        tmpTitleCopy="adding OOo-support Rexx programs to" tmpTargetDir "..."
         tmpTitleDel ="removing OOo-support Rexx programs from" tmpTargetDir "..."
-     end
-     else
-     do
-        tmpTargetDir=q(cmd.ePath2OOoPrograms)
-        tmpTitleCopy="copying OOo-support Rexx programs to the OOo program directory:" tmpTargetDir "..."
-        tmpTitleDel ="removing OOo-support Rexx programs from the OOo program directory:" tmpTargetDir "..."
-     end
 
-     call lineout fn, cmd.eEcho qe(tmpTitleCopy)
-     call lineout ui, cmd.eEcho qe(tmpTitleDel)
+        call lineout fn, cmd.eEcho qe(tmpTitleCopy)
+        call lineout ui, cmd.eEcho qe(tmpTitleDel)
 
-     /* call lineout fn, cmd.eCopy qw(cmd.eRgfReflectUNO) qw(tgtDir) -- 2007-02-03, rgf: not needed anymore, part of "bsf-rexx-engine.jar" */
-
-     do i=1 to iw
-        pgm=word(cmd.e4OOoPrograms, i)
-        pgmWithSourcePath=".."|| cmd.eFile.sep|| pgm -- word(cmd.e4OOoPrograms, i)
-
-        call lineout fn, cmd.eEcho qe("copying" q(pgmWithSourcePath) "to" tmpTargetDir "...")
-        call lineout ui, cmd.eEcho qe("deleting" q(pgm)  "from directory" tmpTargetDir "...")
-
-        if cmd.eIsUnix=.false then  -- in Windows: copy to OOo/program; new strategy for Linux since 20100815, rgf
-        do
-           call lineout fn, cmd.eCopy qw(pgmWithSourcePath) qw(cmd.ePath2OOoPrograms)
-           call lineout ui, cmd.eDelete qw(cmd.ePath2OOoPrograms || cmd.eFile.sep || pgm)
-        end
-        else   -- in Unix: copy to cmd.eBinDir, ignore libBSF4ooRexx.so, which gets linked to its appropriate lib directory
-        do
-           if pgm~left(3)<>"lib" then
+        do i=1 to iw
+           pgm=word(cmd.e4OOoPrograms, i)
+           -- pgmWithSourcePath= ".."       || cmd.eFile.sep || pgm
+           srcFn =qualify(".." || cmd.eFile.sep || pgm)
+           tmpTgt=cmd.eBinDir || cmd.eFile.sep || pgm
+           if \sysFileExists(tmpTgt) then   -- only copy if it does not exist yet
            do
-              call lineout fn, cmd.eCopy qw(pgmWithSourcePath) qw(cmd.eBinDir)
-              call lineout ui, cmd.eDelete qw(cmd.eBinDir || cmd.eFile.sep || pgm)
-           end
-        end
+              call lineout fn, cmd.eEcho qe("adding" q(srcFn) "to" tmpTargetDir "...")
+              call lineout ui, cmd.eEcho qe("deleting" q(pgm)  "from directory" tmpTargetDir "...")
 
-        call lineout fn, ""
-        call lineout ui, ""
+              if cmd.eUseSymbolicLink?=.true then
+                 tmpCmd=cmd.eSymbolicLink qw(srcFn) tmpTgt
+              else
+                 tmpCmd=cmd.eCopy qw(srcFn) tmpTgt
+
+              call lineout fn, tmpCmd
+              if cmd.eUseSymbolicLink?=.true then
+              do
+                 call lineout fn, cmd.eEcho qe(cmd.eChownOfSymbolicLink tmpTgt "...")
+                 call lineout fn, cmd.eChownOfSymbolicLink tmpTgt
+              end
+              else
+              do
+                 call lineout fn, cmd.eEcho qe(cmd.eChown tmpTgt "...")
+                 call lineout fn, cmd.eChown  tmpTgt
+              end
+              call lineout ui, cmd.eDelete qw(tmpTgt)
+           end
+
+           call lineout fn, ""
+           call lineout ui, ""
+        end
      end
   end
 
-   -- 2008-05-17, ---rgf: now add necessary path and classpath values to registry
   call lineout ui, ""
   call lineout fn, ""
 
@@ -556,9 +572,11 @@ createInstallScript: procedure expose cmd. path.
   do
      bWriteProlog=.false  -- for "/etc/profile" no epilog/prolog, for .bashrc: yes!
 
-     do tmpTgt over .array~of(cmd.eAdd2Profile, cmd.eAdd2BashRc)
-        if cmd.eIsMacOSX, bWriteProlog then     -- on MacOSX do not create .bashrc
-           leave
+     do tmpTgt over .array~of(cmd.eAdd2Profile, cmd.eAdd2BashRc, cmd.eAdd2Zshenv)
+        if cmd.eIsMacOSX, tmpTgt=cmd.eAdd2BashRc then     -- on MacOSX do not create .bashrc
+           iterate
+
+        bWriteProlog=(tmpTgt=cmd.eAdd2BashRc)   -- write pro/epilog if .bashrc
 
         appendTo=">>" tmpTgt
 
@@ -568,8 +586,8 @@ createInstallScript: procedure expose cmd. path.
         if bWriteProlog then
            call lineout fn, cmd.eEcho qc(cmd.eAdd2BashRcProlog) appendTo
 
-        do i=1 to cmd.eAdd2BashRc.0
-           call lineout fn, cmd.eEcho qc(cmd.eAdd2BashRc.i) appendTo
+        do i=1 to cmd.eAdd2setEnvironment.0
+           call lineout fn, cmd.eEcho qc(cmd.eAdd2setEnvironment.i) appendTo
         end
 
         if bWriteProlog then
@@ -577,7 +595,7 @@ createInstallScript: procedure expose cmd. path.
 
         call lineout fn, ""
 
-        call lineout ui, cmd.eEcho qe("removing BSF4ooRexx' OpenOffice entries from" tmpTgt "...")
+        call lineout ui, cmd.eEcho qe("removing BSF4ooRexx OpenOffice entries from" tmpTgt "...")
         call lineout ui, cmd.e_sed_delete tmpTgt
         call lineout ui, ""
 
@@ -714,7 +732,10 @@ createInstallScript: procedure expose cmd. path.
   if cmd.eSetExecutable<>"" then       /* set file executable (Unix)    */
   do
      cmd.eSetExecutable cmd.eInstallScriptName
+     cmd.eChown         cmd.eInstallScriptName
+
      cmd.eSetExecutable cmd.eUninstallScriptName
+     cmd.eChown         cmd.eUninstallScriptName
   end
   return
 
@@ -722,7 +743,6 @@ createInstallScript: procedure expose cmd. path.
 /* Windows only: create runAs batch file for Vista and higher, rgf 2010-03-07 */
 createRunAsScripts: procedure expose cmd. path.
 
-  -- hintString="created:" q(date("S") time()) "by user" q(j.user.name)
   hintString="created:" q(date("S") time()) "by user" q(cmd.eUser)
 
   runAsCmd=cmd.eRunAsAdmin
@@ -741,6 +761,9 @@ createRunAsScripts: procedure expose cmd. path.
      call lineout fn, cmd.eEcho qe(tmpCmd "...")
      call lineout fn, tmpCmd
      call stream fn, "c", "close"
+
+     if cmd.eIsUnix=.true then
+        cmd.eChown fn      -- change ownership
   end
 
   return
@@ -786,7 +809,10 @@ createEnvironmentScript: procedure expose cmd. path.
   call stream fn, "c", "close"
 
   if cmd.eSetExecutable<>"" then       /* set file executable (Unix)    */
+  do
      cmd.eSetExecutable cmd.eSetEnvironmentScriptName
+     cmd.eChown         cmd.eSetEnvironmentScriptName
+  end
 
   return
 
@@ -874,11 +900,6 @@ getRexxDir: procedure expose cmd. path.
 
 /* parse path into stem path. */
 parsePath: procedure expose cmd. path.
-/*
-say "... j.path.separator=["j.path.separator"]"
-say "... j.file.separator=["j.file.separator"]"
-*/
-
   p=value("PATH", , "ENVIRONMENT")
   i=0
   do while p<>""
@@ -891,10 +912,6 @@ say "... j.file.separator=["j.file.separator"]"
         path.i=changestr('"', chunk, "")  /* remove any quotes from any part of the Windows path */
 
      path.i.upperCase=translate(chunk)  /* uppercase version */
-/*
-say "... i="i "chunk="pp(chunk)
-*/
-
      path.0=i
   end
 
@@ -1123,3 +1140,52 @@ syntax2:                   -- no OOo-entry
      if hint="Addressing Mode" then bitness=val
   end
   return bitness
+
+/* Unix: returns the group name to be used in 'chown' command:
+   - if "staff" present in "/etc/group" use it (Linux: full rights to "/usr/local")
+   - else use real user name as the group name
+*/
+::routine determineGroupName
+  use strict arg groupName
+
+  s=.stream~new("/etc/group")~~open("read")
+  arr=s~arrayin
+  s~close
+  bFound=.false      -- needle "staff:" found?
+  do entry over arr while bFound=.false
+     bFound=entry~abbrev("staff:")  -- allow this to work prior to ooRexx 5.0 which has "startsWith"
+  end
+  if bFound then return "staff"     -- o.k. found, use group name "staff"
+  return groupName
+
+
+/* Unix: if MacOS then use "/Users/<userid>", if "root", then "/var/root"
+
+   TODO: Android "/data/media/<userid>", cf. <https://en.wikipedia.org/wiki/Home_directory>
+*/
+::routine determineHomeDir
+  use strict arg userName, isMacOS=.false
+
+  if isMacOS=.true then
+  do
+     if userName="root" then homedir="/var/root"
+                        else homedir="/Users/"userName
+     if \sysFileExists(homedir) then homedir="$HOME"  -- fall back to environment variable
+     return homedir
+  end
+
+  s=.stream~new("/etc/passwd")~~open("read") -- read passwd file
+  arr=s~arrayin
+  s~close
+  bFound=.false      -- needle "staff:" found?
+  needle=userName":"
+  do entry over arr until bFound=.true
+     bFound=entry~abbrev(needle) -- allow this to work prior to ooRexx 5.0 which has "startsWith"
+  end
+  if bFound=.false then return "$HOME"    -- not found, fall back to environment variable
+
+  parse var entry uname ":" pwd ":" uid ":" gid ":" gecos ":" homeDir ":" shell
+  if sysFileExists(homeDir) then return homeDir -- done
+
+  return "$HOME"     -- not found, fall back to environment variable
+

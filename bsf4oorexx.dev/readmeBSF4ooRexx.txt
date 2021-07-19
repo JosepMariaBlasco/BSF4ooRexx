@@ -1,10 +1,29 @@
-BSF4ooRexx, 6.41                                         17 December 2020 (Beta)
-================                                         =======================
+BSF4ooRexx, 6.41                                         19 July 2021 (Gamma)
+================                                         ====================
 
 This is a package that creates a bridge between ooRexx and Java. For that
 reason Java must be installed on your machine as well, which is easy and
-a one click away e.g. from <http://www.java.com>. See box below for an
-important information.
+a one click away.
+
+- ooRexx download page (use ooRexx 5 or later):
+
+  <https://sourceforge.net/projects/oorexx/files/oorexx/>
+
+- Java download pages, e.g.:
+
+         - azul.com <https://www.azul.com/downloads/?package=jdk#download-openjdk>
+
+                - On the download page choose either "JDK FX" or "JRE FX" to
+                  get the Java version with the great JavaFX support
+
+         - bellsoft <https://bell-sw.com/pages/downloads/>
+
+                - On the download page choose "Full JDK" or "Full JRE" to
+                  get the Java version with the great JavaFX support
+
+         - Oracle <http://www.java.com> (note the license!)
+
+   See box below for an important information.
 
 PLEASE NOTE: this version of BSF4ooRexx is for Java 1.6/6, 1.7/7, 1.8/8
              and Java 9.0 (introduced the module system) and newer
@@ -23,6 +42,14 @@ PLEASE NOTE: this version of BSF4ooRexx is for Java 1.6/6, 1.7/7, 1.8/8
                   occur, when using the new .NET support, as the Windows
                   unzip utility would mark all unzipped files as a security risk.]
 
+    On *MacOS*: Apple marks all files from the Internet with a quarantine attribute
+                and does not allow for running such programs; open a Terminal window
+                and go to the download directory and issue the command
+
+                       xattr -d com.apple.quarantine zipOrDmgPkg-file
+
+                where "zipOrDmgPkg-file" is the name of the downloaded zip-archive or
+                dmg/pkg installation package
 
 
 *******************************************************************************
@@ -33,20 +60,17 @@ PLEASE NOTE: this version of BSF4ooRexx is for Java 1.6/6, 1.7/7, 1.8/8
 *                                                                             *
 *      -> consult after unzipping:  bsf4oorexx/information/0_startHere.html   *
 *                                                                             *
+* Advice: if you can, use the 64-bit versions of ooRexx and Java              *
+*                                                                             *
 *******************************************************************************
 
 
 ===============================================================================
 
-HINT: after unzipping the zip-archive you can get additional installation information
-      beyond this readme file by placing your browser to the file:
 
-         bsf4oorexx/information/0_startHere.html
-
-
-
-0) If there is a previous version of BSF4Rexx or BSF4ooRexx installed on your
-   system, please deinstall it first!
+1) If there is a previous version of BSF4Rexx or BSF4ooRexx installed on your
+   system, please deinstall it first! (Make sure all instances of OpenOffice or
+   LibreOffice are closed, including the quickstarter!)
 
    Best use the menu "BSF4ooRexx -> Installation -> Uninstall BSF4ooRexx".
 
@@ -58,21 +82,22 @@ HINT: after unzipping the zip-archive you can get additional installation inform
            - "sudo path2-bsf4oorexx/install/uninstallBSF.sh" (Linux)
            ]
 
-1) Unzip the downloaded installation archive "BSF4ooRexx_install-*.zip" (this
-   will also unzip the Apache OpenOffice scripting-support for ooRexx)
+2) Download the software (ooRexx, Java, BSF4ooRexx)
 
-2) change into the unzipped subdirectory "bsf4oorexx/install/windows" or
+   - on MacOS and Windows: remove the security/quarantine attributes as described
+     above!
+
+3) Unzip the downloaded installation archive "BSF4ooRexx_install-*.zip" (this
+   will also unzip the Apache OpenOffice/LibreOffice scripting-support for ooRexx)
+
+4) change into the unzipped subdirectory "bsf4oorexx/install/windows" or
    "bsf4oorexx/install/linux" or "bsf4oorexx/install/macosx", depending on
-   your operating system and then run as Administrator/superuser/sudo
+   your operating system and then run
 
-   - the setup program named "install.cmd" (Windows) or "install.sh"
-    (Linux, MacOSX), e.g. by double-clicking the installation scripts
-    or opening a console/terminal changing to the above location and
-    enter "install.cmd" or "sh install.sh" manually which will cause
-    elevation to Administrator/uperuser/sudo
-
-    (you may need to run from the console/terminal as lately some installations
-    inhibit running files downloaded from the Internet from a GUI interface)
+   - the setup program named "install.cmd" (Windows) or "sh install.sh"
+    (Linux, MacOSX), e.g. by opening a console/terminal changing to the
+    unzip location and enter "install.cmd" (Windows) or "sh install.sh" (Unix)
+    manually which will cause elevation to Administrator/uperuser/sudo.
 
 Good luck and have fun!
 

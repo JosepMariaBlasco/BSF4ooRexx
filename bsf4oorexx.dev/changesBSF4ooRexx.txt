@@ -1,3 +1,166 @@
+-------------------------------------- 2021-07-19 ----------------------------------
+
+- Makefile-all-macosx
+
+        - fat (universal) binary, simplify/tidy up a little bit
+
+        - using "-target" instead of "-arch"
+
+        - do not link against libjvm.dylib (was a long standing mistake/error)
+
+-------------------------------------- 2021-07-18 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - Windows: new sequence for searching Java:
+
+                        1) new: honoring JAVA_HOME, if set in the following sequence:
+
+                               %JAVA_HOME%\bin\server\jvm.dll
+                               %JAVA_HOME%\jre\bin\server\jvm.dll
+
+                        ") just load unqualified "jvm.dll" and have the operating system
+                           search and load it
+
+        - Unix:    new sequence for searching Java:
+
+                        1) /opt/BSF4ooRexx/libBSF4ooRexx.{so|dylib} (a symbolic link created at installation time)
+                        2) new: honoring JAVA_HOME, if set in the following sequence:
+
+                               ${JAVA_HOME}/lib/server/libjvm.{so|dylib}
+                               ${JAVA_HOME}/jre/lib/server/libjvm.{so|dylib}
+
+                        3) Apple only: use "/System/Library/Frameworks/JavaVM.framework/JavaVM" (used to be the default)
+                        4) just load unqualified "libjvm.{so|dylib}" and have the operating system
+                           search and load it
+
+
+        - Unix only: if loading Java on Unix, 'java.library.path' gets set, unless it is passed as
+                     "-Djava.library.path=..." in ${BSF4Rexx_JavaStartupOptions}; supplied value:
+
+                        /opt/BSF4ooRexx:/usr/lib:/usr/lib64:/usr/local/lib:/usr/local/lib64:.
+
+                     [this way we can help Java locate libBSF4ooRexx.{so|dylib} on all Unix systems]
+
+-------------------------------------- 2021-07-17 ----------------------------------
+
+- setupAllAndRun.rex
+
+        - little cleanup of code
+
+- setupBSF.rex
+
+        - on Unix: - added cmd.eUseSymbolicLink?, cmd.eSymbolicLink, cmd.eChownOfSymbolicLink
+
+                   - now using symbolic links for /usr/local/{bin|lib}
+
+                     - apply owner:group
+
+                     - making sure symbolic links get owner:group set (must use "-h")
+
+                   - instead of copying the files physically, now only
+                     symbolic links get created; to change this behaviour back to copying
+                     change: "cmd.eUseSymbolicLink?=.false" below
+
+                   - little cleanup of code
+
+- setupOOo.rex
+
+        - on Unix: - added cmd.eUseSymbolicLink?, cmd.eSymbolicLink, cmd.eChownOfSymbolicLink
+
+                   - now using symbolic links for /usr/local/{bin|lib}
+
+                     - apply owner:group
+
+                     - making sure symbolic links get owner:group set (must use "-h")
+
+                   - instead of copying the files physically, now only
+                     symbolic links get created; to change this behaviour back to copying
+                     change: "cmd.eUseSymbolicLink?=.false" below
+
+                   - little cleanup of code
+
+-------------------------------------- 2021-07-15 ----------------------------------
+
+- setupOOo.rex
+
+        - on Unix: - only copy UNO-related programs & chown /usr/local/bin/UNO*
+                   - make sure owner gets set accordingly on Unix
+
+- setupAllAndRun.rex
+
+        - on Unix: new routine "determineHomeDir()", new "cmd.eHomeDir"
+
+- setupBSF.rex
+
+        - on Unix: - if new profile/bashrc/zshenv gets created change owner to realUserName afterwards
+
+- setupFileAssociations.rex
+
+        - on Unix: new routine "determineHomeDir()", new "cmd.eHomeDir"
+
+-------------------------------------- 2021-07-13 ----------------------------------
+
+- setupAllAndRun.rex
+
+        - on Unix add "cmd.eChownUserGroup", new routine "determineGroupName(defGroup)"
+
+- setupFileAssociations.rex
+
+        - Unix
+
+          - add "cmd.eSudoUser", "cmd.eChown", cmd.eSetExecutable
+
+          - make real user the owner of the created scripts
+
+          - on Unix add "cmd.eChownUserGroup", new routine "determineGroupName(defGroup)"
+
+- setupBSF.rex
+
+        - on Unix: - added: add/remove to/from $HOME/.zshenv
+
+                   - correct needle test for conditionally setting environment from ~/.bashrc
+
+                   - make real user the owner of the created un/install scripts
+
+                   - added "cmd.eChown"
+
+                   - on Unix add "cmd.eChownUserGroup", new routine "determineGroupName(defGroup)";
+                     make sure libjvm.so link in /opt/BSF4ooRexx gets owner:group set;
+                     new routine "determineHomeDir(userName, isMacOS)", result stored
+                     in new "cmd.eHomeDir"
+
+- setupOOo.rex
+
+         - on Unix: - added: add/remove to/from $HOME/.zshenv
+
+                    - correct needle test for conditionally setting environment from ~/.bashrc
+
+                    - make real user the owner of the created un/install scripts
+
+                    - removed unused "cmd.eSetOwner"
+
+                    - added "cmd.eChown"
+
+                    - on Unix add "cmd.eChownUserGroup", new routine "determineGroupName(defGroup)";
+                      new routine "determineHomeDir(userName, isMacOS)", result stored
+                      in new "cmd.eHomeDir"
+
+-------------------------------------- 2021-07-12 ----------------------------------
+
+
+- setupAllAndRun.rex
+
+        - on Unix change owner after copying package to cmd.eRealUserName
+
+        - show in logfile the command, if it returned with rc<>0
+
+-------------------------------------- 2021-07-06 ----------------------------------
+
+- utilities/ooRexxTry.rxj
+
+        - ExecuteThread::run: unlike ooRexx 4.x ooRexx 5.0 will raise an error condition
+          if .mm.dir~tempFile is .nil when being used in SysFileExists(.mm.dir~tempFile)
 
 -------------------------------------- 2021-07-05 ----------------------------------
 

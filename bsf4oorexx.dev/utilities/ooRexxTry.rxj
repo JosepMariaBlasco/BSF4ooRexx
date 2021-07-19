@@ -108,10 +108,12 @@
             2019-02-03, rgf: - now that bsf.import() does not accept abstract Java classes, use bsf.loadClass2environment()
                                for them
             2019-02-04, rgf: - replace "bsf.loadClass2environment()" with "bsf.loadClass()"
+            2021-07-06, rgf: - ExecuteThread::run: unlike ooRexx 4.x ooRexx 5.0 will raise an error condition
+                               if .mm.dir~tempFile is .nil when being used in SysFileExists(.mm.dir~tempFile)
 */
 
 /*----------------------------------------------------------------------------*/
-/*  Copyright 2011 Markus Moldaschl, 2011-2019 Rony G. Flatscher,             */
+/*  Copyright 2011 Markus Moldaschl, 2011-2021 Rony G. Flatscher,             */
 /*            2012-2014 Gerald Leitner                                        */
 /*                                                                            */
 /*  Licensed under the Apache License, Version 2.0 (the "License");           */
@@ -1040,6 +1042,7 @@ RunSyntax:
    expose name code_array arg_array userData
    exec = .executor~new(name, code_array, userData)
    exec~run(arg_array)
+   if .mm.dir~tempFile=.nil then return
    if SysFileExists(.mm.dir~tempFile) then call SysFileDelete .mm.dir~tempFile          -- Delete temporal code storage if present.
    return
 

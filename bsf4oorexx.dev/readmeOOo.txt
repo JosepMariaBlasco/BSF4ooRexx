@@ -1,5 +1,5 @@
-The ooRexx OpenOffice.org Support (Using BSF4ooRexx)     17 December 2020 (Beta)
-====================================================     =======================
+The ooRexx OpenOffice.org Support (Using BSF4ooRexx)     19 July 2021 (Gamma)
+====================================================     ====================
 
 This adds support for interfacing with OpenOffice/StarOffice/LibreOffice using
 BSF4ooRexx, which therefore must be installed already. Please note: by default the
@@ -13,11 +13,13 @@ LibreOffice (LO) support.
 Installation of the OpenOffice support in a Nutshell
 ====================================================
 
-0) If there is a previous version of the OpenOffice support installed on your
+1) If there is a previous version of the OpenOffice support installed on your
    system, please deinstall it by executing "uninstallOOo.cmd" (Windows) or
    "uninstallOOo.sh" (Linux).
 
-1) change into the subdirectory "bsf4oorexx/install"
+2) Close all instances of OpenOffice/LibreOffice including the quickstarter!
+
+3) change into the subdirectory "bsf4oorexx/install"
 
    - run the Rexx setup program, e.g.
 
@@ -34,8 +36,7 @@ Installation of the OpenOffice support in a Nutshell
 
                 ./installOOo_sudo.sh
 
-
-3) done.
+4) done.
 
 
 Good luck and have fun!

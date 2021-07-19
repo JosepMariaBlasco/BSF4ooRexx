@@ -18,6 +18,12 @@
             2018-12-21, ---rgf, - SysVersion() now returns the Windows version number with multiple dots, hence
                                   getting integer value using '.' in the parse template rather than via an
                                   arithmetic operation
+            2021-07-13, ---rgf, - Unix
+                                  - add "cmd.eSudoUser", "cmd.eChown", cmd.eSetExecutable
+                                  - make real user the owner of the created scripts
+                                  - on Unix add "cmd.eChownUserGroup", new routine "determineGroupName(defGroup)"
+            2021-07-14, rgf   - on Unix: new routine "determineHomeDir()", new "cmd.eHomeDir"
+            2021-07-17, rgf   - little cleanup of code
 
    last svn check-in: $Revision: 640 $ $Author: rony $ $Date: 2010-04-17 22:25:38 +0200 (Sat, 17 Apr 2010) $
 
@@ -26,7 +32,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2010-2018 Rony G. Flatscher
+       Copyright (C) 2010-2021 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -508,6 +514,8 @@ createTypeNameEntry: procedure
 ::routine create4linux_xdg
   use arg dir
 
+  parse source opsys +1
+  cmd.eIsMacOSX = (opsys='D' | opsys='M') -- "Darwin" (or old: "Macosx")
 
   baseDir      = "/usr/share"       -- install into "/usr/share" branch
   skeletonDir  = "/etc/skel"        -- skeleton dir to create "Templates", will be used for each new created user
@@ -521,6 +529,18 @@ createTypeNameEntry: procedure
   cmd.eShHashBang    = "#!/bin/sh"
   cmd.eXdgPathProlog = "export PATH=$PATH:"cmd.ePath2resources"xdg-utils/scripts"
 
+   -- get and save logName and sudoUser-Name
+   cmd.eLogName  = value('LOGNAME',    ,'ENVIRONMENT')  -- get current logname, could be 'root' if sudo'ing
+   cmd.eSudoUser = value('SUDO_USER',  ,'ENVIRONMENT')  -- maybe sudo'ing, then who is the sudo user
+
+   if cmd.eLogName="root", cmd.eSudoUser<>"" then
+      cmd.eRealUserName=cmd.eSudoUser
+   else
+      cmd.eRealUserName=cmd.eLogName
+
+  cmd.eChownUserGroup = cmd.eRealUserName":"determineGroupName(cmd.eRealUserName)
+  cmd.eHomeDir=determineHomeDir(cmd.eRealUserName, cmd.eIsMacOSX)
+
   cmd.eEcho     = "echo"
   cmd.eCopy     = "cp -pfv"         /* preserve, force, verbose: source target(dir) [works on FAT32/NTFS systems from Linux as well] */
   cmd.eLink     = "ln -fsv"         /* force, symbolic, verbose: source target(dir/)  */
@@ -530,19 +550,10 @@ createTypeNameEntry: procedure
   cmd.eRmDir    = "rmdir --ignore-fail-on-non-empty -v"  /* no force! verbose, but do not fail */
   cmd.eTouch    = "touch"
 
+  cmd.eChown="chown" cmd.eChownUserGroup   -- command to change the owner of the generated un/install scripts
+  cmd.eSetExecutable = "chmod 755"  /* set executable for all (user, group, other)  */
+
   cmd.eNullDevice = "/dev/null" /* null device  */
-
-  -- get and save logName and sudoUser-Name
-  logName  = value('LOGNAME',    ,'ENVIRONMENT')  -- get current logname, could be 'root' if sudo'ing
-  sudoUser = value('SUDO_USER',  ,'ENVIRONMENT')  -- maybe sudo'ing, then who is the sudo user
-
-  if logName="root", sudoUser<>"" then
-     realUserName=sudoUser
-  else
-     realUserName=logName
-
-  cmd.eLogName=logName
-  cmd.eRealUserName=realUserName
 
   call ctlLinuxIconsMenus cmd., dir   -- create icons and menus
 
@@ -587,11 +598,9 @@ createTypeNameEntry: procedure
      ufs~close
   end
 
-  ---- change owner/group
-   "chmod 775" fragmentName"*.sh"
-
--- rgf,2011-06-08: FC has no "admin" group!
---   'chown' realuserName":admin" fragmentName"*.sh"
+   -- make executable, change owner
+   cmd.eSetExecutable fragmentName"*.sh"
+   cmd.eChown         fragmentName"*.sh"
   return
 
 
@@ -616,16 +625,13 @@ createTypeNameEntry: procedure
   ifs~close
   ufs~close
 
-  ---- change owner/group
-  "chmod 775" fragmentName"*.sh"
-
--- rgf,2011-06-08: FC has no "admin" group!
---  'chown' cmd.eRealuserName":admin" fragmentName"*.sh"
+   -- make executable, change owner
+  cmd.eSetExecutable fragmentName"*.sh"
+  cmd.eChown         fragmentName"*.sh"
 
 
 ::routine linuxXdgMenu     -- install/uninstall menu
   use arg cmd., ifs, ufs
-
 
    -- install menu related files
   ifs~~say~~say("# install desktop and menu files")~~say
@@ -646,23 +652,10 @@ createTypeNameEntry: procedure
   ifs~say("# installing desktop files used in merged BSF4ooRexx menu")
   ufs~say("# uninstalling desktop files used in merged BSF4ooRexx menu")
 
---  directoryFile=cmd.ePath2resources"menu/rgf-bsf4oorexx_menu.directory"
---  call sysFileTree cmd.ePath2resources"menu/*.desktop", "files.", "FO"
---  do i=1 to files.0
---      ifs~say("xdg-desktop-menu   install --noupdate --mode" cmd.eMode directoryFile files.i)
---      ufs~say("xdg-desktop-menu uninstall --noupdate --mode" cmd.eMode directoryFile filespec("Name",files.i))
---  end
-
   dirFileBSF4ooRexx  =cmd.ePath2resources"menu/bsf4oorexx_menu.directory"
   dirFileInstallation=cmd.ePath2resources"menu/bsf4oorexx_submenu_installation.directory"
 
       -- create the BSF4ooRexx-menu entries
-/* does not work this way: :-(
-      -- try to create a submenu by supplying a .directory file as second argument
-  ifs~say("xdg-desktop-menu   install --noupdate --novendor --mode" cmd.eMode dirFileBSF4ooRexx dirFileInstallation)
-  ufs~say("xdg-desktop-menu uninstall --noupdate --novendor --mode" cmd.eMode dirFileBSF4ooRexx filespec("Name",dirFileInstallation))
-*/
-
   do file over .array~of("bsf4oorexx_information.desktop", "bsf4oorexx_oorexxtry.desktop", -
                          "bsf4oorexx_samples.desktop",     "bsf4oorexx_utilities.desktop" )
      path2file=cmd.ePath2resources"menu/"file
@@ -675,31 +668,12 @@ createTypeNameEntry: procedure
                          "bsf4oorexx_setupjava.desktop", "bsf4oorexx_uninstall.desktop")
 
      path2file=cmd.ePath2resources"menu/"file
---     ifs~say("xdg-desktop-menu   install --noupdate --novendor --mode" cmd.eMode dirFileInstallation path2file)
---     ufs~say("xdg-desktop-menu uninstall --noupdate --novendor --mode" cmd.eMode dirFileInstallation file)
      ifs~say("xdg-desktop-menu   install --noupdate --novendor --mode" cmd.eMode dirFileBSF4ooRexx dirFileInstallation path2file)
      ufs~say("xdg-desktop-menu uninstall --noupdate --novendor --mode" cmd.eMode dirFileBSF4ooRexx dirFileInstallation file)
   end
 
   ifs~~say~~say("xdg-desktop-menu   forceupdate --mode" cmd.eMode)~~say
   ufs~~say~~say("xdg-desktop-menu   forceupdate --mode" cmd.eMode)~~say
-
-
---      ---------------------
---  -- Important: this file needs to be copied *after* xdg-desktop-menu ran, as it will replace the xdg-created ones!
---   -- install menu-file to "/etc/xdg/menus/applications-merged/", create directory, if not in existence yet
---  if sysFileExists(cmd.eXdgMergedMenus)=.false then      -- create directory
---     ifs~~say(cmd.eMkDir755 cmd.eXdgMergedMenus  "# does not exist yet, create directory")~~say
-
---  pattern=cmd.ePath2resources"menu/*.menu"
---  call sysFileTree pattern, "files.", "FO"   -- copy the .menu file(s) to their location
---  -- call sysFileTree cmd.ePath2resources"menu/*.menu", "files.", "FO"   -- copy the .menu file(s) to their location
---  do i=1 to files.0
---     name=fileSpec("Name", files.i)    -- get name
---     ifs~say(cmd.eCopy files.i cmd.eXdgMergedMenus)      -- add
---     ufs~say(cmd.eRm   cmd.eXdgMergedMenus"/"name)       -- remove
---  end
---  ifs~say; ufs~say
 
   return
 
@@ -720,10 +694,8 @@ createTypeNameEntry: procedure
   ifs~say; ufs~say   -- insert empty line for better ledgibility
 
    -- now define the x-mime icons
-   -- logos=.array~of("oorexx_logo", "bsf4oorexx_logo",  "oorexx4ooo_logo")
    logos=.array~of("oorexx_", "bsf4oorexx_",  "oorexx4ooo_")
    mimes=.array~of("application-x-rexx", "application-x-rexx-java", "application-x-rexx-java-ooo")
-   -- mimes=.array~of("text-x-rexx", "text-x-rexx-java", "text-x-rexx-java-ooo")
    theme=""
    do i=1 to logos~items
       call sysFileTree cmd.ePath2images"/"logos[i]"*.png", "files.", "FOS"
@@ -773,7 +745,6 @@ linuxAddIconsDoTheWork: procedure
   end
   return theme
 
-
 ----------------------------- end of (new) xdg usage ----------------------------------
 ---------------------------------------------------------------------------------------
 
@@ -784,51 +755,42 @@ linuxAddIconsDoTheWork: procedure
    ifs~~say~~say("# install template")~~say
    ufs~~say~~say("# uninstall template")~~say
 
-
-   logName  = value('LOGNAME',    ,'ENVIRONMENT')  -- get current logname, could be 'root' if sudo'ing
-   sudoUser = value('SUDO_USER',  ,'ENVIRONMENT')  -- maybe sudo'ing, then who is the sudo user
-
-   if logName="root", sudoUser<>"" then
-      realUserName=sudoUser
-   else
-      realUserName=logName
-
-   userHome = value('HOME',       ,'ENVIRONMENT')  -- get home directory
    skelHome = "/etc/skel"                       -- skeleton home
 
    if dir~debug=.true then
-      say "-> logName="pp(logName) "userHome="pp(userHome) "skelHome="pp(skelHome)
+   do
+      say "-> linuxTemplates(), regFile="pp(regFile)
+      say "-> linuxTemplates(), logName="pp(cmd.eLogName) "cmd.eHomeDir="pp(cmd.eHomeDir) "skelHome="pp(skelHome)
+   end
 
    templateName = dir~entry(regFile".template") -- get template's name
 
    if dir~debug=.true then
-      say "-> templateName="pp(templateName)
+      say "-> linuxTemplates(), templateName="pp(templateName)
 
    if templateName=.nil then return             -- none given
 
    path2srcTemplate=stream("../Templates/"templateName, "C", "query exists") /* from current directory */
 
    if dir~debug=.true then
-      say "-> path2srcTemplate="pp(path2srcTemplate)
+      say "-> linuxTemplates(), path2srcTemplate="pp(path2srcTemplate)
 
    if path2srcTemplate="" then return        -- corresponding template file does not exist
 
    defaultTemplateName=getTemplateDirName()  -- get default name for "Templates" directory
    if dir~debug=.true then
-      say "-> defaultTemplateName="pp(defaultTemplateName)
+      say "-> linuxTemplates(), defaultTemplateName="pp(defaultTemplateName)
 
-   userTemplatesDirName=getTemplateHomeDirName( defaultTemplateName, userHome, cmd.)
+   userTemplatesDirName=getTemplateHomeDirName(defaultTemplateName, cmd.)
    if dir~debug=.true then
-      say "-> userTemplatesDirName="pp(userTemplatesDirName)
+      say "-> linuxTemplates(), userTemplatesDirName="pp(userTemplatesDirName)
 
    if SysFileExists(userTemplatesDirName)=.false then -- Templates folder does not exist !
    do
        ifs~say("# Templates directory will be created, but never removed")
        ifs~~say(cmd.eMkDir775 enQQ(userTemplatesDirName))~~say -- create Templates directory
             -- change owner/group to real user
-
--- rgf,2011-06-08: FC has no "admin" group!
---       ifs~~say('chown' realuserName":admin" enQQ(userTemplatesDirName))
+       ifs~~say(cmd.eChown enQQ(userTemplatesDirName))
        ifs~say
    end
 
@@ -873,11 +835,11 @@ getTemplateDirName: procedure    -- get the default template name
 
 
 getTemplateHomeDirName: procedure      -- get the user's name for the Templates folder (could be translated)
-   use arg defaultTemplateName, userHome, cmd.
+   use arg defaultTemplateName, cmd.
 
-   homeTemplateDir=userHome"/"defaultTemplateName
+   homeTemplateDir=cmd.eHomeDir"/"defaultTemplateName
 
-   fn=userHome"/.config/user-dirs.dirs"
+   fn=cmd.eHomeDir"/.config/user-dirs.dirs"
    if SysFileExists(fn)=.true then
    do
       fi=.stream~new(fn)~~open("READ")
@@ -904,299 +866,13 @@ getTemplateHomeDirName: procedure      -- get the user's name for the Templates 
           end
 
           if templateName~left(6)="$HOME/" then    -- we need to replace $HOME with physical path
-              homeTemplateDir=templateName~changeStr("$HOME", userHome)
+              homeTemplateDir=templateName~changeStr("$HOME", cmd.eHomeDir)
           else
               homeTemplateDir=templateName
       end
    end
 
    return homeTemplateDir
-
-
-
-
-
-----------------
-
-/* ---> obsolete as of 2011-03-25, leaving in program for documentary purposes */
-/*
-   Maybe useful URLs (as of 2010-07-27):
-
-   - Icon Theme Specification
-      <http://standards.freedesktop.org/icon-theme-spec/icon-theme-spec-latest.html>
-   - Desktop Entry Specification
-      <http://standards.freedesktop.org/desktop-entry-spec/desktop-entry-spec-latest.html>
-   - Desktop Menu Specification
-      <http://standards.freedesktop.org/menu-spec/latest/>
-   - XDG Base Directory Specification
-      <http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html>
-   - Shared MIME-info Database
-      <http://standards.freedesktop.org/shared-mime-info-spec/shared-mime-info-spec-latest.html>
-   - Modifying MIME types (GNOME Documentation Library)
-      <http://library.gnome.org/admin/system-admin-guide/stable/mimetypes-modifying.html.en>
-
-   ad Templates:
-   - in "~/.config/user-dirs.dirs" entry should read: XDG_TEMPLATES_DIR="$HOME/Templates",
-     cf. <http://ubuntuforums.org/showthread.php?t=6182>
-   - "/etc/skel/Templates", cf <https://bugs.launchpad.net/ubuntu/+source/nautilus/+bug/372132>
-   - Gnome GUI, cf. <http://tombuntu.com/index.php/2008/02/13/add-your-document-templates-to-gnome/>
-
-*/
-::routine create4linux_old
-  use arg dir
-
-  fragmentName = "fileAssociations_for_"
-
-  baseDir      = "/usr/share"       -- install into "/usr/share" branch
-  skeletonDir  = "/etc/skel"        -- skeleton dir to create "Templates", will be used for each new created user
-  -- TemplatesDir = "$HOME/Templates"  -- template dir (user-related); maybe we need to check "~/.config/user-dirs.dirs"
-
-  shHashBang    = "#!/bin/sh"
-  cmd.eEcho     = "echo"
-  cmd.eCopy     = "cp -pfv"         /* preserve, force, verbose: source target(dir) [works on FAT32/NTFS systems from Linux as well] */
-  cmd.eLink     = "ln -fsv"         /* force, symbolic, verbose: source target(dir/)  */
-  cmd.eMkDir755 = "mkdir -v -m u=rwx,go=rx"   /* verbose, created directories have umask 755 */
-  cmd.eMkDir775 = "mkdir -v -m ug=rwx,o=rx"   /* verbose, created directories have umask 775 */
-  cmd.eRm       = "rm -fv"          /* force, verbose */
-  cmd.eRmDir    = "rmdir --ignore-fail-on-non-empty -v"  /* no force! verbose, but do not fail */
-  cmd.eTouch    = "touch"
-
-
-  -- create separate files for each file association type
-  do regfile over .list~of("rex", "rxj", "rxo")
-     baseName = dir~entry(regfile".baseName")
-     desktopName = baseDir"/applications/"||baseName".desktop"
-
-       -- open/create files
-     ifs = .stream~new(fragmentName || regfile"_add.sh")~~open("replace")
-     ufs = .stream~new(fragmentName || regfile"_remove.sh")~~open("replace")
-
-         -- write prolog
-     ifs~~say(shHashBang)~~say
-     ufs~~say(shHashBang)~~say
-
-     ifs~~say("# Created by ""setupFileAssociations.rex"" (from BSF4ooRexx) on:" dir~runtime)~~say
-     ufs~~say("# Created by ""setupFileAssociations.rex"" (from BSF4ooRexx) on:" dir~runtime)~~say
-
-     if regFile="rex" then
-     do
-        -- in any case copy the "oorexxpause.desktop"
-        ifs~~say(cmd.eCopy "linux/resources/oorexxpause.desktop /usr/share/applications/") ~~say
-        ufs~~say(cmd.eRm   "/usr/share/applications/oorexxpause.desktop")~~say
-
-        if SysFileExists(desktopName) then   /* don't mess with an existing "oorexx.desktop" definition */
-        do
-           info=pp(desktopName) "exists already, leaving intact (no actions taken) ..."
-           .error~say(info)   -- show user on-screen
-           info=cmd.eEcho enQS(info)   -- use echo command, enquote information string
-           ifs~say(info)      -- write info
-           ufs~say(info)
-           ifs~close          -- close files
-           ufs~close
-           iterate            -- process next extension
-        end
-     end
-
-     ---------------------------------------
-     -- create .desktop cp/rm
-     if SysFileExists("linux/resources/" || baseName || ".desktop") then
-     do
-        ifs~~say(cmd.eCopy "linux/resources/" || baseName || ".desktop" "/usr/share/applications/") ~~say
-        ufs~~say(cmd.eRm                           "/usr/share/applications/" || baseName || ".desktop")~~say
-     end
-
-     ---------------------------------------
-     -- create .mime-xml cp/rm  + execute mime-update
-     if SysFileExists("linux/resources/" || baseName || ".xml") then
-     do
-        ifs~~say(cmd.eCopy "linux/resources/" || baseName || ".xml" "/usr/share/mime/packages/")
-        ufs~~say(cmd.eRm                           "/usr/share/mime/packages/" || baseName || ".xml")
-        tmpCmd="update-mime-database /usr/share/mime"
-        ifs~~say(tmpCmd)~~say
-        ufs~~say(tmpCmd)~~say
-     end
-
-     ---------------------------------------
-     -- create icon cp/rm + touch theme-root-dir-entries (to exploit the "5 secs" rule)
-     call linuxIcons dir, ifs, ufs, regFile, cmd.
-
-     ---------------------------------------
-     -- copy respective template file [create Templates directory in "$HOME/Templates" and "/etc/skel/Templates"]
-     call linuxTemplates dir, ifs, ufs, regFile, cmd.
-
-      -- done
-     ifs~close
-     ufs~close
-  end
-
-   ------------------------------------
-   -- add BSF4ooRexx menu to the system
-   localDir="linux/resources/menu/"    -- local directory containing xdg menu definition
-   fragmentName="xdg_menu"
-      -- open/create files
-   ifs = .stream~new(fragmentName"_add.sh")~~open("replace")
-   ufs = .stream~new(fragmentName"_remove.sh")~~open("replace")
-         -- write prolog
-   ifs~~say(shHashBang)~~say
-   ufs~~say(shHashBang)~~say
-
-   ifs~~say("# Created by ""setupFileAssociations.rex"" (from BSF4ooRexx) on:" dir~runtime)~~say
-   ufs~~say("# Created by ""setupFileAssociations.rex"" (from BSF4ooRexx) on:" dir~runtime)~~say
-
-      -- copy the desktop files to their appropriate locations
-   -- xdg-desktop-menu uses the following directories (however remaining consistent with the other
-   -- desktop locations in this program just using "/usr/share/applications"):
-   tgtDirs  =.array~of("/usr/local/share/applications/", "/usr/share/applnk/")
-   -- tgtDirs  =.array~of("/usr/share/applications/") -- this unfortunately is "shaky": after a logoff/logon the menu is missing! rgf, 20100821
-
-   fileNames=.array~of("rgf-bsf4oorexx_home.desktop"     , "rgf-bsf4oorexx_information.desktop", -
-                       "rgf-bsf4oorexx_reinstall.desktop", "rgf-bsf4oorexx_samples.desktop"    , -
-                       "rgf-bsf4oorexx_setupjava.desktop", "rgf-bsf4oorexx_uninstall.desktop"  , -
-                       "rgf-bsf4oorexx_utilities.desktop", "rgf-bsf4oorexx_oorexxtry.desktop")
-   call groupCopy fileNames, tgtDirs
-
-      -- copy the menu file to its place
-   call singleCopy "rgf-bsf4oorexx_menu.directory", "/usr/share/desktop-directories/", .false
-
-      -- conclude copying the xdg menu file
-   call singleCopy "rgf-bsf4oorexx_menu.menu", "/etc/xdg/menus/applications-merged/", .true
-
-   ifs~close
-   ufs~close
-
-  return
-
-
-singleCopy: procedure expose cmd. localDir ifs ufs
-  use arg fileName, tgtDir, bBug=.false
-
-   if SysFileExists(tgtDir)=.false then   -- does not exist, hence create it
-      ifs~say(cmd.eMkDir755 tgtDir)
-
-   ifs~~say(cmd.eCopy localDir||fileName tgtDir) ~~say
-
-/* does not really work out, hence removing it; user may just run explicitly
-      /opt/BSF4ooRexx/install/xdg_menu_add.sh immediately after installation or
-      logoff/logon which seems to fix this bug
-
-
-   if bBug=.true then   -- rgf, 2010-08-21: On Ubuntu 10.04 building of the main menu is not immediate, trying to achieve that with this technique
-   do
-      ifs~~say("sleep 0.2s") ~~say
-      ifs~~say("cat" localDir||fileName ">" tgtDir||fileName) ~~say
-   end
-*/
-
-   ufs~say(cmd.eRm     tgtDir||fileName)
-   -- ufs~say(cmd.eRmDir tgtDir)             -- try to remove dir without force (maybe empty now)
-   ufs~say("rmdir --ignore-fail-on-non-empty -v" tgtDir)    -- try to remove dir without force (maybe empty now)
-   ufs~say
-   return
-
-
-groupCopy: procedure expose cmd. localDir ifs ufs
-   use arg fileNames, tgtDirs
-
-   do tgtDir over tgtDirs        -- loop over target directories to copy to/remove from
-      if SysFileExists(tgtDir)=.false then   -- does not exist, hence create it
-         ifs~~say(cmd.eMkDir755 tgtDir)~say
-
-      do filename over filenames -- loop over desktop files to copy/remove
-         ifs~say(cmd.eCopy localDir||fileName tgtDir)
-         ufs~say(cmd.eRm     tgtDir||fileName)
-      end
-
-      -- ufs~say(cmd.eRmDir tgtDir) -- try to remove dir (maybe empty now)
-      ufs~say("rmdir --ignore-fail-on-non-empty -v" tgtDir) -- try to remove dir (maybe empty now)
-
-      ifs~say     -- add empty line to make shell script easier to read
-      ufs~say
-   end
-   return
-
-
-::routine linuxIcons    -- copy icons to application and mimetype folders, including matching themes
-   use strict arg dir, ifs, ufs, regFile, cmd.
-
-   iconDir="/usr/share/icons"
-   baseName=dir~entry(regFile".baseName") -- get base name
-
-   call SysFileTree dir~path_to_images"/linux/*", "themeDirs.", "DO"
-   if dir~debug=.true then say "themeDirs.0="pp(themeDirs.0)
-
-   do i=1 to themeDirs.0      -- iterate over all theme directories
-      if dir~debug=.true then say "themeDirs."i"="pp(themeDirs.i)
-
-      themeName=fileSpec("Name", themeDirs.i)   -- get theme's name
-      themeNameBaseDir=iconDir"/"themeName
-      if SysFileExists(themeNameBaseDir)=.false then  -- if no matching theme on Linux, skip
-         iterate
-
-      themeIconCount=0     -- counter to count number of icon files copied
-      imagesThemeBaseDir= dir~path_to_images"/linux/"themeName   -- get full path to theme directory
-      call SysFileTree imagesThemeBaseDir"/*", "iconFiles.", "FO"
-      if iconFiles.0>0 then
-      do
-         ifs~say("# trying to add icons to theme" pp(themeName))
-         ufs~say("# removing icons added to icon theme" pp(themeName))
-         do k=1 to iconFiles.0
-            iconName=fileSpec("Name", iconFiles.k) -- get icon's simple file name
-
-            parse var iconName name "." type
-            if type = 'svg' then       -- a scalable graphics file
-                targetBaseDir="scalable"
-            else
-            do
-               parse var name name "_" resolution
-               if \datatype(resolution, "W") then  -- not a number, hence an unexpected file, which we ignore
-                  iterate
-               resolution+=0           -- add 0, such that leading 0s get removed (Rexx rule!)
-               targetBaseDir=resolution"x"resolution
-            end
-
-            isLogo=(name=baseName"-logo")  -- a logo image ?
-            if name<>baseName, isLogo=.false then  -- icon not of the sought for base name, nor a logo image
-               iterate
-
-            fullTargetBaseDir=themeNameBaseDir || "/" || targetBaseDir
-
-            if SysFileExists(fullTargetBaseDir)=.false then -- target directory does not exist
-               iterate
-
-            do targetFragment over .array~of("apps", "mimetypes")
-               thisFullTargetBaseDir = fullTargetBaseDir || "/" || targetFragment
-
-               if SysFileExists(thisFullTargetBaseDir)=.false then  -- target does not exist, skip
-                  iterate
-
-               themeIconCount += 1           -- adding an icon to the theme
-               if targetFragment="apps" then
-               do
-                  -- tmpTarget=thisFullTargetBaseDir"/" || baseName"."type
-                  tmpTarget=thisFullTargetBaseDir"/" || name"."type
-               end
-               else if isLogo=.false then    -- use mimetype convention for icon name
-                  tmpTarget=thisFullTargetBaseDir"/"dir~entry(regFile".mimetype")~changeStr("/","-")"."type
-
-               ifs~say(cmd.eCopy enQQ(iconFiles.k) enQQ(tmpTarget))
-               ufs~say(cmd.eRm   enQQ(tmpTarget))
-            end
-         end
-
-         if themeIconCount>0 then   -- touch theme's root directory (exploit 5 sec rule)
-         do
-             cmd=cmd.eTouch enQQ(themeNameBaseDir)
-             ifs~say(cmd)
-             ufs~say(cmd)
-         end
-
-         ifs~say  -- add empty line
-         ufs~say
-      end
-   end
-   return
-/* <--- obsolete as of 2011-03-25, leaving in program for documentary purposes */
-
 
 
 /* ================================================================================= */
@@ -1253,3 +929,51 @@ syntax2:
 syntax3:
   say "showDir(): syntax error, cannot dump 'dir' (probably path to 'rgf_util2.rex' not set up yet) ..."
   return
+
+/* Unix: returns the group name to be used in 'chown' command:
+   - if "staff" present in "/etc/group" use it (Linux: full rights to "/usr/local")
+   - else use real user name as the group name
+*/
+::routine determineGroupName
+  use strict arg groupName
+
+  s=.stream~new("/etc/group")~~open("read")
+  arr=s~arrayin
+  s~close
+  bFound=.false      -- needle "staff:" found?
+  do entry over arr while bFound=.false
+     bFound=entry~abbrev("staff:")  -- allow this to work prior to ooRexx 5.0 which has "startsWith"
+  end
+  if bFound then return "staff"     -- o.k. found, use group name "staff"
+  return groupName
+
+/* Unix: if MacOS then use "/Users/<userid>", if "root", then "/var/root"
+
+   TODO: Android "/data/media/<userid>", cf. <https://en.wikipedia.org/wiki/Home_directory>
+*/
+::routine determineHomeDir
+  use strict arg userName, isMacOS=.false
+
+  if isMacOS=.true then
+  do
+     if userName="root" then homedir="/var/root"
+                        else homedir="/Users/"userName
+     if \sysFileExists(homedir) then homedir="$HOME"  -- fall back to environment variable
+     return homedir
+  end
+
+  s=.stream~new("/etc/passwd")~~open("read") -- read passwd file
+  arr=s~arrayin
+  s~close
+  bFound=.false      -- needle "staff:" found?
+  needle=userName":"
+  do entry over arr until bFound=.true
+     bFound=entry~abbrev(needle) -- allow this to work prior to ooRexx 5.0 which has "startsWith"
+  end
+  if bFound=.false then return "$HOME"    -- not found, fall back to environment variable
+
+  parse var entry uname ":" pwd ":" uid ":" gid ":" gecos ":" homeDir ":" shell
+  if sysFileExists(homeDir) then return homeDir -- done
+
+  return "$HOME"     -- not found, fall back to environment variable
+

@@ -1,5 +1,5 @@
-BSF4ooRexx - Installation Directions for Linux           17 December 2020 (Beta)
-==============================================           =======================
+BSF4ooRexx - Installation Directions for Linux           19 July 2021 (Gamma)
+==============================================           ====================
 Home: <http://sourceforge.net/projects/bsf4oorexx/>
 
 BSF4ooRexx adds support to the ooRexx scripting language to camouflage
@@ -21,11 +21,23 @@ Prerequisites
     Sometimes it is possible to run Java from the commandline. To check, open
     a command line window and enter: "java -version"
 
-    Home: <http://www.java.com>
+    Home:
+         - azul.com <https://www.azul.com/downloads/?package=jdk#download-openjdk>
 
-[2] ooRexx 4.2.0 or higher from its home: <http://www.ooRexx.org>. Please note:
-    it is highly advised to use the latest ooRexx 5.0 beta, which is stabler and
-    has many great new features!
+                - On the download page choose either "JDK FX" or "JRE FX" to
+                  get the Java version with the great JavaFX support
+
+         - bellsoft <https://bell-sw.com/pages/downloads/>
+
+                - On the download page choose "Full JDK" or "Full JRE" to
+                  get the Java version with the great JavaFX support
+
+         - Oracle <http://www.java.com> (note the license!)
+
+
+[2] ooRexx 5.0.0 or newer from its home: <https://sourceforge.net/projects/oorexx/files/oorexx/>.
+    (The current BSF4ooRexx baseline for ooRexx is version 4.1.0, so this
+    version of ooRexx and later versions are supported.)
 
 [3] optional: Apache OpenOffice.org (OOo) from <http://download.openoffice.org>
 
@@ -35,33 +47,38 @@ Prerequisites
 
 [4] Uninstall any previously installed version of BSF4[oo]Rexx, if any.
 
+    Prerequisite: close all instances of OpenOffice/LibreOffice, also the quickstarter!
+
     Choose the menu "Applications -> BSF4ooRexx ->  Installation -> Uninstall BSF4ooRexx"
 
     [To manually uninstall, try to locate the following two scripts and execute
      them in the following sequence:
 
-        Linux                   Comment
-        -------                 -------
-        uninstallOOo.sh         run, if the OOo support was installed
+        Linux                                   Comment
+        -------                                 -------
+        /opt/BSF4ooRexx/install/uninstallOOo.sh run, if the OOo support was installed
 
-        uninstallBSF.sh         uninstalls the old BSF4[oo]Rexx support]
+        /opt/BSF4ooRexx/install/uninstallBSF.sh uninstalls the previous BSF4[oo]Rexx support]
 
 
 Installation
 ============
 
-Either get the GUI-installer for your platform (deb, rpm) from
-<http://sourceforge.net/projects/bsf4oorexx/files/> and double-click on
-them.
+        Step [1] Close all instances of OpenOffice/LibreOffice including the quickstarter
 
-Alternatively use the command-line version:
+        Step [2] Download the archive "BSF4ooRexx_install_v641-YYYYMMDD.zip" and unzip it
 
-Step [1] Download the archive "BSF4ooRexx_install.zip" and unzip it
+        Step [3] Open a terminal window and change into the unzipped directory into
+                 "bsf4oorexx/install/linux"
 
-Step [2] Open a terminal window and change the directory to
-         "bsf4oorexx/install/linux"
+        Step [4] Run the shell program "sh install.sh" which will copy
+                 everything to "/opt/BSF4ooRexx", create the installation
+                 and uninstall scripts in "/opt/BSF4ooRexx/install" and
+                 runs the install scripts
 
-Step [3] Run the shell program "sh install.sh"
+        Step [5] Open the menu "BSF4ooRexx" and start "GUI Rexxtry Program (ooRexxTry.rxj)"
+                 to test the installation (you can enter Rexx statements and execute them
+                 in this window)
 
 That's it.
 

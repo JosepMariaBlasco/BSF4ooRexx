@@ -8,6 +8,25 @@
    Version: 1.35
    Changed:
 
+            2021-07-17, ---rgf, - on Unix: - added cmd.eUseSymbolicLink?, cmd.eSymbolicLink, cmd.eChownOfSymbolicLink
+                                           - now using symbolic links for /usr/local/{bin|lib}
+                                             - apply owner:group
+                                             - making sure symbolic links get owner:group set (must use "-h")
+                                           - instead of copying the files physically, now only
+                                             symbolic links get created; to change this behaviour back to copying
+                                             change: "cmd.eUseSymbolicLink?=.false" below
+                                           - little cleanup of code
+
+            2021-07-14, ---rgf, - on Unix: - if new profile/bashrc/zshenv gets created change owner to realUserName afterwards
+            2021-07-13, ---rgf, - on Unix: - added: add/remove to/from $HOME/.zshenv
+                                           - correct needle test for conditionally setting environment from ~/.bashrc
+                                           - make real user the owner of the created un/install scripts
+                                           - added "cmd.eChown"
+                                           - on Unix add "cmd.eChownUserGroup", new routine "determineGroupName(defGroup)";
+                                             make sure libjvm.so link in /opt/BSF4ooRexx gets owner:group set;
+                                             new routine "determineHomeDir(userName, isMacOS)", result stored
+                                             in new "cmd.eHomeDir"
+
             2020-11-20, ---rgf, - make sure the 64-bit arm library can be also "aarch64" and use
                                   the suffix "-aarch64" for it from now on
             2020-08-17, ---rgf, - add 64-bit arm library
@@ -185,7 +204,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2006-2020 Rony G. Flatscher
+       Copyright (C) 2006-2021 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -200,10 +219,6 @@
        limitations under the License.
     -----------------------------------------------------------------------------
 */
-
--- TODO: for Linux change "chmod" logics: set all files to 644, directories and executables to 755
-
--- parse version "exx_" val "(" . level .
 
    -- 20150527: make sure we get the full version and the full source information logged
 parse version v
@@ -248,7 +263,6 @@ do
                            W8.1 & Server 2012 R2= 6.3
    */
    parse value sysVersion() with . cmd.eWinVersion
-   -- cmd.eElevation.exe="windows\Elevate"cmd.eBitness".exe"   -- define elevate exe to use
    cmd.eElevation.exe="windows\elevate.rex"  -- 2015-08-24: Gil Barmwater's elevate.rex, works on all Windows versions so far
 end
 else
@@ -325,31 +339,22 @@ cmd.eIsMacOSX=(s="D" | s="M")    -- determine whether running on "MACOSX" replac
 cmd.eExt.dir.bin=j.java.home || j.file.separator || "lib" || j.file.separator || ,
                                 iif(pos("86", j.os.arch)>0, "i386", j.os.arch)
 
-
-
--- rgf, 2010-03-07, 2010-03-18:
 cmd.eSuperDir = qualify(directory() || j.file.separator || "..")  -- get path to super directory
 cmd.eSuperDir2=cmd.eSuperDir || j.file.separator   -- supply a trailing separator
-
-/* 2007-01-28, ---rgf */
 
    /* set BSF4REXX_HOME */
 cmd.eSetBSF4REXX_HOME=iif(cmd.eIsUnix=1, "", "set ") || "BSF4REXX_HOME="cmd.eSuperDir
    -- 2013-07-14, ---rgf: ooRexx 4.1.3 introduced an error if using a compound symbol ending in a dot
--- call SysFileTree cmd.eSuperDir2||"bsf*.jar", "cmd.eJarBaseNames.", "FO" /* query for the jars we need */
 call SysFileTree cmd.eSuperDir2||"bsf*.jar", "files.", "FO" /* query for the jars we need */
 cmd.eJarBaseNames.0=files.0
 do i=1 to files.0             -- now assign elements from files. to cmd.eJarBaseNames.
    cmd.eJarBaseNames.i=files.i
 end
 
-
--- rgf, 2010-03-18
 if cmd.eIsUnix=1 then
    cmd.eSetCP="export CLASSPATH="
 else
    cmd.eSetCP="set CLASSPATH="
-
 
 do i=1 to cmd.eJarBaseNames.0    /* iterate over all found jar-files    */
    cmd.eSetCP=cmd.eSetCP || iif(i=1, "", j.path.separator) || -
@@ -372,29 +377,25 @@ do
    end
 end
 
+  /* get and set the commons-logging jar-file name: */
+cmd.eCommonsLoggingJarName=""    /* default to empty  */
+call sysFileTree "commons-logging-*.jar", "clname.", "FO"   /* get fully qualified file name */
+if clname.0>0 then
+do
+   cmd.eCommonsLoggingJarName=clname.1    /* save very first (should be only) filename */
 
-/* 2006-08-02, ---rgf */
-     /* get and set the commons-logging jar-file name: */
-   cmd.eCommonsLoggingJarName=""    /* default to empty  */
-   call sysFileTree "commons-logging-*.jar", "clname.", "FO"   /* get fully qualified file name */
-   if clname.0>0 then
-   do
-      cmd.eCommonsLoggingJarName=clname.1    /* save very first (should be only) filename */
+      /* extend classpath  */
+   if right(cmd.eSetCP,1)="=" then
+      cmd.eSetCP=cmd.eSetCP || cmd.eCommonsLoggingJarName
+   else
+      cmd.eSetCP=cmd.eSetCP || j.path.separator || cmd.eCommonsLoggingJarName
 
-         /* extend classpath  */
-      if right(cmd.eSetCP,1)="=" then
-         cmd.eSetCP=cmd.eSetCP || cmd.eCommonsLoggingJarName
-      else
-         cmd.eSetCP=cmd.eSetCP || j.path.separator || cmd.eCommonsLoggingJarName
+      /* add to jar-stem   */
+   i=cmd.eJarBaseNames.0+1
+   cmd.eJarBaseNames.0=i         /* i got already increased by 1, so no need to do it again */
+   cmd.eJarBaseNames.i=cmd.eCommonsLoggingJarName
+end
 
-         /* add to jar-stem   */
-      i=cmd.eJarBaseNames.0+1
-      cmd.eJarBaseNames.0=i         /* i got already increased by 1, so no need to do it again */
-      cmd.eJarBaseNames.i=cmd.eCommonsLoggingJarName
-   end
-/* 2006-08-02, ---rgf */
-
--- rgf, 2010-03-18
 if cmd.eIsUnix=.true then
 do
    if right(cmd.eSetCP,1)="=" then
@@ -410,10 +411,9 @@ do
       cmd.eSetCP=cmd.eSetCP || j.path.separator || "." || j.path.separator || "%CLASSPATH%"
 end
 
-
    /* define path to "jvm.dll/libjvm.so" ("javai.dll/libjavai.so" for Java 1.1.8)   */
 if cmd.eIsMacOSX then
-   cmd.ePath2JavaDLL=getPath2JavaOnMacOSX()
+   cmd.ePath2JavaDLL=getPath2JavaOnMacOSX(j.)
 else
    cmd.ePath2JavaDLL= getPath2JavaDll()
 
@@ -421,12 +421,9 @@ cmd.eInstallDirectory=directory() || j.file.separator -- save this directory
 
 cmd.eSupportInfos=qc("Support: Internet newsgroup <news:comp.lang.rexx> or via <http://www.RexxLA.org>")
 
-
 -- cmd.eIsUnix=.true -- for debugging only
-
 -- 2010-03-19: create a unique needle (e.g. to allow deleting lines with sed from profiles later)
 cmd.eInstallationNeedle="BSF4ooRexxNeedle"   -- .dateTime~new~string
-
 cmd.eHintString="created:" q(cmd.eDateTimeEdited) "by user" q(j.["USER.NAME"]) -- q(j.user.name)
 
 if cmd.eIsUnix then
@@ -448,6 +445,8 @@ do
    else
       cmd.eRealUserName=cmd.eLogName
 
+   cmd.eChownUserGroup = cmd.eRealUserName":"determineGroupName(cmd.eRealUserName)
+
    call UnixDetermineTargetLibDirs cmd.   -- determine where to copy/link libraries to
 
    nl="0a"x                      /* Unix new-line character sequence (\n)     */
@@ -455,37 +454,32 @@ do
 
    cmd.eLeadIn="#!/bin/sh"nl     /* command to execute this file              */
    cmd.eEcho="echo"
-   -- cmd.eCopy="cp -plfv"          /* preserve, hard-link, force, verbose: source target(dir)  */
-   cmd.eCopy="cp -pfv"            /* force, verbose: source target(dir) [works on FAT32/NTFS systems from Linux as well] */
---   cmd.eCopy="cp -f"            /* force, verbose: source target(dir) [works on FAT32/NTFS systems from Linux as well] */
+   cmd.eCopy="cp -pfv"           /* force, verbose: source target(dir) [works on FAT32/NTFS systems from Linux as well] */
    cmd.eLink="ln -fv"            /* force, verbose: source target(dir)  */
---   cmd.eLink="ln -f"            /* force, verbose: source target(dir)  */
+
+   cmd.eUseSymbolicLink? = .true /* 2021-07-17, rgf: controls whether to copy or to create a symbolic link to/in /usr/local/{bin|lib}*/
+   cmd.eSymbolicLink="ln -sfv"   /* symbolic, force, verbose: sourceFilePath targetFilePath (= symbolic link)  */
    cmd.eDelete="rm -fv"
---   cmd.eDelete="rm -f"
-   -- cmd.eSetPath="export PATH=" || "$PATH" || j.path.separator || "$BSF4REXX_HOME"
+   cmd.eChown="chown" cmd.eChownUserGroup   -- command to change the owner of the generated un/install scripts
+   cmd.eChownOfSymbolicLink="chown -h" cmd.eChownUserGroup -- command to change the owner of the generated un/install scripts
+
    cmd.eSetPath="export PATH=$BSF4REXX_HOME:$PATH"
-   /*
-       No need to list the Java-known library paths (JVM will find it on its own)
-   */
    cmd.eSetCP= '[ "$CLASSPATH" != "" ] && TMPCP=:$CLASSPATH || TMPCP=' || .endOfLine || cmd.eSetCP
 
    -- if LD_LIBRARY_PATH is set, use it
    -- rgf, 20100321: note: if used in /etc/profile will get totally ignored ! (works for ~/.bashrc)
    if cmd.eIsMacOSX then
    do
+      -- note: Apple ignores DYLD_LIBRARY_PATH if used with system's shell; on the Internet there is
+      --       a suggestion to copy the shell binary to user space and use that one to run the script
       cmd.eSetDLLPath = '[ "$DYLD_LIBRARY_PATH" != "" ] && TMPLLP=$DYLD_LIBRARY_PATH: || TMPLLP=' || .endOfLine || -
                          "export DYLD_LIBRARY_PATH=$BSF4REXX_HOME:" || cmd.ePath2JavaDLL  || ":" || ":" || "$TMPLLP"
---                         "export DYLD_LIBRARY_PATH=$BSF4REXX_HOME:" || cmd.ePath2JavaDLL  || ":" || "$BSF4REXX_HOME/install/"cmd.eBitness || ":" || "$TMPLLP"
---                         "export DYLD_LIBRARY_PATH=$BSF4REXX_HOME:" || cmd.ePath2JavaDLL  || ":" || "$BSF4REXX_HOME/install/macosx/resources" || ":" || "$TMPLLP"
---                         "export DYLD_LIBRARY_PATH=$BSF4REXX_HOME:" || cmd.ePath2JavaDLL  || ":" || "`pwd`/macosx/resources" || ":" || "$TMPLLP"
    end
    else
    do
       cmd.eSetDLLPath = '[ "$LD_LIBRARY_PATH" != "" ] && TMPLLP=$LD_LIBRARY_PATH: || TMPLLP=' || .endOfLine || -
                          "export LD_LIBRARY_PATH=$BSF4REXX_HOME:" || cmd.ePath2JavaDLL || ":" || "$TMPLLP"
    end
-
-                      -- "export LD_LIBRARY_PATH=$TMPLLP" || "$BSF4REXX_HOME" || j.path.separator  || cmd.ePath2JavaDLL
 
    cmd.eInstallScriptName="installBSF.sh"
    cmd.eUninstallScriptName="uninstallBSF.sh"
@@ -495,7 +489,6 @@ do
    cmd.eUninstallScriptName.RunAsAdmin="uninstallBSF_sudo.sh"
 
    cmd.eTestScriptName   = "rexxj.sh"  /* "testBSF4Rexx.sh"             */
-   -- cmd.eSetEnvironmentScriptName="setEnvironment4BSF.sh"
    cmd.eSetEnvironmentScriptName=cmd.eInstallDirectory || "setEnvironment4BSF.sh"
 
    cmd.eInstallSystemWide=.true           /* install into /etc/profile which supposedly works on all systems
@@ -503,18 +496,23 @@ do
                                              supported by the Linux distribution;
                                              if .false, install into user's profile ~/.bashrc else */
 
-   cmd.eAdd2BashRc   = "$HOME/.bashrc"    /* logon user's bash profile to add entry to       */
+   cmd.eHomeDir      = determineHomeDir(cmd.eRealUserName, cmd.eIsMacOSX)
+
+   cmd.eAdd2BashRc   = cmd.eHomeDir"/.bashrc"   /* logon user's bash profile to add entry to       */
    cmd.eAdd2Profile  = "/etc/profile"     /* system wide setting                       */
+   cmd.eAdd2Zshenv   = cmd.eHomeDir"/.zshenv"   /* user's zsh environment for all sessions   */
+
+
 
       /* prolog and epilog used for ".bashrc" to make sure that CLASSPATH gets only extended, if
          "/etc/profile" has not run yet (and set CLASSPATH already to our needs) */
-   cmd.eAdd2BashRcProlog = "if [ -z `echo $CLASSPATH | grep ""bsf-rexx-engine.jar""` ] ; then" "#" cmd.eInstallationNeedle
+   cmd.eAdd2BashRcProlog = "if [ -z `echo $CLASSPATH | grep ""bsf4ooRexx-.*-bin\.jar""` ] ; then" "#" cmd.eInstallationNeedle
    cmd.eAdd2BashRcEpilog = "fi" "#" cmd.eInstallationNeedle
 
-   cmd.eAdd2BashRc.0 = 2
-   cmd.eAdd2BashRc.1 = "    #" cmd.eInstallationNeedle "("cmd.eHintString")"
-   cmd.eAdd2BashRc.2="if [ -f" cmd.eSetEnvironmentScriptName "];" -
-                     "then ." cmd.eSetEnvironmentScriptName "; fi #" cmd.eInstallationNeedle
+   cmd.eAdd2setEnvironment.0 = 2
+   cmd.eAdd2setEnvironment.1 = "    #" cmd.eInstallationNeedle "("cmd.eHintString")"
+   cmd.eAdd2setEnvironment.2="if [ -f" cmd.eSetEnvironmentScriptName "];" -
+                             "then ." cmd.eSetEnvironmentScriptName "; fi #" cmd.eInstallationNeedle
 
    if cmd.eIsMacOSX then --rgf, 2011-03-01: sed on MacOSX works differently, cf. <http://blog.mpdaugherty.com/2010/05/27/difference-with-sed-in-place-editing-on-mac-os-x-vs-linux/>
       cmd.e_sed_delete_profile ="sed -i '' '/"cmd.eInstallationNeedle"/d'"
@@ -531,11 +529,18 @@ do
       if cmd.eBinDir="" then
          cmd.eBinDir="/usr/local/bin"  /* directory where executables reside     */
 
-      select      -- determine location and name of library to use
       --   when cmd.eBitness=32 then cmd.eDll.sourcePath="lib/libBSF4ooRexx.dylib-32-x86"    -- no 32-bit support anymore!
-         when cmd.eBitness=64 then cmd.eDll.sourcePath="lib/libBSF4ooRexx.dylib-64-x86_64"
-         otherwise                 cmd.eDll.sourcePath="lib/panic-unknown-bitness-"cmd.eBitness
+      if cmd.eBitness=64 then
+      do
+          if j.os.arch='arm' | j.os.arch='arm64' then
+              cmd.eDll.sourcePath="lib/libBSF4ooRexx.dylib-64-arm64"
+          else
+              cmd.eDll.sourcePath="lib/libBSF4ooRexx.dylib-64-x86_64"
+
+-- TODO: remove (just for testing)
+--          cmd.eDll.sourcePath="lib/libBSF4ooRexx.dylib-universal"
       end
+      else cmd.eDll.sourcePath="lib/panic-unknown-bitness-"cmd.eBitness
    end
    else
    do
@@ -565,8 +570,6 @@ do
          otherwise                   cmd.eDll.sourcePath="lib/panic-unknown-bitness-"cmd.eBitness"-arch-"j.os.arch
       end
    end
-
-
 
    /*  cmd.eQuote=''                 /* no quoting of file names for Unix      */ */
    cmd.eQuote='"'                /* ---rgf, 2007-01-28: quoting of file names for Unix too! */
@@ -648,8 +651,28 @@ cmd.eRexxDispatch= "org.rexxla.bsf.RexxDispatcher" cmd.eAllArguments
 
 if cmd.eBitness>0 then  -- copy the appropriate DLL/shared library into super directory
 do
-   -- cmd.eCopy cmd.eBitness || j.file.separator || cmd.eDLL ".." ">" cmd.eNullDevice
-   cmd.eCopy cmd.eDll.sourcePath ".." || j.file.separator || cmd.eDLL  ">" cmd.eNullDevice
+   if cmd.eIsWindows then
+   do
+      cmd.eCopy cmd.eDll.sourcePath ".." || j.file.separator || cmd.eDLL  ">" cmd.eNullDevice
+   end
+   else  -- Unix
+   do
+      tmpTgt=qualify("../"cmd.eDLL)
+      srcFn =qualify(cmd.eDll.sourcePath)
+
+      if cmd.eUseSymbolicLink?=.true then
+         tmpCmd=cmd.eSymbolicLink srcFn tmpTgt
+      else
+         tmpCmd=cmd.eCopy         srcFn tmpTgt
+
+      cmd.eEcho qc(tmpCmd)
+      tmpCmd
+
+      if cmd.eUseSymbolicLink?=.true then
+         cmd.eChownOfSymbolicLink tmpTgt
+      else
+         cmd.eChown tmpTgt
+   end
 end
 
 if cmd.eCLRDir<>"" then -- .NET/CLR (common language runtime) support be put into eBinDir?
@@ -675,20 +698,10 @@ end
 exit
 */
 
-
    /* create the scripts   */
 call create_REXXJ_Script
-
-/*
-if cmd.eIsUnix=.true then     /* set ag+rx   */
-   "chmod 755" cmd.eTestScriptName
-*/
-
 cmd.eCopy cmd.eTestScriptName ".." ">" cmd.eNullDevice   /* copy rexxj.{sh|cm} to superdirectory   */
-
-
 call createEnvironmentScript  /* Windows probably needs this script        */
-
 call createInstallScript      /* new on 2008-05-17, ---rgf
                                  Windows: will add environment values to registry,
                                  Linux:   will add the execution of setEnvironment4BSF4Rexx.sh to ~/bash.rc
@@ -700,62 +713,23 @@ call createRunAsScripts       /* 2010-03-07: for Vista and higher */
 if cmd.eIsUnix=1 then         /* make sure rights are not fully available to the world */
    call setChmod cmd.
 
-/* ---> 2010-08-07, done by controlling script "setupAllAndRun.rex"
-if cmd.eIsUnix=1 then         /* make sure rights are not fully available to the world */
-do
-      -- rgf, 2010-07-31, new logic
-   "chmod 755 ../.."                                     /* 755 on "bsf4oorexx"-directory */
-   "find .. -type f -exec chmod 644 '{}' \;"
-   "find .. -type d -exec chmod 755 '{}' \;"  /* 755 on all directories, starting out in parent direcotry */
-   'find .. \( -iname "*.txt" -o -iname "*.pdf" -o -iname "*.oxt" \) -type f -execdir chmod 644 ''{}'' \;'
-
-   chunk1="find .."   -- leadin, start from parent directory
-   chunk2="-type f -exec chmod ugo+x '{}' \;"  /* make sure they are executable */
-   tmpStr=""
-   do ext over .array~of("sh", "so", "rex", "rxj", "rxo", "rexxj", "jrexx", "cls", "orx", "testUnits", "exe", "class", "cmd", "py", "js", "nrx", "jacl")
-      if tmpStr="" then tmpStr = '-iname "*'ext'"'
-                   else tmpStr = tmpStr '-o -iname "*'ext'"'
-   end
-   cmd = chunk1 "\(" tmpStr "\)" chunk2   -- build command
-   cmd                                    -- let the shell run the command
-end
-<--- */
-
-
-/* 2007-02-03, ---rgf: do not create the script to install BSF4Rexx as a Java extension (yet)
-                       - there is a problem with JDBC-driver-loading and the ClassLoader being used;
-                         needs to be debugged (could not do it to the gory details, need more time
-
-call createInstallScript4javaExtension   /* also creates the matching uninstall script      */
-*/
-
 call info                  /* tell user what one can do now                   */
-
 exit
 
 
 /* create the install script: this will copy the BSF4Rexx jar-file and dynamic link library
    to the appropriate Java extension directory; in effect using BSF4Rexx as a genuine extension
    to Java;
-   shortcomings as of 2007-02-03:
-       - problems with JDBC samples that do not work, because drivers are loaded wrongly!
-       - this script needs to be created and run for every Java possessing its own directory
-         structure, which may be rather error prone
 */
 createInstallScript: procedure expose j. cmd. path.
   fn=cmd.eInstallScriptName            /* name of install script              */
   ui=cmd.eUninstallScriptName          /* name of uninstall script            */
 
-
-   -- 2010-07-27, rgf: create fileAssocations
   if \cmd.eIsMacOSX then		-- do not setup file associations and menus on MacOSX
      call "setupFileAssociations.rex"       /* create the file association files   */
 
   call stream fn, "c", "open replace"
   call stream ui, "c", "open replace"
-
-  -- hintString="created:" q(date("S") time()) "by user" q(j.user.name)
-  -- hintString="created:" q(cmd.eDateTimeEdited) "by user" q(j.user.name)
 
   /* call lineout fn, cmd.eLeadIn */
   call lineout fn, cmd.eEcho qe(cmd.eHintString)
@@ -768,30 +742,8 @@ createInstallScript: procedure expose j. cmd. path.
   call lineout ui, cmd.eEcho qe("uninstalling ""BSF4ooRexx""...")
   call lineout ui, ""
 
-
-/* TODO: rgf, 2010-08-07
-
----
-   -> $HOME/.bashrc
-         -- instead of ". /etc/profile" invoke directly the generated script(s)
-            ". /opt/bsf4oorexx/install/setEnvironment4BSF.sh"
-            ". /opt/bsf4oorexx/install/setEnvironment4OOo.sh"
-
-            [ `echo $CLASSPATH | grep "some-string-needle" | wc -l` -eq 0 ]; then . /etc/profile ; fi;
-
-      even better:
-            [ -z `echo $CLASSPATH | grep "some-string-needle"' ]; then . /etc/profile; fi;
-
-  TODO: take care that "~/.bashrc" is actually "$HOME/.bashrc" !!
-
-
-*/
-
   if cmd.eIsUnix=1 then
   do
-/* ---> 2010-08-07, ---rgf
-     "chmod u+rwx,go+rx *sh"     -- make sure the newly created shell scripts are executable
-<--- */
      if cmd.eIsMacOSX then
         tmpJvmLibName="libjvm.dylib"
      else
@@ -799,23 +751,22 @@ createInstallScript: procedure expose j. cmd. path.
 
      bWriteProlog=.false  -- for "/etc/profile" no epilog/prolog, for .bashrc: yes!
 
-     do tmpTgt over .array~of(cmd.eAdd2Profile, cmd.eAdd2BashRc)
-        if cmd.eIsMacOSX, bWriteProlog then     -- on MacOSX do not create .bashrc
-           leave
+     do tmpTgt over .array~of(cmd.eAdd2Profile, cmd.eAdd2BashRc, cmd.eAdd2Zshenv)
+        -- if cmd.eIsMacOSX, tmpTgt=cmd.eAdd2BashRc then     -- on MacOSX do not create .bashrc
+        --   iterate
+
+        bWriteProlog=(tmpTgt=cmd.eAdd2BashRc)   -- write pro/epilog if .bashrc
 
         appendTo=">>" tmpTgt
 
         call lineout fn, ""
         call lineout fn, cmd.eEcho qc("adding entries to the end of" tmpTgt "...")
 
--- rgf, 2010-08-14: do not write empty line anymore
---        call lineout fn, cmd.eEcho qc(" ") appendTo
-
         if bWriteProlog then
            call lineout fn, cmd.eEcho qc(cmd.eAdd2BashRcProlog) appendTo
 
-        do i=1 to cmd.eAdd2BashRc.0
-           call lineout fn, cmd.eEcho qc(cmd.eAdd2BashRc.i) appendTo
+        do i=1 to cmd.eAdd2setEnvironment.0
+           call lineout fn, cmd.eEcho qc(cmd.eAdd2setEnvironment.i) appendTo
         end
 
         call lineout ui, cmd.eEcho qe("removing BSF4ooRexx entries from" tmpTgt "...")
@@ -827,56 +778,70 @@ createInstallScript: procedure expose j. cmd. path.
         call lineout fn, ""
         call lineout ui, ""
 
-        bWriteProlog=.true
+        if tmpTgt<>cmd.eAdd2Profile then  -- let /etc/config remain root/root, change the others
+        do
+           call lineout fn, cmd.eEcho qc("make sure ownership and group is set to '"cmd.eRealUserName"' using command:" cmd.eChown tmpTgt "...")
+           call lineout fn, cmd.eChown tmpTgt
+           call lineout fn, ""
+        end
      end
 
--- rgf, 2020-08-18: now also for Linux
--- TODO: clean up!
---     if cmd.eIsMacOSX then    -- copy libBSF4ooRexx.dylib from and to correct location, no support for ppc as of 2011-03-07
-     do
+     tmpTgt=cmd.eLibDir || "/" || cmd.eDLL
+     srcFn = qualify(directory()"/"||cmd.eDLL.sourcePath)   -- get fully qualified path
+     if cmd.eUseSymbolicLink?=.true then
+        tmpCmd=cmd.eSymbolicLink srcFn tmpTgt
+     else
+        tmpCmd=cmd.eCopy cmd.eDLL.sourcePath tmpTgt
 
-/* rgf, 2020-08-18: already copied!
-        -- tmpCmd=cmd.eCopy path2lib || cmd.eDLL ".." -- make sure it's in BSFHOME for setEnvironment4BSF.sh
-        tmpCmd=cmd.eCopy cmd.eDll.sourcePath  "../" || cmd.eDLL -- make sure it's in BSFHOME for setEnvironment4BSF.sh
-        call lineout fn, cmd.eEcho qc(tmpCmd)
-        call lineout fn, tmpCmd
-        call lineout fn, ""
-*/
+     call lineout fn, cmd.eEcho qc(tmpCmd)
+     call lineout fn, tmpCmd
 
-        -- tmpCmd=cmd.eCopy path2lib || cmd.eDLL cmd.eLibDir
-        tmpCmd=cmd.eCopy cmd.eDLL.sourcePath cmd.eLibDir || "/" || cmd.eDLL
-        call lineout fn, cmd.eEcho qc(tmpCmd)
-        call lineout fn, tmpCmd
-        call lineout fn, ""
+     if cmd.eUseSymbolicLink?=.true then
+        call lineout fn, cmd.eChownOfSymbolicLink tmpTgt
+     else
+        call lineout fn, cmd.eChown tmpTgt
 
-        -- tmpCmd=cmd.eDelete cmd.eLibDir || "/" || cmd.eDLL
-        tmpCmd=cmd.eDelete cmd.eLibDir || "/" || cmd.eDLL
-        call lineout ui, cmd.eEcho qc(tmpCmd)
-        call lineout ui, tmpCmd
-        call lineout ui, ""
-     end
+     call lineout fn, ""
 
--- rgf, 2020-08-18
---     else   -- plain Unix/Linux
-     if cmd.eIsMacOSX<>1 then    -- also copy to lib32 or lib64
+     tmpCmd=cmd.eDelete tmpTgt
+     call lineout ui, cmd.eEcho qc(tmpCmd)
+     call lineout ui, tmpCmd
+     call lineout ui, ""
+
+     if cmd.eIsMacOSX<>1 then    -- on Linux also copy to lib32 or lib64, if they exist
      do
         -- rgf, 2010-08-11: cf. <http://wiki.winehq.org/WineOn64bit>, Fedora/SuSE vs. Debian-based
-
         if cmd.eTgtLib32<>.nil then
         do
-           -- tmpCmd=cmd.eCopy "32/" || cmd.eDLL cmd.eTgtLib32
-           tmpCmd=cmd.eCopy cmd.eDll.sourcePath cmd.eTgtLib32 || "/" || cmd.eDLL
+           tmpTgt=cmd.eTgtLib32 || "/" || cmd.eDLL
+           if cmd.eUseSymbolicLink?=.true then
+              tmpCmd=cmd.eSymbolicLink srcFn tmpTgt
+           else
+              tmpCmd=cmd.eCopy cmd.eDLL.sourcePath tmpTgt
+
            call lineout fn, cmd.eEcho qc(tmpCmd)
            call lineout fn, tmpCmd
+           if cmd.eUseSymbolicLink?=.true then
+              call lineout fn, cmd.eChownOfSymbolicLink tmpTgt
+           else
+              call lineout fn, cmd.eChown tmpTgt
            call lineout fn, ""
         end
 
         if cmd.eTgtLib64<>.nil then   -- rgf, 2011-03-07
         do
-           -- tmpCmd=cmd.eCopy "64/" || cmd.eDLL cmd.eTgtLib64
-           tmpCmd=cmd.eCopy cmd.eDll.sourcePath cmd.eTgtLib64 || "/" || cmd.eDLL
+           tmpTgt=cmd.eTgtLib64 || "/" || cmd.eDLL
+           if cmd.eUseSymbolicLink?=.true then
+              tmpCmd=cmd.eSymbolicLink srcFn tmpTgt
+           else
+              tmpCmd=cmd.eCopy cmd.eDLL.sourcePath tmpTgt
+
            call lineout fn, cmd.eEcho qc(tmpCmd)
            call lineout fn, tmpCmd
+           if cmd.eUseSymbolicLink?=.true then
+              call lineout fn, cmd.eChownOfSymbolicLink tmpTgt
+           else
+              call lineout fn, cmd.eChown tmpTgt
            call lineout fn, ""
         end
      end
@@ -888,10 +853,6 @@ createInstallScript: procedure expose j. cmd. path.
         libs2look~~append(tmpLibDir||cmd.eBitness) -- either append 32 or 64
      end
 
-  -- rgf, 20100815: delete libBSF4ooRexx*.so in /usr/lib, /usr/lib32, /usr/lib64
-  --                ldconfig may create symbolic links named libBSF4ooRexx-32-so and libBSF4ooRexx-64.so
-     -- do tmpTgtLib over .array~of("/usr/local/lib", "/usr/local/lib32", "/usr/local/lib64" -
-     --                             "/usr/lib",       "/usr/lib32",       "/usr/lib64")
      do tmpTgtLib over libs2look
         if SysFileExists(tmpTgtLib) then
         do
@@ -904,31 +865,40 @@ createInstallScript: procedure expose j. cmd. path.
 
      if cmd.bCreateLinkInB4RHome?=.true then -- rgf, 20170109
      do
-        -- rgf, 20100814
-        -- tmpName1="/opt/BSF4ooRexx/libjvm.so"  -- default location to link to
         tmpPath2libjvm=cmd.ePath2JavaDLL || j.file.separator || tmpJvmLibName -- "libjvm.so"
-
-        -- tmpCmd="ln -fsv" tmpPath2libjvm "/opt/BSF4ooRexx/libjvm.so"
-        -- tmpCmd="ln -fsv" tmpPath2libjvm "/opt/BSF4ooRexx/"tmpJvmLibName
-        -- tmpCmd=cmd.eLink tmpPath2libjvm "/opt/BSF4ooRexx/"tmpJvmLibName -- rgf, 2011-03-06
-
-         -- on Linux this needs to be a symbolic link, such that the JVM can find its Java home
-        tmpCmd="ln -fsv" tmpPath2libjvm "/opt/BSF4ooRexx/"tmpJvmLibName -- rgf, 2011-03-21
+        tmpTgt="/opt/BSF4ooRexx/"tmpJvmLibName
+        -- on Linux this needs to be a symbolic link, such that the JVM can find its Java home
+        tmpCmd=cmd.eSymbolicLink tmpPath2libjvm tmpTgt
 
         call lineout fn, cmd.eEcho qc(tmpCmd)
         call lineout fn, tmpCmd
+        call lineout fn, cmd.eChownOfSymbolicLink  tmpTgt
+
         call lineout fn, ""
      end
 
       -- copying Rexx scripts to cmd.eBinDir (/usr/local/bin)
-     call lineout fn, cmd.eEcho qc("copying BSF4ooRexx scripts to" cmd.eBinDir "...")
+     call lineout fn, cmd.eEcho qc("adding BSF4ooRexx scripts to" cmd.eBinDir "...")
      call lineout ui, cmd.eEcho qc("removing BSF4ooRexx scripts from" cmd.eBinDir "...")
 
      files2userBin=.array~of("../BSF.CLS", "../BSF_OnTheFly.cls", "../rexxj.sh", "../rexxj2.sh", "../rgf_util2.rex", "../rexxj2.sh", "rexxpaws.rex")
      do binFile over files2userBin
-         tmpCmd=cmd.eCopy binFile cmd.eBinDir
+         tmpTgt=cmd.eBinDir || "/" || filespec('name',binFile)
+         srcFn = qualify(directory()"/"||binFile)  -- get fully qualified path
+         call lineout fn, cmd.eEcho qc("# // srcFn:" srcFn "// tmpTgt:" tmpTgt "...")
+
+         if cmd.eUseSymbolicLink?=.true then
+            tmpCmd=cmd.eSymbolicLink srcFn tmpTgt
+         else
+            tmpCmd=cmd.eCopy srcFn tmpTgt
+
          call lineout fn, cmd.eEcho qc(tmpCmd)
          call lineout fn, tmpCmd
+
+         if cmd.eUseSymbolicLink?=.true then
+            call lineout fn, cmd.eChownOfSymbolicLink tmpTgt
+         else
+            call lineout fn, cmd.eChown tmpTgt
 
          tmpCmd="rm -fv" cmd.eBinDir"/"filespec("Name", binFile)
          call lineout ui, cmd.eEcho qc(tmpCmd)
@@ -940,14 +910,6 @@ createInstallScript: procedure expose j. cmd. path.
 
      if \cmd.eIsMacOSX then
      do
--- say "cmd.eOperatingSystem=["cmd.eOperatingSystem"]"
-        -- if cmd.eOperatingSystem="LINUX" then    -- update /etc/ld.so.cache
-
-         -- tmpCmd="ldconfig"
-         -- tmpCmd="ldconfig -n /usr/lib /usr/lib32 /usr/lib64 /opt/BSF4ooRexx"   -- rgf, 2010-08-14
-         -- tmpCmd="ldconfig /usr/local/lib /usr/local/lib32 /usr/local/lib64 /opt/BSF4ooRexx /usr/lib /usr/lib32 /usr/lib64 "   -- rgf, 2012-02-25, 2016-08-15
-         -- tmpCmd="/sbin/ldconfig /usr/local/lib /usr/local/lib32 /usr/local/lib64 /opt/BSF4ooRexx /usr/lib /usr/lib32 /usr/lib64 "   -- rgf, 2012-02-25, 2016-08-15
-         -- rgf, 2017-02-03: supply full path to ldconfig such that it can be located on systems that do not place sbin on the PATH
          if sysFileExists("/sbin/ldconfig") then   -- supply fully qualified name
             cmdLDconfig="/sbin/ldconfig"
          else                 -- fallback that may yield a runtime error "command not found"
@@ -970,9 +932,7 @@ createInstallScript: procedure expose j. cmd. path.
          call lineout ui, tmpCmd2
          call lineout ui, ""
 
-        -- copy *bins to /usr/local/bin
-
-      -- create icons and menu (2010-08-20, 2011-03-27)
+            -- create icons and menu (2010-08-20, 2011-03-27)
          call lineout fn, "# add icons and menu"
          call lineout fn, "./xdg_icons_menu_add.sh"
          call lineout fn, ""
@@ -993,11 +953,9 @@ createInstallScript: procedure expose j. cmd. path.
          call lineout ui, ""
 
      end
-
   end
   else      -- non-Unix (Windows) branch: add statements to incorporate paths into registry
   do
-
       if cmd.eClrDir<>"" then    -- 2016-08-15, adding .NET/CLR support
       do
           call lineout fn, cmd.eEcho qc("Installing .Net/CLR assemblies into GAC (global assembly cache) ...")
@@ -1019,14 +977,12 @@ createInstallScript: procedure expose j. cmd. path.
           call lineout fn, ""
       end
 
-      -- j.user.dir == %BSF4REXX_HOME%
       cmd="call rexx orx2reg.rex"      -- invoke utility to interact with Windows registry
 
       hint="Creating a backup of PATH and CLASSPATH registry values..."
       call lineout fn, cmd.eEcho qc(hint)
       call lineout ui, cmd.eEcho qc(hint)
 
-      -- bkpFile="registryValues-"||date("S")"T"time("N")~changestr(":","")
       bkpFile="registryValues-"||cmd.eDateTimeEdited
       call lineout fn, cmd ">" bkpFile"-beforeAddBSF4RexxPathValues.bat"
       call lineout ui, cmd ">" bkpFile"-beforeDelBSF4RexxPathValues.bat"
@@ -1035,16 +991,12 @@ createInstallScript: procedure expose j. cmd. path.
       call lineout fn, ""
 
          -- add BSF4ooRexx home directory to PATH
-      -- paths=j.user.dir||j.path.separator||cmd.ePath2JavaDLL
-      -- rgf, 2010-03-07, cater for new directory structure
       paths=cmd.eSuperdir||j.path.separator||cmd.ePath2JavaDLL
 
       arg="/key:"q(cmd.eRegistryPath) "/path:"q(paths)
       tmpStr1=cmd "/add"    arg
       tmpStr2=cmd "/remove" arg
          -- inform user
-      -- call lineout fn, cmd.eEcho qc(tmpStr1)
-      -- call lineout ui, cmd.eEcho qc(tmpStr2)
 
       call lineout fn, cmd.eEcho qc("add BSF4ooRexx-paths to environment variable 'Path' via registry ...")
       call lineout ui, cmd.eEcho qc("remove BSF4ooRexx-paths from environment variable 'Path' via registry ...")
@@ -1078,9 +1030,6 @@ createInstallScript: procedure expose j. cmd. path.
          tmpStr1=cmd "/add"    arg
          tmpStr2=cmd "/remove" arg
             -- inform user
-         -- call lineout fn, cmd.eEcho qc(tmpStr1)
-         -- call lineout ui, cmd.eEcho qc(tmpStr2)
-
          call lineout fn, cmd.eEcho qc("add BSF4ooRexx-jars to environment variable 'CLASSPATH' via registry ...")
          call lineout ui, cmd.eEcho qc("remove BSF4ooRexx-jars from environment variable 'CLASSPATH' via registry ...")
 
@@ -1102,18 +1051,6 @@ createInstallScript: procedure expose j. cmd. path.
 
   end
 
-/* rgf, 2010-03-19: always copied while running setupBSF.rex, no need to delete it
-  -- rgf, 2010-03-08: copy "rexxj.*" to ..
-  call lineout fn, ""
-  call lineout fn, cmd.eEcho qe("copying" q(cmd.eTestScriptName) "to" q("..") "...")
-  call lineout fn, cmd.eCopy qw(cmd.eTestScriptName) qw("..")
-  -- rgf, 2010-03-08: delete "../rexxj.*" ..
-  call lineout ui, ""
-  call lineout ui, cmd.eEcho qe("deleting" q(cmd.eTestScriptName)  "from directory" q("..") "...")
-  call lineout ui, cmd.eDelete qw(".." || j.file.separator || cmd.eTestScriptName)
-  -- rgf, 2010-03-08: the end.
-*/
-
   lastMessage="done."
   if cmd.eInstallSystemWide=.true then -- installed systemwide?
      lastMessage=lastMessage "PLEASE logoff and logon for the changes to take affect!"
@@ -1124,13 +1061,6 @@ createInstallScript: procedure expose j. cmd. path.
 
   call lineout fn, cmd.eEcho cmd.eSupportInfos
   call lineout fn, ""
-/*
-  if cmd.eIsUnix=.false then
-  do
-     call lineout fn, "@pause"
-     call lineout fn, ""
-  end
-*/
 
   call lineout ui, ""
   call lineout ui, cmd.eEcho qe(lastMessage)
@@ -1138,31 +1068,22 @@ createInstallScript: procedure expose j. cmd. path.
   call lineout ui, cmd.eEcho cmd.eSupportInfos
   call lineout ui, ""
 
-/*
-  if cmd.eIsUnix=.false then
-  do
-     call lineout ui, "@pause"
-     call lineout ui, ""
-  end
-*/
-
   call stream fn, "c", "close"
   call stream ui, "c", "close"
 
   if cmd.eSetExecutable<>"" then       /* set file executable (Unix)    */
   do
      cmd.eSetExecutable cmd.eInstallScriptName
+     cmd.eChown         cmd.eInstallScriptName
+
      cmd.eSetExecutable cmd.eUninstallScriptName
+     cmd.eChown         cmd.eUninstallScriptName
   end
   return
 
 
 /* Windows only: create runAs batch file for Vista and higher, rgf 2010-03-07 */
 createRunAsScripts: procedure expose j. cmd. path.
-
-  -- hintString="created:" q(date("S") time()) "by user" q(j.user.name)
-  -- hintString="created:" q(cmd.eDateTimeEdited) "by user" q(j.user.name)
-
   runAsCmd=cmd.eRunAsAdmin
   arr=.array~of(cmd.eInstallScriptName,   cmd.eInstallScriptName.RunAsAdmin, -
                 cmd.eUninstallScriptName, cmd.eUninstallScriptName.RunAsAdmin)
@@ -1182,6 +1103,9 @@ createRunAsScripts: procedure expose j. cmd. path.
      call lineout fn, cmd.eEcho qe(tmpCmd "...")
      call lineout fn, tmpCmd
      call stream fn, "c", "close"
+
+     if cmd.eIsUnix=.true then
+        cmd.eChown fn      -- change ownership
   end
 
   return
@@ -1204,38 +1128,20 @@ createInstallScript4javaExtension: procedure expose j. cmd. path.
   call stream fn, "c", "open replace"
   call stream ui, "c", "open replace"
 
-  -- hintString="created:" q(date("S") time()) "by user" q(j.user.name)
-  -- hintString="created:" q(cmd.eDateTimeEdited) "by user" q(j.user.name)
-
   /* call lineout fn, cmd.eLeadIn */
   call lineout fn, cmd.eEcho qe(cmd.eHintString)
   call lineout fn, cmd.eEcho qe("installing optional Java extension ""BSF4ooRexx""...")
   call lineout fn, ""
-/* ---> 2010-08-07, ---rgf
-  if cmd.eIsUnix=1 then                /* make sure rights are not fully available to the world */
-  do
-     call lineout fn, cmd.eLineComment "make sure rights are not fully available to the world"
-     call lineout fn, "chmod 755 *.sh *.so *.CLS *.rex *.rxj *.rxo *.dll *.class *.REX"   /* set rwxr-xr-x */
-     call lineout fn, "chmod 644 *.java"                                      /* set rw-r--r-- */
-     call lineout fn, ""
-  end
-<--- */
 
      /* uninstall: */
-  /* call lineout ui, cmd.eLeadIn */
-  -- call lineout ui, cmd.eEcho qe("created:" q(date("S") time()) "by user" q(j.user.name))
   call lineout ui, cmd.eEcho qe(cmd.eHintString)
   call lineout ui, cmd.eEcho qe("uninstalling optional Java extension ""BSF4ooRexx""...")
   call lineout ui, ""
 
-
-  /* tgtDir=j.java.ext.dirs */
   tgtDir=getDir(j.java.ext.dirs, 1) /* since Java 6: 1st directory "jre/lib/ext", 2nd directory: system-wide */
-  call lineout fn, cmd.eEcho qe("copying the BSF4ooRexx jar file(s) to the Java extension directory" q(tgtDir) "...")
+  call lineout fn, cmd.eEcho qe("adding the BSF4ooRexx jar file(s) to the Java extension directory" q(tgtDir) "...")
   call lineout ui, cmd.eEcho qe("deleting the BSF4ooRexx jar file(s) from the Java extension directory" q(tgtDir) "...")
 
-  /* call lineout fn, cmd.eCopy qw(cmd.eJar) qw(tgtDir) */
-  /* call lineout ui, cmd.eDelete qw(tgtDir || j.file.separator || cmd.eJarBaseName) */
   do i=1 to cmd.eJarBaseNames.0    /* iterate over all found jar-files    */
      call lineout fn, cmd.eCopy   qw(cmd.eJarBaseNames.i) qw(tgtDir)
      call lineout ui, cmd.edelete qw(tgtDir || j.file.separator || filespec("Name", cmd.eJarBaseNames.i) )
@@ -1248,13 +1154,6 @@ createInstallScript4javaExtension: procedure expose j. cmd. path.
   if j.org.apache.commons.logging.LogFactory=0 then
   do
      call lineout fn, cmd.eEcho qe("/// trying to install optional org.apache.commons.logging ...")
-/*
-     call lineout fn, cmd.eEcho qe("NEED for org.apache.commons.logging, hence copying the file ...")
-     shortName=filespec("Name", cmd.eCommonsLoggingJarName)
-
-     call lineout fn, cmd.eEcho qe("copying the commons-logging jar" q(shortName)  "to the Java extension directory" q(tgtDir) "...")
-     call lineout ui, cmd.eEcho qe("deleting the commons-logging jar" q(shortName) "from the Java extension directory" q(tgtDir) "...")
-*/
 
      if cmd.eCommonsLoggingJarName="" then   /* hmm, not found in current directory!   */
      do
@@ -1264,31 +1163,13 @@ createInstallScript4javaExtension: procedure expose j. cmd. path.
         call lineout fn, cmd.eEcho qe("///  and copy the jar-file to" qw(tgtDir) "yourself, if you want")
         call lineout ui, cmd.eEcho qe(msg)
      end
-/*
-     else   /* create the copy/delete statement */
-     do
-        call lineout fn, cmd.eCopy   qw(cmd.eCommonsLoggingJarName) qw(tgtDir)
-        call lineout ui, cmd.edelete qw(tgtDir || j.file.separator || filespec("Name", cmd.eCommonsLoggingJarName) )
-     end
-*/
+
      call lineout fn, ""
      call lineout ui, ""
   end
 
-
-/* 2020-08-18, not using the Java extension directory anymore, as of Java 9 does not get honored by Java
-  tgtDir=cmd.eExt.dir.bin
-  call lineout fn, cmd.eEcho qe("copying the BSF4ooRexx dynamic link library file to its Java extension directory" q(tgtDir) "...")
-  call lineout fn, cmd.eCopy qw(cmd.eDLL) qw(tgtDir)
-  call lineout fn, ""
-     /* uninstall: */
-  call lineout ui, cmd.eEcho qe("delete the BSF4ooRexx dynamic link library file from its Java extension directory" q(tgtDir) "...")
-  call lineout ui, cmd.eDelete qw(tgtDir || j.file.separator || cmd.eDLL)
-  call lineout ui, ""
--- */
-
   tgtDir=cmd.eLibDir
-  call lineout fn, cmd.eEcho qe("copying the BSF4ooRexx dynamic link library file to the lib directory" q(tgtDir) "...")
+  call lineout fn, cmd.eEcho qe("adding the BSF4ooRexx dynamic link library file to the lib directory" q(tgtDir) "...")
   call lineout fn, cmd.eCopy qw(cmd.eDLL) qw(tgtDir)
   call lineout fn, ""
      /* uninstall: */
@@ -1296,9 +1177,8 @@ createInstallScript4javaExtension: procedure expose j. cmd. path.
   call lineout ui, cmd.eDelete qw(tgtDir || j.file.separator || cmd.eDLL)
   call lineout ui, ""
 
-
   tgtDir=cmd.eBinDir
-  call lineout fn, cmd.eEcho qe("copying the Rexx scripts and ooRexx class files to" q(tgtDir) "...")
+  call lineout fn, cmd.eEcho qe("adding the Rexx scripts and ooRexx class files to" q(tgtDir) "...")
      /* uninstall: */
   call lineout ui, cmd.eEcho qe("deleting the Rexx scripts and ooRexx class files from" q(tgtDir) "...")
   list="*.rex *.REX *.cls *.CLS *.sh *.cmd"     /* list of files to copy/uninstall  */
@@ -1323,26 +1203,12 @@ createInstallScript4javaExtension: procedure expose j. cmd. path.
   call lineout fn, ""
   call lineout fn, cmd.eEcho cmd.eSupportInfos
   call lineout fn, ""
-/*
-  if cmd.eIsUnix=.false then
-  do
-     call lineout fn, "@pause"
-     call lineout fn, ""
-  end
-*/
 
   call lineout ui, ""
   call lineout ui, cmd.eEcho qe("done.")
   call lineout ui, ""
   call lineout ui, cmd.eEcho cmd.eSupportInfos
   call lineout ui, ""
-/*
-  if cmd.eIsUnix=.false then
-  do
-     call lineout ui, "@pause"
-     call lineout ui, ""
-  end
-*/
 
   call stream fn, "c", "close"
   call stream ui, "c", "close"
@@ -1350,10 +1216,12 @@ createInstallScript4javaExtension: procedure expose j. cmd. path.
   if cmd.eSetExecutable<>"" then       /* set file executable (Unix)    */
   do
      cmd.eSetExecutable cmd.eInstallScriptName
+     cmd.eChown         cmd.eInstallScriptName
+
      cmd.eSetExecutable cmd.eUninstallScriptName
+     cmd.eChown         cmd.eUninstallScriptName
   end
   return
-
 
 
 
@@ -1367,8 +1235,6 @@ create_REXXJ_Script: procedure expose j. cmd. path.
   if cmd.eIsUnix=.false then
      call lineout fn, cmd.eEchoOff
 
-  /* -- call lineout fn, cmd.eLeadIn */
-  -- call lineout fn, cmd.eLineComment "created:" q(date("S") time()) "by user" q(j.user.name)
   call lineout fn, cmd.eLineComment "created:" qe(cmd.eHintString)
   call lineout fn, cmd.eLineComment "script to run ""BSF4ooRexx"" programs without prior installation ..."
   call lineout fn, ""
@@ -1399,19 +1265,15 @@ create_REXXJ_Script: procedure expose j. cmd. path.
      else
          call lineout fn, cmd.eLineComment "set LD_LIBRARY_PATH "
 
-     -- call lineout fn, subword(cmd.eSetDLLPath, 2)  -- skip first word ("export")
      call lineout fn, cmd.eSetDLLPath
      call lineout fn, ""
   end
 
   call lineout fn, cmd.eLineComment "Java start command, allows passing arguments to Rexx script"
-  --  tmpStr1="-Djava.library.path=" || cmd.eQuote
-  -- rgf, 2010-03-08
   tmpStr1="-Djava.library.path=" || cmd.eQuote
 
   if cmd.eIsUnix=1 then
   do
-  --   tmpStr1=tmpStr1 || "$BSF4REXX_HOME"  || j.path.separator || "$LD_LIBRARY_PATH" || cmd.eQuote
      if cmd.eIsMacOSX then
         tmpStr1=tmpStr1 || "$DYLD_LIBRARY_PATH" || cmd.eQuote
      else
@@ -1419,17 +1281,12 @@ create_REXXJ_Script: procedure expose j. cmd. path.
   end
   else
   do
-     /*
-     tmpStr1=tmpStr1 || "%BSF4REXX_HOME%" || j.path.separator || "%PATH%"           || cmd.eQuote
-     */
      tmpStr1=tmpStr1 || "%BSF4REXX_HOME%"  || cmd.eQuote
   end
 
   -- rgf, 20180614: the CLASSPATH may get too large for the (Windows) command line, and Jvaa
   --                honors the CLASSPATH environment variable, so no need to explicitly state it
-  -- tmpStr2="-classpath" cmd.eQuote || iif(cmd.eIsUnix=1, "$CLASSPATH", "%CLASSPATH%") || cmd.eQuote
   tmpStr2=""      -- do not supply CLASSSPATH via the command line (may break on Windows)
-
   tmpStr3= iif(cmd.eIsUnix=1, "$BSF4Rexx_JavaStartupOptions", "%BSF4Rexx_JavaStartupOptions%")
 
   -- rgf, 2011-02-27: if a Java 64-bit then explicitly start Java in Rexx-bitness (32 or 64 bit) mode
@@ -1437,13 +1294,15 @@ create_REXXJ_Script: procedure expose j. cmd. path.
   if cmd.eBitness=32, j.sun.arch.data.model=64 then
      tmpStr0="-d32"
 
-
   call lineout fn, cmd.eJavaBinary tmpStr0 tmpStr1 tmpStr2 tmpStr3 cmd.eRexxDispatch
 
   call stream fn, "c", "close"
 
   if cmd.eSetExecutable<>"" then       /* set file executable (Unix)    */
+  do
      cmd.eSetExecutable cmd.eTestScriptName
+     cmd.eChown         cmd.eTestScriptName
+  end
 
   return
 
@@ -1455,9 +1314,6 @@ createEnvironmentScript: procedure expose j. cmd. path.
   fn=cmd.eSetEnvironmentScriptName
 
   call stream fn, "c", "open replace"
-  /* call lineout fn, cmd.eLeadIn */
-  /* call lineout fn, "" */
-  -- call lineout fn, cmd.eLineComment "created:" q(date("S") time())  "by user" q(j.user.name)
   call lineout fn, cmd.eLineComment "created:" qe(cmd.eHintString)
   call lineout fn, cmd.eLineComment "run this script before invoking a BSF4ooRexx program that loads Java on its own."
   call lineout fn, ""
@@ -1473,13 +1329,7 @@ createEnvironmentScript: procedure expose j. cmd. path.
   call lineout fn, cmd.eSetCP
   call lineout fn, ""
 
-
-  if cmd.eIsUnix=1 then
-  do
-      /* rgf, 20100814: new strategy, scripts copied to /usr/bin, hence PATH remains unchanged
-         rgf, 20200818: target now "/usr/local"                                  */
-  end
-  else      /* non-Unix */
+  if cmd.eIsUnix<>.true then
   do
      call lineout fn, ""
 
@@ -1488,11 +1338,7 @@ createEnvironmentScript: procedure expose j. cmd. path.
 
      call lineout fn, ""
      call lineout fn, cmd.eSetDLLPath
-  end
 
-
-  if cmd.eIsUnix=.false then  -- don't echo in Unix as this script may be executed on every new shell
-  do
      call lineout fn, ""
      call lineout fn, cmd.eEcho qe(".")
      call lineout fn, cmd.eEcho cmd.eSupportInfos
@@ -1502,7 +1348,10 @@ createEnvironmentScript: procedure expose j. cmd. path.
   call stream fn, "c", "close"
 
   if cmd.eSetExecutable<>"" then       /* set file executable (Unix)    */
+  do
      cmd.eSetExecutable cmd.eSetEnvironmentScriptName
+     cmd.eChown         cmd.eSetEnvironmentScriptName
+  end
 
   return
 
@@ -1627,13 +1476,15 @@ getPath2JavaDll: procedure expose j. cmd. path.
    return tmpStr || j.file.separator || "bin" || j.file.separator || "client"
 
 
-/* rgf, 2011-02-25: try to locate correct libjvm.dylib on MacOSX
+/*
+   rgf, 2021-07-17: adjust search to new realities as there is no "/System/Library/Java/JavaVirtualMachines" anymore on MacOS
 */
 getPath2JavaOnMacOSX: procedure
-   call SysFileTree "/System/Library/Java/JavaVirtualMachines/libjvm.dylib", "files.", "FOS"
-   if files.0=0 then return ""
+   use strict arg j.
+   call SysFileTree j.java.home"/libjvm.dylib", "files.", "FOS"
+   if files.0=0 then return "" -- not found
 
-   location=filespec("Loction", files.[files.0])   -- get path to newest Java in case there are multiply dylibs
+   location=filespec("Location", files.[files.0])  -- get location of last listed libjvm.dylib
    return location~left(max(1,location~length-1))  -- remove trailing file separator
 
 /* Parse commandline arguments, if any.
@@ -1768,29 +1619,6 @@ info:                            /* tell user what has happened   */
   say
   say
 
-/*
-  say
-  say "     remarks: - You may need to run as user ""root"" (Linux) or ""Administrator"" (Windows)."
-  say "                Under Vista, you may need to run the un/install scripts with elevated privileges."
-  say
-  say "              - After installation you may start any Rexx-program by issuing:"
-  say
-  if cmd.eIsUnix=0 then
-     say "                  " cmd.eSetEnvironmentScriptName
-
-  say "                   rexx rexx-file optional-arguments"
-  say
-  say "                or (note the trailing ""j"", which means via ""Java""):"
-  say
-
-  if cmd.eIsUnix=0 then
-     say "                   rexxj rexx-file optional-arguments"
-  else
-     say "                   rexxj.sh rexx-file optional-arguments"
-
-*/
-
-  -- say " " pp(cmd.eUninstallScriptName)": use to uninstall" q("BSF4ooRexx") "(removes BSF4ooRexx-paths from Windows registry)"
   say " " pp(cmd.eUninstallScriptName)": run to uninstall" q("BSF4ooRexx")
   say
   if cmd.eIsUnix=0 then
@@ -1799,28 +1627,11 @@ info:                            /* tell user what has happened   */
      say "       to uninstall as root run:" q("./"cmd.eUnInstallScriptName.RunAsAdmin)
   say
 
-
-
   say
-  -- say " " pp(cmd.eSetEnvironmentScriptName)": allows Rexx to find Java ("q("jvm.dll")") on its own"
   say " " pp(cmd.eSetEnvironmentScriptName)": helper script for setting up the environment"
   say "              for running BSF4ooRexx rograms"
   say
 
-
-/*
-  if cmd.eIsUnix=1 then
-     say "                it is advised to run this script right after installation of ""BSF4ooRexx"""
-  else
-     say "                it is advised to add this environment setting to your system's profile"
-  say
-
-
-  say
-  say "     remarks: - You may need to run as user ""root"" (Linux) or ""Administrator"" (Windows)."
-  say "                Under Vista, you may need to run the un/install scripts with elevated privileges."
-  say
-*/
   say "Good luck! :-)  [You may also want to take a look at these generated scripts.]"
   exit 0
 
@@ -1836,7 +1647,6 @@ usage:
   say
   say "Examples:  rexx setupBSF"
 
-  -- if cmd.eIsUnix=.false then
   if cmd.eIsWindows=.true then
   do
      say "           - will use any ""java.exe"" found in one of the directories of the"
@@ -1881,10 +1691,6 @@ parsePath: procedure expose j. cmd. path.
         path.i=changestr('"', chunk, "")  /* remove any quotes from any part of the Windows path */
 
      path.i.upperCase=translate(chunk)  /* uppercase version */
-/*
-say "... i="i "chunk="pp(chunk)
-*/
-
      path.0=i
   end
 
@@ -2270,7 +2076,7 @@ syntax:
      -- parse value val with flags . . . . . . lib . target
      parse value val with _mode _inode _owner _group _size _date _time lib . target
 
-say "unixDetermineLibs:" _mode"|"lib"|"target "..."
+     say "unixDetermineLibs:" _mode"|"lib"|"target "..."
 
      if      lib="/usr/lib32" then lib32=.true
      else if lib="/usr/lib64" then
@@ -2322,108 +2128,93 @@ say "unixDetermineLibs:" _mode"|"lib"|"target "..."
    if bAllFiles=.true then
    do
       "chmod 775 .."                            /* 755 on "bsf4oorexx"-directory                      */
-
--- rgf,2011-06-08: FC has no "admin" group!
---      "chown" "-R" cmd.eRealUserName":admin ../*"
-
       "find .. -type d -exec chmod 775 '{}' \;" /* 755 make all directories traversable; rwx-rwxr-x   */
       "find .. -type f -exec chmod 664 '{}' \;" /* make all files rw-rw-r--                           */
 
             /* make all executable files executable: */
-      -- 'find .. \( -iname "*.txt" -o -iname "*.pdf" -o -iname "*.oxt" -o -iname "*.htm*" \) -type f -execdir chmod 644 ''{}'' \;'
       chunk1="find .."   -- leadin, start from parent directory
       chunk2="-type f -execdir chmod ugo+x '{}' \;"   /* make sure executable gets set for all */
       tmpStr=""
-      do ext over .array~of("sh", "so", "rex", "rxj", "rxo", "rexxj", "jrexx", "cls", "orx", "testGroup", "testUnit", "exe", "class", "cmd", "py", "js", "nrx", "jacl")
+      do ext over .array~of("sh", "so", "rex", "rexx", "rxj", "rxo", "rexxj", "jrexx", "cls", "frm", "orx", "testGroup", "testUnit", "exe", "class", "cmd", "py", "js", "nrx", "jacl")
          if tmpStr="" then tmpStr =           '-iname "*'ext'"'
                       else tmpStr = tmpStr '-o -iname "*'ext'"'
       end
 
       -- rgf, 2017-02-03: as the libBSF4ooRexx files changed (bitness and architecture appended) make sure they get ther x-bit set
       tmpStr = tmpStr '-o -iname "libBSF4ooRexx*"'
-
       cmd = chunk1 "\(" tmpStr "\)" chunk2   -- build command
-
       say "setupBSF.rex: line #" pp(.line) cmd  -- show command (for logging)
-
       cmd                                    -- let the shell run the command
    end
    else  /* just make sure that all (possibly newly created) .sh-files in the current directory get set to: 775 */
    do
-
--- rgf,2011-06-08: FC has no "admin" group!
---       'find . -iname "*.sh" -type f -exec chown' cmd.eRealUserName':admin  ''{}'' \;'
-
        'find . -iname "*.sh" -type f -exec chmod 775 ''{}'' \;'
    end
    return
 
 
-
-/*
----- for testing canonizePath():
-l=.list~of( "c:\eins\zwei\drei\vier", -
-            "c:\eins\zwei\drei\.."  , -
-            "c:\eins\zwei\..\.."    , -
-            "c:\eins\zwei\..\..\a"  , -
-            "c:\eins\..\..\.."      , -
-            "c:\..\..\..\.."        , -
-            "--------------"        , -
-              "\eins\zwei\drei\.."  , -
-              "\eins\zwei\..\.."    , -
-              "\eins\zwei\..\..\a"  , -
-              "\eins\..\..\.."      , -
-              "\..\..\..\.."        , -
-            "--------------"        , -
-               "eins\zwei\drei\.."  , -
-               "eins\zwei\..\.."    , -
-               "eins\zwei\..\..\a"  , -
-               "eins\..\..\.."      , -
-               "..\..\..\.."        , -
-            "--------------"        , -
-            "c:\eins\zwei\drei\."  , -
-            "c:\eins\zwei\.\."    , -
-            "c:\eins\zwei\.\.\a"    , -
-            "c:\eins\.\.\."      , -
-            "c:\.\.\.\."        , -
-            "--------------"        , -
-              "\eins\zwei\drei\."  , -
-              "\eins\zwei\.\."    , -
-              "\eins\zwei\.\.\a"    , -
-              "\eins\.\.\."      , -
-              "\.\.\.\."        , -
-            "--------------"        , -
-               "eins\zwei\drei\."  , -
-               "eins\zwei\.\.\a"  , -
-               "eins\zwei\.\."    , -
-               "eins\.\.\."      , -
-               ".\.\.\."              )
-
-do it over l
-   say (it)~left(22) "->" canonizePath(it)
-end
-exit
-----
-*/
-
-
 /*
 
 on UNIX the extension for dynamic link libraries can be:
-
 .so      ibm-aix solaris sparc linux freebsd netbsd openbsd dec-osf nto-qnx qnx beos unknown
 .dylib   apple-darwin
 .sl      hp-hpux
 
 on Windows:
-
 .dll     windows cygnus
-
 
 looking for Unix:    libjvm.so | libjvm.dylib | libjvm.sl
             Windows: jvm.dll
-
 */
 
 ::routine pp   -- rgf, 2017-02-04
   return "["arg(1)"]"
+
+/* Unix: returns the group name to be used in 'chown' command:
+   - if "staff" present in "/etc/group" use it (Linux: full rights to "/usr/local")
+   - else use real user name as the group name
+*/
+::routine determineGroupName
+  use strict arg groupName
+
+  s=.stream~new("/etc/group")~~open("read")
+  arr=s~arrayin
+  s~close
+  bFound=.false      -- needle "staff:" found?
+  do entry over arr while bFound=.false
+     bFound=entry~abbrev("staff:")  -- allow this to work prior to ooRexx 5.0 which has "startsWith"
+  end
+  if bFound then return "staff"     -- o.k. found, use group name "staff"
+  return groupName
+
+
+/* Unix: if MacOS then use "/Users/<userid>", if "root", then "/var/root"
+
+   TODO: Android "/data/media/<userid>", cf. <https://en.wikipedia.org/wiki/Home_directory>
+*/
+::routine determineHomeDir
+  use strict arg userName, isMacOS=.false
+
+  if isMacOS=.true then
+  do
+     if userName="root" then homedir="/var/root"
+                        else homedir="/Users/"userName
+     if \sysFileExists(homedir) then homedir="$HOME"  -- fall back to environment variable
+     return homedir
+  end
+
+  s=.stream~new("/etc/passwd")~~open("read") -- read passwd file
+  arr=s~arrayin
+  s~close
+  bFound=.false      -- needle "staff:" found?
+  needle=userName":"
+  do entry over arr until bFound=.true
+     bFound=entry~abbrev(needle) -- allow this to work prior to ooRexx 5.0 which has "startsWith"
+  end
+  if bFound=.false then return "$HOME"    -- not found, fall back to environment variable
+
+  parse var entry uname ":" pwd ":" uid ":" gid ":" gecos ":" homeDir ":" shell
+  if sysFileExists(homeDir) then return homeDir -- done
+
+  return "$HOME"     -- not found, fall back to environment variable
+

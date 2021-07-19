@@ -2,7 +2,7 @@
 /*
    author:  Rony G. Flatscher
    date:    2010-08-05,14,18
-   version: 1.10
+   version: 1.11
    name:    setupAllAndRun.rex
    purpose: installer to install or reinstall the BSF4ooRexx package
 
@@ -78,13 +78,18 @@
             2017-08-13, rgf   - make sure to honor "DARWIN" instead of "MACOSX"
             2018-06-13, rgf   - show line number where signal got invoked in "sayWasInstallationSuccessful";
                                 make sure variable "text" has a value
+            2021-07-12, rgf   - on Unix change owner after copying package to cmd.eRealUserName
+                              - show in logfile the command, if it returned with rc<>0
+            2021-07-13, rgf   - on Unix add "cmd.eChownUserGroup", new routine "determineGroupName(defGroup)"
+            2021-07-14, rgf   - on Unix: new routine "determineHomeDir()", new "cmd.eHomeDir"
+            2021-07-17, rgf   - little cleanup of code
 
    remark:  ---
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2010-2017 Rony G. Flatscher
+       Copyright (C) 2010-2021 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -106,12 +111,14 @@ cmd.eOpSys=cmd.eOpsysFull~left(1)~upper
 parse upper source s +1    -- get operating system name in uppercase
 cmd.eIsMacOSX=(s="D" | s="M")      -- determine whether running on "MACOSX" replaced by "DARWIN"
 
-cmd.eOriginalDirectory=directory()  -- original directory from where this script go started
+   -- set most important flags
+cmd.eIsWindows=(cmd.eOperatingSystem~left(1)="W")
+cmd.eIsUnix   =\cmd.eIsWindows   /* if not Windows, it's a Unix dialect       */
+
 
 cmd.bShowSuccessAsGUI=.false  -- determines whether .bsf.dialog should be used to display success
 
 bPauseAtEnd=.true                -- pause at end, such that user can see the output in the console
-   -- using 'elevate{32|64}.exe' in wait mode; if command line window does not close, the user
    -- must enter "EXIT" and hit the return key on some Windows installations, inform the user about it
 strHintToExit="you may need to enter 'EXIT' and hit the enter key in order to close this window to proceed operation..."
 
@@ -219,41 +226,36 @@ cmd.eSetupOOo="setupOOo.rex"
 cmd.eGeneratedScripts.BSF=.array~of("installBSF", "uninstallBSF", "fileAssociations_for_")
 cmd.eGeneratedScripts.OOo=.array~of("installOOo", "uninstallOOo", "fileAssociations_for_RXO")
 
-
--- if sysVersion()~left(1)~upper="W" then       -- determine opsys and default target installation directory
 if cmd.eOpSys="W" then
 do
---   cmd.eOpSys="W"
    cmd.eFile.sep="\"
    cmd.eDefaultTargetDir=value("ProgramFiles", ,"ENVIRONMENT")"\"cmd.eInstallDirName
    cmd.eInstallScriptNameBSF  ="installBSF.cmd"
    cmd.eUninstallScriptNameBSF="uninstallBSF.cmd"
    cmd.eInstallScriptNameOOo  ="installOOo.cmd"
    cmd.eUninstallScriptNameOOo="uninstallOOo.cmd"
---   cmd.eSudo='runas /env /user:Administrator "%cmd%"' -- replace %cmd% with shell-script
    cmd.eRM="del /q"              -- remove command
    cmd.eScriptExtension=".cmd"
    cmd.eRexxJ="rexxj.cmd"
 
    cmd.eShowEnvironment="set"    -- for debugging: show all environment variables
    cmd.eShowOperatingSystemVersion="ver"  -- show Windows version
-   -- xcopy:   xcopy /s /r /k /y test1\* test2\
-
-   -- del:     del test2 /s /f /q
-   -- rmdir:   rd dirName /s /q     ... dirName<>"." because of lock an error would occur
    cmd.eRmDir="rd /s /q"
 end
 else   -- Unix-like system, including MacOSX
 do
-
    -- get and save logName and sudoUser-Name
    cmd.eLogName  = value('LOGNAME',    ,'ENVIRONMENT')  -- get current logname, could be 'root' if sudo'ing
    cmd.eSudoUser = value('SUDO_USER',  ,'ENVIRONMENT')  -- maybe sudo'ing, then who is the sudo user
-
    if cmd.eLogName="root", cmd.eSudoUser<>"" then
       cmd.eRealUserName=cmd.eSudoUser
    else
       cmd.eRealUserName=cmd.eLogName
+
+   cmd.eChownUserGroup = cmd.eRealUserName":"determineGroupName(cmd.eRealUserName)
+
+   cmd.eOriginalDirectory=directory(real)  -- original directory from where this script go started
+   cmd.eHomeDir=determineHomeDir(cmd.eRealUserName, cmd.eIsMacOSX)
 
    cmd.eOpSys="U"
    cmd.eFile.sep="/"
@@ -262,7 +264,6 @@ do
    cmd.eUninstallScriptNameBSF="./uninstallBSF.sh"
    cmd.eInstallScriptNameOOo  ="./installOOo.sh"
    cmd.eUninstallScriptNameOOo="./uninstallOOo.sh"
---   cmd.eSudo='sudo ./%cmd%'      -- replace %cmd% with shell-script
    cmd.eRM="rm -fv"              -- remove command
    cmd.eScriptExtension=".sh"
    cmd.eRexxJ="./rexxj.sh"
@@ -271,21 +272,12 @@ do
 
    cmd.eShowEnvironment=""             -- not defined for Unix-variants (TODO: research shell-related commands)
    cmd.eShowOperatingSystemVersion="uname -a"   -- Linux, MacOSX
-
--- cp -rfv * /opt/BSF4ooRexx
--- rm -rfv /opt/BSF4ooRexx
-
    cmd.eRmDir="rm -rf"
-
--- rmdir --ignore-fail-on-non-empty /etc/skel/Templates
-
 -- 'id rony | rxqueue' ; parse pull 'gid=' . '(' gname ')';
-
-
 end
+
 cmd.eBInstallBSF=.true    -- start out to install BSF
 cmd.eBInstallOOo=.true    -- start out to install OOo
-
 cmd.eThisDir=directory()   -- get current directory
 
 if cmd.eBDebug=.true | cmd.eBLogFile=.true then
@@ -401,21 +393,6 @@ do
 
    if cmd.eBInstallBSF=.true then   -- o.k. we need to install from scratch
    do
-/* -- try to install OOo-support even for non-genuine versions of OOo
-       if cmd.eOpSys="U" then
-       do
-          -- check whether genuine OOo installation present
-          call SysFileTree "/opt/openoffice*", "oooDirs.", "DO" /* query whether openoffice-directories exist in "opt" */
-          if oooDirs.0=0 then
-          do
-             cmd.eBInstallOOo=.false      -- do not automatically install OOo support
-             say cmd.eThisName": Please note: rerun ""install.sh"", if you want to install the special BSF4ooRexx OpenOffice support"
-             say cmd.eThisName"  (make sure that you have the original version from 'http://www.OpenOffice.org' installed on your system!)"
-             say
-          end
-       end
-       else             -- Windows: usually only the official version from OOo installed, hence go ahead
-*/
        cmd.eBInstallOOo=.true       -- try to install OOo support afterwards
 
        if cmd.eOpSys="U" then
@@ -849,7 +826,6 @@ exit 0
          end
       end
 
-      -- cmd='cp -rfv ../*' enQQ(targetDir)
       cmd='cp -prfv ../*' enQQ(targetDir)    -- rgf, 2017-02-03: make sure to preserve timestamps
   end
 
@@ -859,8 +835,19 @@ exit 0
      cmd cmd.eRedirect2LogFile
      if rc<>0 then
      do
-        say cmd.eThisName" copyPackage() - (install-mode): something went wrong, rc='"rc"', aborting ..."
+        say cmd.eThisName" copyPackage() - (install-mode): something went wrong while executing ["cmd"], rc='"rc"', aborting ..."
         exit rc
+     end
+
+     if cmd.eOpSys<>'W' then   -- on some Unix, change owner to cmd.eRealUserName
+     do
+        cmd="chown -R" cmd.eChownUserGroup enQQ(targetDir)
+        cmd cmd.eRedirect2LogFile
+        if rc<>0 then
+        do
+           say cmd.eThisName" copyPackage() - (install-mode): something went wrong while executing ["cmd"], rc='"rc"', aborting ..."
+           exit rc
+        end
      end
   end
 
@@ -894,10 +881,7 @@ exit 0
 
    upperDir=directory("..")   -- go up one more level, then remove
    if cmd.eOpSys='W' then     -- Windows ?
-   /*  gab,2015-08-24: The following does not work since the cmd.exe running
-        this script still has the windows sub-folder open:
-       cmd="rd /s /q" enQQ(cmd.eDefaultTargetDir)  -- delete subdirectory recursively
-   */  cmd="echo removeInstallationDir deferred; will be done after this script terminates"
+       cmd="echo removeInstallationDir deferred; will be done after this script terminates"
    else
        cmd="rm -rfv" cmd.eDefaultTargetDir   -- delete subdirectory recursively
 
@@ -918,8 +902,7 @@ exit 0
 
 -- return bitness of Rexx interpreter (e.g. 32, 64, etc.)
 ::routine getRexxBitness
-
-  -- do not use ADDRESS CMD as on Linux this causes an error :(
+  -- do not use ADDRESS CMD as on Linux this causes an error :( | on ooRexx 5 one could use 'ADDRESS ""' or 'ADDRESS SYSTEM' instead
    "rexx -v 2>&1 | rxqueue"
    bitness=.nil                  -- default value
    do while queued()>0           -- make sure we process entire queue (to empty it)
@@ -942,18 +925,14 @@ exit 0
    if bAllFiles=.true then
    do
       "chmod 775 .."                            /* 755 on "bsf4oorexx"-directory                      */
--- rgf,2011-06-08: FC has no "admin" group!
-      -- "chown" "-R" cmd.eRealUserName":admin ../*"
-
       "find .. -type d -exec chmod 775 '{}' \;" /* 755 make all directories traversable; rwx-rwxr-x   */
       "find .. -type f -exec chmod 664 '{}' \;" /* make all files rw-rw-r--                           */
 
             /* make all executable files executable: */
-      -- 'find .. \( -iname "*.txt" -o -iname "*.pdf" -o -iname "*.oxt" -o -iname "*.htm*" \) -type f -execdir chmod 644 ''{}'' \;'
       chunk1="find .."   -- leadin, start from parent directory
       chunk2="-type f -execdir chmod ugo+x '{}' \;"   /* make sure executable gets set for all */
       tmpStr=""
-      do ext over .array~of("sh", "so", "rex", "rxj", "rxo", "rexxj", "jrexx", "cls", "orx", "frm", "testGroup", "testUnit", "exe", "class", "cmd", "py", "js", "nrx", "jacl")
+      do ext over .array~of("sh", "so", "rex", "rexx", "rxj", "rxo", "rexxj", "jrexx", "cls", "orx", "frm", "testGroup", "testUnit", "exe", "class", "cmd", "py", "js", "nrx", "jacl")
          if tmpStr="" then tmpStr =           '-iname "*'ext'"'
                       else tmpStr = tmpStr '-o -iname "*'ext'"'
       end
@@ -962,7 +941,6 @@ exit 0
       tmpStr = tmpStr '-o -iname "libBSF4ooRexx*"'
 
       cmd = chunk1 "\(" tmpStr "\)" chunk2   -- build command
-
       strTmp="setupAllAndRun.rex: line # [".line"]" cmd
       if cmd.eBLogFile=.true then cmd.eLogFile~say(strTmp)
 
@@ -970,9 +948,6 @@ exit 0
    end
    else  /* just make sure that all (possibly newly created) .sh-files in the current directory get set to: 775 */
    do
--- rgf,2011-06-08: FC has no "admin" group!
---       'find . -iname "*.sh" -type f -exec chown' cmd.eRealUserName':admin  ''{}'' \;'
-
        'find . -iname "*.sh" -type f -exec chmod 775 ''{}'' \;'
    end
    return
@@ -1029,8 +1004,6 @@ any:                 -- something went wrong while executing the program
   return .false      -- indicate error
 
 
-
-
    /* Class to establish a logfile and use it for all installation messages, exploiting
       ooRexx monitors for .stdout and .stderr, rgf, 2013-07-07
       sets: cmd.eLogFileName, cmd.eLogFile (stream object), cmd.eLoggingStarted and cmd.eLoggingEnded
@@ -1045,30 +1018,33 @@ any:                 -- something went wrong while executing the program
   expose fileName stream cmd.
   use strict arg cmd.
 
---  filename="BSF4ooRexx.log"      -- logfile name
   filename="BSF4ooRexx_" || .dateTime~new~string~changeStr(":","-") || ".log"      -- logfile name
 
   if cmd.eOpSys="W" then
      fileName=value("USERPROFILE",,"ENVIRONMENT")"\"fileName
   else   -- Unix operating systems
   do
-         -- determine current user ids
-     logname =value("LOGNAME",,"ENVIRONMENT")
-     sudoUser=value("SUDO_USER",,"ENVIRONMENT")
+     -- get and save logName and sudoUser-Name
+     cmd.eLogName  = value('LOGNAME',    ,'ENVIRONMENT')  -- get current logname, could be 'root' if sudo'ing
+     cmd.eSudoUser = value('SUDO_USER',  ,'ENVIRONMENT')  -- maybe sudo'ing, then who is the sudo user
 
-         -- determine real user name and define location
-     if logName="root", sudoUser<>"" then
-        realName=sudoUser        --  cmd.eRealUserName=cmd.eSudoUser
+     if cmd.eLogName="root", cmd.eSudoUser<>"" then
+        cmd.eRealUserName=cmd.eSudoUser
      else
-        realName=logName         -- cmd.eRealUserName=cmd.eLogName
+        cmd.eRealUserName=cmd.eLogName
+
+     cmd.eChownUserGroup = cmd.eRealUserName":"determineGroupName(cmd.eRealUserName)
+
+     cmd.eOriginalDirectory=directory(real)  -- original directory from where this script go started
+     cmd.eHomeDir=determineHomeDir(cmd.eRealUserName, cmd.eIsMacOSX)
 
      -- if Unix user is root, then we place the logfile into "/tmp"
-     if realName="root" then
+     if cmd.eRealUserName="root" then
         fileName="/tmp/"fileName
      else
      do
         homeDir =value("HOME",,"ENVIRONMENT")  -- fetch home directory on Unix
-        fileName=homeDir || "/" || fileName
+        fileName=cmd.eHomeDir || "/" || fileName
      end
   end
 
@@ -1092,8 +1068,6 @@ any:                 -- something went wrong while executing the program
   expose filename stream cmd.
   use arg methName, methArgs
 
-  -- .stdout~say(self": UNKNOWN, methName=["methName"]")
-
   if wordpos(methName, "SAY LINEOUT")>0 then
   do
      str=.dateTime~new":" methArgs[1]  -- prepend date and time
@@ -1113,10 +1087,59 @@ any:                 -- something went wrong while executing the program
 
      if cmd.eOpSys<>"W" then           -- on Unix, make sure to change file-owner
      do
-         "chown" cmd.eRealUserName filename
+         -- "chown" cmd.eRealUserName filename
+         "chown" cmd.eChownUserGroup filename
      end
      return                            -- already processed, return
   end
 
   say self": UNKNOWN message ["methName"] received, where does it come from?"
---  forward to (stream) message (methName) arguments (methArgs)
+
+/* Unix: returns the group name to be used in 'chown' command:
+   - if "staff" present in "/etc/group" use it (Linux: full rights to "/usr/local")
+   - else use real user name as the group name
+*/
+::routine determineGroupName
+  use strict arg groupName
+
+  s=.stream~new("/etc/group")~~open("read")
+  arr=s~arrayin
+  s~close
+  bFound=.false      -- needle "staff:" found?
+  do entry over arr while bFound=.false
+     bFound=entry~abbrev("staff:")  -- allow this to work prior to ooRexx 5.0 which has "startsWith"
+  end
+  if bFound then return "staff"     -- o.k. found, use group name "staff"
+  return groupName
+
+
+/* Unix: if MacOS then use "/Users/<userid>", if "root", then "/var/root"
+
+   TODO: Android "/data/media/<userid>", cf. <https://en.wikipedia.org/wiki/Home_directory>
+*/
+::routine determineHomeDir
+  use strict arg userName, isMacOS=.false
+
+  if isMacOS=.true then
+  do
+     if userName="root" then homedir="/var/root"
+                        else homedir="/Users/"userName
+     if \sysFileExists(homedir) then homedir="$HOME"  -- fall back to environment variable
+     return homedir
+  end
+
+  s=.stream~new("/etc/passwd")~~open("read") -- read passwd file
+  arr=s~arrayin
+  s~close
+  bFound=.false      -- needle "staff:" found?
+  needle=userName":"
+  do entry over arr until bFound=.true
+     bFound=entry~abbrev(needle) -- allow this to work prior to ooRexx 5.0 which has "startsWith"
+  end
+  if bFound=.false then return "$HOME"    -- not found, fall back to environment variable
+
+  parse var entry uname ":" pwd ":" uid ":" gid ":" gecos ":" homeDir ":" shell
+  if sysFileExists(homeDir) then return homeDir -- done
+
+  return "$HOME"     -- not found, fall back to environment variable
+
