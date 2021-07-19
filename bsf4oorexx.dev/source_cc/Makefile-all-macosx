@@ -159,12 +159,6 @@ x86_64: BSF4ooRexx.cc
 	cp -p $(BSF_ORX_TARGET_64) $(TGT_LIB_DIR)
 
 # ---------------------------------------------------
-ppc: BSF4ooRexx.cc
-	g++ -c $(CFLAGS) $(INC_PATH) -I/opt/ooRexx-x86_64/include -I/opt/ooRexx-ppc/include -m32 -arch ppc -DUSE_OREXX -DUNIX -DBSF4REXX_32_BIT -oBSF4ooRexx-mac-ppc.o BSF4ooRexx.cc
-
-	g++ -dynamiclib $(LFLAGS) -o libBSF4ooRexx-ppc.dylib BSF4ooRexx-mac-ppc.o /opt/ooRexx-ppc/lib/ooRexx/librexx.dylib /opt/ooRexx-ppc/lib/ooRexx/librexxapi.dylib -framework JavaVM -arch ppc
-
-# ---------------------------------------------------
 
 arm64: BSF4ooRexx.cc
 
@@ -196,14 +190,19 @@ clean:
 	rm -f $(BLD_PATH)/*.o
 
 
-# -------------------------------------------------------- needs 32-bit ooRexx installed currently
+# --------------------------------------------------- outdated
+ppc_outdated: BSF4ooRexx.cc
+	g++ -c $(CFLAGS) $(INC_PATH) -I/opt/ooRexx-x86_64/include -I/opt/ooRexx-ppc/include -m32 -arch ppc -DUSE_OREXX -DUNIX -DBSF4REXX_32_BIT -oBSF4ooRexx-mac-ppc.o BSF4ooRexx.cc
+
+	g++ -dynamiclib $(LFLAGS) -o libBSF4ooRexx-ppc.dylib BSF4ooRexx-mac-ppc.o /opt/ooRexx-ppc/lib/ooRexx/librexx.dylib /opt/ooRexx-ppc/lib/ooRexx/librexxapi.dylib -framework JavaVM -arch ppc
+# -------------------------------------------------------- outdated, needs 32-bit ooRexx installed currently
 x86_outdated: BSF4ooRexx.cc
 	g++ -c $(CFLAGS) $(INC_PATH_ALL) -m32 -arch i386 -DUSE_OREXX -DUNIX -DBSF4REXX_32_BIT -o$(BSF_OBJ_ORX_32) BSF4ooRexx.cc
 	g++ -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_32) $(BSF_OBJ_ORX_32) $(ORX_LIBS_32) -framework JavaVM -arch i386
 
 	cp -p $(BSF_ORX_TARGET_32) $(BSF4REXX)
 	cp -p $(BSF_ORX_TARGET_32) $(TGT_LIB_DIR)
-# ---------------------------------------------------
+# --------------------------------------------------- outdated
 universal__outdated: BSF4ooRexx.cc x86 x86_64
 #	lipo -create -output libBSF4ooRexx.dylib -arch x86_64 libBSF4ooRexx-x86_64.dylib -arch i386 libBSF4ooRexx-i386.dylib -arch ppc libBSF4ooRexx-ppc.dylib
 	lipo -create -output $(BSF4REXX)-universal -arch x86_64 $(BSF_ORX_TARGET_64) -arch i386 $(BSF_ORX_TARGET_32)
