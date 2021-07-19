@@ -5055,17 +5055,15 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
                    char *buf = (char *) malloc(len);
     			// try the new directory layout (since Java 9)
                    snprintf(buf, len, "%s%s", java_home, "/lib/server/libjvm.so");
-fprintf(stderr, "LINUX: JAVA_HOME=[%s], len=[%lu], buf=[%s] ...\n", java_home, len, buf);
                    hVM=dlopen(buf, RTLD_LAZY | RTLD_GLOBAL );
-fprintf(stderr, "LINUX: hVM=[%p] buf=[%s] ...\n", hVM, buf);
+// fprintf(stderr, "LINUX: hVM=[%p] buf=[%s] ...\n", hVM, buf);
 
-        		   if (hVM==NULL)    // try older directory layout (up to and often including Java 8)
-        		   {
+        	   if (hVM==NULL)    // try older directory layout (up to and often including Java 8)
+        	   {
                        snprintf(buf, len, "%s%s", java_home, "/jre/lib/server/libjvm.so");
-fprintf(stderr, "LINUX: JAVA_HOME=[%s], len=[%lu], buf=[%s] ...\n", java_home, len, buf);
                        hVM=dlopen(buf, RTLD_LAZY | RTLD_GLOBAL );
-fprintf(stderr, "LINUX: hVM=[%p] buf=[%s] ...\n", hVM, buf);
-        	       }
+// fprintf(stderr, "LINUX: hVM=[%p] buf=[%s] ...\n", hVM, buf);
+        	   }
 
                    free(buf);
     	       }
@@ -5217,7 +5215,7 @@ fprintf(stderr, "LINUX: hVM=[%p] buf=[%s] ...\n", hVM, buf);
 #endif
 
         // create and save supplied option
-        size_t tmpLength=strlen(cTmpStrObj);
+        size_t tmpLength=strlen(cTmpStrObj)+2;
         char *ch = (char *) malloc(tmpLength+1);   // copy Rexx argument
         memset(ch, 0, tmpLength+1);	    // make sure that initialized to 0x00
 
