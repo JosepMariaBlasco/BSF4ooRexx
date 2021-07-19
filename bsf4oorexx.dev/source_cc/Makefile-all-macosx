@@ -1,17 +1,19 @@
-# usage: make -f Makefile-all-macosx [all \ x86 | x86_64 | arm64 | ppc | universal \ clean ]
-# rgf, 2011-01-02, 2011-01-12, 2011-02-20, 2013-08-12, 2017-01-08, 2021-07-19: cleaned a bit, universal
-
-# to support earlier versions of MacOSX export MACOSX_DEPLOYMENT_TARGET=min_version
-# before compiling (cf. "man g++"), e.g.:
+# usage: make -f Makefile-all-macosx [all | x86_64 | arm64 | ppc | universal | clean ]
+# rgf, 2011-01-02, 2011-01-12, 2011-02-20, 2013-08-12, 2017-01-08, 2021-07-19
 #
-#
-#  MacOSX 10.9, "Mavericks", released: 2013-10-22
-#
-#                  export MACOSX_DEPLOYMENT_TARGET=10.9
+#  2021-07-19: using "-target" (instead of "-arch") and version information in name of value, cf. x86_64 and arm64
+#              ad otool, install_name_tool, cf. e.g. <https://gitlab.kitware.com/cmake/community/-/wikis/doc/cmake/RPATH-handling>
 #
 # rgf, 2017-08-17: about using "std++" (C++11) on clang, e.g. cf <https://stackoverflow.com/questions/19774778/when-is-it-necessary-to-use-use-the-flag-stdlib-libstdc>
 #
 #         target 10.9, add to g++ "-std=c++11" (or "-std=gnu++11"); (and before Maverick: "-stdlib=libc++"; to force gnu without c++-11 support use: "-stdlib=libstdc++")
+#
+# to support earlier versions of MacOSX export MACOSX_DEPLOYMENT_TARGET=min_version
+# before compiling (cf. "man g++"), e.g.:
+#
+#  MacOSX 10.9, "Mavericks", released: 2013-10-22
+#
+#                  export MACOSX_DEPLOYMENT_TARGET=10.9
 #
 #  MacOSX 10.6, "Snow Leopard", released: 2009-08-28
 #
@@ -20,7 +22,7 @@
 
 #/*----------------------------------------------------------------------------*/
 #/*                                                                            */
-#/* Copyright (c) 2008-2017 Rexx Language Association. All rights reserved.    */
+#/* Copyright (c) 2008-2021 Rexx Language Association. All rights reserved.    */
 #/*                                                                            */
 #/* This program and the accompanying materials are made available under       */
 #/* the terms of the Common Public License v1.0 which accompanies this         */
@@ -127,26 +129,19 @@ ORX_LIBS_64 = $(ORX_LIBPATH_64)/librexx.dylib $(ORX_LIBPATH_64)/librexxapi.dylib
 # assuming that ooRexx is universal or arm64
 ORX_LIBS_64 = -L${OOREXX_APP_INSTALL}/lib   -lrexx -lrexxapi
 INC_PATH_ALL = $(INC_PATH) -I$(OOREXX_APP_INSTALL)/include
-INC_PATH_ALL_ARM64 = $(INC_PATH_ARM64) -I$(OOREXX_APP_INSTALL)/include 
+INC_PATH_ALL_ARM64 = $(INC_PATH_ARM64) -I$(OOREXX_APP_INSTALL)/include
 
 
 
 # INC_PATH_ALL = $(INC_PATH) -I/System/Library/Frameworks/ooRexx.framework/Versions/Current/Headers $(ORX5_INCPATH_64)
-INC_PATH_ALL = $(INC_PATH) -I/Applications/ooRexx5/include -I$(OOREXX_APP_INSTALL)/include 
+INC_PATH_ALL = $(INC_PATH) -I/Applications/ooRexx5/include -I$(OOREXX_APP_INSTALL)/include
 
 CFLAGS = -fPIC
 LFLAGS = -shared
 
 # --------------------------------------------------------
-all: x86 x86_64 universal
-
-# -------------------------------------------------------- needs 32-bit ooRexx installed currently
-x86: BSF4ooRexx.cc
-	g++ -c $(CFLAGS) $(INC_PATH_ALL) -m32 -arch i386 -DUSE_OREXX -DUNIX -DBSF4REXX_32_BIT -o$(BSF_OBJ_ORX_32) BSF4ooRexx.cc
-	g++ -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_32) $(BSF_OBJ_ORX_32) $(ORX_LIBS_32) -framework JavaVM -arch i386
-
-	cp -p $(BSF_ORX_TARGET_32) $(BSF4REXX)
-	cp -p $(BSF_ORX_TARGET_32) $(TGT_LIB_DIR)
+# all: x86 x86_64 universal
+all: x86_64 arm64 universal
 
 # --------------------------------------------------- needs 64-bit ooRexx installed currently
 x86_64: BSF4ooRexx.cc
@@ -178,18 +173,13 @@ arm64: BSF4ooRexx.cc
 #	g++ -v -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_64) $(BSF_OBJ_ORX_64) $(ORX_LIBS_64) -framework JavaVM -arch x86_64
 
 #	g++    -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_ARM64) $(BSF_OBJ_ORX_ARM64) $(ORX_LIBS_64) -arch arm64
-# experimenting with '-target' 
+# experimenting with '-target'
 	g++    -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_ARM64) $(BSF_OBJ_ORX_ARM64) $(ORX_LIBS_64) -target arm64-apple-macos11
 
 	install_name_tool -id $(LIB_INSTALL_NAME) $(BSF_ORX_TARGET_ARM64)
 	cp -p $(BSF_ORX_TARGET_ARM64) $(BSF4REXX)
 	cp -p $(BSF_ORX_TARGET_ARM64) $(TGT_LIB_DIR)
 
-
-# ---------------------------------------------------
-universal_old: BSF4ooRexx.cc x86 x86_64
-#	lipo -create -output libBSF4ooRexx.dylib -arch x86_64 libBSF4ooRexx-x86_64.dylib -arch i386 libBSF4ooRexx-i386.dylib -arch ppc libBSF4ooRexx-ppc.dylib
-	lipo -create -output $(BSF4REXX)-universal -arch x86_64 $(BSF_ORX_TARGET_64) -arch i386 $(BSF_ORX_TARGET_32)
 
 # ---------------------------------------------------
 universal: BSF4ooRexx.cc x86_64 arm64
@@ -199,10 +189,22 @@ universal: BSF4ooRexx.cc x86_64 arm64
 	cp -p $(BSF4REXX)-universal $(BSF4REXX)
 	cp -p $(BSF4REXX)-universal $(TGT_LIB_DIR)
 
-
-
 # ---------------------------------------------------
 .PHONY: clean
 clean:
 	rm -f $(BLD_PATH)/*.dylib*
 	rm -f $(BLD_PATH)/*.o
+
+
+# -------------------------------------------------------- needs 32-bit ooRexx installed currently
+x86_outdated: BSF4ooRexx.cc
+	g++ -c $(CFLAGS) $(INC_PATH_ALL) -m32 -arch i386 -DUSE_OREXX -DUNIX -DBSF4REXX_32_BIT -o$(BSF_OBJ_ORX_32) BSF4ooRexx.cc
+	g++ -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_32) $(BSF_OBJ_ORX_32) $(ORX_LIBS_32) -framework JavaVM -arch i386
+
+	cp -p $(BSF_ORX_TARGET_32) $(BSF4REXX)
+	cp -p $(BSF_ORX_TARGET_32) $(TGT_LIB_DIR)
+# ---------------------------------------------------
+universal__outdated: BSF4ooRexx.cc x86 x86_64
+#	lipo -create -output libBSF4ooRexx.dylib -arch x86_64 libBSF4ooRexx-x86_64.dylib -arch i386 libBSF4ooRexx-i386.dylib -arch ppc libBSF4ooRexx-ppc.dylib
+	lipo -create -output $(BSF4REXX)-universal -arch x86_64 $(BSF_ORX_TARGET_64) -arch i386 $(BSF_ORX_TARGET_32)
+
