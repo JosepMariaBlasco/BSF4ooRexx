@@ -996,11 +996,11 @@ thread_id_t  RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20210718 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20210719 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20210718 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20210719 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20210718 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20210719 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
     // 2005-06-02, when BSF4ooRexx loads Java, the following Java class is used to initialize all necessary Java objects
@@ -5006,11 +5006,11 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
        //                  honor JAVA_HOME environment variable, if set
 
         #ifdef __APPLE__
-           hVM=dlopen("/opt/BSF4ooRexx/libjvm.dylib", RTLD_LAZY | RTLD_GLOBAL );
+           hVM=dlopen("/opt/BSF4ooRexx/libjvm.dylib", RTLD_LAZY | RTLD_GLOBAL ); // try link to JVM (it may not exist)
 // fprintf(stderr, "APPLE: hVM=[%p] /opt/BSF4ooRexx/libjvm.dylib ...\n", hVM);
 
            // 2021-07-18, rgf: honor JAVA_HOME
-           if (hVM==NULL)   // not found, now look for environemnet variable JAVA_HOME
+           if (hVM==NULL)   // not found, now look for environemnet variable JAVA_HOME next
            {
                char *java_home = getenv("JAVA_HOME");	// try to get environment variable
      	       if (java_home != NULL)
@@ -5020,27 +5020,25 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
                    char *buf = (char *) malloc(len);
     			// try the new directory layout (since Java 9)
                    snprintf(buf, len, "%s%s", java_home, "/lib/server/libjvm.dylib");
-// fprintf(stderr, "APPLE: JAVA_HOME=[%s], len=[%d], buf=[%s] ...\n", java_home, len, buf);
                    hVM=dlopen(buf, RTLD_LAZY | RTLD_GLOBAL );
 // fprintf(stderr, "APPLE: hVM=[%p] buf=[%s] ...\n", hVM, buf);
 
-        		   if (hVM==NULL)    // try older directory layout (up to and often including Java 8)
-        		   {
+       		   if (hVM==NULL)    // try older directory layout (up to and often including Java 8)
+       		   {
                        snprintf(buf, len, "%s%s", java_home, "/jre/lib/server/libjvm.dylib");
-        // fprintf(stderr, "APPLE: JAVA_HOME=[%s], len=[%d], buf=[%s] ...\n", java_home, len, buf);
                        hVM=dlopen(buf, RTLD_LAZY | RTLD_GLOBAL );
-        // fprintf(stderr, "APPLE: hVM=[%p] buf=[%s] ...\n", hVM, buf);
-        	       }
+// fprintf(stderr, "APPLE: hVM=[%p] buf=[%s] ...\n", hVM, buf);
+        	   }
 
                    free(buf);
     	       }
            }
 
-           if (hVM==NULL)   // not found, now look in system's location
+           if (hVM==NULL)   // not found, now look in MacOSX system location
            {
-		// 2021-07-18, rgf: surprisingly this still works on macOS BigSur 11.4
+		// 2021-07-18, rgf: surprisingly this still works on macOS BigSur 11.4 although it does not exist physically
                hVM=dlopen("/System/Library/Frameworks/JavaVM.framework/JavaVM", RTLD_LAZY | RTLD_GLOBAL );
-// fprintf(stderr, "hVM=[%p] /System/Library/Frameworks/JavaVM.framework/JavaVM ...\n", hVM);
+// fprintf(stderr, "APPLE: hVM=[%p] /System/Library/Frameworks/JavaVM.framework/JavaVM ...\n", hVM);
            }
 
         #else  // ohter Unixes, e.g. Linux
@@ -5057,14 +5055,14 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
                    char *buf = (char *) malloc(len);
     			// try the new directory layout (since Java 9)
                    snprintf(buf, len, "%s%s", java_home, "/lib/server/libjvm.so");
-fprintf(stderr, "LINUX: JAVA_HOME=[%s], len=[%d], buf=[%s] ...\n", java_home, len, buf);
+fprintf(stderr, "LINUX: JAVA_HOME=[%s], len=[%lu], buf=[%s] ...\n", java_home, len, buf);
                    hVM=dlopen(buf, RTLD_LAZY | RTLD_GLOBAL );
 fprintf(stderr, "LINUX: hVM=[%p] buf=[%s] ...\n", hVM, buf);
 
         		   if (hVM==NULL)    // try older directory layout (up to and often including Java 8)
         		   {
                        snprintf(buf, len, "%s%s", java_home, "/jre/lib/server/libjvm.so");
-fprintf(stderr, "LINUX: JAVA_HOME=[%s], len=[%d], buf=[%s] ...\n", java_home, len, buf);
+fprintf(stderr, "LINUX: JAVA_HOME=[%s], len=[%lu], buf=[%s] ...\n", java_home, len, buf);
                        hVM=dlopen(buf, RTLD_LAZY | RTLD_GLOBAL );
 fprintf(stderr, "LINUX: hVM=[%p] buf=[%s] ...\n", hVM, buf);
         	       }
@@ -5233,7 +5231,7 @@ fprintf(stderr, "LINUX: hVM=[%p] buf=[%s] ...\n", hVM, buf);
         (cp_env!= NULL))            // CLASSPATH environment variable set
     {
         // create option for setting "java.class.path" to CLASSPATH
-        size_t bufLen=strlen(cp_env)+needleLength;
+        size_t bufLen=strlen(cp_env)+needleLength+2;
         options[m].optionString = (char *) malloc(bufLen+1);    // get needed memory
         snprintf( options[m].optionString, bufLen+1, "%s%s", needle, cp_env);
 
@@ -5246,7 +5244,7 @@ fprintf(stderr, "LINUX: hVM=[%p] buf=[%s] ...\n", hVM, buf);
     {
         // create option for setting "java.class.path" to CLASSPATH
         char strJLP[] = "/opt/BSF4ooRexx:/usr/lib:/usr/lib64:/usr/local/lib:/usr/local/lib64:.";
-        size_t bufLen=strlen(strJLP)+needleLength;
+        size_t bufLen=strlen(strJLP)+needleLength+2;
         options[m].optionString = (char *) malloc(bufLen+1);    // get needed memory
         snprintf( options[m].optionString, bufLen+1, "%s%s", jvlpNeedle, strJLP);
 
