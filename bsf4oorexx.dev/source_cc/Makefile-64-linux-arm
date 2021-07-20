@@ -44,7 +44,10 @@ TGT_LIB_DIR     = ./lib
 #   export PATH=$JAVA_HOME/bin:$PATH
 # Statements Above can be added to the $HOME/.bashrc file to be set when Bash
 # Command Shell is started; Some Distros also use $JDK_HOME as an environment variable
-JDK_BASE = $(JAVA_HOME)  # Best Practice for JDK Version Differences
+# Best Practice for JDK Version Differences
+# Moved Previous Comment Up To Separate Line To Prevent Append of Space Characters to JDK_BASE 
+# Variable Assignement That Follows -- tfd July 19, 2021
+JDK_BASE = $(JAVA_HOME)
 # If Using $JDK_HOME Environment Variable; Uncomment Line Below & Comment Out $(JAVA_HOME) Line
 #JDK_BASE = $(JDK_HOME)
 # ---------------------------------------------------------------------------
