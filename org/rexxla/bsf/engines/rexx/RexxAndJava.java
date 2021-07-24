@@ -25,7 +25,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
   *
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2021 Rony G. Flatscher
+ *    Copyright (C) 2001-2020 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -53,9 +53,6 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
 
  /*
-     2020-07-21, rgf: - if environment variable "BSF4ooRexx_LibraryPath" is set, then solely use
-                        it to load the BSF4ooRexx dynamic library (must be given as an absolute path)
-
      2020-08-21, rgf: - if loaded from Rexx on Linux, and libBSF4ooRexx.so resides in /usr/local/lib
                         then it is not found as of Java 14, cf. <https://bugs.openjdk.java.net/browse/JDK-8073067>;
                         this version explicitly tries to load it from /usr/local/lib if not found by
@@ -585,7 +582,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20210721";
+    static final public String version = "600.20200821";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -838,48 +835,33 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
         //                  cf. <https://bugs.openjdk.java.net/browse/JDK-8073067>
 
         boolean bLoadSuccessful=false;
-
-        // 2021-07-21: honor "BSF4ooRexx_LibraryPath" environment symbol; if supplied use it, but
-        //             do not catch Exception, if path was wrong (no fallback in this case)
-        String path2lib = System.getenv("BSF4ooRexx_LibraryPath");
-        if (path2lib != null)       // environemnt variable exists, use its value
+        try
         {
-System.err.println("**DEBUG** RexxAndJava: path2lib=["+path2lib+"]");
-            System.load(path2lib);  // now load BSF4ooRexx library
+            System.loadLibrary( DLL_NAME ); // uses Java's library search order (java.library.path)
             bLoadSuccessful=true;
         }
-
-        if (!bLoadSuccessful)
+        catch (UnsatisfiedLinkError t)  // not found via java.library.path
         {
-            try
+            // 2020-08-21, rgf: if on Linux, explicitly try to load from "/usr/local/lib"
+            // as loadLibrary seems to not honor that location, although one is supposed
+            // to install non-system shared objects there
+            String libFileName=System.mapLibraryName( DLL_NAME );
+            if (libFileName.startsWith("lib") && libFileName.endsWith(".so") )  // we are on Linux, check /usr/local/lib
             {
+                String strFullLibPath="/usr/local/lib/"+libFileName;
+                File fileLibPath=new File(strFullLibPath);
 
-                System.loadLibrary( DLL_NAME ); // uses Java's library search order (java.library.path)
-                bLoadSuccessful=true;
-            }
-            catch (UnsatisfiedLinkError t)  // not found via java.library.path
-            {
-                // 2020-08-21, rgf: if on Linux, explicitly try to load from "/usr/local/lib"
-                // as loadLibrary seems to not honor that location, although one is supposed
-                // to install non-system shared objects there
-                String libFileName=System.mapLibraryName( DLL_NAME );
-                if (libFileName.startsWith("lib") && libFileName.endsWith(".so") )  // we are on Linux, check /usr/local/lib
+                if (fileLibPath.exists())   // if file exists, we let Java resolve it (e.g. if a symbolic link)
                 {
-                    String strFullLibPath="/usr/local/lib/"+libFileName;
-                    File fileLibPath=new File(strFullLibPath);
-
-                    if (fileLibPath.exists())   // if file exists, we let Java resolve it (e.g. if a symbolic link)
+                    try
                     {
-                        try
-                        {
-                           String canonicalLibPath=fileLibPath.getCanonicalPath();
-                           System.load(canonicalLibPath);   // now explicitly load it
+                       String canonicalLibPath=fileLibPath.getCanonicalPath();
+                       System.load(canonicalLibPath);   // now explicitly load it
 // System.err.println("**DEBUG** RexxAndJava.java, # 860; explicitly loading from ["+strFullLibPath+"], canonical=["+canonicalLibPath+"], was successful!");
-                           bLoadSuccessful=true;            // indicate we could load/find it!
-                        }
-                        catch (Throwable t2)    // do nothing
-                        {}
+                       bLoadSuccessful=true;            // indicate we could load/find it!
                     }
+                    catch (Throwable t2)    // do nothing
+                    {}
                 }
             }
         }
