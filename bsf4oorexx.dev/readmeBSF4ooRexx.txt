@@ -35,12 +35,15 @@ PLEASE NOTE: this version of BSF4ooRexx is for Java 1.6/6, 1.7/7, 1.8/8
     but *BEFORE UNZIPPING* make sure that no "security" attributes are attached to it.
 
     On *WINDOWS*: right mouse click on the zip-file and choose "Unblock" from the
-                  Property menu, *then* unzip. Here are directions by Microsoft:
-                  <https://blogs.msdn.microsoft.com/delay/p/unblockingdownloadedfile/>
+                  Property menu, *then* unzip.
 
                   [If you do not do this, unexpected/unexplainable errors may
                   occur, when using the new .NET support, as the Windows
-                  unzip utility would mark all unzipped files as a security risk.]
+                  unzip utility would mark all unzipped files as a security risk
+                  as well.]
+
+                  Cf. e.g. <https://winaero.com/how-to-unblock-files-downloaded-from-internet-in-windows-10/>
+                  which also shows various possibilities via the PowerShell.
 
     On *MacOS*: Apple marks all files from the Internet with a quarantine attribute
                 and does not allow for running such programs; open a Terminal window

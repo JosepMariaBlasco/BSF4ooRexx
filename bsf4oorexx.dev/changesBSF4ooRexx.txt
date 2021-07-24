@@ -1,3 +1,39 @@
+
+-------------------------------------- 2021-07-24 ----------------------------------
+
+- install/setupBSF.rex
+
+        - changes for rexxj.{cm|sh}:
+
+                - BSF4REXX_HOME gets defined to point to the directory where setupBSF.rex
+                  resides; will be placed in front of java.library.path: this makes sure
+                  that Java will find the dynamic link library [lib]BSF4ooRexx.{dll|so|dylib}
+
+                - OOREXX_LIB_HOME environment variable gets set, if ooRexx 5.0 or higher;
+                  will be placed after BSF4REXX_HOME, but before java.library.path: this
+                  makes sure that Java loads this Rexx interpreter
+
+                - if PREPEND_JAVA_LIBRARY environment variable is set, it will
+                  be put in front of all of the java.library.path: this allows on MacOS
+                  to be used in place of DYLD_LIBRARY_PATH/LD_LIBRARY_PATH which might
+                  get wiped out by SIP (note: if a script defines DYLD_LIBRARY_PATH
+                  then this will be honored if running programs from the same session)
+
+                - if JAVA_HOME environment variable is set, use it, otherwise
+                  fallback to the exact Java version that was employed when the script got
+                  created; if that path does not exist anymore, fall back to "java" and
+                  have the operating system find and run it
+
+
+-------------------------------------- 2021-07-22 ----------------------------------
+
+- bin/rexxj2.sh, bin/rexxj2-32.sh, bin/rexxj2-64.sh
+
+        - removed hashbang (because of Apple's SIP)
+
+
+
+
 -------------------------------------- 2021-07-19 ----------------------------------
 
 - Makefile-all-macosx
