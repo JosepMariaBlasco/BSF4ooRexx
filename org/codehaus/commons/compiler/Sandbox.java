@@ -27,8 +27,10 @@ package org.codehaus.commons.compiler;
 
 import java.security.AccessControlContext;
 import java.security.AccessController;
+import java.security.CodeSource;
 import java.security.Permission;
 import java.security.PermissionCollection;
+import java.security.Permissions;
 import java.security.Policy;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
@@ -37,6 +39,24 @@ import java.security.ProtectionDomain;
 
 import org.codehaus.commons.nullanalysis.NotNullByDefault;
 
+/**
+ * Executes a {@link PrivilegedAction} or {@link PrivilegedExceptionAction} in a context with restricted permissions.
+ * This is useful for executing "untrusted" code, e.g. user-provided expressions or scripts that were compiled with
+ * <a href="https://janino.unkrig.de/">JANINO</a>.
+ * <p>
+ *   Code example:
+ * </p>
+ * <pre>
+ *     Permissions noPermissions = new Permissions();
+ *     Sandbox sandbox = new Sandbox(noPermissions);
+ *     sandbox.confine(new PrivilegedExceptionAction&lt;Object>() {
+ *         &#64;Override public Object run() throws Exception { new java.io.File("xxx").delete(); return null; }
+ *     });
+ * </pre>
+ *
+ * @see <a href="https://docs.oracle.com/javase/tutorial/essential/environment/security.html">ORACLE: Java Essentials:
+ *      The Security Manager</a>
+ */
 public final
 class Sandbox {
 
@@ -57,6 +77,26 @@ class Sandbox {
             //     That eventually leads to a very restricted policy which typically allows applications to read only
             //     a small set of system properties and nothing else.
             Policy.setPolicy(new Policy() {
+
+                @Override @NotNullByDefault(false) public PermissionCollection
+                getPermissions(CodeSource codesource) {
+
+                    // Taken from https://github.com/elastic/elasticsearch/pull/14274, on request of
+                    // https://github.com/janino-compiler/janino/issues/124:
+
+                    // Code should not rely on this method, or at least use it correctly:
+                    // https://bugs.openjdk.java.net/browse/JDK-8014008
+                    // return them a new empty permissions object so jvisualvm etc work
+                    for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
+                        if (
+                            "sun.rmi.server.LoaderHandler".equals(element.getClassName())
+                            && "loadClass".equals(element.getMethodName())
+                        ) return new Permissions();
+                    }
+
+                    // Return UNSUPPORTED_EMPTY_COLLECTION since it is safe.
+                    return super.getPermissions(codesource);
+                }
 
                 @Override @NotNullByDefault(false) public boolean
                 implies(ProtectionDomain domain, Permission permission) { return true; }

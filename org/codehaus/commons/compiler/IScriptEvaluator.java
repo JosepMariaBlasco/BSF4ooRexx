@@ -206,6 +206,9 @@ interface IScriptEvaluator extends ICookable, IMultiCookable {
     /**
      * When this {@link IScriptEvaluator} is coooked, then the <var>defaultReturnType</var> applies to all scripts for
      * which no explicit return type was configured.
+     * <p>
+     *   The initial default return type (if you want, the "default-default" return type) is {@code void.class}.
+     * </p>
      *
      * @see #setReturnType(Class)
      * @see #setReturnTypes(Class[])
@@ -230,6 +233,8 @@ interface IScriptEvaluator extends ICookable, IMultiCookable {
 
     /**
      * Defines the return type of the generated method. Value {@code null} means "use the default return type".
+     *
+     * @see #setDefaultReturnType(Class)
      */
     void setReturnType(Class<?> returnType);
 
@@ -376,7 +381,7 @@ interface IScriptEvaluator extends ICookable, IMultiCookable {
      * @param script Contains the sequence of script tokens
      * @see          #createFastEvaluator(Reader, Class, String[])
      */
-    <T> Object
+    <T> T
     createFastEvaluator(
         String   script,
         Class<T> interfaceToImplement,
@@ -429,7 +434,7 @@ interface IScriptEvaluator extends ICookable, IMultiCookable {
      * @param parameterNames       The names of the parameters of that method
      * @return                     An object that implements the given interface
      */
-    <T> Object
+    <T> T
     createFastEvaluator(
         Reader   reader,
         Class<T> interfaceToImplement,

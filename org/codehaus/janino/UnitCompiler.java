@@ -233,6 +233,7 @@ class UnitCompiler {
 
     // Some debug flags; controlled by system properties.
     private static final boolean disassembleClassFilesToStdout = SystemProperties.getBooleanClassProperty(UnitCompiler.class, "disassembleClassFilesToStdout");
+    private static final int     defaultTargetVersion          = SystemProperties.getIntegerClassProperty(UnitCompiler.class, "defaultTargetVersion", -1);
 
     /**
      * This constant determines the number of operands up to which the
@@ -271,6 +272,8 @@ class UnitCompiler {
 
     private EnumSet<JaninoOption> options = EnumSet.noneOf(JaninoOption.class);
 
+    private int              targetVersion        = -1;
+
     public
     UnitCompiler(AbstractCompilationUnit abstractCompilationUnit, IClassLoader iClassLoader) {
         this.abstractCompilationUnit = abstractCompilationUnit;
@@ -292,6 +295,14 @@ class UnitCompiler {
         this.options = options;
         return this;
     }
+
+    /**
+     * Generates class files that target a specified release of the virtual machine, in analogy with JAVAC's {@code
+     * -target} command line option.
+     * By default, Java 6 .class files are generated.
+     */
+    public void
+    setTargetVersion(int version) { this.targetVersion = version; }
 
     /**
      * @return The {@link AbstractCompilationUnit} that this {@link UnitCompiler} compiles
@@ -483,16 +494,7 @@ class UnitCompiler {
         if (cd instanceof EnumDeclaration) accessFlags |= Mod.ENUM;
 
         // Create "ClassFile" object.
-        ClassFile cf;
-        {
-            IClass superclass = iClass.getSuperclass();
-            cf = new ClassFile(
-                accessFlags,                                            // accessFlags
-                iClass.getDescriptor(),                                 // thisClassFD
-                superclass != null ? superclass.getDescriptor() : null, // superclassFD
-                IClass.getDescriptors(iClass.getInterfaces())           // interfaceFDs
-            );
-        }
+        ClassFile cf = this.newClassFile(accessFlags, iClass, iClass.getSuperclass(), iClass.getInterfaces());
 
         // Add class annotations with retention != SOURCE.
         this.compileAnnotations(cd.getAnnotations(), cf, cf);
@@ -803,20 +805,29 @@ class UnitCompiler {
         // extras.
         final int declaredMethodCount = cd.getMethodDeclarations().size();
         {
-            int                     syntheticFieldCount = cd.syntheticFields.size();
-            ConstructorDeclarator[] ctords              = cd.getConstructors();
-            for (ConstructorDeclarator ctord : ctords) {
+            ConstructorDeclarator[] ctords = cd.getConstructors();
 
-                this.compile(ctord, cf);
-                if (syntheticFieldCount != cd.syntheticFields.size()) {
-                    throw new InternalCompilerException(
-                        "SNO: Compilation of constructor \""
-                        + ctord
-                        + "\" ("
-                        + ctord.getLocation()
-                        + ") added synthetic fields!?"
-                    );
+            int syntheticFieldCount = cd.syntheticFields.size();
+            int methodInfoCount     = cf.methodInfos.size();
+            for (ConstructorDeclarator ctord : ctords) this.compile(ctord, cf);
+
+            if (syntheticFieldCount != cd.syntheticFields.size()) {
+
+                // New synthetic fields were created while the constructors were compiled -- need to re-compile all
+                // constructors!
+                syntheticFieldCount = cd.syntheticFields.size();
+                while (cf.methodInfos.size() > methodInfoCount) cf.methodInfos.remove(methodInfoCount);
+                for (ConstructorDeclarator ctord : ctords) {
+
+                    // Clear the cached IConstructor -- necessary because the synthetic constructor parameters have
+                    // changed!
+                    ctord.iConstructor = null;
+
+                    this.compile(ctord, cf);
                 }
+
+                // Re-compilation of the constructors cannot possibly create even more synthetic fields!
+                assert syntheticFieldCount == cd.syntheticFields.size();
             }
         }
 
@@ -931,7 +942,7 @@ class UnitCompiler {
     compile2(AnonymousClassDeclaration acd) throws CompileException {
 
         // For classes that enclose surrounding scopes, trawl their field initializers looking for synthetic fields.
-        this.fakeCompileVariableDeclaratorsAndInitializers(acd);
+//        this.fakeCompileVariableDeclaratorsAndInitializers(acd);
 
         this.compile2((InnerClassDeclaration) acd);
     }
@@ -983,26 +994,15 @@ class UnitCompiler {
         final IClass iClass = this.resolve(id);
 
         // Determine extended interfaces.
-        IClass[] is                   = (id.interfaces = new IClass[id.extendedTypes.length]);
-        String[] interfaceDescriptors = new String[is.length];
-        for (int i = 0; i < id.extendedTypes.length; ++i) {
-            is[i]                   = this.getType(id.extendedTypes[i]);
-            interfaceDescriptors[i] = is[i].getDescriptor();
-        }
+        id.interfaces = this.getTypes(id.extendedTypes);
 
         short accessFlags = this.accessFlags(id.getModifiers());
         accessFlags |= Mod.INTERFACE;
         accessFlags |= Mod.ABSTRACT;
-        if (id instanceof AnnotationTypeDeclaration) accessFlags |= Mod.ANNOTATION;
+        if (id instanceof AnnotationTypeDeclaration)  accessFlags |= Mod.ANNOTATION;
         if (id instanceof MemberInterfaceDeclaration) accessFlags |= Mod.STATIC;
 
-        // Create "ClassFile" object.
-        ClassFile cf = new ClassFile(
-            accessFlags,                 // accessFlags
-            iClass.getDescriptor(),      // thisClassFD
-            Descriptor.JAVA_LANG_OBJECT, // superclassFD
-            interfaceDescriptors         // interfaceFDs
-        );
+        ClassFile cf = this.newClassFile(accessFlags, iClass, this.iClassLoader.TYPE_java_lang_Object, id.interfaces);
 
         // Add interface annotations with retention != SOURCE.
         this.compileAnnotations(id.getAnnotations(), cf, cf);
@@ -1041,6 +1041,32 @@ class UnitCompiler {
 
         // Add the generated class file to a thread-local store.
         this.addClassFile(cf);
+    }
+
+    /**
+     * @param superclass {@code null} for {@link Object}, {@link Object} for interfaces
+     */
+    private ClassFile
+    newClassFile(
+        short            accessFlags,
+        IClass           iClass,
+        @Nullable IClass superclass,
+        IClass[]         interfaces
+    ) throws CompileException {
+        ClassFile result = new ClassFile(
+            accessFlags,                                            // accessFlags
+            iClass.getDescriptor(),                                 // thisClassFD
+            superclass != null ? superclass.getDescriptor() : null, // superclassFD
+            IClass.getDescriptors(interfaces)                       // interfaceFDs
+        );
+
+        int v = this.getTargetVersion();
+
+        if (v < 6) throw new CompileException("Cannot generate version " + v + " .class files", Location.NOWHERE);
+
+        result.setVersion((short) (44 + v), ClassFile.MINOR_VERSION_JDK_1_6);
+
+        return result;
     }
 
     /**
@@ -1442,10 +1468,13 @@ class UnitCompiler {
         final CodeContext codeContext      = new CodeContext(mi.getClassFile());
         final CodeContext savedCodeContext = this.replaceCodeContext(codeContext);
         try {
+            codeContext.saveLocalVariables();
 
             // Allocate all our local variables.
-            codeContext.saveLocalVariables();
+
             codeContext.allocateLocalVariable((short) 1, "this", override.getDeclaringIClass());
+            this.updateLocalVariableInCurrentStackMap((short) 0, this.verificationTypeInfo(override.getDeclaringIClass()));
+
             IClass[]            paramTypes = override.getParameterTypes();
             LocalVariableSlot[] locals     = new LocalVariableSlot[paramTypes.length];
             for (int i = 0; i < paramTypes.length; ++i) {
@@ -1454,6 +1483,7 @@ class UnitCompiler {
                     "param" + i,
                     paramTypes[i]
                 );
+                this.updateLocalVariableInCurrentStackMap(locals[i].getSlotIndex(), this.verificationTypeInfo(paramTypes[i]));
             }
 
             this.load(Located.NOWHERE, declaringIClass, 0);
@@ -1573,7 +1603,11 @@ class UnitCompiler {
                 this.compileError("Statement is unreachable", bs.getLocation());
                 break;
             }
-            previousStatementCanCompleteNormally = this.compile(bs);
+            try {
+                previousStatementCanCompleteNormally = this.compile(bs);
+            } catch (AssertionError ae) {
+                throw new InternalCompilerException(bs.getLocation() + ": " + ae, ae);
+            }
         }
         return previousStatementCanCompleteNormally;
     }
@@ -1698,6 +1732,8 @@ class UnitCompiler {
             this.getCodeContext().saveLocalVariables();
             try {
 
+                StackMap beforeStatement = this.getCodeContext().currentInserter().getStackMap();
+
                 // Allocate the local variable for the current element.
                 LocalVariable elementLv = this.getLocalVariable(fes.currentElement, false);
                 elementLv.setSlot(this.getCodeContext().allocateLocalVariable(
@@ -1748,6 +1784,8 @@ class UnitCompiler {
                 this.load(fes, expressionType, expressionLv);
                 this.arraylength(fes);
                 this.if_icmpxx(fes, UnitCompiler.LT, bodyOffset);
+
+                this.getCodeContext().currentInserter().setStackMap(beforeStatement);
             } finally {
                 this.getCodeContext().restoreLocalVariables();
             }
@@ -1760,6 +1798,8 @@ class UnitCompiler {
         if (this.iClassLoader.TYPE_java_lang_Iterable.isAssignableFrom(expressionType)) {
             this.getCodeContext().saveLocalVariables();
             try {
+
+                StackMap beforeStatement = this.getCodeContext().currentInserter().getStackMap();
 
                 // Allocate the local variable for the current element.
                 LocalVariable elementLv = this.getLocalVariable(fes.currentElement, false);
@@ -1814,6 +1854,8 @@ class UnitCompiler {
                 this.load(fes, iteratorLv);
                 this.invoke(fes.expression, this.iClassLoader.METH_java_util_Iterator__hasNext);
                 this.ifxx(fes, UnitCompiler.NE, bodyOffset);
+
+                this.getCodeContext().currentInserter().setStackMap(beforeStatement);
             } finally {
                 this.getCodeContext().restoreLocalVariables();
             }
@@ -1899,6 +1941,7 @@ class UnitCompiler {
         {
             for (Rvalue rv : update) this.compile(rv);
             this.gotO(cs, bodyOffset);
+            this.getCodeContext().currentInserter().setStackMap(null);
         }
         cs.whereToContinue = null;
 
@@ -1917,6 +1960,8 @@ class UnitCompiler {
 
         Offset wtb = ls.whereToBreak;
         if (wtb == null) return canCompleteNormally;
+
+        if (!canCompleteNormally) this.getCodeContext().currentInserter().setStackMap(wtb.getStackMap());
 
         wtb.set();
 
@@ -2342,7 +2387,11 @@ class UnitCompiler {
     private boolean
     compile2(ExpressionStatement ee) throws CompileException {
 
-        this.compile(ee.rvalue);
+        try {
+            this.compile(ee.rvalue);
+        } catch (InternalCompilerException ice) {
+            throw new InternalCompilerException(ee.rvalue.getLocation() + ": " + ice, ice);
+        }
 
         return true;
     }
@@ -2358,41 +2407,46 @@ class UnitCompiler {
             // TODO: Compile annotations on fields.
 //            assert fd.modifiers.annotations.length == 0 : fd.getLocation();
 
-            this.addLineNumberOffset(vd);
+            try {
 
-            if (!declaringIClass.isInterface() && !fd.isStatic()) this.load(vd, declaringIClass, 0);
+                this.addLineNumberOffset(vd);
 
-            IClass fieldType = this.getType(fd.type);
-            if (initializer instanceof Rvalue) {
-                Rvalue rvalue          = (Rvalue) initializer;
-                IClass initializerType = this.compileGetValue(rvalue);
-                fieldType = fieldType.getArrayIClass(vd.brackets, this.iClassLoader.TYPE_java_lang_Object);
-                this.assignmentConversion(
-                    fd,                           // locatable
-                    initializerType,              // sourceType
-                    fieldType,                    // targetType
-                    this.getConstantValue(rvalue) // constantValue
-                );
-            } else
-            if (initializer instanceof ArrayInitializer) {
-                this.compileGetValue((ArrayInitializer) initializer, fieldType);
-            } else
-            {
-                throw new InternalCompilerException(
-                    "Unexpected array initializer or rvalue class "
-                    + initializer.getClass().getName()
-                );
+                if (!declaringIClass.isInterface() && !fd.isStatic()) this.load(vd, declaringIClass, 0);
+
+                IClass fieldType = this.getType(fd.type);
+                if (initializer instanceof Rvalue) {
+                    Rvalue rvalue          = (Rvalue) initializer;
+                    IClass initializerType = this.compileGetValue(rvalue);
+                    fieldType = fieldType.getArrayIClass(vd.brackets, this.iClassLoader.TYPE_java_lang_Object);
+                    this.assignmentConversion(
+                        fd,                           // locatable
+                        initializerType,              // sourceType
+                        fieldType,                    // targetType
+                        this.getConstantValue(rvalue) // constantValue
+                    );
+                } else
+                if (initializer instanceof ArrayInitializer) {
+                    this.compileGetValue((ArrayInitializer) initializer, fieldType);
+                } else
+                {
+                    throw new InternalCompilerException(
+                        "Unexpected array initializer or rvalue class "
+                        + initializer.getClass().getName()
+                    );
+                }
+
+                // No need to check accessibility here.
+                ;
+
+                // TODO: Compile annotations on fields.
+//                assert fd.modifiers.annotations.length == 0;
+
+                IField iField = declaringIClass.getDeclaredIField(vd.name);
+                assert iField != null : fd.getDeclaringType() + " has no field " + vd.name;
+                this.putfield(fd, iField);
+            } catch (InternalCompilerException ice) {
+                throw new InternalCompilerException(initializer.getLocation() + ": " + ice, ice);
             }
-
-            // No need to check accessibility here.
-            ;
-
-            // TODO: Compile annotations on fields.
-//            assert fd.modifiers.annotations.length == 0;
-
-            IField iField = declaringIClass.getDeclaredIField(vd.name);
-            assert iField != null : fd.getDeclaringType() + " has no field " + vd.name;
-            this.putfield(fd, iField);
         }
         return true;
     }
@@ -2454,9 +2508,10 @@ class UnitCompiler {
                 this.compileBoolean(is.condition, eso, UnitCompiler.JUMP_IF_FALSE);
                 boolean tsccn = this.compile(is.thenStatement);
                 if (tsccn) this.gotO(is, end);
-                eso.setStackMap(null);
+                this.getCodeContext().currentInserter().setStackMap(null);
                 eso.set();
                 boolean esccn = this.compile(es);
+                if (!esccn) this.getCodeContext().currentInserter().setStackMap(null);
                 end.set();
                 return tsccn || esccn;
             } else {
@@ -2465,7 +2520,6 @@ class UnitCompiler {
                 CodeContext.Offset end = this.getCodeContext().new Offset();
                 this.compileBoolean(is.condition, end, UnitCompiler.JUMP_IF_FALSE);
                 this.compile(is.thenStatement);
-                end.setStackMap(null);
                 end.set();
                 return true;
             }
@@ -2557,6 +2611,7 @@ class UnitCompiler {
                 lv.setSlot(
                     this.getCodeContext().allocateLocalVariable(Descriptor.size(lv.type.getDescriptor()), vd.name, lv.type)
                 );
+                // Do not update the StackMap here; this will only happen on the first assigment.
 
                 ArrayInitializerOrRvalue oi = vd.initializer;
                 if (oi != null) {
@@ -2988,10 +3043,14 @@ class UnitCompiler {
         this.getCodeContext().saveLocalVariables();
         try {
 
+            StackMap smBeforeBody = this.getCodeContext().currentInserter().getStackMap();
+
             final CodeContext.Offset beginningOfBody = this.getCodeContext().newOffset();
             canCompleteNormally = this.compileTryCatch(ts, compileBody, beginningOfBody, afterStatement);
 
-            // Generate the "catch (Throwable) {" clause that invokes the FINALLY subroutine.
+            StackMap smAfterBody = this.getCodeContext().currentInserter().getStackMap();
+
+            // Generate the "catch (any) {" clause that invokes the FINALLY subroutine.
             this.getCodeContext().saveLocalVariables();
             try {
 
@@ -3002,6 +3061,8 @@ class UnitCompiler {
                     here,            // handlerPC
                     null             // catchTypeFD
                 );
+
+                this.getCodeContext().currentInserter().setStackMap(smBeforeBody);
 
                 // Push the exception on the operand stack.
                 this.getCodeContext().pushObjectOperand(Descriptor.JAVA_LANG_THROWABLE);
@@ -3023,6 +3084,8 @@ class UnitCompiler {
                     );
                     this.athrow(finallY);
                 }
+
+                this.getCodeContext().currentInserter().setStackMap(smAfterBody);
             } finally {
 
                 // The exception object local variable allocated above MUST NOT BE RELEASED until after the FINALLY
@@ -3072,14 +3135,17 @@ class UnitCompiler {
 
         StackMap smBeforeBody = this.getCodeContext().currentInserter().getStackMap();
 
-        boolean tryCatchCcn = compileBody.compile();
+        boolean bodyCcn = compileBody.compile();
 
         CodeContext.Offset afterBody = this.getCodeContext().newOffset();
 
-        if (tryCatchCcn) {
+        StackMap smAfterBody = this.getCodeContext().currentInserter().getStackMap();
+
+        if (bodyCcn) {
             this.gotO(tryStatement, afterStatement);
         }
 
+        boolean catchCcn = false; // "At least one catch clause can complete normally"
         if (beginningOfBody.offset != afterBody.offset) { // Avoid zero-length exception table entries.
             for (int i = 0; i < tryStatement.catchClauses.size(); ++i) {
                 this.getCodeContext().currentInserter().setStackMap(smBeforeBody);
@@ -3128,8 +3194,9 @@ class UnitCompiler {
                     if (this.compile(catchClause.body)) {
 
                         if (tryStatement.finallY == null || this.compile(tryStatement.finallY)) {
-                            tryCatchCcn = true;
+                            catchCcn = true;
                             this.gotO(catchClause, afterStatement);
+                            afterStatement.setStackMap();
                         }
                     }
                 } finally {
@@ -3138,9 +3205,9 @@ class UnitCompiler {
             }
         }
 
-        this.getCodeContext().currentInserter().setStackMap(smBeforeBody);
+        this.getCodeContext().currentInserter().setStackMap(smAfterBody);
 
-        return tryCatchCcn;
+        return bodyCcn | catchCcn;
     }
 
     // ------------ FunctionDeclarator.compile() -------------
@@ -3152,7 +3219,7 @@ class UnitCompiler {
         } catch (ClassFileException cfe) {
             throw new ClassFileException("Compiling \"" + fd + "\": " + cfe.getMessage(), cfe);
         } catch (RuntimeException re) {
-            throw new InternalCompilerException("Compiling \"" + fd + "\": " + re.getMessage(), re);
+            throw new InternalCompilerException(fd.getLocation() + ": Compiling \"" + fd + "\": " + re.getMessage(), re);
         }
     }
 
@@ -3160,8 +3227,12 @@ class UnitCompiler {
     compile2(FunctionDeclarator fd, final ClassFile classFile) throws CompileException {
         ClassFile.MethodInfo mi;
 
-        if (fd instanceof MethodDeclarator && ((MethodDeclarator) fd).isDefault()) {
-            this.compileError("Default interface methods not implemented", fd.getLocation());
+        if (this.getTargetVersion() < 8 && fd instanceof MethodDeclarator && ((MethodDeclarator) fd).isDefault()) {
+            this.compileError((
+                ""
+                + "Default interface methods only available for target version 8+. "
+                + "Either use \"setTargetVersion(8)\", or \"-DdefaultTargetVersion=8\"."
+            ), fd.getLocation());
         }
 
         if (fd.getAccess() == Access.PRIVATE) {
@@ -3215,13 +3286,19 @@ class UnitCompiler {
 
             if (fd.getDeclaringType() instanceof InterfaceDeclaration) {
 
-                // Static interface methods would require Java 8 class file format, but JANINO is still tied to Java
-                // 7 class file format.
-                if (Mod.isStatic(accessFlags) && !"<clinit>".equals(fd.name)) {
-                    this.compileError("Static interface methods not implemented", fd.getLocation());
+                accessFlags |= Mod.PUBLIC;
+
+                if (this.getTargetVersion() < 8 && Mod.isStatic(accessFlags) && !"<clinit>".equals(fd.name)) {
+                    this.compileError("Static interface methods only available for target version 8+", fd.getLocation());
                 }
 
-                accessFlags |= Mod.ABSTRACT | Mod.PUBLIC;
+                if (fd instanceof MethodDeclarator && ((MethodDeclarator) fd).isDefault()) {
+                    if (this.getTargetVersion() < 8) {
+                        this.compileError("Default methods only available for target version 8+", fd.getLocation());
+                    }
+                } else {
+                    accessFlags |= Mod.ABSTRACT;
+                }
             }
 
             mi = classFile.addMethodInfo(
@@ -3238,11 +3315,28 @@ class UnitCompiler {
         {
             if (fd.thrownExceptions.length > 0) {
                 final short eani    = classFile.addConstantUtf8Info("Exceptions");
-                short[]     tecciis = new short[fd.thrownExceptions.length];
+                List<Short> tecciis = new ArrayList<Short>(); // new short[fd.thrownExceptions.length];
                 for (int i = 0; i < fd.thrownExceptions.length; ++i) {
-                    tecciis[i] = classFile.addConstantClassInfo(this.getType(fd.thrownExceptions[i]).getDescriptor());
+                    final Type te = fd.thrownExceptions[i];
+                    if (te instanceof ReferenceType) {
+                        ReferenceType rt = (ReferenceType) te;
+
+                        // Don't include thrown exceptions that are parameterized, e.g.
+                        //      void meth() throws EX {...}
+                        // , because we don't generate "Signature" attributes for methods, and "throws Throwable"
+                        // would cause compilation problems when the class is loaded later, e.g. by ClassFileIClass.
+                        if (
+                            rt.identifiers.length == 1
+                            && UnitCompiler.LOOKS_LIKE_TYPE_PARAMETER.matcher(rt.identifiers[0]).matches()
+                        ) continue;
+                    }
+                    tecciis.add(classFile.addConstantClassInfo(this.getType(te).getDescriptor()));
                 }
-                mi.addAttribute(new ClassFile.ExceptionsAttribute(eani, tecciis));
+
+                short[] sa = new short[tecciis.size()];
+                for (int i = 0; i < tecciis.size(); i++) sa[i] = (Short) tecciis.get(i);
+
+                mi.addAttribute(new ClassFile.ExceptionsAttribute(eani, sa));
             }
         }
 
@@ -3320,7 +3414,6 @@ class UnitCompiler {
                 }
             }
 
-
             if (fd instanceof ConstructorDeclarator) {
 
                 // Define special parameter "this".
@@ -3334,10 +3427,12 @@ class UnitCompiler {
                     // Define special constructor parameters "String $name" and "int $ordinal" for enums.
                     LocalVariable lv1 = new LocalVariable(true, this.iClassLoader.TYPE_java_lang_String);
                     lv1.setSlot(this.getCodeContext().allocateLocalVariable((short) 1, null, null));
+                    this.updateLocalVariableInCurrentStackMap(lv1.getSlotIndex(), this.verificationTypeInfo(this.iClassLoader.TYPE_java_lang_String));
                     constructorDeclarator.syntheticParameters.put("$name", lv1);
 
                     LocalVariable lv2 = new LocalVariable(true, IClass.INT);
                     lv2.setSlot(this.getCodeContext().allocateLocalVariable((short) 1, null, null));
+                    this.updateLocalVariableInCurrentStackMap(lv2.getSlotIndex(), this.verificationTypeInfo(IClass.INT));
                     constructorDeclarator.syntheticParameters.put("$ordinal", lv2);
                 }
 
@@ -3348,6 +3443,7 @@ class UnitCompiler {
                     lv.setSlot(
                         this.getCodeContext().allocateLocalVariable(Descriptor.size(sf.getDescriptor()), null, null)
                     );
+                    this.updateLocalVariableInCurrentStackMap(lv.getSlotIndex(), this.verificationTypeInfo(sf.getType()));
                     constructorDeclarator.syntheticParameters.put(sf.getName(), lv);
                 }
             }
@@ -3496,6 +3592,33 @@ class UnitCompiler {
         });
     }
 
+    private int getTargetVersion() {
+
+        if (this.targetVersion == -1) {
+
+            this.targetVersion = UnitCompiler.defaultTargetVersion;
+            if (this.targetVersion == -1) {
+
+//            // System property               Description                                    Example values
+//            // ------------------------------------------------------------------------------------------------
+//            // java.vm.specification.version Java Virtual Machine specification version     "1.8", "11"
+//            // java.specification.version    Java Runtime Environment specification version "1.8", "11"
+//            // java.version                  Java Runtime Environment version               "1.8.0_45", "11-ea"
+//            // java.class.version            Java class format version number               "52.0", "55.0"
+//            String jsv = System.getProperty("java.specification.version");
+//            jsv = jsv.substring(jsv.indexOf('.') + 1);
+//            this.targetVersion = Integer.parseInt(jsv);
+
+                // Because the generation of the StackMapTable attribute is still experimental, we still produce
+                // only Java 6 .class files by default:
+                this.targetVersion = 6;
+            }
+        }
+
+
+        return this.targetVersion;
+    }
+
     /**
      * Makes the variable name and class name Constant Pool names used by local variables.
      */
@@ -3522,17 +3645,17 @@ class UnitCompiler {
 
         // Add function parameters.
         for (int i = 0; i < fd.formalParameters.parameters.length; ++i) {
-            FormalParameter fp              = fd.formalParameters.parameters[i];
-            IClass          parameterIClass = this.getType(fp.type);
-            LocalVariable   lv              = this.getLocalVariable(
+            FormalParameter fp = fd.formalParameters.parameters[i];
+            LocalVariable   lv = this.getLocalVariable(
                 fp,
                 i == fd.formalParameters.parameters.length - 1 && fd.formalParameters.variableArity
             );
             lv.setSlot(this.getCodeContext().allocateLocalVariable(
                 Descriptor.size(lv.type.getDescriptor()),
                 fp.name,
-                parameterIClass
+                lv.type
             ));
+            this.updateLocalVariableInCurrentStackMap(lv.getSlotIndex(), this.verificationTypeInfo(lv.type));
 
             if (localVars.put(fp.name, lv) != null) {
                 this.compileError("Redefinition of parameter \"" + fp.name + "\"", fd.getLocation());
@@ -3968,9 +4091,9 @@ class UnitCompiler {
 
         this.load(sci, declaringIClass, 0);
 
-        // Fix up the operand stack entry: The loaded object is still unitializied!
-        this.getCodeContext().popObjectOperand();
-        this.getCodeContext().pushUninitializedThisOperand();
+//        // Fix up the operand stack entry: The loaded object is still unitializied!
+//        this.getCodeContext().popObjectOperand();
+//        this.getCodeContext().pushUninitializedThisOperand();
 
         if (superclass == null) throw new CompileException("Class has no superclass", sci.getLocation());
 
@@ -4174,7 +4297,7 @@ class UnitCompiler {
 
         COMPARISON:
         {
-            int opIdx = (
+            final int opIdx = (
                 bo.operator == "==" ? UnitCompiler.EQ : // SUPPRESS CHECKSTYLE StringLiteralEquality
                 bo.operator == "!=" ? UnitCompiler.NE : // SUPPRESS CHECKSTYLE StringLiteralEquality
                 bo.operator == "<"  ? UnitCompiler.LT : // SUPPRESS CHECKSTYLE StringLiteralEquality
@@ -4184,8 +4307,6 @@ class UnitCompiler {
                 Integer.MIN_VALUE
             );
             if (opIdx == Integer.MIN_VALUE) break COMPARISON;
-
-            if (orientation == UnitCompiler.JUMP_IF_FALSE) opIdx ^= 1;
 
             // Comparison with "null".
             {
@@ -4228,7 +4349,7 @@ class UnitCompiler {
                         this.consT(bo, (Object) null);
                     }
 
-                    switch (opIdx) {
+                    switch (orientation == UnitCompiler.JUMP_IF_FALSE ? opIdx ^ 1 : opIdx) {
 
                     case EQ:
                         this.ifnull(bo, dst);
@@ -4266,7 +4387,7 @@ class UnitCompiler {
                 this.compileGetValue(bo.rhs);
                 this.numericPromotion(bo.rhs, this.convertToPrimitiveNumericType(bo.rhs, rhsType), promotedType);
 
-                this.ifNumeric(bo, opIdx, dst);
+                this.ifNumeric(bo, opIdx, dst, orientation);
                 return;
             }
 
@@ -4295,7 +4416,7 @@ class UnitCompiler {
                     this.unboxingConversion(bo, icl.TYPE_java_lang_Boolean, IClass.BOOLEAN);
                 }
 
-                this.if_icmpxx(bo, opIdx, dst);
+                this.if_icmpxx(bo, orientation == UnitCompiler.JUMP_IF_FALSE ? opIdx ^ 1 : opIdx, dst);
                 return;
             }
 
@@ -4312,7 +4433,7 @@ class UnitCompiler {
 
                 this.compileGetValue(bo.rhs);
 
-                this.if_acmpxx(bo, opIdx, dst);
+                this.if_acmpxx(bo, orientation == UnitCompiler.JUMP_IF_FALSE ? opIdx ^ 1 : opIdx, dst);
                 return;
             }
 
@@ -5378,7 +5499,7 @@ class UnitCompiler {
             acd                      // contextScope
         );
 
-        Location loc                   = naci.getLocation();
+        Location loc           = naci.getLocation();
         Rvalue   qualification = naci.qualification;
 
         // Determine the formal parameters of the anonymous constructor.
@@ -5445,6 +5566,7 @@ class UnitCompiler {
         ));
 
         // Compile the anonymous class.
+        final IClass iClass = this.resolve(naci.anonymousClassDeclaration);
         try {
             this.compile(acd);
 
@@ -5486,12 +5608,14 @@ class UnitCompiler {
                 oei.setEnclosingScope(naci.getEnclosingScope());
             }
             this.invokeConstructor(
-                naci,                                         // locatable
-                naci.getEnclosingScope(),                     // scope
-                oei,                                          // enclosingInstance
-                this.resolve(naci.anonymousClassDeclaration), // targetClass
-                arguments2                                    // arguments
+                naci,                     // locatable
+                naci.getEnclosingScope(), // scope
+                oei,                      // enclosingInstance
+                iClass,                   // targetClass
+                arguments2                // arguments
             );
+            this.getCodeContext().popUninitializedVariableOperand();
+            this.getCodeContext().pushObjectOperand(iClass.getDescriptor());
         } finally {
 
             // Remove the synthetic constructor that was temporarily added. This is necessary because this NACI
@@ -5499,7 +5623,7 @@ class UnitCompiler {
             // we'd end up with TWO synthetic constructors. See JANINO-143.
             acd.constructors.remove(acd.constructors.size() - 1);
         }
-        return this.resolve(naci.anonymousClassDeclaration);
+        return iClass;
     }
     private IClass
     compileGet2(ParameterAccess pa) throws CompileException {
@@ -5600,8 +5724,12 @@ class UnitCompiler {
             return this.getType(rv);
         }
 
-        this.compileContext(rv);
-        return this.compileGet(rv);
+        try {
+            this.compileContext(rv);
+            return this.compileGet(rv);
+        } catch (RuntimeException re) {
+            throw new InternalCompilerException(rv.getLocation() + ": Compiling \"" + rv + "\": " + re.getMessage(), re);
+        }
     }
 
     // -------------------- Rvalue.getConstantValue() -----------------
@@ -6389,6 +6517,11 @@ class UnitCompiler {
 
     // ---------------- Atom.getType() ----------------
 
+    /**
+     * @return For a {@link Type}, the resolved {@link IClass}, for an {@link Rvalue}, the resolved {@link IClass} of
+     *         the rvalue's type
+     * @see #resolve(TypeDeclaration)
+     */
     private IClass
     getType(Atom a) throws CompileException {
 
@@ -6398,75 +6531,99 @@ class UnitCompiler {
             visitPackage(Package p) throws CompileException { return UnitCompiler.this.getType2(p); }
 
             @Override @Nullable public IClass
-            visitType(Type t) throws CompileException {
-                return (IClass) t.accept(new Visitor.TypeVisitor<IClass, CompileException>() {
-
-                    // SUPPRESS CHECKSTYLE LineLengthCheck:5
-                    @Override public IClass visitArrayType(ArrayType at)                throws CompileException { return UnitCompiler.this.getType2(at);  }
-                    @Override public IClass visitPrimitiveType(PrimitiveType bt)                                { return UnitCompiler.this.getType2(bt);  }
-                    @Override public IClass visitReferenceType(ReferenceType rt)        throws CompileException { return UnitCompiler.this.getType2(rt);  }
-                    @Override public IClass visitRvalueMemberType(RvalueMemberType rmt) throws CompileException { return UnitCompiler.this.getType2(rmt); }
-                    @Override public IClass visitSimpleType(SimpleType st)                                      { return UnitCompiler.this.getType2(st);  }
-                });
-            }
+            visitType(Type t) throws CompileException { return UnitCompiler.this.getType(t); }
 
             @Override @Nullable public IClass
-            visitRvalue(Rvalue rv) throws CompileException {
-
-                return (IClass) rv.accept(new Visitor.RvalueVisitor<IClass, CompileException>() {
-
-                    @Override @Nullable public IClass
-                    visitLvalue(Lvalue lv) throws CompileException {
-                        return (IClass) lv.accept(new Visitor.LvalueVisitor<IClass, CompileException>() {
-
-                            // SUPPRESS CHECKSTYLE LineLengthCheck:7
-                            @Override public IClass visitAmbiguousName(AmbiguousName an)                                        throws CompileException { return UnitCompiler.this.getType2(an);    }
-                            @Override public IClass visitArrayAccessExpression(ArrayAccessExpression aae)                       throws CompileException { return UnitCompiler.this.getType2(aae);   }
-                            @Override public IClass visitFieldAccess(FieldAccess fa)                                            throws CompileException { return UnitCompiler.this.getType2(fa);    }
-                            @Override public IClass visitFieldAccessExpression(FieldAccessExpression fae)                       throws CompileException { return UnitCompiler.this.getType2(fae);   }
-                            @Override public IClass visitSuperclassFieldAccessExpression(SuperclassFieldAccessExpression scfae) throws CompileException { return UnitCompiler.this.getType2(scfae); }
-                            @Override public IClass visitLocalVariableAccess(LocalVariableAccess lva)                                                   { return UnitCompiler.this.getType2(lva);   }
-                            @Override public IClass visitParenthesizedExpression(ParenthesizedExpression pe)                    throws CompileException { return UnitCompiler.this.getType2(pe);    }
-                        });
-                    }
-
-                    // SUPPRESS CHECKSTYLE LineLengthCheck:29
-                    @Override public IClass visitArrayLength(ArrayLength al)                                                            { return UnitCompiler.this.getType2(al);   }
-                    @Override public IClass visitAssignment(Assignment a)                                       throws CompileException { return UnitCompiler.this.getType2(a);    }
-                    @Override public IClass visitUnaryOperation(UnaryOperation uo)                              throws CompileException { return UnitCompiler.this.getType2(uo);   }
-                    @Override public IClass visitBinaryOperation(BinaryOperation bo)                            throws CompileException { return UnitCompiler.this.getType2(bo);   }
-                    @Override public IClass visitCast(Cast c)                                                   throws CompileException { return UnitCompiler.this.getType2(c);    }
-                    @Override public IClass visitClassLiteral(ClassLiteral cl)                                                          { return UnitCompiler.this.getType2(cl);   }
-                    @Override public IClass visitConditionalExpression(ConditionalExpression ce)                throws CompileException { return UnitCompiler.this.getType2(ce);   }
-                    @Override public IClass visitCrement(Crement c)                                             throws CompileException { return UnitCompiler.this.getType2(c);    }
-                    @Override public IClass visitInstanceof(Instanceof io)                                                              { return UnitCompiler.this.getType2(io);   }
-                    @Override public IClass visitMethodInvocation(MethodInvocation mi)                          throws CompileException { return UnitCompiler.this.getType2(mi);   }
-                    @Override public IClass visitSuperclassMethodInvocation(SuperclassMethodInvocation smi)     throws CompileException { return UnitCompiler.this.getType2(smi);  }
-                    @Override public IClass visitIntegerLiteral(IntegerLiteral il)                                                      { return UnitCompiler.this.getType2(il);   }
-                    @Override public IClass visitFloatingPointLiteral(FloatingPointLiteral fpl)                                         { return UnitCompiler.this.getType2(fpl);  }
-                    @Override public IClass visitBooleanLiteral(BooleanLiteral bl)                                                      { return UnitCompiler.this.getType2(bl);   }
-                    @Override public IClass visitCharacterLiteral(CharacterLiteral cl)                                                  { return UnitCompiler.this.getType2(cl);   }
-                    @Override public IClass visitStringLiteral(StringLiteral sl)                                                        { return UnitCompiler.this.getType2(sl);   }
-                    @Override public IClass visitNullLiteral(NullLiteral nl)                                                            { return UnitCompiler.this.getType2(nl);   }
-                    @Override public IClass visitSimpleConstant(SimpleConstant sl)                                                      { return UnitCompiler.this.getType2(sl);   }
-                    @Override public IClass visitNewAnonymousClassInstance(NewAnonymousClassInstance naci)                              { return UnitCompiler.this.getType2(naci); }
-                    @Override public IClass visitNewArray(NewArray na)                                          throws CompileException { return UnitCompiler.this.getType2(na);   }
-                    @Override public IClass visitNewInitializedArray(NewInitializedArray nia)                   throws CompileException { return UnitCompiler.this.getType2(nia);  }
-                    @Override public IClass visitNewClassInstance(NewClassInstance nci)                         throws CompileException { return UnitCompiler.this.getType2(nci);  }
-                    @Override public IClass visitParameterAccess(ParameterAccess pa)                            throws CompileException { return UnitCompiler.this.getType2(pa);   }
-                    @Override public IClass visitQualifiedThisReference(QualifiedThisReference qtr)             throws CompileException { return UnitCompiler.this.getType2(qtr);  }
-                    @Override public IClass visitThisReference(ThisReference tr)                                throws CompileException { return UnitCompiler.this.getType2(tr);   }
-                    @Override public IClass visitLambdaExpression(LambdaExpression le)                          throws CompileException { return UnitCompiler.this.getType2(le);   }
-                    @Override public IClass visitMethodReference(MethodReference mr)                            throws CompileException { return UnitCompiler.this.getType2(mr);   }
-                    @Override public IClass visitInstanceCreationReference(ClassInstanceCreationReference cicr) throws CompileException { return UnitCompiler.this.getType2(cicr); }
-                    @Override public IClass visitArrayCreationReference(ArrayCreationReference acr)             throws CompileException { return UnitCompiler.this.getType2(acr);  }
-                });
-            }
+            visitRvalue(Rvalue rv) throws CompileException { return UnitCompiler.this.getType(rv); }
 
             @Override @Nullable public IClass
             visitConstructorInvocation(ConstructorInvocation ci) throws CompileException {
                 return UnitCompiler.this.getType2(ci);
             }
+        });
+
+        assert result != null;
+        return result;
+    }
+
+    private IClass
+    getType(Type t) throws CompileException {
+        IClass result = (IClass) t.accept(new Visitor.TypeVisitor<IClass, CompileException>() {
+
+            // SUPPRESS CHECKSTYLE LineLengthCheck:5
+            @Override public IClass visitArrayType(ArrayType at)                throws CompileException { return UnitCompiler.this.getType2(at);  }
+            @Override public IClass visitPrimitiveType(PrimitiveType bt)                                { return UnitCompiler.this.getType2(bt);  }
+            @Override public IClass visitReferenceType(ReferenceType rt)        throws CompileException { return UnitCompiler.this.getType2(rt);  }
+            @Override public IClass visitRvalueMemberType(RvalueMemberType rmt) throws CompileException { return UnitCompiler.this.getType2(rmt); }
+            @Override public IClass visitSimpleType(SimpleType st)                                      { return UnitCompiler.this.getType2(st);  }
+        });
+        assert result != null;
+        return result;
+    }
+
+    private IClass[]
+    getTypes(final Type[] types) throws CompileException {
+        IClass[] result = new IClass[types.length];
+        for (int i = 0; i < types.length; ++i) result[i] = this.getType(types[i]);
+        return result;
+    }
+
+    private IClass
+    getType(Rvalue rv) throws CompileException {
+
+        IClass result = (IClass) rv.accept(new Visitor.RvalueVisitor<IClass, CompileException>() {
+
+            @Override @Nullable public IClass
+            visitLvalue(Lvalue lv) throws CompileException { return UnitCompiler.this.getType(lv); }
+
+            // SUPPRESS CHECKSTYLE LineLengthCheck:29
+            @Override public IClass visitArrayLength(ArrayLength al)                                                            { return UnitCompiler.this.getType2(al);   }
+            @Override public IClass visitAssignment(Assignment a)                                       throws CompileException { return UnitCompiler.this.getType2(a);    }
+            @Override public IClass visitUnaryOperation(UnaryOperation uo)                              throws CompileException { return UnitCompiler.this.getType2(uo);   }
+            @Override public IClass visitBinaryOperation(BinaryOperation bo)                            throws CompileException { return UnitCompiler.this.getType2(bo);   }
+            @Override public IClass visitCast(Cast c)                                                   throws CompileException { return UnitCompiler.this.getType2(c);    }
+            @Override public IClass visitClassLiteral(ClassLiteral cl)                                                          { return UnitCompiler.this.getType2(cl);   }
+            @Override public IClass visitConditionalExpression(ConditionalExpression ce)                throws CompileException { return UnitCompiler.this.getType2(ce);   }
+            @Override public IClass visitCrement(Crement c)                                             throws CompileException { return UnitCompiler.this.getType2(c);    }
+            @Override public IClass visitInstanceof(Instanceof io)                                                              { return UnitCompiler.this.getType2(io);   }
+            @Override public IClass visitMethodInvocation(MethodInvocation mi)                          throws CompileException { return UnitCompiler.this.getType2(mi);   }
+            @Override public IClass visitSuperclassMethodInvocation(SuperclassMethodInvocation smi)     throws CompileException { return UnitCompiler.this.getType2(smi);  }
+            @Override public IClass visitIntegerLiteral(IntegerLiteral il)                                                      { return UnitCompiler.this.getType2(il);   }
+            @Override public IClass visitFloatingPointLiteral(FloatingPointLiteral fpl)                                         { return UnitCompiler.this.getType2(fpl);  }
+            @Override public IClass visitBooleanLiteral(BooleanLiteral bl)                                                      { return UnitCompiler.this.getType2(bl);   }
+            @Override public IClass visitCharacterLiteral(CharacterLiteral cl)                                                  { return UnitCompiler.this.getType2(cl);   }
+            @Override public IClass visitStringLiteral(StringLiteral sl)                                                        { return UnitCompiler.this.getType2(sl);   }
+            @Override public IClass visitNullLiteral(NullLiteral nl)                                                            { return UnitCompiler.this.getType2(nl);   }
+            @Override public IClass visitSimpleConstant(SimpleConstant sl)                                                      { return UnitCompiler.this.getType2(sl);   }
+            @Override public IClass visitNewAnonymousClassInstance(NewAnonymousClassInstance naci)                              { return UnitCompiler.this.getType2(naci); }
+            @Override public IClass visitNewArray(NewArray na)                                          throws CompileException { return UnitCompiler.this.getType2(na);   }
+            @Override public IClass visitNewInitializedArray(NewInitializedArray nia)                   throws CompileException { return UnitCompiler.this.getType2(nia);  }
+            @Override public IClass visitNewClassInstance(NewClassInstance nci)                         throws CompileException { return UnitCompiler.this.getType2(nci);  }
+            @Override public IClass visitParameterAccess(ParameterAccess pa)                            throws CompileException { return UnitCompiler.this.getType2(pa);   }
+            @Override public IClass visitQualifiedThisReference(QualifiedThisReference qtr)             throws CompileException { return UnitCompiler.this.getType2(qtr);  }
+            @Override public IClass visitThisReference(ThisReference tr)                                throws CompileException { return UnitCompiler.this.getType2(tr);   }
+            @Override public IClass visitLambdaExpression(LambdaExpression le)                          throws CompileException { return UnitCompiler.this.getType2(le);   }
+            @Override public IClass visitMethodReference(MethodReference mr)                            throws CompileException { return UnitCompiler.this.getType2(mr);   }
+            @Override public IClass visitInstanceCreationReference(ClassInstanceCreationReference cicr) throws CompileException { return UnitCompiler.this.getType2(cicr); }
+            @Override public IClass visitArrayCreationReference(ArrayCreationReference acr)             throws CompileException { return UnitCompiler.this.getType2(acr);  }
+        });
+
+        assert result != null;
+        return result;
+    }
+
+    private IClass
+    getType(Lvalue lv) throws CompileException {
+        IClass result = (IClass) lv.accept(new Visitor.LvalueVisitor<IClass, CompileException>() {
+
+            // SUPPRESS CHECKSTYLE LineLengthCheck:7
+            @Override public IClass visitAmbiguousName(AmbiguousName an)                                        throws CompileException { return UnitCompiler.this.getType2(an);    }
+            @Override public IClass visitArrayAccessExpression(ArrayAccessExpression aae)                       throws CompileException { return UnitCompiler.this.getType2(aae);   }
+            @Override public IClass visitFieldAccess(FieldAccess fa)                                            throws CompileException { return UnitCompiler.this.getType2(fa);    }
+            @Override public IClass visitFieldAccessExpression(FieldAccessExpression fae)                       throws CompileException { return UnitCompiler.this.getType2(fae);   }
+            @Override public IClass visitSuperclassFieldAccessExpression(SuperclassFieldAccessExpression scfae) throws CompileException { return UnitCompiler.this.getType2(scfae); }
+            @Override public IClass visitLocalVariableAccess(LocalVariableAccess lva)                                                   { return UnitCompiler.this.getType2(lva);   }
+            @Override public IClass visitParenthesizedExpression(ParenthesizedExpression pe)                    throws CompileException { return UnitCompiler.this.getType2(pe);    }
         });
 
         assert result != null;
@@ -7851,7 +8008,10 @@ class UnitCompiler {
         this.neW(locatable, this.iClassLoader.TYPE_java_lang_StringBuilder);
         this.dupx(locatable);
         this.swap(locatable);
+
         this.invoke(locatable, this.iClassLoader.CTOR_java_lang_StringBuilder__java_lang_String);
+        this.getCodeContext().popUninitializedVariableOperand();
+        this.getCodeContext().pushObjectOperand(Descriptor.JAVA_LANG_STRINGBUILDER);
 
         for (Iterator<Rvalue> it = tmp.iterator(); it.hasNext();) {
             Rvalue operand = (Rvalue) it.next();
@@ -10389,7 +10549,7 @@ class UnitCompiler {
             @Override public boolean
             isAbstract() {
                 return (
-                    (methodDeclarator.getDeclaringType() instanceof InterfaceDeclaration)
+                    (methodDeclarator.getDeclaringType() instanceof InterfaceDeclaration && !methodDeclarator.isDefault())
                     || methodDeclarator.isAbstract()
                 );
             }
@@ -11583,24 +11743,29 @@ class UnitCompiler {
     }
 
     /**
-     * @param opIdx One of {@link #EQ}, {@link #NE}, {@link #LT}, {@link #GE}, {@link #GT} or {@link #LE}
+     * @param opIdx       One of {@link #EQ}, {@link #NE}, {@link #LT}, {@link #GE}, {@link #GT} or {@link #LE}
+     * @param orientation {@link #JUMP_IF_TRUE} or {@link #JUMP_IF_FALSE}
      */
     private void
-    ifNumeric(Locatable locatable, int opIdx, Offset dst) {
+    ifNumeric(Locatable locatable, int opIdx, Offset dst, boolean orientation) {
         assert opIdx >= UnitCompiler.EQ && opIdx <= UnitCompiler.LE;
 
         VerificationTypeInfo topOperand = this.getCodeContext().peekOperand();
 
         if (topOperand == StackMapTableAttribute.INTEGER_VARIABLE_INFO) {
-            this.if_icmpxx(locatable, opIdx, dst);
+            this.if_icmpxx(locatable, orientation == UnitCompiler.JUMP_IF_FALSE ? opIdx ^ 1 : opIdx, dst);
         } else
         if (
             topOperand == StackMapTableAttribute.LONG_VARIABLE_INFO
             || topOperand == StackMapTableAttribute.FLOAT_VARIABLE_INFO
             || topOperand == StackMapTableAttribute.DOUBLE_VARIABLE_INFO
         ) {
+
+            // Important: The opIdx here must be the *original* opIdx (and not the possibly negated!), because that is
+            // important for floating-point comparison! See PR #145.
             this.cmp(locatable, opIdx);
-            this.ifxx(locatable, opIdx, dst);
+
+            this.ifxx(locatable, orientation == UnitCompiler.JUMP_IF_FALSE ? opIdx ^ 1 : opIdx, dst);
         } else
         {
             throw new InternalCompilerException("Unexpected computational type \"" + topOperand + "\"");
@@ -11654,9 +11819,13 @@ class UnitCompiler {
     arraylength(Locatable locatable) {
         this.addLineNumberOffset(locatable);
 
-        this.getCodeContext().popObjectOperand();
-        this.write(Opcode.ARRAYLENGTH);
-        this.getCodeContext().pushIntOperand();
+        try {
+            this.getCodeContext().popObjectOperand();
+            this.write(Opcode.ARRAYLENGTH);
+            this.getCodeContext().pushIntOperand();
+        } catch (AssertionError ae) {
+            throw new InternalCompilerException(locatable.getLocation() + ": " + ae, ae);
+        }
     }
 
     private void
@@ -11977,13 +12146,17 @@ class UnitCompiler {
 
         this.addLineNumberOffset(locatable);
 
+        // Pop the arguments off the operand stack.
         for (int i = methodDescriptor.parameterFds.length - 1; i >= 0; i--) {
             this.getCodeContext().popOperandAssignableTo(methodDescriptor.parameterFds[i]);
         }
+
+        // Pop the target object off the operand stack.
         if (opcode == Opcode.INVOKEINTERFACE || opcode == Opcode.INVOKESPECIAL || opcode == Opcode.INVOKEVIRTUAL) {
             this.getCodeContext().popObjectOrUninitializedOrUninitializedThisOperand();
         }
 
+        // Generate the instruction.
         this.write(opcode);
         if (useInterfaceMethodRef) {
             this.writeConstantInterfaceMethodrefInfo(declaringIClass, methodName, methodDescriptor);
@@ -12056,7 +12229,8 @@ class UnitCompiler {
             this.writeUnsignedShort(localVariableIndex);
         }
 
-        this.getCodeContext().pushOperand(localVariableType.getDescriptor());
+        VerificationTypeInfo vti = this.getLocalVariableTypeInfo((short) localVariableIndex);
+        this.getCodeContext().pushOperand(vti);
     }
 
     private void
@@ -12141,12 +12315,12 @@ class UnitCompiler {
     }
 
     private void
-        neW(Locatable locatable, IClass iClass) {
-            this.addLineNumberOffset(locatable);
-            this.getCodeContext().pushUninitializedOperand();
-            this.write(Opcode.NEW);
-            this.writeConstantClassInfo(iClass);
-        }
+    neW(Locatable locatable, IClass iClass) {
+        this.addLineNumberOffset(locatable);
+        this.getCodeContext().pushUninitializedOperand();
+        this.write(Opcode.NEW);
+        this.writeConstantClassInfo(iClass);
+    }
 
     private void
     newarray(Locatable locatable, IClass componentType) {
@@ -12617,16 +12791,12 @@ class UnitCompiler {
 
         if (iMethod.isStatic()) {
 
-            // Static class method, or a static interface method (a Java 8 feature).
+            // Static class or interface method.
             final ClassFile cf = this.getCodeContext().getClassFile();
-            if (
-                iMethod.getDeclaringIClass().isInterface()
-                && cf.getMajorVersion() <= ClassFile.MAJOR_VERSION_JDK_1_7
-                && cf.getMinorVersion() <= ClassFile.MINOR_VERSION_JDK_1_7
-            ) {
-                // INVOKESTATIC InterfaceMethodRef only allowed since Java 8 class file format.
+
+            if (iMethod.getDeclaringIClass().isInterface() && this.getTargetVersion() < 8) {
                 this.compileError(
-                    "Invocation of static interface methods NYI",
+                    "Invocation of static interface methods only available for target version 8+",
                     locatable.getLocation()
                 );
             }
@@ -13023,6 +13193,18 @@ class UnitCompiler {
     private static short
     changeAccessibility(short accessFlags, short newAccessibility) {
         return (short) ((accessFlags & ~(Mod.PUBLIC | Mod.PROTECTED | Mod.PRIVATE)) | newAccessibility);
+    }
+
+    private VerificationTypeInfo
+    getLocalVariableTypeInfo(short lvIndex) {
+
+        int nextLvIndex = 0;
+        for (VerificationTypeInfo vti : this.getCodeContext().currentInserter().getStackMap().locals()) {
+            if (nextLvIndex == lvIndex) return vti;
+            nextLvIndex += vti.category();
+        }
+
+        throw new InternalCompilerException("Invalid local variable index " + lvIndex);
     }
 
     private void

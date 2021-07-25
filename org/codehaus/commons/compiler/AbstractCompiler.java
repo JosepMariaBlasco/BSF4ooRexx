@@ -67,6 +67,10 @@ class AbstractCompiler implements ICompiler {
     /** Implements the JAVAC {@code -g:vars} option. */
     protected boolean debugVars;
 
+    protected int sourceVersion = -1;
+
+    protected int targetVersion = -1;
+
     // Temporary, for testing:
 //    { this.debugSource = (this.debugLines = (this.debugVars = true)); }
 
@@ -125,6 +129,12 @@ class AbstractCompiler implements ICompiler {
     setDebugSource(boolean value) { this.debugSource = value; }
 
     @Override public void
+    setSourceVersion(int version) { this.sourceVersion = version; }
+
+    @Override public void
+    setTargetVersion(int version) { this.targetVersion = version; }
+
+    @Override public void
     setSourcePath(File[] directoriesAndArchives) {
         this.setSourceFinder(new PathResourceFinder(directoriesAndArchives));
     }
@@ -146,7 +156,7 @@ class AbstractCompiler implements ICompiler {
      * This is <em>always</em> non-{@code null} for JVMs that support BOOTCLASSPATH (1.0-1.8), and
      * this is <em>always</em> {@code null} for JVMs that don't (9+).
      */
-    protected @Nullable File[]
+    @Nullable protected File[]
     bootClassPath = StringUtil.parseOptionalPath(System.getProperty("sun.boot.class.path"));
 
     /**

@@ -700,319 +700,19 @@ class Unparser {
 
         @Override @Nullable public Void
         visitType(Type t) {
-            t.accept(new Visitor.TypeVisitor<Void, RuntimeException>() {
-
-                @Override @Nullable public Void
-                visitArrayType(ArrayType at) {
-                    Unparser.this.unparseType(at.componentType);
-                    Unparser.this.pw.print("[]");
-                    return null;
-                }
-
-                @Override @Nullable public Void
-                visitPrimitiveType(PrimitiveType bt) {
-                    Unparser.this.pw.print(bt.toString());
-                    return null;
-                }
-
-                @Override @Nullable public Void
-                visitReferenceType(ReferenceType rt) {
-                    Unparser.this.unparseAnnotations(rt.annotations);
-                    Unparser.this.pw.print(rt.toString());
-                    return null;
-                }
-
-                @Override @Nullable public Void
-                visitRvalueMemberType(RvalueMemberType rmt) {
-                    Unparser.this.pw.print(rmt.toString());
-                    return null;
-                }
-
-                @Override @Nullable public Void
-                visitSimpleType(SimpleType st) {
-                    Unparser.this.pw.print(st.toString());
-                    return null;
-                }
-            });
+            Unparser.this.unparseType(t);
             return null;
         }
 
         @Override @Nullable public Void
-        visitPackage(Package p) { Unparser.this.pw.print(p.toString()); return null; }
+        visitPackage(Package p) {
+            Unparser.this.pw.print(p.toString());
+            return null;
+        }
 
         @Override @Nullable public Void
         visitRvalue(Rvalue rv) {
-            rv.accept(new Visitor.RvalueVisitor<Void, RuntimeException>() {
-
-                @Override @Nullable public Void
-                visitLvalue(Lvalue lv) {
-                    lv.accept(new Visitor.LvalueVisitor<Void, RuntimeException>() {
-
-                        @Override @Nullable public Void
-                        visitAmbiguousName(AmbiguousName an) {
-                            Unparser.this.pw.print(an.toString());
-                            return null;
-                        }
-
-                        @Override @Nullable public Void
-                        visitArrayAccessExpression(ArrayAccessExpression aae) {
-                            Unparser.this.unparseLhs(aae.lhs, "[ ]");
-                            Unparser.this.pw.print('[');
-                            Unparser.this.unparseAtom(aae.index);
-                            Unparser.this.pw.print(']');
-                            return null;
-                        }
-
-                        @Override @Nullable public Void
-                        visitFieldAccess(FieldAccess fa) {
-                            Unparser.this.unparseLhs(fa.lhs, ".");
-                            Unparser.this.pw.print('.' + fa.field.getName());
-                            return null;
-                        }
-
-                        @Override @Nullable public Void
-                        visitFieldAccessExpression(FieldAccessExpression fae) {
-                            Unparser.this.unparseLhs(fae.lhs, ".");
-                            Unparser.this.pw.print('.' + fae.fieldName);
-                            return null;
-                        }
-
-                        @Override @Nullable public Void
-                        visitSuperclassFieldAccessExpression(SuperclassFieldAccessExpression scfae) {
-                            if (scfae.qualification != null) {
-                                Unparser.this.unparseType(scfae.qualification);
-                                Unparser.this.pw.print(".super." + scfae.fieldName);
-                            } else
-                            {
-                                Unparser.this.pw.print("super." + scfae.fieldName);
-                            }
-                            return null;
-                        }
-
-                        @Override @Nullable public Void
-                        visitLocalVariableAccess(LocalVariableAccess lva) {
-                            Unparser.this.pw.print(lva.toString());
-                            return null;
-                        }
-
-                        @Override @Nullable public Void
-                        visitParenthesizedExpression(ParenthesizedExpression pe) {
-                            Unparser.this.pw.print('(');
-                            Unparser.this.unparseAtom(pe.value);
-                            Unparser.this.pw.print(')');
-                            return null;
-                        }
-                    });
-                    return null;
-                }
-
-                @Override @Nullable public Void
-                visitMethodInvocation(MethodInvocation mi) {
-                    if (mi.target != null) {
-                        Unparser.this.unparseLhs(mi.target, ".");
-                        Unparser.this.pw.print('.');
-                    }
-                    Unparser.this.pw.print(mi.methodName);
-                    Unparser.this.unparseFunctionInvocationArguments(mi.arguments);
-                    return null;
-                }
-
-                @Override @Nullable public Void
-                visitNewClassInstance(NewClassInstance nci) {
-                    if (nci.qualification != null) {
-                        Unparser.this.unparseLhs(nci.qualification, ".");
-                        Unparser.this.pw.print('.');
-                    }
-                    assert nci.type != null;
-                    Unparser.this.pw.print("new " + nci.type.toString());
-                    Unparser.this.unparseFunctionInvocationArguments(nci.arguments);
-                    return null;
-                }
-
-                @Override @Nullable public Void
-                visitAssignment(Assignment a) {
-                    Unparser.this.unparseLhs(a.lhs, a.operator);
-                    Unparser.this.pw.print(' ' + a.operator + ' ');
-                    Unparser.this.unparseRhs(a.rhs, a.operator);
-                    return null;
-                }
-
-                @Override @Nullable public Void
-                visitArrayLength(ArrayLength al) {
-                    Unparser.this.unparseLhs(al.lhs, ".");
-                    Unparser.this.pw.print(".length");
-                    return null;
-                }
-
-                @Override @Nullable public Void
-                visitBinaryOperation(BinaryOperation bo) {
-                    Unparser.this.unparseLhs(bo.lhs, bo.operator);
-                    Unparser.this.pw.print(' ' + bo.operator + ' ');
-                    Unparser.this.unparseRhs(bo.rhs, bo.operator);
-                    return null;
-                }
-
-                @Override @Nullable public Void
-                visitCast(Cast c) {
-                    Unparser.this.pw.print('(');
-                    Unparser.this.unparseType(c.targetType);
-                    Unparser.this.pw.print(") ");
-                    Unparser.this.unparseRhs(c.value, "cast");
-                    return null;
-                }
-
-                @Override @Nullable public Void
-                visitClassLiteral(ClassLiteral cl) {
-                    Unparser.this.unparseType(cl.type);
-                    Unparser.this.pw.print(".class");
-                    return null;
-                }
-
-                @Override @Nullable public Void
-                visitConditionalExpression(ConditionalExpression ce) {
-                    Unparser.this.unparseLhs(ce.lhs, "?:");
-                    Unparser.this.pw.print(" ? ");
-                    Unparser.this.unparseLhs(ce.mhs, "?:");
-                    Unparser.this.pw.print(" : ");
-                    Unparser.this.unparseRhs(ce.rhs, "?:");
-                    return null;
-                }
-
-                @Override @Nullable public Void
-                visitCrement(Crement c) {
-                    if (c.pre) {
-                        Unparser.this.pw.print(c.operator);
-                        Unparser.this.unparseUnaryOperation(c.operand, c.operator + "x");
-                    } else
-                    {
-                        Unparser.this.unparseUnaryOperation(c.operand, "x" + c.operator);
-                        Unparser.this.pw.print(c.operator);
-                    }
-                    return null;
-                }
-
-                @Override @Nullable public Void
-                visitInstanceof(Instanceof io) {
-                    Unparser.this.unparseLhs(io.lhs, "instanceof");
-                    Unparser.this.pw.print(" instanceof ");
-                    Unparser.this.unparseType(io.rhs);
-                    return null;
-                }
-
-                // SUPPRESS CHECKSTYLE LineLength:8
-                @Override @Nullable public Void visitIntegerLiteral(IntegerLiteral il)              { Unparser.this.pw.print(il.value);             return null; }
-                @Override @Nullable public Void visitFloatingPointLiteral(FloatingPointLiteral fpl) { Unparser.this.pw.print(fpl.value);            return null; }
-                @Override @Nullable public Void visitBooleanLiteral(BooleanLiteral bl)              { Unparser.this.pw.print(bl.value);             return null; }
-                @Override @Nullable public Void visitCharacterLiteral(CharacterLiteral cl)          { Unparser.this.pw.print(cl.value);             return null; }
-                @Override @Nullable public Void visitStringLiteral(StringLiteral sl)                { Unparser.this.pw.print(sl.value);             return null; }
-                @Override @Nullable public Void visitNullLiteral(NullLiteral nl)                    { Unparser.this.pw.print(nl.value);             return null; }
-                @Override @Nullable public Void visitSimpleConstant(SimpleConstant sl)              { Unparser.this.pw.print("[" + sl.value + ']'); return null; }
-
-                @Override @Nullable public Void
-                visitNewArray(NewArray na) {
-                    Unparser.this.pw.print("new ");
-                    Unparser.this.unparseType(na.type);
-                    for (Rvalue dimExpr : na.dimExprs) {
-                        Unparser.this.pw.print('[');
-                        Unparser.this.unparseAtom(dimExpr);
-                        Unparser.this.pw.print(']');
-                    }
-                    for (int i = 0; i < na.dims; ++i) {
-                        Unparser.this.pw.print("[]");
-                    }
-                    return null;
-                }
-
-                @Override @Nullable public Void
-                visitNewInitializedArray(NewInitializedArray nai) {
-
-                    Unparser.this.pw.print("new ");
-
-                    ArrayType at = nai.arrayType;
-                    assert at != null;
-                    Unparser.this.unparseType(at);
-
-                    Unparser.this.pw.print(" ");
-
-                    Unparser.this.unparseArrayInitializerOrRvalue(nai.arrayInitializer);
-
-                    return null;
-                }
-
-                @Override @Nullable public Void
-                visitParameterAccess(ParameterAccess pa) {
-                    Unparser.this.pw.print(pa.toString());
-                    return null;
-                }
-
-                @Override @Nullable public Void
-                visitQualifiedThisReference(QualifiedThisReference qtr) {
-                    Unparser.this.unparseType(qtr.qualification);
-                    Unparser.this.pw.print(".this");
-                    return null;
-                }
-
-                @Override @Nullable public Void
-                visitSuperclassMethodInvocation(SuperclassMethodInvocation smi) {
-                    Unparser.this.pw.print("super." + smi.methodName);
-                    Unparser.this.unparseFunctionInvocationArguments(smi.arguments);
-                    return null;
-                }
-
-                @Override @Nullable public Void
-                visitThisReference(ThisReference tr) { Unparser.this.pw.print("this"); return null; }
-
-                @Override @Nullable public Void
-                visitLambdaExpression(LambdaExpression le) {
-                    Unparser.this.unparseLambdaParameters(le.parameters);
-                    Unparser.this.pw.print(" -> ");
-                    Unparser.this.unparseLambdaBody(le.body);
-                    return null;
-                }
-
-                @Override @Nullable public Void
-                visitUnaryOperation(UnaryOperation uo) {
-                    Unparser.this.pw.print(uo.operator);
-                    Unparser.this.unparseUnaryOperation(uo.operand, uo.operator + "x");
-                    return null;
-                }
-
-                @Override @Nullable public Void
-                visitNewAnonymousClassInstance(NewAnonymousClassInstance naci) {
-                    if (naci.qualification != null) {
-                        Unparser.this.unparseLhs(naci.qualification, ".");
-                        Unparser.this.pw.print('.');
-                    }
-                    Unparser.this.pw.print("new " + naci.anonymousClassDeclaration.baseType.toString() + '(');
-                    for (int i = 0; i < naci.arguments.length; ++i) {
-                        if (i > 0) Unparser.this.pw.print(", ");
-                        Unparser.this.unparseAtom(naci.arguments[i]);
-                    }
-                    Unparser.this.pw.println(") {");
-                    Unparser.this.pw.print(AutoIndentWriter.INDENT);
-                    Unparser.this.unparseClassDeclarationBody(naci.anonymousClassDeclaration);
-                    Unparser.this.pw.print(AutoIndentWriter.UNINDENT + "}");
-                    return null;
-                }
-
-                @Override @Nullable public Void
-                visitMethodReference(MethodReference mr) {
-                    Unparser.this.pw.print(mr.toString());
-                    return null;
-                }
-
-                @Override @Nullable public Void
-                visitInstanceCreationReference(ClassInstanceCreationReference cicr) {
-                    Unparser.this.pw.print(cicr.toString());
-                    return null;
-                }
-
-                @Override @Nullable public Void
-                visitArrayCreationReference(ArrayCreationReference acr) {
-                    Unparser.this.pw.print(acr.toString());
-                    return null;
-                }
-            });
+            Unparser.this.unparseRvalue(rv);
             return null;
         }
 
@@ -1020,6 +720,318 @@ class Unparser {
         visitConstructorInvocation(ConstructorInvocation ci) {
             Unparser.this.unparseBlockStatement(ci);
             Unparser.this.pw.println(';');
+            return null;
+        }
+    };
+
+    private final Visitor.TypeVisitor<Void, RuntimeException>
+    typeUnparser = new Visitor.TypeVisitor<Void, RuntimeException>() {
+
+        @Override @Nullable public Void
+        visitArrayType(ArrayType at) {
+            Unparser.this.unparseType(at.componentType);
+            Unparser.this.pw.print("[]");
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitPrimitiveType(PrimitiveType bt) {
+            Unparser.this.pw.print(bt.toString());
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitReferenceType(ReferenceType rt) {
+            Unparser.this.unparseAnnotations(rt.annotations);
+            Unparser.this.pw.print(rt.toString());
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitRvalueMemberType(RvalueMemberType rmt) {
+            Unparser.this.pw.print(rmt.toString());
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitSimpleType(SimpleType st) {
+            Unparser.this.pw.print(st.toString());
+            return null;
+        }
+    };
+
+    private final Visitor.RvalueVisitor<Void, RuntimeException>
+    rvalueUnparser = new Visitor.RvalueVisitor<Void, RuntimeException>() {
+
+        @Override @Nullable public Void
+        visitLvalue(Lvalue lv) {
+            Unparser.this.unparseLvalue(lv);
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitMethodInvocation(MethodInvocation mi) {
+            if (mi.target != null) {
+                Unparser.this.unparseLhs(mi.target, ".");
+                Unparser.this.pw.print('.');
+            }
+            Unparser.this.pw.print(mi.methodName);
+            Unparser.this.unparseFunctionInvocationArguments(mi.arguments);
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitNewClassInstance(NewClassInstance nci) {
+            if (nci.qualification != null) {
+                Unparser.this.unparseLhs(nci.qualification, ".");
+                Unparser.this.pw.print('.');
+            }
+            assert nci.type != null;
+            Unparser.this.pw.print("new " + nci.type.toString());
+            Unparser.this.unparseFunctionInvocationArguments(nci.arguments);
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitAssignment(Assignment a) {
+            Unparser.this.unparseLhs(a.lhs, a.operator);
+            Unparser.this.pw.print(' ' + a.operator + ' ');
+            Unparser.this.unparseRhs(a.rhs, a.operator);
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitArrayLength(ArrayLength al) {
+            Unparser.this.unparseLhs(al.lhs, ".");
+            Unparser.this.pw.print(".length");
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitBinaryOperation(BinaryOperation bo) {
+            Unparser.this.unparseLhs(bo.lhs, bo.operator);
+            Unparser.this.pw.print(' ' + bo.operator + ' ');
+            Unparser.this.unparseRhs(bo.rhs, bo.operator);
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitCast(Cast c) {
+            Unparser.this.pw.print('(');
+            Unparser.this.unparseType(c.targetType);
+            Unparser.this.pw.print(") ");
+            Unparser.this.unparseRhs(c.value, "cast");
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitClassLiteral(ClassLiteral cl) {
+            Unparser.this.unparseType(cl.type);
+            Unparser.this.pw.print(".class");
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitConditionalExpression(ConditionalExpression ce) {
+            Unparser.this.unparseLhs(ce.lhs, "?:");
+            Unparser.this.pw.print(" ? ");
+            Unparser.this.unparseLhs(ce.mhs, "?:");
+            Unparser.this.pw.print(" : ");
+            Unparser.this.unparseRhs(ce.rhs, "?:");
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitCrement(Crement c) {
+            if (c.pre) {
+                Unparser.this.pw.print(c.operator);
+                Unparser.this.unparseUnaryOperation(c.operand, c.operator + "x");
+            } else
+            {
+                Unparser.this.unparseUnaryOperation(c.operand, "x" + c.operator);
+                Unparser.this.pw.print(c.operator);
+            }
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitInstanceof(Instanceof io) {
+            Unparser.this.unparseLhs(io.lhs, "instanceof");
+            Unparser.this.pw.print(" instanceof ");
+            Unparser.this.unparseType(io.rhs);
+            return null;
+        }
+
+        // SUPPRESS CHECKSTYLE LineLength:8
+        @Override @Nullable public Void visitIntegerLiteral(IntegerLiteral il)              { Unparser.this.pw.print(il.value);             return null; }
+        @Override @Nullable public Void visitFloatingPointLiteral(FloatingPointLiteral fpl) { Unparser.this.pw.print(fpl.value);            return null; }
+        @Override @Nullable public Void visitBooleanLiteral(BooleanLiteral bl)              { Unparser.this.pw.print(bl.value);             return null; }
+        @Override @Nullable public Void visitCharacterLiteral(CharacterLiteral cl)          { Unparser.this.pw.print(cl.value);             return null; }
+        @Override @Nullable public Void visitStringLiteral(StringLiteral sl)                { Unparser.this.pw.print(sl.value);             return null; }
+        @Override @Nullable public Void visitNullLiteral(NullLiteral nl)                    { Unparser.this.pw.print(nl.value);             return null; }
+        @Override @Nullable public Void visitSimpleConstant(SimpleConstant sl)              { Unparser.this.pw.print("[" + sl.value + ']'); return null; }
+
+        @Override @Nullable public Void
+        visitNewArray(NewArray na) {
+            Unparser.this.pw.print("new ");
+            Unparser.this.unparseType(na.type);
+            for (Rvalue dimExpr : na.dimExprs) {
+                Unparser.this.pw.print('[');
+                Unparser.this.unparseAtom(dimExpr);
+                Unparser.this.pw.print(']');
+            }
+            for (int i = 0; i < na.dims; ++i) {
+                Unparser.this.pw.print("[]");
+            }
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitNewInitializedArray(NewInitializedArray nai) {
+
+            Unparser.this.pw.print("new ");
+
+            ArrayType at = nai.arrayType;
+            assert at != null;
+            Unparser.this.unparseType(at);
+
+            Unparser.this.pw.print(" ");
+
+            Unparser.this.unparseArrayInitializerOrRvalue(nai.arrayInitializer);
+
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitParameterAccess(ParameterAccess pa) {
+            Unparser.this.pw.print(pa.toString());
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitQualifiedThisReference(QualifiedThisReference qtr) {
+            Unparser.this.unparseType(qtr.qualification);
+            Unparser.this.pw.print(".this");
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitSuperclassMethodInvocation(SuperclassMethodInvocation smi) {
+            Unparser.this.pw.print("super." + smi.methodName);
+            Unparser.this.unparseFunctionInvocationArguments(smi.arguments);
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitThisReference(ThisReference tr) { Unparser.this.pw.print("this"); return null; }
+
+        @Override @Nullable public Void
+        visitLambdaExpression(LambdaExpression le) {
+            Unparser.this.unparseLambdaParameters(le.parameters);
+            Unparser.this.pw.print(" -> ");
+            Unparser.this.unparseLambdaBody(le.body);
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitUnaryOperation(UnaryOperation uo) {
+            Unparser.this.pw.print(uo.operator);
+            Unparser.this.unparseUnaryOperation(uo.operand, uo.operator + "x");
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitNewAnonymousClassInstance(NewAnonymousClassInstance naci) {
+            if (naci.qualification != null) {
+                Unparser.this.unparseLhs(naci.qualification, ".");
+                Unparser.this.pw.print('.');
+            }
+            Unparser.this.pw.print("new " + naci.anonymousClassDeclaration.baseType.toString() + '(');
+            for (int i = 0; i < naci.arguments.length; ++i) {
+                if (i > 0) Unparser.this.pw.print(", ");
+                Unparser.this.unparseAtom(naci.arguments[i]);
+            }
+            Unparser.this.pw.println(") {");
+            Unparser.this.pw.print(AutoIndentWriter.INDENT);
+            Unparser.this.unparseClassDeclarationBody(naci.anonymousClassDeclaration);
+            Unparser.this.pw.print(AutoIndentWriter.UNINDENT + "}");
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitMethodReference(MethodReference mr) {
+            Unparser.this.pw.print(mr.toString());
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitInstanceCreationReference(ClassInstanceCreationReference cicr) {
+            Unparser.this.pw.print(cicr.toString());
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitArrayCreationReference(ArrayCreationReference acr) {
+            Unparser.this.pw.print(acr.toString());
+            return null;
+        }
+    };
+
+    private final Visitor.LvalueVisitor<Void, RuntimeException>
+    lvalueUnparser = new Visitor.LvalueVisitor<Void, RuntimeException>() {
+
+        @Override @Nullable public Void
+        visitAmbiguousName(AmbiguousName an) {
+            Unparser.this.pw.print(an.toString());
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitArrayAccessExpression(ArrayAccessExpression aae) {
+            Unparser.this.unparseLhs(aae.lhs, "[ ]");
+            Unparser.this.pw.print('[');
+            Unparser.this.unparseAtom(aae.index);
+            Unparser.this.pw.print(']');
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitFieldAccess(FieldAccess fa) {
+            Unparser.this.unparseLhs(fa.lhs, ".");
+            Unparser.this.pw.print('.' + fa.field.getName());
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitFieldAccessExpression(FieldAccessExpression fae) {
+            Unparser.this.unparseLhs(fae.lhs, ".");
+            Unparser.this.pw.print('.' + fae.fieldName);
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitSuperclassFieldAccessExpression(SuperclassFieldAccessExpression scfae) {
+            if (scfae.qualification != null) {
+                Unparser.this.unparseType(scfae.qualification);
+                Unparser.this.pw.print(".super." + scfae.fieldName);
+            } else
+            {
+                Unparser.this.pw.print("super." + scfae.fieldName);
+            }
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitLocalVariableAccess(LocalVariableAccess lva) {
+            Unparser.this.pw.print(lva.toString());
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitParenthesizedExpression(ParenthesizedExpression pe) {
+            Unparser.this.pw.print('(');
+            Unparser.this.unparseAtom(pe.value);
+            Unparser.this.pw.print(')');
             return null;
         }
     };
@@ -1147,6 +1159,41 @@ class Unparser {
         @Override @Nullable public Void
         visitExpressionLambdaBody(ExpressionLambdaBody elb) {
             Unparser.this.unparse(elb.expression, true);
+            return null;
+        }
+    };
+
+    private final Visitor.FunctionDeclaratorVisitor<Void, RuntimeException>
+    functionDeclaratorUnparser = new Visitor.FunctionDeclaratorVisitor<Void, RuntimeException>() {
+
+        @Override @Nullable public Void
+        visitConstructorDeclarator(ConstructorDeclarator cd) {
+            Unparser.this.unparseConstructorDeclarator(cd);
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitMethodDeclarator(MethodDeclarator md) {
+            Unparser.this.unparseMethodDeclarator(md);
+            return null;
+        }
+    };
+
+    private final Visitor.TryStatementResourceVisitor<Void, RuntimeException>
+    resourceUnparser = new Visitor.TryStatementResourceVisitor<Void, RuntimeException>() {
+
+        @Override @Nullable public Void
+        visitLocalVariableDeclaratorResource(LocalVariableDeclaratorResource lvdr) {
+            Unparser.this.unparseModifiers(lvdr.modifiers);
+            Unparser.this.unparseType(lvdr.type);
+            Unparser.this.pw.print(' ');
+            Unparser.this.unparseVariableDeclarator(lvdr.variableDeclarator);
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitVariableAccessResource(VariableAccessResource var) {
+            Unparser.this.unparseAtom(var.variableAccess);
             return null;
         }
     };
@@ -1401,10 +1448,16 @@ class Unparser {
     unparseTypeDeclaration(TypeDeclaration td) { td.accept(this.typeDeclarationUnparser); }
 
     public void
-    unparseType(Type t) { t.accept(this.atomUnparser); }
+    unparseType(Type t) { t.accept(this.typeUnparser); }
 
     public void
     unparseAtom(Atom a) { a.accept(this.atomUnparser); }
+
+    public void
+    unparseRvalue(Rvalue rv) { rv.accept(this.rvalueUnparser); }
+
+    public void
+    unparseLvalue(Lvalue lv) { lv.accept(this.lvalueUnparser); }
 
     /**
      * Iff the {@code operand} is unnatural for the {@code unaryOperator}, encloses the {@code operand} in parentheses.
@@ -1824,39 +1877,12 @@ class Unparser {
 
     private void
     unparseFunctionDeclarator(FunctionDeclarator fd) {
-
-        fd.accept(new Visitor.FunctionDeclaratorVisitor<Void, RuntimeException>() {
-
-            @Override @Nullable public Void
-            visitConstructorDeclarator(ConstructorDeclarator cd) {
-                Unparser.this.unparseConstructorDeclarator(cd); return null;
-            }
-
-            @Override @Nullable public Void
-            visitMethodDeclarator(MethodDeclarator md) { Unparser.this.unparseMethodDeclarator(md); return null; }
-        });
+        fd.accept(this.functionDeclaratorUnparser);
     }
 
     private void
     unparseResource(TryStatement.Resource r) {
-
-        r.accept(new Visitor.TryStatementResourceVisitor<Void, RuntimeException>() {
-
-            @Override @Nullable public Void
-            visitLocalVariableDeclaratorResource(LocalVariableDeclaratorResource lvdr) {
-                Unparser.this.unparseModifiers(lvdr.modifiers);
-                Unparser.this.unparseType(lvdr.type);
-                Unparser.this.pw.print(' ');
-                Unparser.this.unparseVariableDeclarator(lvdr.variableDeclarator);
-                return null;
-            }
-
-            @Override @Nullable public Void
-            visitVariableAccessResource(VariableAccessResource var) {
-                Unparser.this.unparseAtom(var.variableAccess);
-                return null;
-            }
-        });
+        r.accept(this.resourceUnparser);
     }
 
     private void
