@@ -59,7 +59,7 @@ import org.codehaus.janino.util.AbstractTraverser;
  * </p>
  * <p>
  *   If the expression type and the parameters' types are known at compile time, then a "fast" expression evaluator
- *   can be instantiated through {@link #createFastExpressionEvaluator(String, Class, String[], ClassLoader)}.
+ *   can be instantiated through {@link #createFastEvaluator(String, Class, String...)}.
  *   Expression evaluation is faster than through {@link #evaluate(Object[])}, because it is not done through
  *   reflection but through direct method invocation.
  * </p>
@@ -98,6 +98,9 @@ class ExpressionEvaluator extends MultiCookable implements IExpressionEvaluator 
 //    private static final Logger     LOGGER                  = Logger.getLogger(ExpressionEvaluator.class.getName());
 //    private static final Class<?>   DEFAULT_EXPRESSION_TYPE = Object.class;
 //    private static final Class<?>[] ZERO_CLASSES            = new Class<?>[0];
+
+    private int                      sourceVersion = -1;
+    @Nullable private WarningHandler warningHandler;
 
     private final ScriptEvaluator se = new ScriptEvaluator();
     {
@@ -274,6 +277,15 @@ class ExpressionEvaluator extends MultiCookable implements IExpressionEvaluator 
     }
 
     @Override public void
+    setSourceVersion(int version) {
+        this.se.setSourceVersion(version);
+        this.sourceVersion = version;
+      }
+
+    @Override public void
+    setTargetVersion(int version) { this.se.setTargetVersion(version); }
+
+    @Override public void
     setCompileErrorHandler(@Nullable ErrorHandler compileErrorHandler) {
         this.se.setCompileErrorHandler(compileErrorHandler);
     }
@@ -281,6 +293,7 @@ class ExpressionEvaluator extends MultiCookable implements IExpressionEvaluator 
     @Override public void
     setWarningHandler(@Nullable WarningHandler warningHandler) {
         this.se.setWarningHandler(warningHandler);
+        this.warningHandler = warningHandler;
     }
 
     @Override public void
@@ -450,7 +463,11 @@ class ExpressionEvaluator extends MultiCookable implements IExpressionEvaluator 
     cook(Scanner... scanners) throws CompileException, IOException {
 
         Parser[] parsers = new Parser[scanners.length];
-        for (int i = 0; i < scanners.length; ++i) parsers[i] = new Parser(scanners[i]);
+        for (int i = 0; i < scanners.length; ++i) {
+            parsers[i] = new Parser(scanners[i]);
+            parsers[i].setSourceVersion(this.sourceVersion);
+            parsers[i].setWarningHandler(this.warningHandler);
+        }
 
         this.cook(parsers);
     }
@@ -480,7 +497,7 @@ class ExpressionEvaluator extends MultiCookable implements IExpressionEvaluator 
             Parser   parser = parsers[i];
 
             // Parse the expression.
-            Java.Rvalue value = parser.parseExpression().toRvalueOrCompileException();
+            Java.Rvalue value = parser.parseExpression();
 
             Java.BlockStatement statement;
             if (et == void.class) {
@@ -710,13 +727,18 @@ class ExpressionEvaluator extends MultiCookable implements IExpressionEvaluator 
      */
     public static String[]
     guessParameterNames(Scanner scanner) throws CompileException, IOException {
+
         Parser parser = new Parser(scanner);
+
+        // Impossible, because this method is STATIC:
+        //parser.setSourceVersion(this.sourceVersion);
+        //parser.setWarningHandler(this.warningHandler);
 
         // Eat optional leading import declarations.
         while (parser.peek("import")) parser.parseImportDeclaration();
 
         // Parse the expression.
-        Java.Rvalue rvalue = parser.parseExpression().toRvalueOrCompileException();
+        Java.Rvalue rvalue = parser.parseExpression();
         if (!parser.peek(TokenType.END_OF_INPUT)) {
             throw new CompileException("Unexpected token \"" + parser.peek() + "\"", scanner.location());
         }

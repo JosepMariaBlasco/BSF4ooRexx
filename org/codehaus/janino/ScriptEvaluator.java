@@ -87,7 +87,9 @@ import org.codehaus.janino.util.AbstractTraverser;
 public
 class ScriptEvaluator extends MultiCookable implements IScriptEvaluator {
 
-    private final ClassBodyEvaluator cbe = new ClassBodyEvaluator();
+    private int                      sourceVersion = -1;
+    @Nullable private WarningHandler warningHandler;
+    private final ClassBodyEvaluator cbe           = new ClassBodyEvaluator();
 
     /**
      * Represents one script that this {@link ScriptEvaluator} declares. Typically there exactly <em>one</em> such
@@ -143,12 +145,24 @@ class ScriptEvaluator extends MultiCookable implements IScriptEvaluator {
     }
 
     @Override public void
+    setSourceVersion(int version) {
+        this.cbe.setSourceVersion(version);
+        this.sourceVersion = version;
+    }
+
+    @Override public void
+    setTargetVersion(int version) { this.cbe.setTargetVersion(version); }
+
+    @Override public void
     setCompileErrorHandler(@Nullable ErrorHandler compileErrorHandler) {
         this.cbe.setCompileErrorHandler(compileErrorHandler);
     }
 
     @Override public void
-    setWarningHandler(@Nullable WarningHandler warningHandler) { this.cbe.setWarningHandler(warningHandler); }
+    setWarningHandler(@Nullable WarningHandler warningHandler) {
+        this.cbe.setWarningHandler(warningHandler);
+        this.warningHandler = warningHandler;
+    }
 
     /**
      * @return A reference to the currently effective compilation options; changes to it take
@@ -655,7 +669,11 @@ class ScriptEvaluator extends MultiCookable implements IScriptEvaluator {
         this.setScriptCount(scanners.length);
 
         Parser[] parsers = new Parser[scanners.length];
-        for (int i = 0; i < scanners.length; ++i) parsers[i] = new Parser(scanners[i]);
+        for (int i = 0; i < scanners.length; ++i) {
+            parsers[i] = new Parser(scanners[i]);
+            parsers[i].setSourceVersion(this.sourceVersion);
+            parsers[i].setWarningHandler(this.warningHandler);
+        }
 
         this.cook(parsers);
     }
@@ -1017,7 +1035,7 @@ class ScriptEvaluator extends MultiCookable implements IScriptEvaluator {
         // It's either a non-final local variable declaration or an expression statement, or a non-void method
         // declaration. We can only tell after parsing an expression.
 
-        Atom a = parser.parseExpression();
+        Atom a = parser.parseExpressionOrType();
 
         // Expression ';'
         if (parser.peekRead(";")) {
@@ -1114,8 +1132,7 @@ class ScriptEvaluator extends MultiCookable implements IScriptEvaluator {
     }
 
     /**
-     * @deprecated Use {@link #createFastScriptEvaluator(Scanner, String[], String, Class, Class, String[],
-     *             ClassLoader)} instead
+     * @deprecated Use {@link #createFastEvaluator(Scanner, Class, String[])} instead
      */
     @Deprecated public static Object
     createFastScriptEvaluator(String script, Class<?> interfaceToImplement, String[] parameterNames)
@@ -1125,8 +1142,7 @@ class ScriptEvaluator extends MultiCookable implements IScriptEvaluator {
     }
 
     /**
-     * @deprecated Use {@link #createFastScriptEvaluator(Scanner, String[], String, Class, Class, String[],
-     *             ClassLoader)} instead
+     * @deprecated Use {@link #createFastEvaluator(Scanner, Class, String[])} instead
      */
     @Deprecated public static Object
     createFastScriptEvaluator(
@@ -1141,8 +1157,7 @@ class ScriptEvaluator extends MultiCookable implements IScriptEvaluator {
     }
 
     /**
-     * @deprecated Use {@link #createFastScriptEvaluator(Scanner, String[], String, Class, Class, String[],
-     *             ClassLoader)} instead
+     * @deprecated Use {@link #createFastEvaluator(Scanner, Class, String[])} instead
      */
     @Deprecated public static Object
     createFastScriptEvaluator(
@@ -1197,13 +1212,13 @@ class ScriptEvaluator extends MultiCookable implements IScriptEvaluator {
     @Override public String[]
     getDefaultImports() { return this.cbe.getDefaultImports(); }
 
-    @Override public <T> Object
+    @Override public <T> T
     createFastEvaluator(Reader reader, Class<T> interfaceToImplement, String[] parameterNames)
     throws CompileException, IOException {
         return this.createFastEvaluator(new Scanner(null, reader), interfaceToImplement, parameterNames);
     }
 
-    @Override public <T> Object
+    @Override public <T> T
     createFastEvaluator(String script, Class<T> interfaceToImplement, String[] parameterNames) throws CompileException {
         try {
             return this.createFastEvaluator(
@@ -1224,7 +1239,7 @@ class ScriptEvaluator extends MultiCookable implements IScriptEvaluator {
      * @param scanner Source of tokens to read
      * @see #createFastEvaluator(Reader, Class, String[])
      */
-    public Object
+    public <T> T
     createFastEvaluator(Scanner scanner, Class<?> interfaceToImplement, String[] parameterNames)
     throws CompileException, IOException {
         if (!interfaceToImplement.isInterface()) {
@@ -1254,7 +1269,8 @@ class ScriptEvaluator extends MultiCookable implements IScriptEvaluator {
         this.cook(scanner);
         Class<?> c = this.getMethod().getDeclaringClass();
         try {
-            return c.newInstance();
+            @SuppressWarnings("unchecked") T result = (T) c.newInstance();
+            return result;
         } catch (InstantiationException e) {
             // SNO - Declared class is always non-abstract.
             throw new InternalCompilerException(e.toString(), e);
@@ -1287,7 +1303,12 @@ class ScriptEvaluator extends MultiCookable implements IScriptEvaluator {
      */
     public static String[]
     guessParameterNames(Scanner scanner) throws CompileException, IOException {
+
         Parser parser = new Parser(scanner);
+
+        // Impossible, because this method is STATIC:
+        //parser.setSourceVersion(this.sourceVersion);
+        //parser.setWarningHandler(this.warningHandler);
 
         // Eat optional leading import declarations.
         while (parser.peek("import")) parser.parseImportDeclaration();
