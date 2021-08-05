@@ -1,6 +1,6 @@
 @echo off
 rem  ------------------------ Apache Version 2.0 license -------------------------
-rem     Copyright (C) 2001-2016 Rony G. Flatscher
+rem     Copyright (C) 2001-2021 Rony G. Flatscher
 rem
 rem     Licensed under the Apache License, Version 2.0 (the "License")rem
 rem     you may not use this file except in compliance with the License.
@@ -82,7 +82,7 @@ rem copy %javaSrc%\RexxExtendClass.java           %path2engine%
 rem copy %javaSrc%\RexxExtendingClassLoader.java  %path2engine%
 
 @rem 2010-04-17
-copy %javaSrc%\ClassAdapter.java      %path2engine%
+copy %javaSrc%\ClassAdapter.java              %path2engine%
 copy %javaSrc%\RexxDispatcher.java            %path2rexxlaBsf%
 
 copy %javaSrc%\RexxScriptEngine.java          %path2jsr223%
@@ -99,7 +99,8 @@ copy %javaSrc%\RexxReflectUtil.java           %path2engine%
 @rem 2018-11-01
 copy %javaSrc%\RexxStrictArgument.java        %path2engine%
 
-
+@rem 2021-08-04
+copy %javaSrc%\RexxCleanupRef.java            %path2engine%
 
 
 @rem do the compilations
@@ -148,5 +149,9 @@ javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxCompiledScript.java        
 
 @rem 2018-11-01, 2018-11-22
 javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxStrictArgument.java        && copy %javaSrc%\RexxStrictArgument*         %path2engine%
+
+@rem 2018-11-01, 2018-11-22
+javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxCleanupRef.java            && copy %javaSrc%\RexxCleanupRef*             %path2engine%
+
 endlocal
 

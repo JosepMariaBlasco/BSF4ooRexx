@@ -8,14 +8,21 @@
    Version: 1.36
    Changed:
 
+            2021-07-25 - 2021-07-28 - changes for rexxj.{cm|sh}:
+                        - fetches BSF4OOREXX_HOME's "bsf4ooRexx*bin.jar" as absolute path and prepends it
+                          to the CLASSPATH
+
+                        - Unix: after checking JAVA_HOME trying the Java version that was used to create
+                                the rexxj.sh script before falling back to "java"
+
             2021-07-24, ---rgf, - changes for rexxj.{cm|sh}:
 
-                                  - BSF4REXX_HOME gets defined to point to the directory where setupBSF.rex
+                                  - BSF4OOREXX_HOME gets defined to point to the directory where setupBSF.rex
                                     resides; will be placed in front of java.library.path: this makes sure
                                     that Java will find the dynamic link library [lib]BSF4ooRexx.{dll|so|dylib}
 
                                   - OOREXX_LIB_HOME environment variable gets set, if ooRexx 5.0 or higher;
-                                    will be placed after BSF4REXX_HOME, but before java.library.path: this
+                                    will be placed after BSF4OOREXX_HOME, but before java.library.path: this
                                     makes sure that Java loads this Rexx interpreter
 
                                   - if PREPEND_JAVA_LIBRARY environment variable is set, it will
@@ -100,7 +107,7 @@
             2014-05-25, ---rgf, - getRexxBitness(): use "parse version" starting with ooRexx 4.2 (encodes bitness in version string)
                                 - use elevation starting with Windows Vista (Windows version 6.0)
             2013-07-14, ---rgf, - Make output more verbose, such that logfile reflects environment at installation time
-                                  (displays values for cmd.eSetBSF4REXX_HOME, cmd.eSetPath and cmd.eSetCP), will
+                                  (displays values for cmd.eSetBSF4OOREXX_HOME, cmd.eSetPath and cmd.eSetCP), will
                                   allow to analyze Java at hand
                                 - add log message, if environment variable 'processor_architeW6432' is present
             2012-02-25, ---rgf, - Unix: remove "-n" flag from "ldconfig"
@@ -368,11 +375,27 @@ cmd.eExt.dir.bin=j.java.home || j.file.separator || "lib" || j.file.separator ||
 cmd.eSuperDir = qualify(directory() || j.file.separator || "..")  -- get path to super directory
 cmd.eSuperDir2=cmd.eSuperDir || j.file.separator   -- supply a trailing separator
 
-   /* set BSF4REXX_HOME */
-cmd.eSetBSF4REXX_HOME=iif(cmd.eIsUnix=1, "", "set ") || "BSF4REXX_HOME="cmd.eSuperDir
+   /* set BSF4OOREXX_HOME */
+-- cmd.eSetBSF4OOREXX_HOME=iif(cmd.eIsUnix=1, "", "set ") || "BSF4OOREXX_HOME="cmd.eSuperDir
+   -- if BSF4OOREXX_HOME not defined, assign default value
+if cmd.eIsWindows then
+   cmd.eSetBSF4OOREXX_HOME='if "%BSF4OOREXX_HOME%"=="" set BSF4OOREXX_HOME='cmd.eSuperDir
+else
+   cmd.eSetBSF4OOREXX_HOME='[ "$BSF4OOREXX_HOME" = "" ] && BSF4OOREXX_HOME='cmd.eSuperDir
 
 if cmd.eRexxMajorVersion>= 5 then   /* .RexxInfo available, use itfor rexxj.{cmd|sh}   */
-   cmd.eSetooRexxLibHome=iif(cmd.eIsUnix=1, "", "set ") || "OOREXX_LIB_HOME=".rexxInfo~libraryPath
+do
+   -- if OOREXX_LIB_HOME is not defined, assign default value
+   if cmd.eIsWindows then
+      cmd.eSetooRexxLibHome='if "%OOREXX_LIB_HOME%"=="" set OOREXX_LIB_HOME='.rexxInfo~libraryPath
+   else
+      cmd.eSetooRexxLibHome='[ "$OOREXX_LIB_HOME" = "" ] && OOREXX_LIB_HOME='.rexxInfo~libraryPath
+
+   -- if cmd.eRexxMajorVersion>= 5 then   /* .RexxInfo available, use itfor rexxj.{cmd|sh}   */
+   --    cmd.eSetooRexxLibHome=iif(cmd.eIsUnix=1, "", "set ") || "OOREXX_LIB_HOME=".rexxInfo~libraryPath
+end
+
+
 
    -- 2013-07-14, ---rgf: ooRexx 4.1.3 introduced an error if using a compound symbol ending in a dot
 call SysFileTree cmd.eSuperDir2||"bsf*.jar", "files.", "FO" /* query for the jars we need */
@@ -388,7 +411,7 @@ else
 
 do i=1 to cmd.eJarBaseNames.0    /* iterate over all found jar-files    */
    cmd.eSetCP=cmd.eSetCP || iif(i=1, "", j.path.separator) || -
-                            iif(cmd.eIsUnix=1, "$BSF4REXX_HOME", "%BSF4REXX_HOME%") || -
+                            iif(cmd.eIsUnix=1, "$BSF4OOREXX_HOME", "%BSF4OOREXX_HOME%") || -
                             j.file.separator || filespec("Name", cmd.eJarBaseNames.i)
 end
 
@@ -402,7 +425,7 @@ do
 
    do jar over cmd.eCLR.eJars -- cmd.eSetCP will be used for setting environment variables in scripts
       cmd.eSetCP=cmd.eSetCP || iif(i=1, "", j.path.separator) || -
-                               iif(cmd.eIsUnix=1, "$BSF4REXX_HOME", "%BSF4REXX_HOME%") || -
+                               iif(cmd.eIsUnix=1, "$BSF4OOREXX_HOME", "%BSF4OOREXX_HOME%") || -
                                j.file.separator || jar
    end
 end
@@ -495,7 +518,7 @@ do
    cmd.eChown="chown" cmd.eChownUserGroup   -- command to change the owner of the generated un/install scripts
    cmd.eChownOfSymbolicLink="chown -h" cmd.eChownUserGroup -- command to change the owner of the generated un/install scripts
 
-   cmd.eSetPath="export PATH=$BSF4REXX_HOME:$PATH"
+   cmd.eSetPath="export PATH=$BSF4OOREXX_HOME:$PATH"
    cmd.eSetCP= '[ "$CLASSPATH" != "" ] && TMPCP=:$CLASSPATH || TMPCP=' || .endOfLine || cmd.eSetCP
 
    -- if LD_LIBRARY_PATH is set, use it
@@ -503,13 +526,17 @@ do
                     else cmd.eLDlibPath="LD_LIBRARY_PATH"     -- Unix (Linux)
 
    -- define [DY]LD_LIBRARY_PATH
-
+/*
    if cmd.eSetooRexxLibHome<>"" then      -- we get run by ooRexx >= 5
-      tmpLibPath='TMP_LIB_PATH=$BSF4REXX_HOME:$OOREXX_LIB_HOME'
+      tmpLibPath='TMP_LIB_PATH=$BSF4OOREXX_HOME:$OOREXX_LIB_HOME'
    else
-      tmpLibPath='TMP_LIB_PATH=$BSF4REXX_HOME'
+      tmpLibPath='TMP_LIB_PATH=$BSF4OOREXX_HOME'
 
-   tmpLibPath=tmpLibPath":"j.java.library.path  -- append the existing Java library path
+*/
+   tmpLibPath='[ "$OOREXX_LIB_HOME" = "" ] && TMP_LIB_PATH=$BSF4OOREXX_HOME  || TMP_LIB_PATH=$BSF4OOREXX_HOME:$OOREXX_LIB_HOME' || .endofLine || -
+              'TMP_LIB_PATH=$TMP_LIB_PATH:'j.java.library.path
+
+   -- tmpLibPath=tmpLibPath":"j.java.library.path  -- append the existing Java library path
 
    tmpArr=.array~new
       -- if [DY]LD_LIBRARY_PATH exists, PREpend it (the user expects LD_LIBRARY_PATH to be used first)
@@ -640,16 +667,16 @@ do
    cmd.eLineComment="REM "
 
    -- 2021-07-23, rgf: cmd.ePath2JavaDLL not needed on PATH as Java runs already
-   --   cmd.eSetPath=   "set PATH=" || "%PATH%" || j.path.separator || "%BSF4REXX_HOME%"
-   cmd.eSetPath=   "set PATH=%BSF4REXX_HOME%;%PATH%"
+   --   cmd.eSetPath=   "set PATH=" || "%PATH%" || j.path.separator || "%BSF4OOREXX_HOME%"
+   cmd.eSetPath=   "set PATH=%BSF4OOREXX_HOME%;%PATH%"
    if cmd.eSetooRexxLibHome<>"" then      -- we get run by ooRexx >= 5 ?
    do
       tmpArr~append( cmd.eSetooRexxLibHome )
-      cmd.eSetDLLPath="set PATH=%BSF4REXX_HOME%;%OOREXX_LIB_HOME%;%PATH%"
+      cmd.eSetDLLPath="set PATH=%BSF4OOREXX_HOME%;%OOREXX_LIB_HOME%;%PATH%"
    end
    else
    do
-      cmd.eSetDLLPath="set PATH=%BSF4REXX_HOME%;%PATH%"
+      cmd.eSetDLLPath="set PATH=%BSF4OOREXX_HOME%;%PATH%"
    end
 
    cmd.eInstallScriptName="installBSF.cmd"
@@ -1309,8 +1336,25 @@ create_REXXJ_Script: procedure expose j. cmd. path.
      call lineout fn, ""
   end
 
-  call lineout fn, cmd.eLineComment "set BSF4REXX_HOME variable"
-  call lineout fn, cmd.eSetBSF4REXX_HOME  /* set BSF4REXX_HOME */
+  call lineout fn, cmd.eLineComment "set BSF4OOREXX_HOME variable"
+  call lineout fn, cmd.eSetBSF4OOREXX_HOME  /* set BSF4OOREXX_HOME */
+  call lineout fn, ""
+
+  call lineout fn, cmd.eLineComment "get fully qualified path for BSF4OOREXX_HOME's bsf4ooRexx*bin.jar"
+  if cmd.eIsUnix=1 then                /* find bsf4ooRexx*bin.jar */
+  do
+     call lineout fn, "TMP_BSF4OOREXX_JAR=`ls -d $BSF4OOREXX_HOME/bsf4ooRexx*bin.jar`"
+  end
+  else   -- Windows
+  do
+     call lineout fn, "echo bsf4rexx_home: %BSF4OOREXX_HOME%"
+     -- need to change directory as tests showed wrong absolute path otherwise (takes current dir :( )!
+     call lineout fn, 'for /f "usebackq tokens=*" %%a in (`cd`) do set CURR_DIR=%%a'
+     call lineout fn, "cd /d %BSF4OOREXX_HOME%"      -- also change drive letter
+
+     call lineout fn, "for /F ""delims="" %%I in ('""dir /B %BSF4OOREXX_HOME%\bsf4ooRexx*bin.jar 2>null""') do set TMP_BSF4OOREXX_JAR=%%~fI"
+     call lineout fn, "cd /d %CURR_DIR%"           -- also change drive letter
+  end
   call lineout fn, ""
 
   if cmd.eSetooRexxLibHome<>"" then         -- use .RexxInfo to get library path
@@ -1326,7 +1370,24 @@ create_REXXJ_Script: procedure expose j. cmd. path.
   call lineout fn, ""
 
   call lineout fn, cmd.eLineComment "set CLASSPATH environment variable"
-  call lineout fn, cmd.eSetCP          /* set CLASSPATH        */
+
+  tmpArr=.array~new
+
+  if cmd.eIsWindows=1 then
+  do
+     parse var cmd.eSetCP prefix '=' rest
+      -- within an if statement '%' must be replaced by '!'
+     tmpArr~append('if "%TMP_BSF4OOREXX_JAR%" == "" ('           )
+     tmpArr~append('   'cmd.eSetCP~changestr('%','!')                                )
+     tmpArr~append(')  else ( 'prefix'=!TMP_BSF4OOREXX_JAR!;'rest~changestr('%','!') )
+     tmpArr~append(') '                                          )
+  end
+  else   -- Unix
+  do
+     -- tmpArr~append(cmd.eSetCP)   -- set CLASSPATH on Unix
+     tmpArr~append('[ "$TMP_BSF4OOREXX_JAR" != "" ] && export CLASSPATH=$TMP_BSF4OOREXX_JAR:$CLASSPATH')
+  end
+  call lineout fn, tmpArr~toString('l',.endofline)
   call lineout fn, ""
 
   if cmd.eIsUnix=1 then                /* ??LD_LIBRARY_PATH    */
@@ -1345,26 +1406,21 @@ create_REXXJ_Script: procedure expose j. cmd. path.
   end
   else   -- windows
   do
-     -- tmpStr1=tmpStr1 || "%BSF4REXX_HOME%"  || cmd.eQuote
      tmpArr=.array~of( -
-         'if not "%PREPEND_LIBRARY_PATH%"=="" ( set TMP_LIB_PATH=%PREPEND_LIBRARY_PATH%;%BSF4REXX_HOME%' , -
-         '                             ) else ( set TMP_LIB_PATH=%BSF4REXX_HOME%)                      ' )
-     if cmd.eSetooRexxLibHome<>"" then
-     tmpArr~append('set TMP_LIB_PATH=%TMP_LIB_PATH%;%OOREXX_LIB_HOME%')
+         'if not "%PREPEND_LIBRARY_PATH%"=="" ( set TMP_LIB_PATH=!PREPEND_LIBRARY_PATH!;!BSF4OOREXX_HOME!' , -
+         '                             ) else ( set TMP_LIB_PATH=!BSF4OOREXX_HOME!)                      ' )
+
+     tmpArr~append('if not "!OOREXX_LIB_HOME!"=="" (set TMP_LIB_PATH=!TMP_LIB_PATH!;!OOREXX_LIB_HOME!)' )
+     tmpArr~append('set TMP_LIB_PATH=!TMP_LIB_PATH!;'j.java.library.path )
+
      call lineout fn, ""
      call lineout fn, tmpArr~toString('L',.endOfLine)
      call lineout fn, ""
 
-/*
-     if cmd.eSetooRexxLibHome="" then
-        tmpStr1=tmpStr1 || "%BSF4REXX_HOME%;"j.java.library.path || cmd.eQuote
-     else
-        tmpStr1=tmpStr1 || "%BSF4REXX_HOME%;%OOREXX_LIB_HOME%;"j.java.library.path || cmd.eQuote
-*/
-     tmpStr1 = tmpStr1 || "%TMP_LIB_PATH%;"j.java.library.path || cmd.eQuote
+     tmpStr1 = tmpStr1 || "%TMP_LIB_PATH%" || cmd.eQuote
   end
 
-  -- rgf, 20180614: the CLASSPATH may get too large for the (Windows) command line, and Jvaa
+  -- rgf, 20180614: the CLASSPATH may get too large for the (Windows) command line, and Java
   --                honors the CLASSPATH environment variable, so no need to explicitly state it
   tmpStr2=""      -- do not supply CLASSSPATH via the command line (may break on Windows)
   tmpStr3= iif(cmd.eIsUnix=1, "$BSF4Rexx_JavaStartupOptions", "%BSF4Rexx_JavaStartupOptions%")
@@ -1376,11 +1432,10 @@ create_REXXJ_Script: procedure expose j. cmd. path.
 
   /* 2021-07-22, rgf: new strategy:
       1. if JAVA_HOME set, search and if found, use its jvm.dll/libjvm.{so|dylib}
-      2. use the Java as located by setupBSF.rex
+      2. use the Java as located and used by setupBSF.rex
       3. use 'java' such that the operating system gets used to find and run it
   */
 
-  tmpJava2Use=cmd.eJavaBinary
   call lineout fn, cmd.eLineComment "if JAVA_HOME defined, use its java binary"
   if cmd.eIsWindows=1 then
   do
@@ -1404,12 +1459,28 @@ create_REXXJ_Script: procedure expose j. cmd. path.
   else   -- Unix
   do
      tmpArr=.array~new
-     tmpArr~append( "if [ -e ${JAVA_HOME}/bin/java ] ; then JAVA_BINARY=${JAVA_HOME}/bin/java ;")
-     tmpArr~append( "elif [ -e ${JAVA_HOME}/jre/bin/java  ] ; then JAVA_BINARY=${JAVA_HOME}/jre/bin/java ;" )
+     tmpArr~append( 'if [ -e "${JAVA_HOME}/bin/java" ] ; then JAVA_BINARY=${JAVA_HOME}/bin/java ;')
+     tmpArr~append( 'elif [ -e "${JAVA_HOME}/jre/bin/java"  ] ; then JAVA_BINARY=${JAVA_HOME}/jre/bin/java ;' )
+
+            -- try to get the java binary that is being used for the creation step;
+     if j.java.home<>"" then
+     do
+        call sysFileTree j.java.home"/java", "files.", "FOS"   -- get all "java" binaries
+        binJava=""
+        do i=1 to files.0
+           if files.i~pos("/server/")>0 then binJava=files.i   -- use the "server"
+        end
+        if files.0>0 then
+        do
+           if binJava="" then binJava=files.1   -- use the first java binary (maybe the only one
+           tmpArr~append( 'elif [ -e "'binJava'" ] ; then JAVA_BINARY=' || binJava ';' )
+        end
+     end
+
          -- that's the default Java, if JAVA_HOME was not set, as it got used for the setupBSF.rex run
-     tmpArr~append( "elif [ -e" cmd.eJavaBinary "] ; then JAVA_BINARY="cmd.eJavaBinary ";" )
-     tmpArr~append( "else JAVA_BINARY=java" )   -- last resort: let opsys locate java: currently in /usr/bin/java, in the future in /usr/local/bin/java?
-     tmpArr~append( "fi" )
+     tmpArr~append( 'elif [ -e "'cmd.eJavaBinary'" ] ; then JAVA_BINARY='cmd.eJavaBinary ';' )
+     tmpArr~append( 'else JAVA_BINARY=java' )   -- last resort: let opsys locate java: currently in /usr/bin/java, in the future in /usr/local/bin/java?
+     tmpArr~append( 'fi' )
   end
 
   call lineout fn, tmpArr~toString('l',.endofline) -- write string to file
@@ -1419,8 +1490,23 @@ create_REXXJ_Script: procedure expose j. cmd. path.
   do
      call lineout fn, enquote("%JAVA_BINARY%") tmpStr0 tmpStr1 tmpStr2 tmpStr3 cmd.eRexxDispatch
   end
-  else
+  else   -- Unix
+  do
+     if cmd.eIsMacOSX=1 then
+     do
+        call lineout fn, cmd.eLineComment "export DYLD_PRINT_LIBRARIES=1"
+        call lineout fn, cmd.eLineComment "export DYLD_PRINT_LIBRARIES_POST_LAUNCH=1"
+        call lineout fn, cmd.eLineComment "export DYLD_PRINT_RPATHS=1"
+        call lineout fn, cmd.eLineComment "export DYLD_PRINT_STATISTICS=1"
+     end
+     else   -- Linux
+     do   -- cf. e.g. <http://www.bnikolic.co.uk/blog/linux-ld-debug.html> (20210727)
+        call lineout fn, cmd.eLineComment "export LD_DEBUG=libs reloc statistics"
+     end
+
+     call lineout fn, ""
      call lineout fn, enquote("$JAVA_BINARY") tmpStr0 tmpStr1 tmpStr2 tmpStr3 cmd.eRexxDispatch
+  end
 
   call stream fn, "c", "close"
 
@@ -1444,7 +1530,7 @@ createEnvironmentScript: procedure expose j. cmd. path.
   call lineout fn, cmd.eLineComment "run this script before invoking a BSF4ooRexx program that loads Java on its own."
   call lineout fn, ""
 
-  call lineout fn, cmd.eSetBSF4REXX_HOME
+  call lineout fn, cmd.eSetBSF4OOREXX_HOME
   call lineout fn, ""
 
   if cmd.eIsUnix=1 then -- don't echo in Unix as this script may be executed on every new shell
@@ -1710,7 +1796,7 @@ iif: procedure                   /* VBasic-like function          */
 info:                            /* tell user what has happened   */
   say "setupBSF.rex - info():"
   say
-  say "cmd.eSetBSF4REXX_HOME: ["cmd.eSetBSF4REXX_HOME"]"
+  say "cmd.eSetBSF4OOREXX_HOME: ["cmd.eSetBSF4OOREXX_HOME"]"
   say "cmd.eSetPath:          ["cmd.eSetPath"]"
   say "cmd.eSetCP:            ["cmd.eSetCP"]"
   if cmd.ePath2JavaDll<>"" | cmd.eIsUnix=0 | cmd.eIsMacOSX then -- rgf, 2017-05-09

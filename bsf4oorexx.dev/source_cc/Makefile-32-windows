@@ -145,8 +145,12 @@ $(BSF4REXX) : $(BSF_OBJ_ORX)
     $(copy_cmd) $(BSF_ORX_TARGET) $(BSF4REXX)
     $(copy_cmd) $(BSF_ORX_TARGET) $(TGT_LIB_DIR)
 
-# rgf's developer test installation on Windows as of 2017-01-08: just remove the following statement
-    $(copy_cmd)  $(BSF4REXX)  ..\..\bsf4oorexx\BSF4ooRexx.dll
+
+# rgf's developer test installation on Windows as of 2017-01-08: just remove the following two statement(s)
+     $(copy_cmd)  $(BSF4REXX)  ..\..\bsf4oorexx\BSF4ooRexx.dll
+     $(copy_cmd)  $(BSF4REXX)  ..\..\BSF4ooRexx.dll
+
+    $(copy_cmd) $(BSF4REXX) .
  @echo "done."
 
 

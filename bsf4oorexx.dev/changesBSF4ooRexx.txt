@@ -1,4 +1,72 @@
 
+-------------------------------------- 2021-08-05 ----------------------------------
+
+- RexxProxy.java and
+- RexxAndJava.java
+
+        - removing finalize() which got deprecated for Java
+
+        - use PhantomReference as a replacement, ie., the RexxCleanupRef class
+          in the constructor
+
+
+-------------------------------------- 2021-08-04 ----------------------------------
+
+- org_rexxla_bsf_engines_rexx_RexxCleanupRef.h
+
+        - added new include file org_rexxla_bsf_engines_rexx_RexxCleanupRef.h
+
+- BSF4ooRexx.cc
+
+        - added new include file org_rexxla_bsf_engines_rexx_RexxCleanupRef.h
+
+        - refactor three JNI functions to allow them to be used from RexxAndJava and
+          the new RexxCleanupRef Java class:
+
+          - inline impl_jniRexxHaltInterpreterInstance(...) invoked by
+            - Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxHaltInterpreterInstance
+            - Java_org_rexxla_bsf_engines_rexx_RexxCleanupRef_jniRexxHaltInterpreterInstance
+
+          - inline impl_jniRexxTerminateInterpreterInstance(...) invoked by
+            - Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTerminateInterpreterInstance
+            - Java_org_rexxla_bsf_engines_rexx_RexxCleanupRef_jniRexxTerminateInterpreterInstance
+
+          - inline impl_jniUnregisterRexxObject(...) invoked by
+            - Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniUnregisterRexxObject
+            - Java_org_rexxla_bsf_engines_rexx_RexxCleanupRef_jniUnregisterRexxObject
+
+- RexxCleanupRef.java
+
+        - new class to replace the finalize() mechanism by PhantomReferences
+
+- RexxDispatcher.java
+
+        - Object.finalize() is slated to be removed from a future version of Java,
+          possibly also System.runFinalization(), cater for it
+
+
+
+-------------------------------------- 2021-07-28 ----------------------------------
+
+- install/setupBSF.rex
+
+        - Windows and Unix versions of rexxj.{cmd|sh} structured in a comparable manner
+          to ease usage, maintenance and comparisons
+
+                - sequence of determining which java to use for execution the same:
+                  JAVA_HOME -> java used with setupBSF.rex -> default location -> java
+
+        - fetches BSF4OOREXX_HOME's "bsf4ooRexx*bin.jar" as absolute path and prepends it
+          to the CLASSPATH
+
+        - Unix: after checking JAVA_HOME trying the Java version that was used to create
+                the rexxj.sh script before falling back to "java"
+
+
+-------------------------------------- 2021-07-25 ----------------------------------
+
+- replaced janino 3.1.2 with 3.1.4 (May 2021) (cf. org.codehaus.commons and org.codehaus.janino)
+
 -------------------------------------- 2021-07-24 ----------------------------------
 
 - install/setupBSF.rex
@@ -23,15 +91,6 @@
                   fallback to the exact Java version that was employed when the script got
                   created; if that path does not exist anymore, fall back to "java" and
                   have the operating system find and run it
-
-
--------------------------------------- 2021-07-22 ----------------------------------
-
-- bin/rexxj2.sh, bin/rexxj2-32.sh, bin/rexxj2-64.sh
-
-        - removed hashbang (because of Apple's SIP)
-
-
 
 
 -------------------------------------- 2021-07-19 ----------------------------------

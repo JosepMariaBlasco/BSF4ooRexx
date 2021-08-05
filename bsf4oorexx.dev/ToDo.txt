@@ -1,5 +1,13 @@
 ---
 
+2021-07-28
+
+        - Java: remove "finalize" (will be removed eventually from Java itself), use PhantomReference, e.g.
+                <https://github.com/pfirmstone/JGDMS/blob/trunk/JGDMS/jgdms-collections/src/main/java/org/apache/river/concurrent/ReferenceProcessor.java>
+                <https://www.baeldung.com/java-phantom-reference>
+
+---
+
 2021-02-16:
 
         - DONE (2021-02-16): CLASSPATH: rewrite if * in it, if Rexx loads JVM (otherwise on Java 8 or later jar/JAR files not found!)

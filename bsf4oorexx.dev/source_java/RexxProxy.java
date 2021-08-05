@@ -27,7 +27,7 @@ import org.apache.bsf.BSFException;
  *
 
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2009-2019 Rony G. Flatscher
+ *    Copyright (C) 2009-2021 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -47,6 +47,11 @@ import org.apache.bsf.BSFException;
   */
 
 /*
+
+    2021-08-05, rgf - removing finalize() which got deprecated for Java
+
+                    - use PhantomReference as a replacement, ie., the RexxCleanupRef class
+                      in the constructor
 
     2019-08-21, rgf - renamed ProxiedJavaClassTool.java to ClassAdapter.java
 
@@ -134,7 +139,7 @@ public class RexxProxy implements InvocationHandler
 {
 
      /** Version information on this class. */
-    static final public String version="104.20190821";
+    static final public String version="105.20210805";
 
 
     /** If set, then output for debugging is created. */
@@ -313,6 +318,10 @@ public class RexxProxy implements InvocationHandler
         this.rexxObjectID     =objectId;
         this.rexxUserDataID   =userDataId;
         this.rexxEngine   =engine;
+
+            // create a PhantomReference such that the object can be unregistered (replaces finalize() )
+        new RexxCleanupRef(this, RexxCleanupRef.RefKind.REXX_PROXY, objectId);
+
 //        this.creationTID      =engine.getRexxInterface().jniRexxGetTID();
 
 if (bDebug==true)
@@ -755,30 +764,6 @@ if (bDebug) System.err.println("////// ---> RexxProxy.invoke(jO, mN, mD, args): 
 
         return this.rexxEngine.call(this, javaObject, methodName, methodDescriptor, (Object[]) args);
     }
-
-
-
-    /** Finalize method will unregister Rexx object from the JNI registry.
-     */
-    @SuppressWarnings( "deprecation" ) public void finalize ()  // method needed to maintain native Rexx side
-    {
-// boolean bDebug=true;
-        if (bDebug)
-        {
-            System.err.println(this+": in finalize(), rexxObjectID=["+rexxObjectID+"]...");
-        }
-
-        // remove ooRexx entry in JNI registry
-
-        int  nr=this.rexxEngine.getRexxInterface().jniUnregisterRexxObject(rexxObjectID);
-
-        if (bDebug)
-        {
-            System.err.println(this+": finalize(), nr="+nr+" of references left...");
-        }
-    }
-
-
 
 
     /* ============================================================================ */

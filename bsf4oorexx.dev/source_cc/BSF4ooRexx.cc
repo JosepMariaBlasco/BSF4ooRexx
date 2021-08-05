@@ -34,8 +34,30 @@ remarks:
     History:
 
                              - TODO: remove dead (commented) code
-                             - TODO (at the end): remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
                              - TODO (at the end): remove #define USE_OREXX_REGISTRY_PACKAGE and code
+
+    6.0.0   2021-08-04, rgf: - added new include file org_rexxla_bsf_engines_rexx_RexxCleanupRef.h
+                             - refactor three JNI functions to allow them to be used from RexxAndJava and
+                               the new RexxCleanupRef Java class:
+
+                               - inline impl_jniRexxHaltInterpreterInstance(...) invoked by
+                                 - Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxHaltInterpreterInstance
+                                 - Java_org_rexxla_bsf_engines_rexx_RexxCleanupRef_jniRexxHaltInterpreterInstance
+
+                               - inline impl_jniRexxTerminateInterpreterInstance(...) invoked by
+                                 - Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTerminateInterpreterInstance
+                                 - Java_org_rexxla_bsf_engines_rexx_RexxCleanupRef_jniRexxTerminateInterpreterInstance
+
+                               - inline impl_jniUnregisterRexxObject(...) invoked by
+                                 - Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniUnregisterRexxObject
+                                 - Java_org_rexxla_bsf_engines_rexx_RexxCleanupRef_jniUnregisterRexxObject
+
+
+
+inline jint impl_jniRexxHaltInterpreterInstance (JNIEnv *env, jobject jobj, jstring j_rii_ID)
+
+    6.0.0   2021-08-03, rgf: - remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
+                             - clean up a little bit left-over (debug) statements
 
     6.0.0   2021-07-18, rgf: - when loading Java now also honor JAVA_HOME environment variable, if present
 			     - search sequence:
@@ -960,15 +982,12 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 // -------------------- JNI-interface related: these C++ functions are called from RexxAndJava.java and are implemented here
 #include "org_rexxla_bsf_engines_rexx_RexxAndJava.h"    // rgf, 2005-06-02: Java native functions we must implement
+#include "org_rexxla_bsf_engines_rexx_RexxCleanupRef.h" // rgf, 2021-08-04: new Java class needs access to some JNI functions
 
 
 // -------------------- ooRexx 4.0 and later
 // prototypes
 int32_t RgfRemoveProxyObject2    (RexxThreadContext *rtc, RexxStringObject obj_id);
-
-#ifdef USE_RII2OID_RELATION
-    int32_t        RgfRemoveAllProxyObjectsByRIID2(RexxThreadContext *rtc, RexxStringObject rii_id);
-#endif
 
 void    RgfSetupOrexxRegistry    (RexxThreadContext *rtc);
 void    RgfTearDownOrexxRegistry (RexxThreadContext *rtc);
@@ -996,11 +1015,11 @@ thread_id_t  RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20210719 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20210804 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20210719 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20210804 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20210719 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20210804 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
     // 2005-06-02, when BSF4ooRexx loads Java, the following Java class is used to initialize all necessary Java objects
@@ -1634,15 +1653,8 @@ RexxDirectoryObject OREXX_REGISTRY_REFCOUNTER = NULL;   // refcounter per regist
 // TODO: rgf, 2017-08-16: not needed anymore ?
 // #define USE_OREXX_REGISTRY_PACKAGE      // 2009-06-10: use package object from RexxProxy
 
-// TODO: rgf, 2017-05-15 - remove this logic (probably not needed anymore) ?
-// #define USE_RII2OID_RELATION
-
 #if defined (USE_OREXX_REGISTRY_PACKAGE)
     RexxDirectoryObject OREXX_REGISTRY_PACKAGE= NULL;   // one entry per cached Rexx object containing the object's package object
-#endif
-
-#ifdef USE_RII2OID_RELATION
-   RexxObjectPtr OREXX_RII2_OID_RELATION = NULL;       // rii->obj_ID; allows to free all rii-related proxies, if an rii ends
 #endif
 
 
@@ -1669,18 +1681,6 @@ inline void RgfSetupOrexxRegistry(RexxThreadContext *rtc)
 
         OREXX_REGISTRY_REFCOUNTER=rtc->NewDirectory();          // create new directory object
         rtc->RequestGlobalReference(OREXX_REGISTRY_REFCOUNTER); // globally lock it (all its collected object will be protected from gc as well)
-
-#ifdef USE_RII2OID_RELATION
-        // get .Relation, create an instance of it and assign it
-   RexxObjectPtr rop1=rtc->GetGlobalEnvironment();
-   RexxObjectPtr rop2=rtc->SendMessage0(rop1, "RELATION");
-   OREXX_RII2_OID_RELATION = rtc->SendMessage0(rop2, "NEW");
-   rtc->ReleaseLocalReference(rop2);
-   rtc->ReleaseLocalReference(rop1);
-
-   rtc->RequestGlobalReference(OREXX_RII2_OID_RELATION); // globally lock it (all its collected object will be protected from gc as well)
-#endif
-
     }
     RgfReleaseLock2(REGISTRY_lock);
 
@@ -1761,26 +1761,6 @@ inline void RgfTearDownOrexxRegistry(RexxThreadContext *rtc)
         OREXX_REGISTRY_REFCOUNTER=NULL;
     }
 
-#ifdef USE_RII2OID_RELATION
-    if (OREXX_RII2_OID_RELATION!=NULL)            // if in debug/testing mode, it could be that it's not initialized
-    {
-    #if defined (DEBUG_OREXX_REGISTRY)
-        fprintf(stderr, "RgfTearDownOrexxRegistry()..., SendMessage0(): emptying OREXX_RII2_OID_RELATION\n");
-        fflush(stderr);
-    #endif
-
-        rtc->SendMessage0(OREXX_RII2_OID_RELATION, "EMPTY");  // empty all objects to give them a chance to uninit
-
-    #if defined (DEBUG_OREXX_REGISTRY)
-        fprintf(stderr, "RgfTearDownOrexxRegistry()..., ReleaseGlobalReference(): OREXX_RII2_OID_RELATION\n");
-        fflush(stderr);
-    #endif
-
-        rtc->ReleaseGlobalReference(OREXX_RII2_OID_RELATION); // allow relation object to be garbage collected as well
-        OREXX_RII2_OID_RELATION=NULL;
-    }
-#endif
-
 
 #if defined (DEBUG_OREXX_REGISTRY)
     fprintf(stderr, "<-- RgfTearDownOrexxRegistry()..., finished, rii_id=[%p]... \n", rtc->instance);
@@ -1831,16 +1811,6 @@ inline CSTRING RgfAddProxyObject(RexxThreadContext *rtc, RexxObjectPtr robj, Rex
         rtc->SendMessage2(OREXX_REGISTRY_REFCOUNTER, "PUT", rso, obj_id); // add counter entry, set to "1"
         // rtc->SendMessage2(OREXX_REGISTRY_REFCOUNTER, "PUT", rtc->String("1"), obj_id); // add counter entry, set to "1"
         rtc->ReleaseLocalReference(rso);
-
-#ifdef USE_RII2OID_RELATION
-        char *c_rii_ID=new char[RGF_POINTER_STRING_WIDTH];
-        RgfPointer2String(rtc->instance, c_rii_ID);  // create a string representation of interpreter instance pointer
-
-        rso=rtc->String(c_rii_ID);
-        rtc->SendMessage2(OREXX_RII2_OID_RELATION,   "PUT", obj_id, rso);  // save object
-        rtc->ReleaseLocalReference(rso);
-        delete [] c_rii_ID;
-#endif
     }
     else    // entry exists already, just adjust the ref-counter
     {
@@ -1870,141 +1840,6 @@ inline CSTRING RgfAddProxyObject(RexxThreadContext *rtc, RexxObjectPtr robj, Rex
     return returnValue;
     // return rtc->CString((RexxStringObject) obj_id);
 }
-
-
-
-#ifdef USE_RII2OID_RELATION
-    // =============================================================================================================
-    // ----------------------------------------------------------------------------
-        // remove Rexx object from the JNI registry if counter is 1, otherwise just reduce reference counter by 1;
-        // returns number of Rexx proxy objects removed
-        //          -1 if not found
-    inline int32_t RgfRemoveAllProxyObjectsByRIID(RexxInstance *ri, char * c_rii_id)
-    {
-    #if defined (DEBUG_REXX_PROXY) || defined (DEBUG_UNREGISTER_REXX_OBJECT)
-        fprintf(stderr, "---> RgfRemoveAllProxyObjectsByRIID(), begin: c_rii_id=[%.256s] (Rexx interpreter instance)\n", c_rii_id);
-        fflush(stderr);
-    #endif
-
-        RexxThreadContext *rtc;
-
-    #if defined (DEBUG_REXX_ATTACH)
-        fprintf(stderr, "--------------> ooRexx->AttachThread() - RgfRemoveAllProxyObjectsByRIID... "); fflush(stderr);
-    #endif
-
-        logical_t rc=ri->AttachThread(&rtc);  // attach thread to Interpreter instance
-
-    #if defined (DEBUG_REXX_ATTACH)
-        fprintf(stderr, "AttachThread() done. rc=[%d]-------------->\n", (int) rc); fflush(stderr);
-    #endif
-
-        if (!rc)                // if successful, go ahead
-        {
-            return -101;        // indicate that we could not attach thread to RexxInstance successfully
-        }
-
-        RexxStringObject rii_id=rtc->String(c_rii_id);  // turn into a RexxString object
-
-        int32_t refs=RgfRemoveAllProxyObjectsByRIID2(rtc, rii_id);    // now carry out the work
-        rtc->ReleaseLocalReference(rii_id);
-
-    #if defined (DEBUG_REXX_ATTACH)
-        fprintf(stderr, "<-------------- ooRexx->DetachThread() - RgfRemoveAllProxyObjectsByRIID... "); fflush(stderr);
-    #endif
-
-        rtc->DetachThread();    // detach thread from Interpreter instance
-
-    #if defined (DEBUG_REXX_ATTACH)
-        fprintf(stderr, "DetachThread() done. <--------------\n"); fflush(stderr);
-    #endif
-
-
-    #if defined (DEBUG_REXX_PROXY)
-        fprintf(stderr, "<--- RgfRemoveAllProxyObjectsByRIID(), end:   c_rii_id=[%.256s], remaining references=[%d]\n", c_rii_id, refs);
-        fflush(stderr);
-    #endif
-
-
-        return refs;
-    }
-
-
-    // ----------------------------------------------------------------------------
-        // worker function
-    inline int32_t RgfRemoveAllProxyObjectsByRIID2(RexxThreadContext *rtc, RexxStringObject rii_id)
-    {
-        int32_t refs=0;
-
-    #if defined (DEBUG_UNREGISTER_REXX_OBJECT)
-        fprintf(stderr, "     ---> RgfRemoveAllProxyObjectsByRIID2, begin: rtc=[%p], rii_id=[%p]\n", rtc, rii_id); fflush(stderr);
-    #endif
-
-        RgfAcquireLock2(REGISTRY_lock);      // make sure, no one else can interfere
-
-    #if defined (DEBUG_UNREGISTER_REXX_OBJECT)
-        fprintf(stderr, "          RgfRemoveAllProxyObjectsByRIID2, acquired REGISTRY_lock, before rtc->SendMessage1(...), rtc=[%p], rii_id=[%p], OREXX_RII2_OID_RELATION=[%p] ...\n", rtc, rii_id, OREXX_RII2_OID_RELATION); fflush(stderr);
-    #endif
-
-        // get all objects associated with given RII_ID
-        RexxArrayObject rao=(RexxArrayObject) rtc->SendMessage1(OREXX_RII2_OID_RELATION, "ALLAT", rii_id);
-        size_t items=rtc->ArrayItems(rao);      // get number of items returned
-
-        if (items>0)
-        {
-            for (size_t i=0; i<items; i++)
-            {
-                RexxObjectPtr obj_id=rtc->ArrayAt(rao, i+1);    // get object to process
-
-                // get reference count, decrease it by one, remove rii_id/obj_id from relation
-                int32_t refCount=0;
-                RexxObjectPtr rop=rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "AT", obj_id);
-                logical_t flag=rtc->ObjectToInt32(rop, &refCount);
-                rtc->ReleaseLocalReference(rop);
-                // logical_t flag=rtc->ObjectToInt32(rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "AT", obj_id), &refCount);
-
-                refCount--;     // decrease ref-counter by one
-                if (refCount>0) // not yet at 0, save actual refCount
-                {
-                    rtc->SendMessage2(OREXX_REGISTRY_REFCOUNTER, "PUT", rtc->Int32ToObject(refCount), obj_id); // add counter entry, set to "1"
-                }
-                else    // if refcount is 0 or lower, remove object from refCount and object registry in addition
-                {
-                    rop=rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "REMOVE", obj_id); // remove counter entry
-                    rtc->ReleaseLocalReference(rop);
-                    rop=rtc->SendMessage1(OREXX_REGISTRY,            "REMOVE", obj_id); // remove object from proxy cache altogether
-                    rtc->ReleaseLocalReference(rop);
-                    // rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "REMOVE", obj_id); // remove counter entry
-                    // rtc->SendMessage1(OREXX_REGISTRY,            "REMOVE", obj_id); // remove object from proxy cache altogether
-
-        #if defined (USE_OREXX_REGISTRY_PACKAGE)
-                    rop=rtc->SendMessage1(OREXX_REGISTRY_PACKAGE,    "REMOVE", obj_id); // package object
-                    rtc->ReleaseLocalReference(rop);
-        #endif
-                }
-
-                // remove rii_id/obj_id pair from relation
-                rop=rtc->SendMessage2(OREXX_RII2_OID_RELATION,   "REMOVEITEM", obj_id, rii_id);  // remove object
-                rtc->ReleaseLocalReference(rop);
-                // rtc->SendMessage2(OREXX_RII2_OID_RELATION,   "REMOVEITEM", obj_id, rii_id);  // remove object
-
-                rtc->ReleaseLocalReference(obj_id);
-            }
-            refs= (int32_t) items;      // return number of objets we have freed
-        }
-        else    // entry does not exist
-        {
-            refs= -1;           // indicate that entry does not exist
-        }
-
-        RgfReleaseLock2(REGISTRY_lock);     // make sure lock gets released
-
-    #if defined (DEBUG_UNREGISTER_REXX_OBJECT)
-        fprintf(stderr, "     <--- RgfRemoveAllProxyObjectsByRIID2, end: refs=[%d]\n", refs); fflush(stderr);
-    #endif
-
-        return refs;            // return number of references (if negative: error)
-    }
-#endif
 
 
 
@@ -2188,19 +2023,6 @@ inline int32_t RgfRemoveProxyObject2(RexxThreadContext *rtc, RexxStringObject ob
             rop=rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "REMOVE", obj_id); // add counter entry, set to "1"
             rtc->ReleaseLocalReference(rop);
             // rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "REMOVE", obj_id); // add counter entry, set to "1"
-
-#ifdef USE_RII2OID_RELATION
-    #if defined (DEBUG_UNREGISTER_REXX_OBJECT_NOISY)
-        fprintf(stderr, "          RgfRemoveProxyObject2, before removing from OREXX_RII2_OID_RELATION=[%p]...\n", OREXX_RII2_OID_RELATION);  fflush(stderr);
-    #endif
-
-            char *c_rii_ID=new char[RGF_POINTER_STRING_WIDTH];
-
-            RgfPointer2String(rtc->instance, c_rii_ID);  // create a string representation of interpreter instance pointer
-            rtc->SendMessage2(OREXX_RII2_OID_RELATION,   "REMOVEITEM", obj_id, rtc->String(c_rii_ID));  // remove object
-            delete [] c_rii_ID;
-#endif
-
         }
     }
     else    // entry does not exist
@@ -7192,10 +7014,6 @@ RexxRoutine2(RexxObjectPtr, BsfJavaException, OPTIONAL_CSTRING, option, OPTIONAL
 
         context->DirectoryPut(rdo, OREXX_REGISTRY_REFCOUNTER, "OREXX_REGISTRY_REFCOUNTER");
 
-    #ifdef USE_RII2OID_RELATION
-        context->DirectoryPut(rdo, OREXX_RII2_OID_RELATION, "OREXX_RII2_OID_RELATION");
-    #endif
-
        return rdo;
     }
 #endif
@@ -9506,20 +9324,8 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
 
 
 
-
-
-
-
-
-// ----------------------------------------------------------------------------------------------
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniRexxHaltInterpreterInstance
- * Signature: (Ljava/lang/String;)I
- */
-JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxHaltInterpreterInstance
-
-  (JNIEnv *env, jobject jobj, jstring j_rii_ID)
+// ======== 2021-08-04, rgf: refactor to allow RexxAndJava and RexxCleanupRef to use this JNI function ===>
+inline jint impl_jniRexxHaltInterpreterInstance (JNIEnv *env, jobject jobj, jstring j_rii_ID)
 {
 #if defined(DEBUG_JNI) || defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY)
     thread_id_t thisTid=RgfGetTID();
@@ -9618,17 +9424,38 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxHaltI
 
     return (jint) 0;
 }
+// <======== 2021-08-04, rgf =============================================================================
 
 
 // ----------------------------------------------------------------------------------------------
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniRexxTerminateInterpreterInstance
+ * Method:    jniRexxHaltInterpreterInstance
  * Signature: (Ljava/lang/String;)I
  */
-JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTerminateInterpreterInstance
+
+JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxHaltInterpreterInstance
 
   (JNIEnv *env, jobject jobj, jstring j_rii_ID)
+{
+    return impl_jniRexxHaltInterpreterInstance(env, jobj, j_rii_ID);
+}
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxCleanupRef
+ * Method:    jniRexxHaltInterpreterInstance
+ * Signature: (Ljava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxCleanupRef_jniRexxHaltInterpreterInstance
+  (JNIEnv *env, jobject jobj, jstring j_rii_ID)
+{
+    return impl_jniRexxHaltInterpreterInstance(env, jobj, j_rii_ID);
+}
+// ----------------------------------------------------------------------------------------------
+
+
+// ======== 2021-08-04, rgf: refactor to allow RexxAndJava and RexxCleanupRef to use this JNI function ===>
+inline jint impl_jniRexxTerminateInterpreterInstance (JNIEnv *env, jobject jobj, jstring j_rii_ID)
 {
 
 #if defined(DEBUG_JNI) || defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_TERMINATE_INTERPRETER) || defined (DEBUG_JNI_ENTRY)
@@ -9759,61 +9586,16 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
     fflush(stderr);
 #endif
 
-    // ---rgf, 20090903: remove all created Rexx proxy objects created in the given RII_ID
-    // global variable: int bsfInvokedBy = 0;     // 0=noJVM, 1=byJava, 2=byRexx
-//    if (bsfInvokedBy==1)    // BSF4Rexx invoked by Java, then o.k. to remove the cached Rexx objects
-#if defined (USE_RII2OID_RELATION)
-    {
-
-    #if defined (DEBUG_TERMINATE_INTERPRETER)
-            fprintf(stderr, "---> ---> ---> ");
-            fprintf(stderr, "(3c) .._jniRexxTerminateInterpreterInstance(...): BEFORE** RgfRemoveAllProxyObjectsByRIID...\n");fflush(stderr);
-    #endif
-
-        int32_t nrFreed=RgfRemoveAllProxyObjectsByRIID(tmpInstance, c_rii_ID);
-
-       // RGF_ATTACH_NEW
-        defaultJVM->jvm->DetachCurrentThread();     // speculation: once returned from the JNI invocation this thread is not attached to the JVM anymore
-
-    #if defined (DEBUG_TERMINATE_INTERPRETER)
-            fprintf(stderr, "---> ---> ---> ");
-            fprintf(stderr, "(3c) .._jniRexxTerminateInterpreterInstance(...): after*** RgfRemoveAllProxyObjectsByRIID, nrFreed=[%d] (cached ooRexx objects)\n", nrFreed);
-            fflush(stderr);
-    #endif
-
-    }
-#endif
 
 #if defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_TERMINATE_INTERPRETER)
     fprintf(stderr, "(4a) .._jniRexxTerminateInterpreterInstance(...): before Terminate(), thisTid=[%lu], c_rii_ID=tmpInstance=[%p]\n", (unsigned long) thisTid, tmpInstance);
     fflush(stderr);
 #endif
 
-    tmpInstance->Terminate();    // wait until all interpreter threads terminated
-
-#if defined (INFO_TERMINATE_RII)        // rgf, 2017-08-19
-    fprintf(stderr, "<============== _jniRexxTerminateInterpreterInstance(), count=[%8d], tid=[%6lu], rii_ID=[%p]\n\n",
-                    countRII, (unsigned long) RgfGetTID(), instance);
-    fflush(stderr);
-#endif
+        tmpInstance->Terminate();    // wait until all interpreter threads terminated
 
 #if defined (DEBUG_TERMINATE_INTERPRETER)
     fprintf(stderr, "(4b) .._jniRexxTerminateInterpreterInstance(...): AFTER Terminate(), thisTid=[%lu], tmpInstance=[%p]\n", (unsigned long) thisTid, tmpInstance);
-    fflush(stderr);
-#endif
-
-            // now take care of removing the JRST and all dependants of this instance
-    thread_id_t tid=RgfGetTID();   // get current TID
-
-#if defined (DEBUG_TERMINATE_INTERPRETER)
-    fprintf(stderr, "(6a) .._jniRexxTerminateInterpreterInstance(...), thisTid=[%lu], c_rii_ID=[%p], before removeALL_RIID_nodes ...\n",
-                    (unsigned long) thisTid, instance ); //, a_JRST);
-    fflush(stderr);
-#endif
-
-#if defined (DEBUG_TERMINATE_INTERPRETER)
-    fprintf(stderr, "(6b) .._jniRexxTerminateInterpreterInstance(...), thisTid=[%lu], c_rii_ID=[%p], after removeALL_RIID_nodes .\n",
-                    (unsigned long) thisTid, instance); // , tmpRes);
     fflush(stderr);
 #endif
 
@@ -9830,14 +9612,38 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
     return (jint) 0;
 }
 
-
-
-
 // ----------------------------------------------------------------------------------------------
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniUnregisterRexxObject
+ * Method:    jniRexxTerminateInterpreterInstance
  * Signature: (Ljava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTerminateInterpreterInstance
+
+  (JNIEnv *env, jobject jobj, jstring j_rii_ID)
+{
+    return impl_jniRexxTerminateInterpreterInstance(env, jobj, j_rii_ID);
+}
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxCleanupRef
+ * Method:    jniRexxTerminateInterpreterInstance
+ * Signature: (Ljava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxCleanupRef_jniRexxTerminateInterpreterInstance
+
+  (JNIEnv *env, jobject jobj, jstring j_rii_ID)
+{
+    return impl_jniRexxTerminateInterpreterInstance(env, jobj, j_rii_ID);
+}
+// ----------------------------------------------------------------------------------------------
+
+
+
+
+
+// ======== 2021-08-04, rgf: refactor to allow RexxAndJava and RexxCleanupRef to use this JNI function ===>
+/*
     returns value received from RgfRemoveProxyObject():
 
           >0  still references left
@@ -9846,11 +9652,9 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
           -2  Java was invoked by Rexx, do not free proxies, see comment inline
         -100  No RexxInterpreter instance could be found
         -101  thread could not be attached to RexxInterpreter instance
+*/
 
- */
-JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniUnregisterRexxObject
-
-  (JNIEnv *env, jobject jobj, jstring obj_ID)
+inline jint impl_jniUnregisterRexxObject (JNIEnv *env, jobject jobj, jstring obj_ID)
 {
 #if defined(DEBUG_JNI) || defined (DEBUG_REXX_PROXY) || defined (DEBUG_UNREGISTER_REXX_OBJECT) || defined (DEBUG_JNI_ENTRY)
     thread_id_t thisTid=RgfGetTID();
@@ -9858,29 +9662,11 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniUnregiste
     fflush(stderr);
 #endif
 
-
-    // ---rgf, 20090903: unfortunately, if a Rexx program has been finished, cleaning up cached RexxProxy
-    //                   objects may cause exceptions in the JVM when running Java object's finalizer
-    //                   methods (as if ooRexx 4.0.0 would go away without warning in the middle of processing);
-    //
-    //          -- new logic for the time being: if BSF4Rexx was invoked by Rexx, then do not free cached
-    //             Rexx objects to avoid the above situation
-    //
-    //          -- if Java invoked BSF4Rexx, then upon using RexxEngine.terminate(), all cached Rexx objects
-    //             created by that RexxEngine's Rexx interpreter instance will get freed, such that those
-    //             Rexx objects can be freed (and their uninit's, if any, could be run); this will allow
-    //             a rather conservative usage of Rexx object resources in long running Java hosts
-    //
-    //  TODO: - check on future version of ooRexx (> 4.0.0), if that behaviour can be circumvented/changed
-    //        - it would be possible to define a public ooRexx routine to free those cached Rexx objects in
-    //          case those Rexx programs are long running as well and employing a lot of RexxProxy objects
-    //          (maybe quite unlikely, hence not implementing at the time of this writing)
-    //
-    // global variable: int bsfInvokedBy = 0;     // 0=noJVM, 1=byJava, 2=byRexx
 //  rgf, 20161220: on ooRexx 5.0 beta no problem; creating a global boolean variable bsfDoUnregisterRexxObject
 //                 which can be changed by the new external BSF-function BsfDoUnregisterRexxObject in case
 //                 traps occur because of this at the end of a Rexx program (when a Java RexxProxy gets finalized
 //                 and this callback gets used
+    // global variable: int bsfInvokedBy = 0;     // 0=noJVM, 1=byJava, 2=byRexx
     if (bsfInvokedBy==2 &&  bsfDoUnregisterRexxObject==false)    // BSF4Rexx invoked by Rexx (Java loaded via Rexx) ?
     {
         return -2;                  // indicate that not processed
@@ -9941,6 +9727,49 @@ if (result==-1)
 
     return (jint) result;       // return reference counter value
 }
+
+
+
+
+
+// ----------------------------------------------------------------------------------------------
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniUnregisterRexxObject
+ * Signature: (Ljava/lang/String;)I
+    returns value received from RgfRemoveProxyObject():
+
+          >0  still references left
+          =0  no more references left, entries got removed from registry
+          -1  Rexx proxy object could not be found
+          -2  Java was invoked by Rexx, do not free proxies, see comment inline
+        -100  No RexxInterpreter instance could be found
+        -101  thread could not be attached to RexxInterpreter instance
+
+ */
+JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniUnregisterRexxObject
+
+  (JNIEnv *env, jobject jobj, jstring obj_ID)
+{
+    return impl_jniUnregisterRexxObject (env, jobj, obj_ID);
+}
+
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxCleanupRef
+ * Method:    jniUnregisterRexxObject
+ * Signature: (Ljava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxCleanupRef_jniUnregisterRexxObject
+
+  (JNIEnv *env, jobject jobj, jstring obj_ID)
+{
+    return impl_jniUnregisterRexxObject (env, jobj, obj_ID);
+}
+// ----------------------------------------------------------------------------------------------
+
+
+
 
 
 
