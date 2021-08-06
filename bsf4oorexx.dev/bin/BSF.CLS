@@ -20,6 +20,16 @@
 
    date:
 
+         2021-08-06, ---rgf, - mark all attributes and methods explicitly as guarded which to
+                               "defend" against side-effects of the new ooRexx 5.0 setting of
+                               methods by default to "unguarded", if they do not contain either
+                               the EXPOSE or the USE LOCAL statement; this has undesired side
+                               effects, hence making sure that the guard state is explicitly
+                               set to insulate from any future changes in this regards; this
+                               fix is necessary to get "bsf4oorexx/samples/JavaFX/javafx_update_GUI-from-non-GUI-thread.rxj"
+                               and "bsf4oorexx/samples/3-090_update_awtSwing_GUI-from-non-GUI-thread.rxj"
+                               working again
+
          2021-02-16, ---rgf, - routine parseJavaOptions() will now add option "java.class.path" if
                                not defined using CLASSPATH environment variable (remove duplicates,
                                explode trailing asterisks '*'; in Java 6 explosion of asterisks was
@@ -873,7 +883,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="641.20210805" -- set version (date distribution got created)
+      .bsf4rexx~version="641.20210806" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -1513,7 +1523,7 @@ get_processed_classpath: procedure
    passed to BSF which uses them to create the bean instance
    from the given Java class, ---rgf, 2003-09-05
    ------------------------------------------------------------- */
-::METHOD newStrict
+::METHOD newStrict guarded
   USE ARG javaClass, args
 
   instance=.bsf_reference~new("uninitialized BSF-object!")
@@ -1611,21 +1621,21 @@ syntax:
 ::class BSF4REXX public
 
 /* ------------------------------------------------------------------------------------------------- */
-::method    init class
+::method    init guarded class
   expose bsf.dir
   bsf.dir=.nil
 
 /* ------------------------------------------------------------------------------------------------- */
-::attribute bsf.dir get class
+::attribute bsf.dir get guarded class
 
 /* ------------------------------------------------------------------------------------------------- */
-::attribute bsf.dir set class
+::attribute bsf.dir set guarded class
   expose bsf.dir
   if bsf.dir<>.nil then return      -- already assigned, do not accept another one
   use arg bsf.dir
 
 /* ------------------------------------------------------------------------------------------------- */
-::method unknown     class    -- forward any unknown messages to the attribute
+::method unknown     guarded class    -- forward any unknown messages to the attribute
   expose bsf.dir
   forward message (arg(1)) to (bsf.dir) arguments (arg(2))
 
@@ -1643,7 +1653,7 @@ syntax:
    class method which merely initializes the class attribute "bsf.null_string"
    to its default value
    ------------------------------------------------------------- */
-::METHOD init           CLASS
+::METHOD init           guarded CLASS
   -- EXPOSE bsf.null_string bsf.FullJavaClassName bsf.JavaClassObjectProxies bsf.JavaClassObjects dir
   EXPOSE bsf.null_string bsf.FullJavaClassName rBSF rBsfUninit4JavaBean rBsfRexxProxy rBsfCreateRexxProxy
 
@@ -1658,13 +1668,13 @@ syntax:
   rBsfCreateRexxProxy=.routines["XBSFCREATEREXXPROXY"]
 
 /* ------------------------------------------------------------------------------------------------- */
-::ATTRIBUTE rBSF                 CLASS
+::ATTRIBUTE rBSF                 guarded CLASS
 /* ------------------------------------------------------------------------------------------------- */
-::ATTRIBUTE rBsfUninit4JavaBean  CLASS
+::ATTRIBUTE rBsfUninit4JavaBean  guarded CLASS
 /* ------------------------------------------------------------------------------------------------- */
-::ATTRIBUTE rBsfRexxProxy        CLASS
+::ATTRIBUTE rBsfRexxProxy        guarded CLASS
 /* ------------------------------------------------------------------------------------------------- */
-::ATTRIBUTE rBsfCreateRexxProxy  CLASS
+::ATTRIBUTE rBsfCreateRexxProxy  guarded CLASS
 
 
 /* ------------------------------------------------------------------------------------------------- */
@@ -1696,7 +1706,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::method bsf.jco attribute class private -- contains the BSF proxy to the Java Class Object (JCO) in
+::method bsf.jco attribute guarded class private -- contains the BSF proxy to the Java Class Object (JCO) in
                                          -- the BSF registry, such that it does not get garbage collected!
 
 
@@ -1706,7 +1716,7 @@ syntax:
 
  -->    new_class~bsf.setBSF4RexxInfos(new_class, jco, java_path)  -- rgf 2010-04-18
 */
-::method bsf.setBSF4RexxInfos class
+::method bsf.setBSF4RexxInfos guarded class
   expose bsf.jco bsf.FullJavaClassName
   if arg(1)<>self | arg()<>3 then return .false
 
@@ -1732,7 +1742,7 @@ syntax:
            the Rexx new and newStrict methods to ease creation of instancews for
            Rexx programmers
    ------------------------------------------------------------- */
-::METHOD bsf.import class
+::METHOD bsf.import guarded class
   signal on syntax
   USE STRICT ARG java_path, classname=.nil, extendedJavaClz=.nil  -- 2018-09-14 changed to STRICT
 
@@ -1788,7 +1798,7 @@ syntax:
 /* -------------------------------------------------------------
    a synonym for bsf.import(), remove code, forward to class method BSF.IMPORT
    ------------------------------------------------------------- */
-::METHOD bsf.importClass class
+::METHOD bsf.importClass guarded class
   FORWARD MESSAGE ("BSF.IMPORT")
 
 
@@ -1799,7 +1809,7 @@ syntax:
    proxy); needs to be a method in order to be able to use Object's
    SETMETHOD
    ------------------------------------------------------------- */
-::METHOD bsf.attachNewStrict class
+::METHOD bsf.attachNewStrict guarded class
   use arg java_path
   if self~superclasses[1]<>.bsf then return   -- not a direct subclass of "BSF",
                                               -- hence not from "IMPORT"
@@ -1814,11 +1824,11 @@ syntax:
    Java class got imported (encapsulated in an Object Rexx class
    proxy); not directly accessible from outside the class
    ------------------------------------------------------------- */
-::method bsf.FullJavaClassName class  -- can be read from any object
+::method bsf.FullJavaClassName guarded class  -- can be read from any object
   expose bsf.FullJavaClassName
   return bsf.FullJavaClassName
 
-::method  "bsf.FullJavaClassName=" class private  -- can only be set via "self"
+::method  "bsf.FullJavaClassName=" guarded class private  -- can only be set via "self"
   expose  bsf.FullJavaClassName
   use arg bsf.FullJavaClassName
 
@@ -1833,13 +1843,13 @@ syntax:
    ------------------------------------------------------------- */
 ::ATTRIBUTE bsf.null_string get unguarded CLASS
 /* ------------------------------------------------------------------------------------------------- */
-::ATTRIBUTE bsf.null_string set CLASS
+::ATTRIBUTE bsf.null_string set guarded CLASS
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::attribute rii_id  set private  -- stores the RII (Rexx interpreter instance) id that created the instance
+::attribute rii_id  set guarded private  -- stores the RII (Rexx interpreter instance) id that created the instance
 /* ------------------------------------------------------------------------------------------------- */
-::attribute rii_id  get -- rgf, 2016-11-27, stores the RII (Rexx interpreter instance) id that created the instance
+::attribute rii_id  get guarded -- rgf, 2016-11-27, stores the RII (Rexx interpreter instance) id that created the instance
 
 /* ------------------------------------------------------------------------------------------------- */
 /* -------------------------------------------------------------
@@ -1847,7 +1857,7 @@ syntax:
    passed to BSF which uses them to create the bean instance
    from the given Java class
    ------------------------------------------------------------- */
-::METHOD init
+::METHOD init   guarded
   expose rii_id                    -- RII (Rexx interpreter nstance) where the bean gets stored in the BSF registry
   USE ARG javaClass, args
 
@@ -1892,7 +1902,7 @@ syntax:
 --                        shutting down!
 -- 2018-02-23, rgf: not returning anything from UNINIT; make sure we deregister the Java object even in the
 --                  the case that a RexxAndJava object does not exist (TODO: BsfUnregisterJavaObject)
-::METHOD uninit
+::METHOD uninit guarded
   expose rii_id
 
   signal on syntax name syntax1     -- trap any syntax conditions
@@ -1915,7 +1925,7 @@ syntax1:  -- intercept and thereby clear any condition
    will pass all received arguments (starting with the second argument)
    as an array object to UNKNOWN
    ------------------------------------------------------------- */
-::METHOD bsf.dispatch
+::METHOD bsf.dispatch guarded
   use ARG methodName
   forward message ("BSF.INVOKE")
 
@@ -1934,7 +1944,7 @@ syntax1:  -- intercept and thereby clear any condition
    It is expected that this particular message gets only invoked by DO...OVER, which expects (as of ooRexx 5.0.0beta)
    a genuine Rexx array object to be returned
 */
-::method makearray   -- testing, 2016-11-06, rgf
+::method makearray  guarded  -- testing, 2016-11-06, rgf
    if arg()=0 then
    do
        res=self~bsf.dispatch("MAKEARRAY")    -- send the message directly to the Java object
@@ -1954,7 +1964,7 @@ syntax1:  -- intercept and thereby clear any condition
    Intercept supplier message as returned value might be a RexxProxy which we need to extract the
    Rexx object from.
 */
-::method supplier    -- testing, 2016-11-06, rgf
+::method supplier   guarded  -- testing, 2016-11-06, rgf
 
    if arg()=0 then
    do
@@ -2042,7 +2052,7 @@ syntax:
 
 --   instance methods
    -- TODO: 2017-08-21, rgf: remove this eventually (pre ooRexx 4.0 code)
-::METHOD bsf.addEventListener  /* add event listener to the Java object*/
+::METHOD bsf.addEventListener guarded  /* add event listener to the Java object*/
    use arg eventSetName, filter, text
 
    signal on syntax
@@ -2060,19 +2070,19 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD bsf.exit              /* exit Rexx                    */
+::METHOD bsf.exit             guarded  /* exit Rexx                    */
    FORWARD MESSAGE ("BSF.EXIT") TO (self~class)
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD bsf.invoke
+::METHOD bsf.invoke           guarded
    parse arg methodName
    -- create UNKNOWN format (first argument is unknown method name)
    return self~unknown(methodName, arg(2, 'A'))
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::method bsf.invokeJSO  -- rgf, 20141003: return a reference to a Java or NetRexx object
+::method bsf.invokeJSO  guarded -- rgf, 20141003: return a reference to a Java or NetRexx object
   USE ARG name          -- name of method to be invoked
   args=arg(2, 'A')
 
@@ -2091,7 +2101,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD bsf.invokeStrict
+::METHOD bsf.invokeStrict    guarded
   USE ARG name          -- name of method to be invoked
   args=arg(2, 'A')
 
@@ -2110,7 +2120,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD bsf.invokeStrictJSO  -- rgf, 20141004: return a reference to a Java or NetRexx object
+::METHOD bsf.invokeStrictJSO guarded  -- rgf, 20141004: return a reference to a Java or NetRexx object
   USE ARG name          -- name of method to be invoked
   args=arg(2, 'A')
 
@@ -2129,7 +2139,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD bsf.getFieldValue
+::METHOD bsf.getFieldValue   guarded
    use strict arg fieldName
    signal on syntax
    -- 2018-02-25, rgf: no need to escape .nil on ooRexx, will be correctly translated to null
@@ -2145,7 +2155,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD bsf.getFieldValueJSO -- rgf, 2014-10-04
+::METHOD bsf.getFieldValueJSO guarded -- rgf, 2014-10-04
    use strict arg fieldName
    signal on syntax
    -- 2018-02-25, rgf: no need to escape .nil on ooRexx, will be correctly translated to null
@@ -2161,7 +2171,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD bsf.getFieldValueStrict -- case-sensitive fieldName !
+::METHOD bsf.getFieldValueStrict guarded -- case-sensitive fieldName !
    -- parse arg fieldName
    use strict arg fieldName
 
@@ -2180,7 +2190,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD bsf.getFieldValueStrictJSO -- rgf, 2014-10-04, case-sensitive fieldName !
+::METHOD bsf.getFieldValueStrictJSO guarded -- rgf, 2014-10-04, case-sensitive fieldName !
    use strict arg fieldName
    signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
@@ -2197,7 +2207,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD bsf.setFieldValue
+::METHOD bsf.setFieldValue       guarded
    use strict arg fieldName, newValue
    signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
@@ -2214,7 +2224,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD bsf.setFieldValueStrict
+::METHOD bsf.setFieldValueStrict guarded
   use strict arg fieldName, x, ...     -- at least two arguments a must
 
    signal on syntax
@@ -2233,7 +2243,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD bsf.getPropertyValue
+::METHOD bsf.getPropertyValue    guarded
   parse arg propertyName, index
   if arg(2, "Omitted") then index = "" -- no index given, set to empty string
   signal on syntax
@@ -2250,7 +2260,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD bsf.getPropertyValueJSO    -- rgf, 2014-10-04
+::METHOD bsf.getPropertyValueJSO guarded    -- rgf, 2014-10-04
   parse arg propertyName, index
   if arg(2, "Omitted") then index = "" -- no index given, set to empty string
   signal on syntax
@@ -2267,7 +2277,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD bsf.setPropertyValue
+::METHOD bsf.setPropertyValue    guarded
   parse arg propertyName, index
 
   signal on syntax
@@ -2285,7 +2295,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD bsf.setPropertyValueStrict
+::METHOD bsf.setPropertyValueStrict guarded
   parse arg propertyName, index
   if arg(2, "Omitted") then index = "" -- no index given, set to empty string
 
@@ -2304,7 +2314,7 @@ syntax:
 
 
 -- rgf, 2010-02-20
-::METHOD bsf.isA
+::METHOD bsf.isA                 guarded
   use strict arg javaClass
 
   signal on syntax
@@ -2332,7 +2342,7 @@ syntax:
    this instance of Rexx, this causes Rexx to be shut down as well; the
    Java side waits "waitTime" msecs before terminating the JVM
    ------------------------------------------------------------- */
-::METHOD bsf.exit class
+::METHOD bsf.exit class          guarded
   expose rBSF
   use arg exitValue, waitTime
 
@@ -2357,7 +2367,7 @@ syntax:
    to a msec is calculated, although the Java side may deviate up to 15/100 secs
    (we are not talking realtime here ;)
    ------------------------------------------------------------- */
-::METHOD bsf.sleep class
+::METHOD bsf.sleep class         guarded
   expose rBSF
   use arg sleepTime
   signal on syntax
@@ -2377,7 +2387,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD     bsf.loadClass                 class
+::METHOD     bsf.loadClass                 guarded class
   expose rBSF
   -- parse arg JavaClassName
   use arg javaClassName, name4env=.nil
@@ -2399,7 +2409,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD     bsf.lookupBean                class
+::METHOD     bsf.lookupBean                guarded class
   expose rBSF
   parse arg beanName
   signal on syntax
@@ -2417,7 +2427,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD     bsf.pollEventText             class
+::METHOD     bsf.pollEventText             guarded class
   expose rBSF
   parse arg timeOut
 
@@ -2439,7 +2449,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD     bsf.getStaticValue            class
+::METHOD     bsf.getStaticValue            guarded class
   expose rBSF
   parse arg className, fieldName
   signal on syntax
@@ -2456,7 +2466,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD     bsf.getStaticValueJSO         class   -- rgf, 2014-10-04
+::METHOD     bsf.getStaticValueJSO         guarded class   -- rgf, 2014-10-04
   expose rBSF
   parse arg className, fieldName
   signal on syntax
@@ -2473,7 +2483,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD     bsf.getStaticValueStrict      class
+::METHOD     bsf.getStaticValueStrict      guarded class
   expose rBSF
   parse arg className, fieldName
   signal on syntax
@@ -2490,7 +2500,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD     bsf.getStaticValueStrictJSO   class   -- rgf, 2014-10-04
+::METHOD     bsf.getStaticValueStrictJSO   guarded class   -- rgf, 2014-10-04
   expose rBSF
   parse arg className, fieldName
   signal on syntax
@@ -2507,7 +2517,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD     bsf.postEventText              class
+::METHOD     bsf.postEventText             guarded  class
   expose rBSF
   parse arg eventText, priority
   signal on syntax
@@ -2546,7 +2556,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD     bsf.createArray                class
+::METHOD     bsf.createArray                guarded class
   expose rBSF
 
   signal on syntax
@@ -2570,7 +2580,7 @@ syntax:
    20150721: make sure we wrap non-String and non-BSF Rexx objects as RexxProxy objects,
              reliefing the programmers to do so
 */
-::METHOD     bsf.createArrayOf              class  -- rgf, 2009-07-30
+::METHOD     bsf.createArrayOf              guarded class  -- rgf, 2009-07-30
   expose rBSF rBsfCreateRexxProxy
   signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
@@ -2602,7 +2612,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD     bsf.createJavaArray                class          -- rgf, 2009-09-10
+::METHOD     bsf.createJavaArray                guarded class          -- rgf, 2009-09-10
   forward message (bsf.createArray)
 
 
@@ -2611,12 +2621,12 @@ syntax:
    (either a Java class object or as a fully qualified Java class name). All (optional)
    following arguments are being taking
 */
-::METHOD     bsf.createJavaArrayOf              class  -- rgf, 2009-09-10
+::METHOD     bsf.createJavaArrayOf              guarded class  -- rgf, 2009-09-10
   forward message (bsf.createArrayOf)
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD     bsf.wrapEnumeration            class
+::METHOD     bsf.wrapEnumeration            guarded class
   expose rBSF
   parse arg beanName
   signal on syntax
@@ -2635,7 +2645,7 @@ syntax:
 /* ------------------------------------------------------------------------------------------------- */
    -- set the string which from now on represents the Java "null" on both sides,
    -- the Rexx and the Java side; this was very important for classical Rexx and Regina
-::METHOD     bsf.setRexxNullString         class
+::METHOD     bsf.setRexxNullString         guarded class
   expose rBSF
   parse arg newValue
   signal on syntax
@@ -2657,7 +2667,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD     bsf.haltThread class
+::METHOD     bsf.haltThread guarded class
   expose rBSF
   use strict arg tid
 
@@ -2713,7 +2723,7 @@ syntax:
      to RexxEngine.call() [native code: ...jniRexxRunProgram(),
      ...jniRexxSendMessageToRexxObject(), both will supply .true as a new second arg]
    ------------------------------------------------------------- */
-::METHOD init
+::METHOD init               guarded
    use arg beanName, bIncr=.false   -- should be .false by default, only when Java-args get proxied should ".true" be given
    self~ObjectName=beanName
    self~rii_id=.bsf.rii_id    -- remember RII that created this instance
@@ -2723,7 +2733,7 @@ syntax:
       call bsf 'increaseRefCounter', beanName   -- increment BSF registry reference counter
 
 
-::METHOD util.setmethod    -- rgf, 20180607: allow individually to set methods (e.g. for UNO_ENUM in UNO.CLS)
+::METHOD util.setmethod    guarded -- rgf, 20180607: allow individually to set methods (e.g. for UNO_ENUM in UNO.CLS)
   forward message ("setmethod")
 
 
@@ -2750,7 +2760,7 @@ syntax:
      to RexxEngine.call() [native code: ...jniRexxRunProgram(),
      ...jniRexxSendMessageToRexxObject(), both will supply .true as a new second arg]
    ------------------------------------------------------------- */
-::METHOD init
+::METHOD init        guarded
   expose items dimension indexArray    -- direct access to object variable
   use arg beanName, dimension, bIncr=.false  -- assign "dimension" directly to exposed object variable
 
@@ -2787,7 +2797,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::method uninit      -- rgf, 20120604: make sure we also unregister the index array to avoid a memory leak
+::method uninit      guarded -- rgf, 20120604: make sure we also unregister the index array to avoid a memory leak
   expose indexArray
 
   signal on syntax name syntax1
@@ -2813,7 +2823,7 @@ syntax2:    -- just clear condition
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD dimension
+::METHOD dimension   guarded
   expose dimension dimensions
 
   if arg(1, "Omitted") then return dimension    -- return number of dimensions
@@ -2824,7 +2834,7 @@ syntax2:    -- just clear condition
 
 /* ------------------------------------------------------------------------------------------------- */
       -- get the needed information from ArrayWrapper, make it available with Object Rexx attributes
-::METHOD getData private
+::METHOD getData guarded private
   expose dimensions items
 
   signal on syntax
@@ -2855,7 +2865,7 @@ syntax:
   -- Note: This array-proxy is "1"-based (not 0-based as Java), because Object Rexx arrays
   -- are "1", based, therefore subscript adjustments are necessary, before calling the Java side
   -- The indices can be given individually in comma-separated form or in form of a Rexx array
-::METHOD at
+::METHOD at          guarded
    expose indexArray  dimension
    use arg tmpArr
 
@@ -2901,7 +2911,7 @@ syntax: raise propagate /* propagate dimension/subscript exception */
 
 /* ------------------------------------------------------------------------------------------------- */
   -- allow for referring to array elements as if it was an Object Rexx array
-::METHOD "[]"
+::METHOD "[]"        guarded
   FORWARD MESSAGE ("AT")        -- synonym for "AT", use its implementation
 
 
@@ -2909,7 +2919,7 @@ syntax: raise propagate /* propagate dimension/subscript exception */
   -- Note: This array-proxy is "1"-based (not 0-based as Java), because Object Rexx arrays
   -- are "1", based, therefore subscript adjustments are necessary, before calling the Java side
   -- The indices can be given individually in comma-separated form or in form of a Rexx array
-::METHOD put
+::METHOD put         guarded
   expose indexArray dimension
   use arg value, tmpArr
 
@@ -2953,7 +2963,7 @@ syntax: raise propagate /* propagate dimension/subscript exception */
   -- Note: This array-proxy is "1"-based (not 0-based as Java), because Object Rexx arrays
   -- are "1", based, therefore subscript adjustments are necessary, before calling the Java side
   -- The indices can be given individually in comma-separated form or in form of a Rexx array
-::METHOD putStrict
+::METHOD putStrict   guarded
   expose indexArray dimension
   use arg type, value, tmpArr
 
@@ -2998,13 +3008,13 @@ syntax: raise propagate /* propagate dimension/subscript exception */
   -- using this syntax variant has the following implication: the valueType and the
   -- value itself must be given as *one* string value; the first word is the valueType
   -- the rest the value!    e.g.: xyz[1, 2, 3] = "String Hi, there!"
-::METHOD "[]="
+::METHOD "[]="       guarded
   FORWARD MESSAGE ("PUT") -- let the PUT-method do the work, 2003-05-10
 
 
 /* ------------------------------------------------------------------------------------------------- */
 -- calculates (once) and returns number of individual elements in array
-::METHOD items
+::METHOD items       guarded
   expose items  -- set access to object variable
   if items=-1 then self~getData     -- not yet set, get the data from the ArrayWrapper
   return items
@@ -3012,13 +3022,13 @@ syntax: raise propagate /* propagate dimension/subscript exception */
 
 /* ------------------------------------------------------------------------------------------------- */
 -- Java arrays have a fixed size and their storage is pre-allocated: return same value as method items
-::METHOD size
+::METHOD size        guarded
   return self~items
 
 
 /* ------------------------------------------------------------------------------------------------- */
 -- this method creates a supplier method
-::METHOD  SUPPLIER
+::METHOD  SUPPLIER   guarded
 
   signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
@@ -3043,7 +3053,7 @@ syntax:
 
 /* ------------------------------------------------------------------------------------------------- */
 -- this method is needed by "DO ... OVER" ad it requires a native Rexx array object!
-::METHOD MAKEARRAY
+::METHOD MAKEARRAY   guarded
 
   signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
@@ -3085,7 +3095,7 @@ syntax:
    --
 ::CLASS BSF_ARRAY_PROXY SUBCLASS BSF_ARRAY_REFERENCE
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD init
+::METHOD init        guarded
   use arg beanName, dimension, items         -- name of Java object as registered in the BSF registry
   self~rii_id=.bsf.rii_id    -- remember RII that created this instance
 
@@ -3094,12 +3104,12 @@ syntax:
   self~items     =items
 
 /* ------------------------------------------------------------------------------------------------- */
-::method dimension attribute
+::method dimension guarded attribute
 /* ------------------------------------------------------------------------------------------------- */
-::method items     attribute
+::method items     guarded attribute
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD uninit            -- intercept destructor message, don't remove BSF registry entry
+::METHOD uninit    guarded         -- intercept destructor message, don't remove BSF registry entry
 
   NOP
 
@@ -3478,22 +3488,22 @@ syntax:
 ::class  "JavaStaticFields.Directory"  subclass directory
 
 /* ------------------------------------------------------------------------------------------------- */
-::METHOD init           CLASS
+::METHOD init           guarded CLASS
   EXPOSE rBSF
    -- get the routine objects (of the native routines) and cache them in class attributes; rgf, 20180224
   rBSF               =.routines~xBSF
 
 /* ------------------------------------------------------------------------------------------------- */
-::ATTRIBUTE rBSF        CLASS
+::ATTRIBUTE rBSF        guarded CLASS
 
 /* ------------------------------------------------------------------------------------------------- */
-::method JavaClassName   attribute -- memorize name of Java class
+::method JavaClassName   guarded attribute -- memorize name of Java class
 /* ------------------------------------------------------------------------------------------------- */
-::method JavaClassObject attribute -- memorize Java class object
+::method JavaClassObject guarded attribute -- memorize Java class object
 /* ------------------------------------------------------------------------------------------------- */
-::method bUseCache       attribute -- memorize Java class object
+::method bUseCache       guarded attribute -- memorize Java class object
 /* ------------------------------------------------------------------------------------------------- */
-::method init
+::method init            guarded
   parse arg JavaClassName, bNoCache
 
   self~bUseCache= (bNoCache<>.false)    -- default to use ooRexx directory as cache
@@ -3549,10 +3559,10 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::method "[]"                       -- getter method
+::method "[]"            guarded            -- getter method
   forward message ("AT")
 
-::method AT                         -- get static field, honor case of letters
+::method AT              guarded            -- get static field, honor case of letters
   expose JavaClassObject bUseCache
   parse arg fieldName
 
@@ -3579,18 +3589,18 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::method "[]="                      -- setter method
+::method "[]="           guarded            -- setter method
   forward message ("PUT")
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::method entry                      -- getter method, use uppercased name as index
+::method entry           guarded            -- getter method, use uppercased name as index
   parse upper arg index
   forward message ("AT") array (index)
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::method PUT                        -- set static field, honor case of letters
+::method PUT             guarded            -- set static field, honor case of letters
   expose JavaClassObject
   use arg newVal, fieldName
 
@@ -3729,7 +3739,7 @@ Button Return Values    -1  Dialog CLOSE
 /* ------------------------------------------------------------------------------------------------- */
 /* class methods        */
 /* ------------------------------------------------------------------------------------------------- */
-::method init class
+::method init class      guarded
   expose dlgConstants javaDialogClass defaultInstance
    -- initialize attributes to .nil
   dlgConstants    = .nil
@@ -3738,7 +3748,7 @@ Button Return Values    -1  Dialog CLOSE
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::method getMessageType class    -- determine full name of message type using first character
+::method getMessageType guarded class    -- determine full name of message type using first character
   parse arg messageType .
 
   idx=pos(left(messageType~translate,1), "EIPQW")
@@ -3748,13 +3758,13 @@ Button Return Values    -1  Dialog CLOSE
   return arg(1)                  -- return unchanged argument
 
 
-::method setDefaultComponent class
+::method setDefaultComponent guarded class
   expose defaultInstance
   defaultInstance=self~new(.nil) -- use .nil as default component
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::method javaDialogClass class   -- the Java class object proxy for creating dialogs
+::method javaDialogClass guarded class   -- the Java class object proxy for creating dialogs
   expose javaDialogClass
 
   if .nil=javaDialogClass then   -- not yet defined, get reference to it
@@ -3764,7 +3774,7 @@ Button Return Values    -1  Dialog CLOSE
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::method dlgConstants class      -- defines all the dialog constants needed
+::method dlgConstants guarded class      -- defines all the dialog constants needed
   expose dlgConstants
 
   if .nil=dlgConstants then     -- not yet defined, create it
@@ -3810,7 +3820,7 @@ Button Return Values    -1  Dialog CLOSE
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::method unknown class     -- forward all unknown class messages to the defaultInstance
+::method unknown guarded class     -- forward all unknown class messages to the defaultInstance
   expose defaultInstance
   use arg methodName, arrArgs
 -- say "unknown::class: methodName:" pp(methodName) "defaultInstance:" pp(defaultInstance)
@@ -3822,9 +3832,9 @@ Button Return Values    -1  Dialog CLOSE
 /* ------------------------------------------------------------------------------------------------- */
 /* instance methods     */
 /* ------------------------------------------------------------------------------------------------- */
-::method component attribute     -- the Java component for which the dialog should execute; will be modal for it!
+::method component guarded attribute     -- the Java component for which the dialog should execute; will be modal for it!
 /* ------------------------------------------------------------------------------------------------- */
-::method init
+::method init            guarded
   expose component
   use arg component              -- get component and save it
 
@@ -3832,7 +3842,7 @@ Button Return Values    -1  Dialog CLOSE
 /* ------------------------------------------------------------------------------------------------- */
    -- method to make it simple to invoke a dialog with push buttons as options
    -- implementation uses javax.swing.JOptionPane
-::method dialogBox
+::method dialogBox       guarded
   expose component
   use arg message, title, messageType, optionType, icon, textOfButtons, defaultButton
 
@@ -3915,7 +3925,7 @@ Button Return Values    -1  Dialog CLOSE
 
         ... method returns the entered/chosen value or .nil (user closed dialog)
  */
-::method inputBox
+::method inputBox        guarded
   expose component
   nrArgs=arg()          -- get number of arguments
 
@@ -4001,7 +4011,7 @@ Button Return Values    -1  Dialog CLOSE
 /* ------------------------------------------------------------------------------------------------- */
    -- class method to make it simple to invoke the desired functionality
    -- implementation uses javax.swing.JOptionPane
-::method messageBox
+::method messageBox      guarded
   expose component
   use arg message, title, messageType
 
@@ -4472,13 +4482,13 @@ syntax:
 /* Allows to use a java.io.InputStream or a java.io.Reader object as an ooRexx input stream. */
 ::class "BSF.InputStream"  subclass inputStream  public
 /* ------------------------------------------------------------------------------------------------- */
-::attribute javaObject         -- allow direct access to input stream object
+::attribute javaObject  guarded        -- allow direct access to input stream object
 /* ------------------------------------------------------------------------------------------------- */
-::attribute isReader                -- allow direct access
+::attribute isReader    guarded             -- allow direct access
 /* ------------------------------------------------------------------------------------------------- */
-::attribute prefix                  -- prefix string to be output before executing a LINEIN, writes directly to System.err to bypass outputting any other prefixes
+::attribute prefix      guarded             -- prefix string to be output before executing a LINEIN, writes directly to System.err to bypass outputting any other prefixes
 
-::method string
+::method string          guarded
   expose javaObject isReader prefix
   return "BSF.InputStream[javaObject="javaObject~objectName         || -
                           ";isReader="isReader                      || -
@@ -4486,7 +4496,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::method init                       -- constructor that takes the Java InputStream object
+::method init            guarded            -- constructor that takes the Java InputStream object
   expose javaObject byteArray1 charArray1 isReader prefix
   use strict arg javaObject, prefix=.nil
   byteArray1=bsf.createJavaArray("byte.class",1)   -- Java byte array with capacity of one
@@ -4499,7 +4509,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::method charIn
+::method charIn          guarded
   expose javaObject byteArray1 charArray1 isReader
   signal on syntax name wrong_args
   use strict arg start=1, length=1
@@ -4541,7 +4551,7 @@ wrong_args:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::method chars
+::method chars           guarded
   expose javaObject isReader
   if isReader then
      return javaObject~ready
@@ -4550,7 +4560,7 @@ wrong_args:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::method lineIn
+::method lineIn          guarded
    expose prefix
 
    if prefix<>.nil then       -- write a prefix string to inform the user ?
@@ -4575,17 +4585,17 @@ wrong_args:
 /* Allows to use a java.io.PrintStream or a java.io.Writer object as an ooRexx output stream. */
 ::class "BSF.OutputStream" subclass outputStream public
 /* ------------------------------------------------------------------------------------------------- */
-::attribute javaObject        -- allow direct access to output stream/writer object
+::attribute javaObject   guarded      -- allow direct access to output stream/writer object
 /* ------------------------------------------------------------------------------------------------- */
-::attribute isWriter          -- allow direct access
+::attribute isWriter     guarded      -- allow direct access
 /* ------------------------------------------------------------------------------------------------- */
-::attribute prefix            -- default: .nil, prefix string to be output before executing a LINEOUT
+::attribute prefix       guarded      -- default: .nil, prefix string to be output before executing a LINEOUT
 /* ------------------------------------------------------------------------------------------------- */
-::attribute endOfLine         -- allows setting explicitly end-of-line charactesrs, defaults to .endofline
+::attribute endOfLine    guarded      -- allows setting explicitly end-of-line charactesrs, defaults to .endofline
 /* ------------------------------------------------------------------------------------------------- */
-::attribute doFlush           -- default: .true, allows setting whether we do the flush (a no go in JSPs as 'flush' commits the 'request'!
+::attribute doFlush      guarded      -- default: .true, allows setting whether we do the flush (a no go in JSPs as 'flush' commits the 'request'!
 
-::method string
+::method string          guarded
   expose javaObject isWriter prefix endOfLine doFlush
   return "BSF.OutputStream[javaObject="javaObject~objectName      || -
                           ";isWriter="isWriter                    || -
@@ -4599,7 +4609,7 @@ wrong_args:
 *   @param prefix the string to print at the beginning of an output line, defaults to <code>.nil</code>
 *   @param endofLine the string to use as end-of-line sequence, defaults to <code>.endOfLine</code>
 */
-::method init
+::method init            guarded
   expose javaObject isWriter prefix bPrefixPrinted endOfLine doFlush
   signal on syntax
   use strict arg javaObject, prefix=.nil, endOfLine=.endOfLine, doFlush=.true
@@ -4616,7 +4626,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::method charOut
+::method charOut         guarded
   expose javaObject isWriter prefix bPrefixPrinted doFlush
   signal on syntax
   use strict arg chars, start=1, bSkipPrefix=.false
@@ -4655,7 +4665,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::method lineOut     -- a true synonym for SAY in this implementation (even if no data to display are supplied)
+::method lineOut     guarded -- a true synonym for SAY in this implementation (even if no data to display are supplied)
   expose javaObject isWriter prefix bPrefixPrinted endOfLine doFlush
   use strict arg chars=""
 
@@ -4685,7 +4695,7 @@ syntax:
   bPrefixPrinted=.false          -- a new line for which the prefix was not printed yet
 
 
-::method say      -- in ooRexx file streams a synonym for lineOut
+::method say      guarded -- in ooRexx file streams a synonym for lineOut
   forward message "lineout"
 
 
@@ -4702,12 +4712,12 @@ syntax:
 ::constant GLOBAL_SCOPE 200   -- numeric value for javax.script.ScriptContext.GLOBAL_SCOPE
 
 /* ------------------------------------------------------------------------------------------------- */
-::attribute showWarnings class   -- .true or .false
+::attribute showWarnings guarded class   -- .true or .false
 /* ------------------------------------------------------------------------------------------------- */
-::attribute showDebugs   class   -- .true or .false
+::attribute showDebugs   guarded class   -- .true or .false
 
 /* ------------------------------------------------------------------------------------------------- */
-::method init class
+::method init guarded class
   expose tableOut tableIn showWarnings
    -- define input and output table for TRANSLATE()-BIF
   tableOut   =".abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!?_" -- valid (Rexx symbol) characters
@@ -4722,7 +4732,7 @@ syntax:
 * @param sc the scope number for the javax.script.Binding to be retrieved from scriptContext
 * @return the javax.script.Binding or <code>.nil</code> if not found
 */
-::method getBindings class    -- return bindings from ScriptContext, if not found, .nil
+::method getBindings guarded class    -- return bindings from ScriptContext, if not found, .nil
   use strict arg scriptContext, sc
   signal on syntax         -- if a scope does not exist, then an IllegalArgumentException gets thrown
 
@@ -4748,7 +4758,7 @@ syntax:
 * @return either the unchanged name, if it can be used as a Rexx variable name already, otherwise the
 *         normalized (mangled) form
 */
-::method normalizeName class
+::method normalizeName guarded class
   expose tableOut tableIn
   parse arg name
   newName=TRANSLATE(name, tableOut, tableIn, '?')~upper -- translate all invalid chars into a question mark
@@ -4786,7 +4796,7 @@ syntax:
 *  @return                 a Rexx directory object containing the name/value mappings matching the ScriptContext; the
 *                          name are mangled to valid Rexx variable names if bMangleName was .true
 */
-::method ScriptContext2RexxDir class
+::method ScriptContext2RexxDir guarded class
 
   use strict arg scriptContext, bMangleName=.true, scope="AllBindings", ...
 
@@ -4860,7 +4870,7 @@ syntax:           -- propagate the syntax condition to caller
 * @param scope the scope number for the javax.script.Binding to be retrieved from scriptContext
 * @return the attribute's value or <code>.nil</code> if not found
 */
-::method getAttribute class
+::method getAttribute guarded class
   use strict arg scriptContext, name, scope=.nil
   signal on syntax
 
@@ -4898,7 +4908,7 @@ syntax2:       -- no entry by that name in ScriptContext
 * @return a Rexx directory where the index is the mangled name of the Bindings entry and its item that Bindings entry's value
 */
 
-::method getAttributes class
+::method getAttributes guarded class
   use strict arg scriptContext, ...
 
   signal on syntax
@@ -4935,7 +4945,7 @@ syntax: raise propagate    -- raise in caller
 * @param sc the scope number for the javax.script.Binding to be retrieved from scriptContext
 * @return the javax.script.Binding or <code>.nil</code> if not found
 */
-::method setAttribute class
+::method setAttribute guarded class
   use strict arg scriptContext, name, value, scope=100   -- "100" is "ENGINE_SCOPE", 200="GLOBAL_SCOPE"
   signal on syntax
 
@@ -4985,7 +4995,7 @@ syntax: raise propagate   -- neither a .RexxContext with a / nor a ScriptContext
                   a new invocation; index [3] the scopeNr, if any given
 */
    -- make sure no one else uses this, so we have no need to check for argument erros
-::method getNextAttribute class private
+::method getNextAttribute guarded class private
   use arg attrString, startPos=1
 
   len=attrString~length
@@ -5106,7 +5116,7 @@ syntax: raise propagate   -- neither a .RexxContext with a / nor a ScriptContext
 *          the attribute name [illegal Rexx variable characters get replaced by question marks (?),
 *          cf. class method {@link normalizeName}] and the item is the attribute's value
 */
-::method get class
+::method get guarded class
    expose showWarnings
    signal on syntax
    use strict arg scriptContext, attributeNames=""
@@ -5262,7 +5272,7 @@ syntax:
 *                    value differs in its class or objectname value.
 */
 
-::method set class
+::method set guarded class
    expose showWarnings
 
    signal on syntax
@@ -5417,22 +5427,22 @@ syntax:
     @since 2017-08-14
 */
 ::class AbstractGUIThread private
-::method init  abstract    -- do not allow any instances to be created
+::method init  guarded abstract    -- do not allow any instances to be created
 
-::attribute JavaGuiUtilityClz get class abstract   -- javafx.application.Platform or javax.swing.SwingUtilitities
-::attribute msgQueue              class abstract   -- force creation of attribute in subclass; queues GUIMessages
-::attribute runnable              class abstract   -- force creation of attribute in subclass; Java Proxy of Rexx class itself
-::attribute waitingToRun          class abstract   -- force creation of attribute in subclass; determines
+::attribute JavaGuiUtilityClz get guarded class abstract   -- javafx.application.Platform or javax.swing.SwingUtilitities
+::attribute msgQueue              guarded class abstract   -- force creation of attribute in subclass; queues GUIMessages
+::attribute runnable              guarded class abstract   -- force creation of attribute in subclass; Java Proxy of Rexx class itself
+::attribute waitingToRun          guarded class abstract   -- force creation of attribute in subclass; determines
 
-::method    setup                 class private abstract    -- setup class attributes
-::method    isGuiThread           class abstract   -- determines if current thread is GUI thread
-::method    invokeOnGuiThread     class private abstract    -- use the appropriate Java utility class method
+::method    setup                 guarded class private abstract    -- setup class attributes
+::method    isGuiThread           guarded class abstract   -- determines if current thread is GUI thread
+::method    invokeOnGuiThread     guarded class private abstract    -- use the appropriate Java utility class method
 
 
 /* ------------------------------------------------------------------------------------------------- */
 /** Private static method that processes the supplied GUIMessage.
 */
-::method process           class private
+::method process           guarded class private
   use strict arg guiMsg
 
   signal on syntax      -- intercept errors
@@ -5474,7 +5484,7 @@ syntax:
 *
 *   @return returns a <code>GUIMessage</code> instance
 */
-::method createGUIMessage  class private
+::method createGUIMessage  guarded class private
   use strict arg args      -- an array
 
   signal on syntax
@@ -5514,7 +5524,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-::method run               class       -- this method will be invoked by Java at a later time
+::method run               guarded class       -- this method will be invoked by Java at a later time
   -- expose fxQueue PlatformClz waitingToRun
 -- say self": arrived at  :" pp(.dateTime~new)
   msgQueue=self~msgQueue      -- get message queue
@@ -5551,7 +5561,7 @@ syntax:
 *                     fetching a possible result, determining whether an error occurred and
 *                     inspecting it)
 */
-::method runLater          class
+::method runLater          guarded class
   use strict arg target, messageName, ...
 
   signal on syntax
@@ -5588,7 +5598,7 @@ syntax:
 *                     fetching a possible result, determining whether an error occurred and
 *                     inspecting it)
 */
-::method runLaterPush      class
+::method runLaterPush      guarded class
   use strict arg target, messageName, ...
 
   signal on syntax
@@ -5628,7 +5638,7 @@ syntax:
 *                     fetching a possible result, determining whether an error occurred and
 *                     inspecting it)
 */
-::method runLaterLatest    class
+::method runLaterLatest    guarded class
   use strict arg target, messageName, ...
 
   signal on syntax
@@ -5672,7 +5682,7 @@ syntax:
 *                     fetching a possible result, determining whether an error occurred and
 *                     inspecting it)
 */
-::method runLaterLatestPush   class    -- make sure this message is the first in the message queue, such that it gets executed first
+::method runLaterLatestPush   guarded class    -- make sure this message is the first in the message queue, such that it gets executed first
   use strict arg target, messageName, ...
 
   signal on syntax
@@ -5711,7 +5721,7 @@ syntax:
 *                     fetching a possible result, determining whether an error occurred and
 *                     inspecting it)
 */
-::method removeMessage    class private
+::method removeMessage    guarded class private
   use strict arg target, messageName, ...
 
   signal on syntax
@@ -5759,21 +5769,21 @@ syntax:
 
 /* ------------------------------------------------------------------------------------------------- */
 /** Constructor class method. */
-::method init             class
+::method init             guarded class
   expose JavaGuiUtilityClz          -- class attribute for this class object!
   JavaGuiUtilityClz=.nil
 
 
-::attribute msgQueue          get class
-::attribute runnable          get class
-::attribute JavaGuiUtilityClz get class
-::attribute waitingToRun          class
+::attribute msgQueue          get guarded class
+::attribute runnable          get guarded class
+::attribute JavaGuiUtilityClz get guarded class
+::attribute waitingToRun          guarded class
 
 
 /* ------------------------------------------------------------------------------------------------- */
 /** Private class method to set up and initilaize the infrastructure.
 */
-::method setup             class private
+::method setup             guarded class private
   expose msgQueue runnable JavaGuiUtilityClz waitingToRun
   msgQueue=.queue~new         -- msgQueue: all queued messages will be dispatched
   runnable=.routines["XBSFCREATEREXXPROXY"]~call(self, .nil, "java.lang.Runnable") -- allow this class object to be used as a Runnable
@@ -5785,7 +5795,7 @@ syntax:
 /**
 * @return returns <code>.true</code>, if running on the GUI thread ("JavaFX Application Thread"), <code>.false</code> else
 */
-::method isGuiThread     class
+::method isGuiThread     guarded class
   expose JavaGuiUtilityClz
   if JavaGuiUtilityClz=.nil then self~setup  -- make sure attributes are initialized
   return JavaGuiUtilityClz~isFxApplicationThread
@@ -5794,7 +5804,7 @@ syntax:
 /**
 *   Will cause the <code>runnable</code> (this Rexx class wrapped as a java.lang.Runnable object) to execute later on the GUI thread.
 */
-::method invokeOnGuiThread    class       -- make sure Java will dispatch Rexx message on GUI thread
+::method invokeOnGuiThread    guarded class       -- make sure Java will dispatch Rexx message on GUI thread
   expose JavaGuiUtilityClz runnable
   JavaGuiUtilityClz~runLater(runnable)    -- JavaFX version
 
@@ -5819,20 +5829,20 @@ syntax:
 
 /* ------------------------------------------------------------------------------------------------- */
 /** Constructor class method. */
-::method init             class
+::method init             guarded class
   expose JavaGuiUtilityClz          -- class attribute for this class object!
   JavaGuiUtilityClz=.nil
 
 
-::attribute msgQueue          get class
-::attribute runnable          get class
-::attribute JavaGuiUtilityClz get class
-::attribute waitingToRun          class
+::attribute msgQueue          get guarded class
+::attribute runnable          get guarded class
+::attribute JavaGuiUtilityClz get guarded class
+::attribute waitingToRun          guarded class
 
 /* ------------------------------------------------------------------------------------------------- */
 /** Private class method to set up and initilaize the infrastructure.
 */
-::method setup             class private
+::method setup             guarded class private
   expose msgQueue runnable JavaGuiUtilityClz waitingToRun
   msgQueue=.queue~new         -- msgQueue: all queued messages will be dispatched
   runnable=.routines["XBSFCREATEREXXPROXY"]~call(self, .nil, "java.lang.Runnable") -- allow this class object to be used as a Runnable
@@ -5843,7 +5853,7 @@ syntax:
 /**
 * @return returns <code>.true</code>, if running on the GUI thread ("event dispatch thread" a.k.a. "awt Thread"), <code>.false</code> else
 */
-::method isGuiThread     class
+::method isGuiThread     guarded class
   expose JavaGuiUtilityClz
   if JavaGuiUtilityClz=.nil then self~setup  -- make sure attributes are initialized
   return JavaGuiUtilityClz~isEventDispatchThread   -- awt/swing version
@@ -5852,7 +5862,7 @@ syntax:
 /**
 *   Will cause the <code>runnable</code> (this Rexx class wrapped as a java.lang.Runnable object) to execute later on the GUI thread.
 */
-::method invokeOnGuiThread    class       -- make sure Java will dispatch Rexx message on GUI thread
+::method invokeOnGuiThread    guarded class       -- make sure Java will dispatch Rexx message on GUI thread
   expose JavaGuiUtilityClz runnable
   JavaGuiUtilityClz~invokeLater(runnable) -- awt/swing version
 
@@ -5876,7 +5886,7 @@ syntax:
 *  @param messageName the message name to be sent on the GUI thread
 *  @param arguments optional array of arguments to be supplied when sending the message on the GUI thread
 */
-::method init
+::method init                     guarded
   expose completed hasResult target messageName arguments hasArguments hasError errorCondition
   use strict arg target, messageName, args=.nil
 
@@ -5902,7 +5912,7 @@ syntax:
 /** If <code>.true</code> then <code>errorCondition</code> will hold the Rexx condition object.
  @return returns <code>.true</code>, if an error has occurred while running this message, <code>.false</code> else
 */
-::attribute hasError
+::attribute hasError              guarded
 
 
 /* ------------------------------------------------------------------------------------------------- */
@@ -5910,12 +5920,12 @@ syntax:
     via this attribute.
  @return returns the Rexx condition object or <code>.nil</code>, if none
 */
-::attribute errorCondition
+::attribute errorCondition        guarded
 
 /* ------------------------------------------------------------------------------------------------- */
 /** @return returns <code>.true</code>, if this message has a result, <code>.false</code> else
 */
-::attribute hasResult
+::attribute hasResult             guarded
 
 
 /* ------------------------------------------------------------------------------------------------- */
@@ -5923,24 +5933,24 @@ syntax:
 
  @return returns <code>.true</code>, if this message has completed without an error, <code>.false</code> else
 */
-::attribute completed
+::attribute completed             guarded
 
 
 /* ------------------------------------------------------------------------------------------------- */
 /** @return returns the target object which receives the message */
-::attribute target            get
+::attribute target            get guarded
 
 /* ------------------------------------------------------------------------------------------------- */
 /** @return returns the message name that gets sent */
-::attribute messageName       get
+::attribute messageName       get guarded
 
 /* ------------------------------------------------------------------------------------------------- */
 /** @return returns <code>.true</code>, if this message has arguments, <code>.false</code> else */
-::attribute hasArguments
+::attribute hasArguments          guarded
 
 /* ------------------------------------------------------------------------------------------------- */
 /** @return returns an array of message arguments */
-::attribute arguments         get
+::attribute arguments         get guarded
 
 /* ------------------------------------------------------------------------------------------------- */
 /** Returns the result of running the message. This method will block (wait) until the message
@@ -5952,14 +5962,14 @@ syntax:
 
    @return <code>result</code> object, when <code>completed</code> or <code>hasError</code> turns to <code>.true</code>
 */
-::attribute result            get
+::attribute result            get guarded
   expose completed result hasError
   guard on when completed=.true | hasError=.true
   return result
 
 /* ------------------------------------------------------------------------------------------------- */
 /** Setter method allowing setting result. */
-::attribute result            set
+::attribute result            set guarded
   expose result
   use strict arg result
 
