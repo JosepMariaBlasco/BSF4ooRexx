@@ -1,3 +1,10 @@
+To update Janino in BSF4ooRexx:
+
+        - unzip binary and sources for janino *and* commons-compiler
+        - remove META-INF
+        - xcopy tmp/org/codehaus/* to .../bsf4oerexx/trunk/org/codehaus/ /s
+
+
 2019-08-17, rgf:
 
         replaced with janino-3.0.15 (2019-07-30), requires minimum Java 1.6/6
@@ -6,7 +13,9 @@
 
         replaced with janino-3.1.2 (2020-03-18) as 3.0.x got deprecated with 3.0.16 (2020-03-18)
 
+2021-07-25, rgf:
 
+        replaced with janino-3.1.4 (2021-05-06)
 
 
 URLs:

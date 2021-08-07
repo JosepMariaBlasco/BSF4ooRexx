@@ -8,6 +8,7 @@
 @rem 2015-05-12, adding JSR-223 support
 @rem 2016-08-15, adding .NET/CLR support
 @rem 2016-11-24, adding JavaFX support, basing on Java 1.6/6.0, hence version "600" (6.00)
+@rem 2021-07-30, copy new NOTICE.txt to bsf4rexx
 
 @rem @echo createDistribution.cmd (for BSF4ooRexx)
 @echo %0 (for BSF4ooRexx)
@@ -33,9 +34,9 @@ set CLASSPATH=%CLASSPATH%;%ooo_classes%\unoil.jar;%ooo_classes%\ridl.jar;%ooo_cl
 @echo adding javax.servlet.jsp and javax.servlet.http to CLASSPATH
 set CLASSPATH=%CLASSPATH%;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet.jsp.jar;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet-3.0.0.v201112011016.jar
 
-set releaseDate=20210724
-set runDate=20210724
-set doc_date=20210724
+set releaseDate=20210807
+set runDate=20210807
+set doc_date=20210807
 
 @rem values to use for creating the BSF jarfile
 @rem set bsfDate=20090910
@@ -87,10 +88,11 @@ rem copy %bsfJarNameBin% %bsfJarNameSource%
 @rem now remove sources from bin
 zip -d  %bsfJarNameBin% "*.java" "*.txt" "*.cmd" "*~" "*bkp*" "*tmp*"
 zip -9  %bsfJarNameBin% ApacheLicense2.0.txt
-zip -9  %bsfJarNameBin% asm_LICENSE.TXT
+rem zip -9  %bsfJarNameBin% asm_LICENSE.TXT
 zip -9  %bsfJarNameBin% janino_LICENSE.TXT
 zip -9  %bsfJarNameBin% xdg-utils_freedesktop_org_LICENSE.txt
 zip -9  %bsfJarNameBin% jni4net-MIT-LICENSE.txt
+zip -9  %bsfJarNameBin%  NOTICE*
 
 @echo deleted sources - done - %bsfJarNameBin%
 pause
@@ -125,7 +127,7 @@ zip -d bsf-rexx-engine.jar "/*zip"
 zip -d bsf-rexx-engine.jar "/*~"
 rem make sure the ApacheLicense2.0.txt file is available
 zip -9r bsf-rexx-engine.jar ApacheLicense2.0.txt
-zip -9r bsf-rexx-engine.jar asm_LICENSE.TXT
+rem zip -9r bsf-rexx-engine.jar asm_LICENSE.TXT
 zip -9r bsf-rexx-engine.jar janino_LICENSE.TXT
 
 @echo creating main-jar file...
@@ -143,7 +145,6 @@ zip -d BSF4ooRexx-apache-bsf.jar "*~"
 rem make sure the ApacheLicense2.0.txt file is available
 zip -9r BSF4ooRexx-apache-bsf.jar ApacheLicense2.0.txt
 zip -9r BSF4ooRexx-apache-bsf.jar  asm_LICENSE.TXT
-zip -9r BSF4ooRexx-apache-bsf.jar  janino_LICENSE.TXT
 @rem pause
 
 @echo creating the binary and source jar-files ...
@@ -226,7 +227,8 @@ xcopy %path2dev%\oorexx.net\samples                bsf4oorexx\samples\ /s
 xcopy %path2dev%\oorexx.net\docs                   bsf4oorexx\information\ /s
 @echo pause just for debugging .NET/CLR support so far
 
-copy *licens*.txt                                  bsf4oorexx\
+copy *LICENS*.txt                                  bsf4oorexx\
+copy NOTICE.txt                                    bsf4oorexx\
 @rem copy bsf-*.jar                                bsf4oorexx\
 copy %bsfJarNameBin%                               bsf4oorexx\
 copy ScriptProviderForooRexx.oxt                   bsf4oorexx\install\
@@ -339,8 +341,7 @@ del %releaseInstallZip%.zip
 zip -9r %releaseInstallZip% bsf4oorexx/*
 zip -d  %releaseInstallZip% "*.svn*" "*bkp*" "*tmp*" "*cachedir*" "*~"  "*.idea*" "bin.iml"
 zip -9r %releaseInstallZip% ApacheLicense2.0.txt
-zip -9r %releaseInstallZip% asm_LICENSE.TXT
-zip -9r %releaseInstallZip% janino_LICENSE.TXT
+zip -9 %releaseInstallZip% NOTICE*
 
 zip -d  %releaseInstallZip% "*samples/deprecated*" "*samples/LeePeedin/deprecated*"
 
@@ -383,8 +384,8 @@ zip -d  BSF4ooRexx_testUnits "*.svn*" "*bkp*" "*_bkp*" "*tmp*"  "*~"  "*.idea*" 
 @echo creating source archive ...
 del BSF4ooRexx_sources.zip
 zip -9 BSF4ooRexx_sources ApacheLicense2.0.txt
-zip -9 BSF4ooRexx_sources asm_LICENSE.TXT
-zip -9 BSF4ooRexx_sources janino_LICENSE.TXT
+zip -9 BSF4ooRexx_sources *LICENSE*
+zip -9 BSF4ooRexx_sources NOTICE*
 
 zip -9 BSF4ooRexx_sources *.txt
 zip -9 BSF4ooRexx_sources *.cmd

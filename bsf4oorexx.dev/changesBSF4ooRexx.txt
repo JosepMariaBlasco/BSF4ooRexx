@@ -1,3 +1,58 @@
+-------------------------------------- 2021-08-07 ----------------------------------
+
+- RexxCleanupRef.java
+
+        - new public static methods "getStatistics()" and "getStatistics(title)"
+          which return a formatted string showing the current totals of instances,
+          finalizations, not yet finalized grouped by RefKind
+
+        - not needed anymore hence removed static countInstances and
+          countFinalizes with their getter methods
+
+        - new public static method getRefkinds() which returns an array of the
+          current enum values of the RefKind enum class
+
+-------------------------------------- 2021-08-06 ----------------------------------
+
+- RexxCleanupRef.java
+
+         - make KindRef enum public
+
+         - add two-dimensional long array "counters" for counting instances,
+           finalizes grouped by enum values
+
+         - add public getter getCounters() to return a copy of "counters"
+
+         - added static main() method which tests RexxCleanupRef with
+           TestObjects, to run use the following comand:
+           java org.rexxla.bsf.engines.rexx.RexxCleanupRef
+
+-------------------------------------- 2021-08-05 ----------------------------------
+
+- BSF.CLS
+
+        - mark all attributes and methods explicitly as guarded which to
+          "defend" against side-effects of the new ooRexx 5.0 setting of
+          methods by default to "unguarded", if they do not contain either
+          the EXPOSE or the USE LOCAL statement; this has undesired side
+          effects, hence making sure that the guard state is explicitly
+          set to insulate from any future changes in this regards; this
+          fix is necessary to get "bsf4oorexx/samples/JavaFX/javafx_update_GUI-from-non-GUI-thread.rxj"
+          and "bsf4oorexx/samples/3-090_update_awtSwing_GUI-from-non-GUI-thread.rxj"
+          working again
+
+- RexxCleanupRef.java
+
+        - make KindRef enum public
+
+        - add two-dimensional long array "counters" for counting instances,
+          finalizes grouped by enum values
+
+        - add public getter getCounters() to return a copy of "counters"
+
+        - added static main() method which tests RexxCleanupRef with
+          TestObjects, to run use the following comand:
+          java org.rexxla.bsf.engines.rexx.RexxCleanupRef
 
 -------------------------------------- 2021-08-05 ----------------------------------
 

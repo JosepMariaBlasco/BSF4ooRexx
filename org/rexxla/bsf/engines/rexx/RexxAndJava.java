@@ -25,7 +25,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
   *
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2020 Rony G. Flatscher
+ *    Copyright (C) 2001-2021 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 6.0.0, 2020-08-21
+  * @version 6.0.0, 2021-08-04
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -53,6 +53,11 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
 
  /*
+     2021-08-05, rgf  - removing finalize() which got deprecated for Java
+
+                      - use PhantomReference as a replacement, ie., the RexxCleanupRef class
+                        in the constructor
+
      2020-08-21, rgf: - if loaded from Rexx on Linux, and libBSF4ooRexx.so resides in /usr/local/lib
                         then it is not found as of Java 14, cf. <https://bugs.openjdk.java.net/browse/JDK-8073067>;
                         this version explicitly tries to load it from /usr/local/lib if not found by
@@ -582,7 +587,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20200821";
+    static final public String version = "600.20210805";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -697,7 +702,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
         return rii_ID;
     }
 
-    /** Setter method. Only meant to be used by Java4Rexx.java and RexxAndJava instance that has noe
+    /** Setter method. Only meant to be used by Java4Rexx.java and RexxAndJava instance that has no
      *  peer Rexx interpreter instance yet. If already set an exception gets raised.
      *
      */
@@ -714,6 +719,10 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
         }
 
         this.rii_ID=new_rii_ID;
+
+        // create a PhantomReference such that the Rexx interpreter instance can be terminated once
+        // the RexxAndJava object gets garbage collected
+        new RexxCleanupRef(this, RexxCleanupRef.RefKind.REXX_ENGINE, this.rii_ID);
     }
 
 
@@ -1017,27 +1026,10 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
 
         // create and assign a rxReflector
         createRexxReflectJava(javaRuntimeVersion);
+
+        // rii_ID cannot be set at this time, but after a peer Rexx interpreter instance got created
+        // cf. set_rii_ID(...) above
     }
-
-
-
-    /** Finalize method that makes sure that terminate() on Rexx engine gets invoked.
-     *
-     *  @since 2015-08-03
-     */
-    @SuppressWarnings( "deprecation" ) public void finalize ()      // method needed to maintain native Rexx side
-    {
-        final boolean bDebug= false;
-                              // true;
-        if (bDebug)
-        {
-            System.err.println(this+": in finalize(), this=["+this+"], rii_ID=["+rii_ID+"]...");
-System.err.println(this+": *** - FINALIZE -  *** *** - FINALIZE -  *** *** - FINALIZE -  *** *** - FINALIZE -  *** *** - FINALIZE -  *** *** - FINALIZE -  *** ");
-        }
-        terminate();        // make sure we terminate and carry out any clean-up
-    }
-
-
 
 
 
@@ -2575,6 +2567,7 @@ System.err.println(this+": *** - FINALIZE -  *** *** - FINALIZE -  *** *** - FIN
     public String javaCallBSF (String args[])  throws BSFException
     {
         InvocationType choice=getInvocationType(args[0]);   // get invocation type
+
 
 // System.err.println(this+".javaCallBSF(), args[0]=["+args[0]+"] ---> choice=["+choice+"] / args="+java.util.Arrays.deepToString(args)+" / BRRR ! ...");
 

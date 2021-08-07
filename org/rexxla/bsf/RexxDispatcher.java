@@ -7,7 +7,7 @@ import java.io.*;
 /** Invokes given Rexx or ooRexx program and supplies the commandline arguments.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2006-2016 Rony G. Flatscher
+ *    Copyright (C) 2006-2021 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -28,6 +28,9 @@ import java.io.*;
 
  /*
      last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+
+     2021-08-04, ---rgf: - Object.finalize() is slated to be removed from a future version of Java,
+                           possibly also System.runFinalization(), cater for it
 
      2016-11-05, ---rgf: - basing on 1.6/6.0, get rid of generic warnings
 
@@ -183,7 +186,16 @@ public class RexxDispatcher {
                     // for a general purpose dispatcher; a sleep statement may look like:
                     // try { Thread.sleep(750); } catch (Exception e) {}
                     System.gc();    // run the garbage collector, such that Java objects with finalizers get a chance to run
-                    System.runFinalization();   // run outstanding finalizers (e.g. from RexxProxy objects), if any
+
+                    try // at 2021-08-04: Object.finalize() is planned to be removed in the future, possibly also runFinalization(), cater for it
+                    {
+                        System.runFinalization();   // run outstanding finalizers (e.g. from RexxProxy objects), if any
+                    }
+                    catch (NoSuchMethodError nsme)
+                    {
+                        // System.err.println(nsme);
+                    }
+
                     ap_rexx.terminate();    // wait for termination of the Rexx instance
                 }
                 catch (Throwable t2)

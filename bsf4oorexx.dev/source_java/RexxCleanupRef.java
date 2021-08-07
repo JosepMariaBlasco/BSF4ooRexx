@@ -4,6 +4,7 @@ package org.rexxla.bsf.engines.rexx;
 import java.lang.ref.PhantomReference ;
 import java.lang.ref.ReferenceQueue ;
 import java.util.IdentityHashMap ;
+import java.util.Calendar;
 
 
 /** With Java 9 Object.finalize() gets deprecated, therefore we use <code>PhantomReferences</code>
@@ -48,21 +49,49 @@ import java.util.IdentityHashMap ;
 */
 
 /*
-     last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+    - 20210806, rgf: - make KindRef enum public
+
+                     - add two-dimensional long array "counters" for counting instances,
+                       finalizes grouped by enum values
+
+                     - add public getter getCounters() to return a copy of "counters"
+
+                     - added static main() method which tests RexxCleanupRef with
+                       TestObjects, to run use the following comand:
+                       java org.rexxla.bsf.engines.rexx.RexxCleanupRef
+
+    - 20210807, rgf: - new public static methods "getStatistics()" and "getStatistics(title)"
+                       which return a formatted string showing the current totals of instances,
+                       finalizations, not yet finalized grouped by RefKind
+
+                     - not needed anymore hence removed static countInstances and
+                       countFinalizes with their getter methods
+
+                     - new public static method getRefkinds which returns an array of the
+                       current enum values of the RefKind enum class
+
 */
+
 public class RexxCleanupRef extends PhantomReference
 {
     /** If set to false the compiler should eradicate all dependent code. */
     private static final boolean bDebug=false; // true;
 
+
+    /** Version string indicating version of this class (majorVersion*100+minorVersion
+     *  concatenated with a dot and the sorted date of last change.
+     */
+    static final public String version = "100.20210807";
+
     /** Counts number of times the clean() thread got started so far. */
     private static int cleanInvocationCounter=0;
-    /** Getter method.
-     *  @return current number of clean threads started so far
-    */
-    static public int getCleanInvocationCounter()
-    {
-        return cleanInvocationCounter;
+
+    /** Getter method.
+     *  @return current number of clean threads started so far(depends on the implementation)
+    */
+    static public int getCleanInvocationCounter()
+    {
+        return cleanInvocationCounter;
     }
 
     /** This queue will get references enqueued, whenever the referred to Java object is not referenced anymore.
@@ -74,35 +103,44 @@ public class RexxCleanupRef extends PhantomReference
      *  otherwise they may never be put on the reference queue, so storing them
      *  in this <code>IdentityHashMap</code> until the reference is being put on
      *  the reference queue for processing, at which time the reference will be
-     *  removed from the <code>IdentityHashMap</code>.
+     *  removed from the <code>IdentityHashMap</code>. The <code>IdentityHashMap</code>
+     *  gets used as <code>IdentityHashSet</code>, i.e. the value part will always
+     *  be </code>null</code>.
      */
-    static public final IdentityHashMap<RexxCleanupRef,Object> ihm = new IdentityHashMap<RexxCleanupRef,Object>();
+    static public final IdentityHashMap<RexxCleanupRef,Object> pinnedReferences = new IdentityHashMap<RexxCleanupRef,Object>();
 
-    /** For debugging purposes, maintain an instance counter for created references. */
-    static private long countInstances=0;
-    /** Getter method.
-     *  @return current counter of created <code>RexxCleanupRef</code> instances
-    */
-    static public long getCountInstances()
+
+    /** Defines the valid kinds of Rexx related resources to finalize. */
+    static public enum RefKind { TEST, REXX_ENGINE, REXX_PROXY } ;
+
+    static private RefKind refkinds[] = RefKind.class.getEnumConstants();
+
+    /** Getter that returns a clone (copy) of the enum constants of the @link{RefKind} enum class.
+     *
+     * @return copy of the array of enum constants
+     */
+    static public RefKind[] getRefkinds()
     {
-        return countInstances;
+        return refkinds.clone();
     }
 
-    /** For debugging purposes, maintain a counter of <code>RexxCleanupRef</code> instances processed from the reference queue */
-    static private long countFinalizes=0;
-    /** Getter method.
-     *  @return current counter of finalizes
-    */
-    static public long getCountFinalizes()
+
+    /** Counter array indexed by ordinal value of RefKind, and by created instances and finalizations ran. */
+    static private long counters[][] = new long[refkinds.length][2];
+
+    /** Getter that returns a clone (copy) of the current counters array indexed by ordinal value of
+     *  <code>RefKind</code> in first dimension, and by 0 (created instances) and 1 (finalizers ran).
+     *
+     * @return copy of array at time of invocation
+     */
+    static public long[][] getCounters()
     {
-        return countFinalizes;
+        return counters.clone();
     }
+
 
     /** Lock controlling whether a clean runnable needs to be dispatched on a new thread. */
     private static boolean cleanLock=false;
-
-    /** Defines the valid kinds of Rexx related resources to finalize. */
-    static enum RefKind { TEST, REXX_ENGINE, REXX_PROXY } ;
 
     /** The Runnable that uses remove(timeout) to fetch references from the reference queue.
      *  This Runnable will exit the thread once no references can be fetched from the queue.
@@ -121,11 +159,15 @@ public class RexxCleanupRef extends PhantomReference
                     {
                         rcObj.finalizeRexxObject();
                         rcObj.clear();          // clear PhantomReference
-                        synchronized (ihm)
+                        synchronized (pinnedReferences)
                         {
-                            ihm.remove(rcObj);  // remove PhantomReference
+                            pinnedReferences.remove(rcObj);  // remove PhantomReference
                         }
-                        countFinalizes++;
+
+                        synchronized (counters)
+                        {
+                            counters[rcObj.refKind.ordinal()][1]++;
+                        }
                     }
                 }
                 catch (Exception e)
@@ -157,11 +199,15 @@ public class RexxCleanupRef extends PhantomReference
         this.refKind=refKind;
         this.str_id =str_id;
 
-        synchronized (ihm)
+        synchronized (pinnedReferences)
         {
-            ihm.put(this,null);
+            pinnedReferences.put(this,null);
         }
-        countInstances++;
+
+        synchronized (counters)
+        {
+            counters[refKind.ordinal()][0]++;
+        }
 
         if (cleanLock==false)   // cleaner thread not running, start it
         {
@@ -284,4 +330,124 @@ public class RexxCleanupRef extends PhantomReference
             new Thread (rRemove, threadName).start();  // create and start the thread
         }
     }
+
+    /** Main method to test briefly garbage collection with TestObjects using <code>RexxCleanupRef</code>. */
+    static int testObjectCounter=0;
+    public static void main (String args[])
+    {
+        class TestObject
+        {
+            int num=0;
+            TestObject()
+            {
+                num=testObjectCounter++;
+                new RexxCleanupRef(this, RexxCleanupRef.RefKind.TEST, this.toString());
+            }
+
+            public String toString()
+            {
+                return "TestObject_#_"+num;
+            }
+        }
+
+        java.util.ArrayList<TestObject> al = new java.util.ArrayList<TestObject>();
+        int nrObjects=123456;
+        System.out.println("RexxCleanupRef.main(): creating ["+nrObjects+"] TestObjects and storing them in an ArrayList ...\n");
+
+        for (int i=0; i<nrObjects; i++)
+        {
+            TestObject jobj=new TestObject();
+            al.add(jobj);
+        }
+
+        System.err.println(getStatistics("main(): before nullifying"));
+        System.out.println("... nullifying the ArrayList ...\n");
+        al=null;
+
+        System.gc();
+        System.err.println(getStatistics("after gc()"));
+
+        System.runFinalization();
+        System.err.println(getStatistics("after runFinalization()"));
+
+        System.gc();
+        System.err.println(getStatistics("after gc()"));
+
+        System.err.println("main(): sleeping 1000 ms");
+        try { Thread.sleep(1000); } catch (Throwable t) {}
+        System.err.println(getStatistics("after sleeping 1000 ms"));
+
+        System.err.println("\nJava version used for this run: ["+System.getProperty("java.version")+"]");
+
+        System.exit(0);     // force exit (there is a cleaner thread running)
+    }
+
+
+    /** Creates a string with formatted instances, finalizes and not yet finalized objects grouped by
+     *  @link {RexxCleanupRef.RefKind}.
+     *
+     * @return formatted String (including newline at the end of each line)
+     */
+    static public String getStatistics()
+    {
+        return getStatistics(null);
+    }
+
+    /** Creates a string with formatted instances, finalizes and not yet finalized objects grouped by
+     *  @link {RexxCleanupRef.RefKind}.
+     *
+     * @param title to be included in the header line at the top
+     * @return formatted String (including newline at the end of each line)
+     */
+    static public String getStatistics(String title)
+    {
+        String strRes="",
+               strHeader,
+               strFormatHeader="%-13s",
+               strNumbers,
+               strFormatNumbers=": [%,16d] [%,16d] [%,16d]%n",
+               strDivider=String.format("%-71s%n","").replace(' ','-');
+
+        long totalInstances=0;
+        long totalFinalizes=0;
+
+            // header line
+        if (title==null || title.isEmpty())
+        {
+            strRes=String.format("RexxCleanupRef [%1$tY-%1$tm-%1$td %1$tT.%1$tN]%n",
+                                 Calendar.getInstance());
+        }
+        else
+        {
+            strRes=String.format("RexxCleanupRef [%1$tY-%1$tm-%1$td %1$tT.%1$tN] [%2$s]%n",
+                                 Calendar.getInstance(), title);
+        }
+
+
+        strRes+=String.format("%14s  %17s  %17s %18s%n", "RefKind:", "Instances:", "Finalized:", "Not Yet Finalized:");
+        strRes+=strDivider;
+
+        synchronized (counters)
+        {
+            for (RefKind en : refkinds)
+            {
+                strHeader=String.format(strFormatHeader,'['+en.name()+']').replace(' ','.');
+                int ordinal=en.ordinal();
+                strNumbers=String.format(strFormatNumbers, counters[ordinal][0], counters[ordinal][1],
+                                                 counters[ordinal][0]-counters[ordinal][1]);
+                strRes+=strHeader+strNumbers;
+
+                totalInstances+=counters[ordinal][0];
+                totalFinalizes+=counters[ordinal][1];
+            }
+
+
+            strHeader =String.format(strFormatHeader,"Totals").replace(' ','.');
+            strNumbers=String.format(strFormatNumbers, totalInstances, totalFinalizes,
+                                                       totalInstances-totalFinalizes);
+            strRes+=strDivider+strHeader+strNumbers;
+        }
+        return strRes;
+    }
+
 }
