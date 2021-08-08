@@ -64,11 +64,14 @@ import java.util.Calendar;
                        which return a formatted string showing the current totals of instances,
                        finalizations, not yet finalized grouped by RefKind
 
-                     - not needed anymore hence removed static countInstances and its getter,
-                       countFinalizes and its getters
+                     - not needed anymore hence removed static countInstances and
+                       countFinalizes with their getter methods
 
                      - new public static method getRefkinds which returns an array of the
                        current enum values of the RefKind enum class
+
+    - 20210808, rgf: - clone in synchronized block
+                     - change format patterns to static
 
 */
 
@@ -81,7 +84,7 @@ public class RexxCleanupRef extends PhantomReference
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "100.20210807";
+    static final public String version = "100.20210808";
 
     /** Counts number of times the clean() thread got started so far. */
     private static int cleanInvocationCounter=0;
@@ -121,7 +124,10 @@ public class RexxCleanupRef extends PhantomReference
      */
     static public RefKind[] getRefkinds()
     {
-        return refkinds.clone();
+        synchronized (refkinds)
+        {
+            return refkinds.clone();
+        }
     }
 
 
@@ -135,7 +141,10 @@ public class RexxCleanupRef extends PhantomReference
      */
     static public long[][] getCounters()
     {
-        return counters.clone();
+        synchronized (counters)
+        {
+            return counters.clone();
+        }
     }
 
 
@@ -170,9 +179,9 @@ public class RexxCleanupRef extends PhantomReference
                         }
                     }
                 }
-                catch (Exception e)
+                catch (Throwable t)
                 {
-                    System.err.println("RexxCleanupRef.clean(): Runnable (thread="+Thread.currentThread().getName()+") received exception: "+e);
+                    System.err.println("RexxCleanupRef.clean(): Runnable (thread="+Thread.currentThread().getName()+") threw throwable: "+t);
                 }
                 if (bDebug==true) System.err.println("RexxCleanupRef.clean().rRemove: about to finish (thread="+Thread.currentThread().getName()+"), resetting 'cleanLock' to false.");
                 cleanLock=false;    // reset lock to allow to start a new thread next time a new instance gets created
@@ -286,13 +295,15 @@ public class RexxCleanupRef extends PhantomReference
                      try
                      {
                          // Not needed: halting all threads with jniRexxHaltInterpreterInstance() before terminating Rexx interpreter instance
+                         // it may be the case that the interpreter instance got already terminated by RexxEngine
+                         // so ignoring return value which would indicate that instead of returning 0
                          res=jniRexxTerminateInterpreterInstance (str_id);
                      }
-                     catch (Exception e)    // the interpreter instance could be already terminated by RexxEngine !
+                     catch (Throwable t)    // the interpreter instance could be already terminated by RexxEngine !
                      {
                          if (bDebug==true)
                          {
-                             System.err.println("*** RexxCleanupRef.finalizeRexxObject(): refKind=["+refKind+"], str_id=["+str_id+"] -> exception: "+e);
+                             System.err.println("*** RexxCleanupRef.finalizeRexxObject(): refKind=["+refKind+"], str_id=["+str_id+"] -> threw throwable: "+t);
                          }
                      }
 
@@ -308,7 +319,7 @@ public class RexxCleanupRef extends PhantomReference
         }
         else if (refKind==RefKind.REXX_PROXY)
         {
-            int res=jniUnregisterRexxObject(str_id);    // returns number of references left
+            int res=jniUnregisterRexxObject(str_id);    // returns number of references left on the Rexx object
 
             if (bDebug==true) System.err.println("*** RexxCleanupRef.finalizeRexxObject(): refKind=["+this.refKind+"], str_id=["+this.str_id+"], res=["+res+"]=jniUnregisterRexxObject(...), (thread="+Thread.currentThread().getName()+")");
         }
@@ -337,16 +348,9 @@ public class RexxCleanupRef extends PhantomReference
     {
         class TestObject
         {
-            int num=0;
             TestObject()
             {
-                num=testObjectCounter++;
-                new RexxCleanupRef(this, RexxCleanupRef.RefKind.TEST, this.toString());
-            }
-
-            public String toString()
-            {
-                return "TestObject_#_"+num;
+                new RexxCleanupRef(this, RexxCleanupRef.RefKind.TEST, "clean infos for TestObject # "+(++testObjectCounter) );
             }
         }
 
@@ -373,11 +377,18 @@ public class RexxCleanupRef extends PhantomReference
         System.gc();
         System.err.println(getStatistics("after gc()"));
 
-        System.err.println("main(): sleeping 1000 ms");
-        try { Thread.sleep(1000); } catch (Throwable t) {}
-        System.err.println(getStatistics("after sleeping 1000 ms"));
+        int sleepTime=500;
+        System.err.println("main(): sleeping "+sleepTime+" ms");
+        try { Thread.sleep(sleepTime); } catch (Throwable t) {}
+        System.err.println(getStatistics("after sleeping "+sleepTime+" ms"));
 
         System.err.println("\nJava version used for this run: ["+System.getProperty("java.version")+"]");
+
+/*
+        System.err.println("\ntesting \"getStatistics()\" and \"getStatistics(null)\", ie., with no title:\n");
+        System.err.println(getStatistics());
+        System.err.println(getStatistics(null));
+*/
 
         System.exit(0);     // force exit (there is a cleaner thread running)
     }
@@ -393,20 +404,24 @@ public class RexxCleanupRef extends PhantomReference
         return getStatistics(null);
     }
 
+    static final private String strFormatHeader_1  = "RexxCleanupRef [%1$tY-%1$tm-%1$td %1$tT.%1$tN]%n";
+    static final private String strFormatHeader_2  = "RexxCleanupRef [%1$tY-%1$tm-%1$td %1$tT.%1$tN] [%2$s]%n";
+    static final private String strFormatHeader_3  = String.format("%14s  %17s  %17s %18s%n", "RefKind:", "Instances:", "Finalized:", "Not Yet Finalized:");
+    static final private String strFormatLineHeader= "%-13s";
+    static final private String strFormatNumbers   = ": [%,16d] [%,16d] [%,16d]%n";
+    static final private String strDivider         = String.format("%-71s%n","").replace(' ','-');
+
     /** Creates a string with formatted instances, finalizes and not yet finalized objects grouped by
      *  @link {RexxCleanupRef.RefKind}.
      *
      * @param title to be included in the header line at the top
      * @return formatted String (including newline at the end of each line)
      */
-    static public String getStatistics(String title)
+    static public String getStatistics(final String title)
     {
-        String strRes="",
-               strHeader,
-               strFormatHeader="%-13s",
-               strNumbers,
-               strFormatNumbers=": [%,16d] [%,16d] [%,16d]%n",
-               strDivider=String.format("%-71s%n","").replace(' ','-');
+        String strRes,
+               strLineHeader,
+               strNumbers;
 
         long totalInstances=0;
         long totalFinalizes=0;
@@ -414,38 +429,34 @@ public class RexxCleanupRef extends PhantomReference
             // header line
         if (title==null || title.isEmpty())
         {
-            strRes=String.format("RexxCleanupRef [%1$tY-%1$tm-%1$td %1$tT.%1$tN]%n",
-                                 Calendar.getInstance());
+            strRes=String.format(strFormatHeader_1, Calendar.getInstance());
         }
         else
         {
-            strRes=String.format("RexxCleanupRef [%1$tY-%1$tm-%1$td %1$tT.%1$tN] [%2$s]%n",
-                                 Calendar.getInstance(), title);
+            strRes=String.format(strFormatHeader_2, Calendar.getInstance(), title);
         }
 
-
-        strRes+=String.format("%14s  %17s  %17s %18s%n", "RefKind:", "Instances:", "Finalized:", "Not Yet Finalized:");
-        strRes+=strDivider;
+        strRes+=strFormatHeader_3 + strDivider;
 
         synchronized (counters)
         {
             for (RefKind en : refkinds)
             {
-                strHeader=String.format(strFormatHeader,'['+en.name()+']').replace(' ','.');
+                strLineHeader=String.format(strFormatLineHeader,'['+en.name()+']').replace(' ','.');
                 int ordinal=en.ordinal();
                 strNumbers=String.format(strFormatNumbers, counters[ordinal][0], counters[ordinal][1],
                                                  counters[ordinal][0]-counters[ordinal][1]);
-                strRes+=strHeader+strNumbers;
+                strRes+=strLineHeader+strNumbers;
 
                 totalInstances+=counters[ordinal][0];
                 totalFinalizes+=counters[ordinal][1];
             }
 
 
-            strHeader =String.format(strFormatHeader,"Totals").replace(' ','.');
+            strLineHeader =String.format(strFormatLineHeader,"Totals").replace(' ','.');
             strNumbers=String.format(strFormatNumbers, totalInstances, totalFinalizes,
                                                        totalInstances-totalFinalizes);
-            strRes+=strDivider+strHeader+strNumbers;
+            strRes+=strDivider+strLineHeader+strNumbers;
         }
         return strRes;
     }

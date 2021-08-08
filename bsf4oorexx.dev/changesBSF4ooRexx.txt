@@ -1,3 +1,11 @@
+-------------------------------------- 2021-08-08 ----------------------------------
+
+- RexxCleanupRef.java
+
+        - clone in synchronized block
+
+        - change format patterns to static final
+
 -------------------------------------- 2021-08-07 ----------------------------------
 
 - RexxCleanupRef.java
