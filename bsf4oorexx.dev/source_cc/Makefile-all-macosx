@@ -8,6 +8,8 @@
 #
 #         target 10.9, add to g++ "-std=c++11" (or "-std=gnu++11"); (and before Maverick: "-stdlib=libc++"; to force gnu without c++-11 support use: "-stdlib=libstdc++")
 #
+# rgf, 2021-08-21: adding -rpath when librexx.4.dylib gets sought 
+
 # to support earlier versions of MacOSX export MACOSX_DEPLOYMENT_TARGET=min_version
 # before compiling (cf. "man g++"), e.g.:
 #
@@ -131,6 +133,8 @@ ORX_LIBS_64 = -L${OOREXX_APP_INSTALL}/lib   -lrexx -lrexxapi
 INC_PATH_ALL = $(INC_PATH) -I$(OOREXX_APP_INSTALL)/include
 INC_PATH_ALL_ARM64 = $(INC_PATH_ARM64) -I$(OOREXX_APP_INSTALL)/include
 
+#rpath for searching librexx.4.dylib
+RPATH = .:../lib:/Library/Frameworks/ooRexx.framework/Versions/Current/Libraries:/opt/ooRexx/lib 
 
 
 # INC_PATH_ALL = $(INC_PATH) -I/System/Library/Frameworks/ooRexx.framework/Versions/Current/Headers $(ORX5_INCPATH_64)
@@ -152,7 +156,7 @@ x86_64: BSF4ooRexx.cc
 
 #	g++    -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_64)  $(BSF_OBJ_ORX_64) $(ORX_LIBS_64) -arch x86_64
 # experimenting with '-target' macOS 10.12: "Sierra", released 2016-06-13
-	g++    -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_64)  $(BSF_OBJ_ORX_64) $(ORX_LIBS_64) -target x86_64-apple-macos10.12
+	g++    -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_64)  $(BSF_OBJ_ORX_64) $(ORX_LIBS_64) -rpath ${RPATH} -target x86_64-apple-macos10.12
 
 	install_name_tool -id $(LIB_INSTALL_NAME) $(BSF_ORX_TARGET_64)
 	cp -p $(BSF_ORX_TARGET_64) $(BSF4REXX)
