@@ -136,7 +136,8 @@ INC_PATH_ALL_ARM64 = $(INC_PATH_ARM64) -I$(OOREXX_APP_INSTALL)/include
 #rpath for searching librexx.4.dylib
 # RPATH = '$$ORIGIN:$$ORIGIN/../lib:/usr/local/lib:/Library/Frameworks/ooRexx.framework/Libraries:/opt/ooRexx/lib'
 # on MacOS: advice to use $loader_path
-RPATH = @loader_path:@loader_path/../lib:/usr/local/lib:/Library/Frameworks/ooRexx.framework/Libraries:/opt/ooRexx/lib
+# RPATH = @loader_path:@loader_path/../lib:/usr/local/lib:/Library/Frameworks/ooRexx.framework/Libraries:/opt/ooRexx/lib
+RPATH = @loader_path:@loader_path/../lib:/usr/local/lib:/Library/Frameworks/ooRexx.framework/Libraries:/opt/oorexx/lib
 
 
 # INC_PATH_ALL = $(INC_PATH) -I/System/Library/Frameworks/ooRexx.framework/Versions/Current/Headers $(ORX5_INCPATH_64)
