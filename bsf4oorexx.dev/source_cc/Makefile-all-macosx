@@ -133,11 +133,12 @@ ORX_LIBS_64 = -L${OOREXX_APP_INSTALL}/lib   -lrexx -lrexxapi
 INC_PATH_ALL = $(INC_PATH) -I$(OOREXX_APP_INSTALL)/include
 INC_PATH_ALL_ARM64 = $(INC_PATH_ARM64) -I$(OOREXX_APP_INSTALL)/include
 
-#rpath for searching librexx.4.dylib
+#rpath for searching librexx[api].4.dylib, get infos: otool -l tmp/libBSF4ooRexx.dylib
 # RPATH = '$$ORIGIN:$$ORIGIN/../lib:/usr/local/lib:/Library/Frameworks/ooRexx.framework/Libraries:/opt/ooRexx/lib'
 # on MacOS: advice to use $loader_path
-# RPATH = @loader_path:@loader_path/../lib:/usr/local/lib:/Library/Frameworks/ooRexx.framework/Libraries:/opt/ooRexx/lib
-RPATH = @loader_path:@loader_path/../lib:/usr/local/lib:/Library/Frameworks/ooRexx.framework/Libraries:/opt/oorexx/lib
+# all other Unix versions use "/opt/ooRexx/lib", so we keep on using that casing on MacOS as well
+RPATH = @loader_path:@loader_path/../lib:/usr/local/lib:/Library/Frameworks/ooRexx.framework/Libraries:/opt/ooRexx/lib
+# RPATH = @loader_path:@loader_path/../lib:/usr/local/lib:/Library/Frameworks/ooRexx.framework/Libraries:/opt/oorexx/lib
 
 
 # INC_PATH_ALL = $(INC_PATH) -I/System/Library/Frameworks/ooRexx.framework/Versions/Current/Headers $(ORX5_INCPATH_64)
