@@ -7,8 +7,13 @@
 # make -f Makefile-64-linux-arm [ all | clean | clean_dll | rebuild ]
 #-------------------------------------------------------------------------
 
+# changes:
+# 	20210823, rgf: define RPATH at link time to look up: $ORIGIN:$ORIGIN/../lib:/usr/local/lib64:/usr/lib64:/usr/local/lib:/usr/lib:/opt/ooRexx/lib
+#
+
 # ------------------------ Apache Version 2.0 license -------------------------
-#    Copyright (C) 2001-2017 Rony G. Flatscher
+#    Copyright (C) 2001-2021 Rony G. Flatscher
+#    Copyright (C) 2020-2021 Tony Dycks
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -45,7 +50,7 @@ TGT_LIB_DIR     = ./lib
 # Statements Above can be added to the $HOME/.bashrc file to be set when Bash
 # Command Shell is started; Some Distros also use $JDK_HOME as an environment variable
 # Best Practice for JDK Version Differences
-# Moved Previous Comment Up To Separate Line To Prevent Append of Space Characters to JDK_BASE 
+# Moved Previous Comment Up To Separate Line To Prevent Append of Space Characters to JDK_BASE
 # Variable Assignement That Follows -- tfd July 19, 2021
 JDK_BASE = $(JAVA_HOME)
 # If Using $JDK_HOME Environment Variable; Uncomment Line Below & Comment Out $(JAVA_HOME) Line
@@ -54,7 +59,7 @@ JDK_BASE = $(JAVA_HOME)
 # >>> Raspberry Pi 4 (aarch64) Architecture JDK 8 or 11 Settings <<<
 # ==> Manjaro Linux; JDK 8 Setting for OpenJDK Pacman Package
 #JDK_BASE = /usr/lib/jvm/java-8-openjdk
-# ==> Ubuntu Linux Server; JDK 8 Setting for Ubuntu Debian Packages Install 
+# ==> Ubuntu Linux Server; JDK 8 Setting for Ubuntu Debian Packages Install
 #JDK_BASE = /usr/lib/jvm/java-8-openjdk-arm64
 # ==> Raspberry Pi OS 64 Beta; JDK 8 Setting for Oracle Download Install
 #JDK_BASE = /opt/jdk1.8.0_261 # Oracle JDK v1.8 Download
@@ -107,6 +112,14 @@ LINK_FLAGS      = -shared -rdynamic -lpthread -lc  -lm -ldl
 # LINK_ORX_FLAGS  = -lrexx -lrexxapi -lrexxutil
 LINK_ORX_FLAGS  = -lrexx -lrexxapi
 
+# rgf, 20210823: RPATH will be used to find the ooRexx libraries if libBSF4ooRexx.so was loaded by Java (and needs to load librexx[api].so)
+#     in order to get $ORIGIN processed as such it needs to be written as $$'ORIGIN' to have substitions and escapes applied to yield $ORIGIN at link time!
+#     in order on newer linkers to create RPATH and not RUNPATH one needs to use -Wl,--disable-new-dtags :(
+#     note: -rpath is claimed to also work for libraries (so no need to use -rpath-link which is not shown in the dynamic section anyway)
+#           to see effect of linking use: readelf -d path/to/binary
+# RPATH           = $$'ORIGIN':$$'ORIGIN'/../lib:/usr/local/lib64:/usr/lib64:/usr/local/lib:/usr/lib:/opt/ooRexx/lib
+RPATH           = $$'ORIGIN':$$'ORIGIN'/../lib:/usr/local/lib:/usr/lib:/opt/ooRexx/lib
+
 BSF_SONAME      = libBSF4ooRexx.so
 BSF_OBJ_ORX     = $(BLD_PATH)/BSF4ooRexx-$(BITNESS)-$(ARCH).o
 BSF_ORX_TARGET  = $(BLD_PATH)/$(BSF_SONAME)-$(BITNESS)-$(ARCH)
@@ -134,7 +147,10 @@ $(BSF_ORX_TARGET) : $(BSF_SRC)
 # rgf, 2017-01-26: "-m32" a.k.a. "-m$(BITNESS)" was needed to successfully link a 32-bit .o file on a 64-bit system
 #       $(link) -m$(BITNESS) -Wl,-soname,$(BSF_SONAME) -o $@ $(BSF_OBJ_ORX) $(LIB_PATH) $(LINK_FLAGS) $(LINK_ORX_FLAGS)
 
-	$(link) -Wl,-soname,$(BSF_SONAME) -o $@ $(BSF_OBJ_ORX) $(LIB_PATH) $(LINK_FLAGS) $(LINK_ORX_FLAGS)
+#	$(link) -Wl,-soname,$(BSF_SONAME)                                     -o $@ $(BSF_OBJ_ORX) $(LIB_PATH) $(LINK_FLAGS) $(LINK_ORX_FLAGS)
+
+# newer gcc/ld: have to add "--disable-new-dtags"
+	$(link) -Wl,--disable-new-dtags,-soname,$(BSF_SONAME),-rpath,$(RPATH) -o $@ $(BSF_OBJ_ORX) $(LIB_PATH) $(LINK_FLAGS) $(LINK_ORX_FLAGS)
 
 	$(copy_cmd) $(BSF_ORX_TARGET) $(BSF4REXX)
 	$(copy_cmd) $(BSF_ORX_TARGET) $(TGT_LIB_DIR)

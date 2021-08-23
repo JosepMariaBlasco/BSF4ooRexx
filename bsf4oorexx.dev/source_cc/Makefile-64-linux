@@ -9,10 +9,10 @@
 
 # changes:
 # 	20210823, rgf: define RPATH at link time to look up: $ORIGIN:$ORIGIN/../lib:/usr/local/lib64:/usr/lib64:/usr/local/lib:/usr/lib:/opt/ooRexx/lib
-# 
+#
 
 # ------------------------ Apache Version 2.0 license -------------------------
-#    Copyright (C) 2001-2011 Rony G. Flatscher
+#    Copyright (C) 2001-2021 Rony G. Flatscher
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -120,11 +120,11 @@ $(BSF_ORX_TARGET) : $(BSF_SRC)
 	$(cc) $(CFLAGS) $(CFLAGS_ORX) -o$(BSF_OBJ_ORX) $(INC_PATH) $(INC_PATH_ORX) $(LIB_PATH) $(BSF_SRC)
 
 # older gcc/ld
-#	$(link) -Wl,-soname,$(BSF_SONAME),-rpath,$(RPATH) -o $@ $(BSF_OBJ_ORX) $(LIB_PATH) $(LINK_FLAGS) $(LINK_ORX_FLAGS) 
+#	$(link) -Wl,-soname,$(BSF_SONAME),-rpath,$(RPATH) -o $@ $(BSF_OBJ_ORX) $(LIB_PATH) $(LINK_FLAGS) $(LINK_ORX_FLAGS)
 
 # newer gcc/ld: have to add "--disable-new-dtags"
-	$(link) -Wl,--disable-new-dtags,-soname,$(BSF_SONAME),-rpath,$(RPATH) -o $@ $(BSF_OBJ_ORX) $(LIB_PATH) $(LINK_FLAGS) $(LINK_ORX_FLAGS) 
-	
+	$(link) -Wl,--disable-new-dtags,-soname,$(BSF_SONAME),-rpath,$(RPATH) -o $@ $(BSF_OBJ_ORX) $(LIB_PATH) $(LINK_FLAGS) $(LINK_ORX_FLAGS)
+
 
 	$(copy_cmd) $(BSF_ORX_TARGET) $(BSF4REXX)
 	$(copy_cmd) $(BSF_ORX_TARGET) $(TGT_LIB_DIR)

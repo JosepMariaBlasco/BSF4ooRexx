@@ -7,8 +7,12 @@
 # make -f Makefile-32-linux [ all | clean | clean_dll | rebuild ]
 #-------------------------------------------------------------------------
 
+# changes:
+# 	20210823, rgf: define RPATH at link time to look up: $ORIGIN:$ORIGIN/../lib:/usr/local/lib64:/usr/lib64:/usr/local/lib:/usr/lib:/opt/ooRexx/lib
+#
+
 # ------------------------ Apache Version 2.0 license -------------------------
-#    Copyright (C) 2001-2017 Rony G. Flatscher
+#    Copyright (C) 2001-2021 Rony G. Flatscher
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -80,6 +84,14 @@ LINK_FLAGS      = -shared -rdynamic -lpthread -lc  -lm -ldl
 # LINK_ORX_FLAGS  = -lrexx -lrexxapi -lrexxutil
 LINK_ORX_FLAGS  = -lrexx -lrexxapi
 
+# rgf, 20210823: RPATH will be used to find the ooRexx libraries if libBSF4ooRexx.so was loaded by Java (and needs to load librexx[api].so)
+#     in order to get $ORIGIN processed as such it needs to be written as $$'ORIGIN' to have substitions and escapes applied to yield $ORIGIN at link time!
+#     in order on newer linkers to create RPATH and not RUNPATH one needs to use -Wl,--disable-new-dtags :(
+#     note: -rpath is claimed to also work for libraries (so no need to use -rpath-link which is not shown in the dynamic section anyway)
+#           to see effect of linking use: readelf -d path/to/binary
+# RPATH           = $$'ORIGIN':$$'ORIGIN'/../lib:/usr/local/lib64:/usr/lib64:/usr/local/lib:/usr/lib:/opt/ooRexx/lib
+RPATH           = $$'ORIGIN':$$'ORIGIN'/../lib:/usr/local/lib:/usr/lib:/opt/ooRexx/lib
+
 BSF_SONAME      = libBSF4ooRexx.so
 BSF_OBJ_ORX     = $(BLD_PATH)/BSF4ooRexx-$(BITNESS)-$(ARCH).o
 BSF_ORX_TARGET  = $(BLD_PATH)/$(BSF_SONAME)-$(BITNESS)-$(ARCH)
@@ -105,7 +117,8 @@ $(BSF_ORX_TARGET) : $(BSF_SRC)
 	$(cc) $(CFLAGS) $(CFLAGS_ORX) -o$(BSF_OBJ_ORX) $(INC_PATH) $(INC_PATH_ORX) $(LIB_PATH) $(BSF_SRC)
 
 # rgf, 2017-01-26: "-m32" a.k.a. "-m$(BITNESS)" was needed to successfully link a 32-bit .o file on a 64-bit system
-	$(link) -m$(BITNESS) -Wl,-soname,$(BSF_SONAME) -o $@ $(BSF_OBJ_ORX) $(LIB_PATH) $(LINK_FLAGS) $(LINK_ORX_FLAGS)
+#	$(link) -m$(BITNESS) -Wl,-soname,$(BSF_SONAME)                                     -o $@ $(BSF_OBJ_ORX) $(LIB_PATH) $(LINK_FLAGS) $(LINK_ORX_FLAGS)
+	$(link) -m$(BITNESS) -Wl,--disable-new-dtags,-soname,$(BSF_SONAME),-rpath,$(RPATH) -o $@ $(BSF_OBJ_ORX) $(LIB_PATH) $(LINK_FLAGS) $(LINK_ORX_FLAGS)
 
 	$(copy_cmd) $(BSF_ORX_TARGET) $(BSF4REXX)
 	$(copy_cmd) $(BSF_ORX_TARGET) $(TGT_LIB_DIR)
