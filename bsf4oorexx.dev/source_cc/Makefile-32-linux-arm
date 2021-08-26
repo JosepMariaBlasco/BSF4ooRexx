@@ -92,7 +92,8 @@ link = gcc
 
 BITNESS         = 32
 # ARCH            = x86
-ARCH            = arm
+# --tfd -- Revised to Append Bitness to ARCH Suffix -- August 26, 2021
+ARCH            = arm$(BITNESS)
 
 #
 # CFLAGS		= -fPIC -c -O3 -D__cplusplus -DUNIX -m$(BITNESS) -DBSF4REXX_$(BITNESS)_BIT
