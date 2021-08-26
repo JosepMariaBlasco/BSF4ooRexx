@@ -176,7 +176,7 @@ arm64: BSF4ooRexx.cc
 
 #	g++    -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_ARM64) $(BSF_OBJ_ORX_ARM64) $(ORX_LIBS_64) -arch arm64
 # experimenting with '-target'
-	g++    -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_ARM64) $(BSF_OBJ_ORX_ARM64) $(ORX_LIBS_64) -target arm64-apple-macos11
+	g++    -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_ARM64) $(BSF_OBJ_ORX_ARM64) $(ORX_LIBS_64)  -rpath ${RPATH} -target arm64-apple-macos11
 
 	install_name_tool -id $(LIB_INSTALL_NAME) $(BSF_ORX_TARGET_ARM64)
 	cp -p $(BSF_ORX_TARGET_ARM64) $(BSF4REXX)
