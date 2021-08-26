@@ -99,7 +99,8 @@ link = gcc
 # Revise BITNESS from 32 to 64 -- T. Dycks -- June 13, 2020
 BITNESS         = 64
 # ARCH            = x86
-ARCH            = arm
+# tfd, 2021-08-25: Changed ARCH from "arm" to "arm64"
+ARCH            = arm$(BITNESS)
 
 #
 # CFLAGS		= -fPIC -c -O3 -D__cplusplus -DUNIX -m$(BITNESS) -DBSF4REXX_$(BITNESS)_BIT
