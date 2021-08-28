@@ -5,8 +5,16 @@
             without any knowledge about Java installation issues)
    Author:  Rony G. Flatscher
    Date:    2006-01-07
-   Version: 1.36
+   Version: 1.37
    Changed:
+
+            2021-08-26, - 64-bit arm test against different machine names ("arm", "aarch64",
+                          "arm64") and use either "lib/libBSF4ooRexx.so-64-aarch64" or if not
+                          present "lib/libBSF4ooRexx.so-64-aarch64"
+
+            2021-08-14, - MacOSX: add 'aarch64' (reported by Java as such) as another test,
+                                  default to 'universal' in case the name 'x86_64' is not
+                                  reported by Java
 
             2021-07-25 - 2021-07-28 - changes for rexxj.{cm|sh}:
                         - fetches BSF4OOREXX_HOME's "bsf4ooRexx*bin.jar" as absolute path and prepends it
@@ -607,13 +615,12 @@ do
       --   when cmd.eBitness=32 then cmd.eDll.sourcePath="lib/libBSF4ooRexx.dylib-32-x86"    -- no 32-bit support anymore!
       if cmd.eBitness=64 then
       do
-          if j.os.arch='arm' | j.os.arch='arm64' then
+          if j.os.arch='arm' | j.os.arch='arm64' | j.os.arch='aarch64' then
               cmd.eDll.sourcePath="lib/libBSF4ooRexx.dylib-64-arm64"
-          else
+          else if j.os.arch='x86_64' then
               cmd.eDll.sourcePath="lib/libBSF4ooRexx.dylib-64-x86_64"
-
--- TODO: remove (just for testing)
---          cmd.eDll.sourcePath="lib/libBSF4ooRexx.dylib-universal"
+          else -- default to universal which includes arm64 and x86_64
+              cmd.eDll.sourcePath="lib/libBSF4ooRexx.dylib-universal"
       end
       else cmd.eDll.sourcePath="lib/panic-unknown-bitness-"cmd.eBitness
    end
@@ -634,9 +641,15 @@ do
          when cmd.eBitness=64    then
          do
             if j.os.arch='s390x'    then cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-64-s390x"
-            else if j.os.arch='arm' | j.os.arch='aarch64' then
-                                         cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-64-aarch64"
-                                    else cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-64-amd64"
+            else if j.os.arch='arm' | j.os.arch='aarch64' | j.os.arch='arm64' then    -- Linux
+                                    do
+                                       if sysFileExists("lib/libBSF4ooRexx.so-64-aarch64") then
+                                          cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-64-aarch64"
+                                       else
+                                          cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-64-arm64"
+                                    end
+                                    else -- Intel/AMD
+                                       cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-64-amd64"
          end
 
          when j.os.arch~caselessAbbrev('aix') then

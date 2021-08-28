@@ -680,7 +680,7 @@ if (bDebugInfosToTmp)
         {
             xSingleServiceFactory = FactoryHelper.getServiceFactory(
                 ScriptProviderForooRexx._ScriptProviderForooRexx.class,
-                "com.sun.star.script.provider.ScriptProviderForooRexx",
+                "com.sun.star.script.provider.ScriptProviderForooRexx",  // service3 below ?
                 multiFactory,
                 regKey );
         }

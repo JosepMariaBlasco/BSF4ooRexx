@@ -1,3 +1,104 @@
+
+-------------------------------------- 2021-08-28 ----------------------------------
+
+- source_cc/lib/libBSF4ooRexx.so-32-arm32
+
+        - new arm32 build
+
+- source_cc/lib/libBSF4ooRexx.so-64-s390x
+
+        - new build
+
+-------------------------------------- 2021-08-26 ----------------------------------
+
+- Makefile-all-macosx
+
+        - changing name of resulting lib from libBSF4ooRexx.so-64-aarch64 to libBSF4ooRexx.so-64-arm64
+
+- Makefile-all-macosx
+
+        - adding RPATH to arm64 version (was overlooked)
+
+- source_cc/lib/libBSF4ooRexx.so-64-arm64
+
+        - new arm64 build, renamed libBSF4ooRexx.so-64-aarch64 to libBSF4ooRexx.so-64-arm64
+
+- install/setupBSF.rex
+
+        - 64-bit arm test against different machine names ("arm", "aarch64",
+          "arm64") and use either "lib/libBSF4ooRexx.so-64-aarch64" or if not
+          present "lib/libBSF4ooRexx.so-64-aarch64"
+
+
+-------------------------------------- 2021-08-23 ----------------------------------
+
+- BSF.CLS
+
+        - if a weird "java.version" value gets returned that cannot be parsed
+          into a whole number for the "major" part use "java.specification.version"
+          instead
+
+- all Linux Makefiles
+
+        - add RPATH at link-time, Linux bitness set to either:
+
+           $ORIGIN:$ORIGIN/../lib:/usr/local/lib:/usr/lib:/opt/ooRexx/lib
+           $ORIGIN:$ORIGIN/../lib:/usr/local/lib64:/usr/lib64:/usr/local/lib:/usr/lib:/opt/ooRexx/lib
+
+- Makefile-all-macosx
+
+        - uppercasing "R" in /opt/ooRexx/lib, RPATH now set to:
+
+          @loader_path:@loader_path/../lib:/usr/local/lib:/Library/Frameworks/ooRexx.framework/Libraries:/opt/ooRexx/lib
+
+-------------------------------------- 2021-08-22 ----------------------------------
+
+- BSF.CLS
+
+        - "java.version" from early-access/beta versions of OpenJDKs may be of the
+          form "18-ea" and the like, rather than in the form "major.minor.rest";
+          cater for that by translating only numbers and dots and then parse that
+
+- Makefile-all-macosx
+
+        - RPATH now set to:
+
+          @loader_path:@loader_path/../lib:/usr/local/lib:/Library/Frameworks/ooRexx.framework/Libraries:/opt/oorexx/lib
+
+          so the searching order should be:
+
+                1) same directory libBSF4ooRexx.dylib resides
+                2) starting from the directory libBSF4ooRexx.dylib resides: ../lib
+                3) /usr/local/lib
+                4) /Library/Frameworks/ooRexx.framework/Libraries (GUI installer for BSF4ooRexx)
+                5) /opt/oorexx/lib (whatever ooRexx version is there)
+
+-------------------------------------- 2021-08-21 ----------------------------------
+
+- Makefile-all-macosx
+
+        - adding -rpath such that libBSF4ooRexx.dylib searches librexx[api].dylib
+          according to it
+
+-------------------------------------- 2021-08-14 ----------------------------------
+
+- Mac GUI installer (Packages)
+
+        - new logic for installing OpenOffice/LibreOffice support (scripts/AOO_install_support.sh,
+          AOO_uninstall_support.sh)
+
+                - if multiple OO/LO installed, process all of them
+
+                - ScriptProviderForooRexx.oxt installed for user for the moment
+
+-------------------------------------- 2021-08-14 ----------------------------------
+
+- setupBSF.rex
+
+        - MacOSX: add 'aarch64' (reported by Java as such) as another test,
+                  default to 'universal' in case the name 'x86_64' is not
+                  reported by Java
+
 -------------------------------------- 2021-08-08 ----------------------------------
 
 - RexxCleanupRef.java

@@ -116,6 +116,7 @@ public class RexxCleanupRef extends PhantomReference
     /** Defines the valid kinds of Rexx related resources to finalize. */
     static public enum RefKind { TEST, REXX_ENGINE, REXX_PROXY } ;
 
+    /** Stores the enum objects in an arary in ordinal order. */
     static private RefKind refkinds[] = RefKind.class.getEnumConstants();
 
     /** Getter that returns a clone (copy) of the enum constants of the @link{RefKind} enum class.

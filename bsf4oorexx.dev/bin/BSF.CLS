@@ -19,6 +19,13 @@
           .BSF in .environment;
 
    date:
+         2021-08-23, ---rgf, - if a weird "java.version" value gets returned that cannot be parsed
+                               into a whole number for the "major" part use "java.specification.version"
+                               instead
+
+         2021-08-22, ---rgf, - "java.version" from early-access/beta versions of OpenJDKs may be of the
+                               form "18-ea" and the like, rather than in the form "major.minor.rest";
+                               cater for that by translating only numbers and dots and then parse that
 
          2021-08-06, ---rgf, - mark all attributes and methods explicitly as guarded which to
                                "defend" against side-effects of the new ooRexx 5.0 setting of
@@ -883,7 +890,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="641.20210807" -- set version (date distribution got created)
+      .bsf4rexx~version="641.20210828" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -1163,15 +1170,27 @@ syntax:
   -- 2018-02-20, rgf: add "java.version",  "java.major.version" and "java.minor.version"
   javaVersion=bsf.dir~entry("java.lang.System")~getProperty("java.version")
   bsf.dir~setEntry("java.version",javaVersion)
+
   -- make sure this gets run only on Java 1.8/8 or higher; up to Java 9 "java.version" returned 1.6, 1.7 or 1.8, then 9.0
-  parse var javaVersion major "." minor "." rest
-  if major=1 then          -- 1.6, 1.7, 1.8?
+
+  -- 20210822: beta or early access version of OpenJDK may return a version string like "18-ea"
+  filterChars="012345678."
+  tmpJavaVersion=javaVersion~translate(filterChars, filterChars||xrange("00"x,"ff"x))
+
+  parse var tmpJavaVersion major "." minor "." rest
+  if \datatype(major,"whole") then  -- some weird non-whole version string (ea, beta, ...), use the specification version
+  do     -- try to use the java.specification.version value instead
+     tmpJavaVersion=bsf.dir~entry("java.lang.System")~getProperty("java.specification.version") -- would not contain "ea" etc.
+     parse var tmpJavaVersion major "." minor "." rest
+  end
+
+  if major=1 then          -- 1.6, 1.7, 1.8? shift
   do
       major=minor
       minor=rest
   end
   bsf.dir~setEntry("java.major.version", major)
-  bsf.dir~setEntry("java.minor.version", minor )
+  bsf.dir~setEntry("java.minor.version", minor )   -- minor can be the empty string if java.version is "18-ea" or the like
 
 --  say .line": BSF.CLS - java.version="pp(bsf.dir~java.version) "java.major.version="pp(bsf.dir~java.major.version) "java.minor.version="pp(bsf.dir~java.minor.version)
 
