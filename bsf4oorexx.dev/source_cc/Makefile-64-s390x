@@ -41,13 +41,17 @@ TGT_LIB_DIR     = ./lib
 # JDK_BASE = /usr/lib/jvm/java-6-openjdk-amd64
 
 # 2016-04-05
-JDK_BASE = /opt/ibm/java-s390x-80
+#JDK_BASE = /opt/ibm/java-s390x-80
+JDK_BASE = /opt/ibm/ibm-java-s390x-80
 
-INC_PATH = -I. -I/usr/local/include -I$(JDK_BASE)/include -I$(JDK_BASE)/include/linux -I/usr/include
+#INC_PATH = -I. -I/usr/local/include -I$(JDK_BASE)/include -I$(JDK_BASE)/include/linux -I/usr/include
+INC_PATH = -I.  -I./include -I/usr/local/include -I$(JDK_BASE)/include -I$(JDK_BASE)/include/linux -I/usr/include
 
-INC_PATH_ORX = -I/usr/include $(INC_PATH)
+#INC_PATH_ORX = -I/usr/include $(INC_PATH)
+INC_PATH_ORX = -I/usr/lib64 -I/usr/include/rpcsvc $(INC_PATH)
 
-LIB_PATH = -L. -L/usr/local/lib64 -L/usr/lib64 -L/usr/lib
+#LIB_PATH = -L. -L/usr/local/lib64 -L/usr/lib64 -L/usr/lib
+LIB_PATH = -L. -L/usr/local/lib64 -L/usr/local/lib -L/usr/lib64 -L/usr/lib
 
 
 # --------------------------------------------------------
