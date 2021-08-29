@@ -5,8 +5,10 @@
             without any knowledge about Java installation issues)
    Author:  Rony G. Flatscher
    Date:    2006-01-07
-   Version: 1.37
+   Version: 1.38
    Changed:
+            2021-08-29, - make sure on Unix that "/usr/local/bin" and "/usr/local/lib"
+                          exist and if not create them before placing links there
 
             2021-08-26, - 64-bit arm test against different machine names ("arm", "aarch64",
                           "arm64") and use either "lib/libBSF4ooRexx.so-64-aarch64" or if not
@@ -904,6 +906,17 @@ createInstallScript: procedure expose j. cmd. path.
      call lineout ui, cmd.eEcho qc(tmpCmd)
      call lineout ui, tmpCmd
      call lineout ui, ""
+
+     -- rgf, 2021-08-29: create "/usr/local/bin" and "/usr/local/lib" if they do not exist already, never remove them
+     localDirs=.array~of("/usr/local/bin", "/usr/local/lib")
+     do dir over localDirs
+        call lineout fn, "if ! [ -d" dir "] ; then "
+        call lineout fn, "   " cmd.eEcho qc("creating" dir "...")
+        call lineout fn, "    mkdir -pvm 755" dir
+        call lineout fn, "fi"
+     end
+     call lineout fn, ""
+
 
      if cmd.eIsMacOSX<>1 then    -- on Linux also copy to lib32 or lib64, if they exist
      do

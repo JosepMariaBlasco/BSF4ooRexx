@@ -19,6 +19,9 @@
           .BSF in .environment;
 
    date:
+         2021-08-29, ---rgf, - add System's "os.arch" property in quotes to the Java chunk in
+                               "display.version" entry
+
          2021-08-23, ---rgf, - if a weird "java.version" value gets returned that cannot be parsed
                                into a whole number for the "major" part use "java.specification.version"
                                instead
@@ -890,7 +893,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="641.20210828" -- set version (date distribution got created)
+      .bsf4rexx~version="641.20210829" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -6174,7 +6177,7 @@ syntax:
     if javaVersionDate<>.nil then
        javaVersion=javaVersion "(released:" javaVersionDate")"
 
-    javaVersion="Java" javaVersion"," .java.lang.System~getProperty("sun.arch.data.model")"-bit"
+    javaVersion="Java" javaVersion"," .java.lang.System~getProperty("sun.arch.data.model")"-bit" "(".java.lang.System~getProperty("os.arch")")"
 
     .bsf4rexx~display.version=orxVersion "/ BSF" .bsf4rexx~version "/" javaVersion "/" sysVersion()
     return

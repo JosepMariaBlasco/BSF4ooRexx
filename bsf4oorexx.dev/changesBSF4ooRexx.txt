@@ -1,3 +1,15 @@
+-------------------------------------- 2021-08-29 ----------------------------------
+
+- BSF.CLS
+
+        - add System's "os.arch" property in quotes to the Java chunk in
+          "display.version" entry
+
+- Unix install scirpts
+
+        - it might be possible that "/usr/local/bin" and "/usr/local/lib"
+          do not exist on newly rolled out systems, so make sure that they get created
+          as BSF4ooRexx places symbolic links there
 
 -------------------------------------- 2021-08-28 ----------------------------------
 
