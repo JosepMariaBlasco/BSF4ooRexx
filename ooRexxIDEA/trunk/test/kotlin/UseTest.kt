@@ -1,7 +1,10 @@
 import TestUtils.Companion.getAst
 import TestUtils.Companion.printTree
+import org.junit.Ignore
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
+@Disabled
 class UseTest {
 
     @Test

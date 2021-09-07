@@ -1,7 +1,9 @@
 package org.oorexx.ide.setting;
 
-import com.intellij.openapi.components.*;
-import com.intellij.util.xmlb.XmlSerializerUtil;
+import com.intellij.openapi.components.PersistentStateComponent;
+import com.intellij.openapi.components.ServiceManager;
+import com.intellij.openapi.components.State;
+import com.intellij.openapi.components.Storage;
 import org.jetbrains.annotations.Nullable;
 
 @State(
@@ -22,7 +24,7 @@ public class OoRexxLanguageSettings implements PersistentStateComponent<OoRexxLa
 
     @Override
     public void loadState(OoRexxLanguageSettings ooRexxLanguageSettings) {
-        XmlSerializerUtil.copyBean(ooRexxLanguageSettings, this);
+        this.allowSpecialChars = ooRexxLanguageSettings.allowSpecialChars;
     }
 
     public static OoRexxLanguageSettings getInstance() {

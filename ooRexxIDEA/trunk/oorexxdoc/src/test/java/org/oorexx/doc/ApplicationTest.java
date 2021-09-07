@@ -2,6 +2,7 @@ package org.oorexx.doc;
 
 import com.beust.jcommander.MissingCommandException;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.oorexx.doc.generate.DocGeneratorBase;
 import org.oorexx.doc.generate.StandaloneDocGenerator;
@@ -13,6 +14,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertNotNull;
 
+@Ignore
 public class ApplicationTest {
 
     @Before
