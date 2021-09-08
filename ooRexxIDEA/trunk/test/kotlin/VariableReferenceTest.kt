@@ -1,11 +1,7 @@
-import TestUtils.Companion.getAst
-import TestUtils.Companion.printTree
-import org.junit.Assert
-import org.junit.Ignore
-import org.junit.jupiter.api.Disabled
+import TestUtils.Companion.assertNoPsiError
+import TestUtils.Companion.getPsiFile
 import org.junit.jupiter.api.Test
 
-@Disabled
 class VariableReferenceTest {
 
     @Test
@@ -19,8 +15,9 @@ class VariableReferenceTest {
     if a < b then
         say "hi"
     """
-        val astNode = getAst(ooRexxSource)
-        printTree(astNode)
+        val astNode = getPsiFile(ooRexxSource)
+
+        assertNoPsiError(astNode)
     }
 
 

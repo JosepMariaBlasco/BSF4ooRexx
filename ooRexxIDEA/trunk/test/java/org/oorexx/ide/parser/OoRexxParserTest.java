@@ -23,7 +23,6 @@ import java.util.logging.Logger;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-@Disabled
 public class OoRexxParserTest {
 
     private Logger logger = Logger.getLogger(OoRexxParserTest.class.getCanonicalName());
@@ -76,8 +75,6 @@ public class OoRexxParserTest {
         ArrayList<File> files = new ArrayList<>();
 
         getFilesOfDir(getTestResource("noErrors"), files);
-
-        getFilesOfDir(new File("/opt/BSF4ooRexx"), files);
 
         return files;
     }

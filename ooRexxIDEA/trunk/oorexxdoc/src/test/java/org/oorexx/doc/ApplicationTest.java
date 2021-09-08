@@ -1,6 +1,12 @@
 package org.oorexx.doc;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
+
 import com.beust.jcommander.MissingCommandException;
+import com.beust.jcommander.internal.Console;
+import com.beust.jcommander.internal.DefaultConsole;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -18,7 +24,7 @@ import static org.junit.Assert.assertNotNull;
 public class ApplicationTest {
 
     @Before
-    public void init(){
+    public void init() {
         Application.initCommands();
     }
 
@@ -29,7 +35,7 @@ public class ApplicationTest {
         String outputDirectory = "/home/test/output";
         String title = "title";
 
-        String[] args = {"generate", "-i="+inputDirectory, "-o="+outputDirectory, "-t="+title};
+        String[] args = {"generate", "-i=" + inputDirectory, "-o=" + outputDirectory, "-t=" + title};
 
         Application.parse(args);
 
@@ -48,7 +54,7 @@ public class ApplicationTest {
         String outputDirectory = "/home/test/output";
         String title = "title";
 
-        String[] args = {"generate", "-i="+inputDirectory +  "," + inputFile, "-o="+outputDirectory, "-t="+title};
+        String[] args = {"generate", "-i=" + inputDirectory + "," + inputFile, "-o=" + outputDirectory, "-t=" + title};
         Application.parse(args);
 
         GenerateCommand command = Application.getGenerateCommand();
@@ -67,27 +73,38 @@ public class ApplicationTest {
         String outputDirectory = "/home/test/output";
         String title = "title";
 
-        String[] args = {"unknown", "-i="+inputDirectory +  "," + inputFile, "-o="+outputDirectory, "-t="+title};
+        String[] args = {"unknown", "-i=" + inputDirectory + "," + inputFile, "-o=" + outputDirectory, "-t=" + title};
         Application.parse(args);
     }
 
     @Test
+    @Ignore
+    // U
     public void testUsage() throws Exception {
         String inputFile = "/home/test/a.file";
         String inputDirectory = "/home/test/";
         String outputDirectory = "/home/test/output";
         String title = "title";
 
-        String[] args = {"generate", "-i="+inputDirectory +  "," + inputFile, "-o="+outputDirectory, "-t="+title};
+        String[] args = {"generate", "-i=" + inputDirectory + "," + inputFile, "-o=" + outputDirectory, "-t=" + title};
         Application.parse(args);
 
-        String usage = Application.getUsage();
+        Console console;
+        try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+             PrintStream printStream = new PrintStream(byteArrayOutputStream)) {
 
-        assertNotNull(usage);
+            console = new DefaultConsole(printStream);
+            Application.setConsole(console);
+
+            Application.printUsage();
+
+            assertNotNull(byteArrayOutputStream.toString(StandardCharsets.UTF_8));
+        }
+
     }
 
     @Test
-    public void testHelp() throws Exception{
+    public void testHelp() throws Exception {
         String inputFile = "/home/test/a.file";
         String inputDirectory = "/home/test/";
         String outputDirectory = "/home/test/output";
@@ -95,7 +112,7 @@ public class ApplicationTest {
 
         String help = "help";
 
-        String[] args = {help, "-i="+inputDirectory +  "," + inputFile, "-o="+outputDirectory, "-t="+title};
+        String[] args = {help, "-i=" + inputDirectory + "," + inputFile, "-o=" + outputDirectory, "-t=" + title};
 
         String parsedCommand = Application.parse(args);
         assertThat(parsedCommand, is(help));
@@ -108,7 +125,7 @@ public class ApplicationTest {
         String outputDirectory = "/home/alex/test/output";
         String title = "title";
 
-        String[] args = {"generate", "-i="+inputDirectory, "-o="+outputDirectory, "-t="+title};
+        String[] args = {"generate", "-i=" + inputDirectory, "-o=" + outputDirectory, "-t=" + title};
 
         Application.main(args);
 
@@ -120,7 +137,7 @@ public class ApplicationTest {
         String outputDirectory = "/home/alex/test/output";
         String title = "title";
 
-        String[] args = {"generate", "-i="+inputDirectory, "-o="+outputDirectory, "-t="+title};
+        String[] args = {"generate", "-i=" + inputDirectory, "-o=" + outputDirectory, "-t=" + title};
 
         Application.main(args);
 
@@ -132,7 +149,7 @@ public class ApplicationTest {
         String outputDirectory = "/home/alex/test/output";
         String title = "title";
 
-        String[] args = {"generate", "-i="+inputDirectory, "-o="+outputDirectory, "-t="+title};
+        String[] args = {"generate", "-i=" + inputDirectory, "-o=" + outputDirectory, "-t=" + title};
 
         Application.main(args);
 
@@ -144,7 +161,7 @@ public class ApplicationTest {
         String outputDirectory = "/home/alex/test/output";
         String title = "title";
 
-        String[] args = {"generate", "-i="+inputDirectory, "-o="+outputDirectory, "-t="+title};
+        String[] args = {"generate", "-i=" + inputDirectory, "-o=" + outputDirectory, "-t=" + title};
 
         Application.main(args);
 
@@ -156,7 +173,7 @@ public class ApplicationTest {
         String outputDirectory = "/home/alex/test/output";
         String title = "title";
 
-        String[] args = {"generate", "-i="+inputDirectory, "-o="+outputDirectory, "-t="+title};
+        String[] args = {"generate", "-i=" + inputDirectory, "-o=" + outputDirectory, "-t=" + title};
 
         Application.main(args);
 
@@ -168,7 +185,7 @@ public class ApplicationTest {
         String outputDirectory = "/home/alex/test/output";
         String title = "title";
 
-        String[] args = {"generate", "-i="+inputDirectory, "-o="+outputDirectory, "-t="+title};
+        String[] args = {"generate", "-i=" + inputDirectory, "-o=" + outputDirectory, "-t=" + title};
 
         Application.main(args);
 
@@ -180,14 +197,14 @@ public class ApplicationTest {
         String outputDirectory = "/home/alex/test/output";
         String title = "title";
 
-        String[] args = {"generate", "-i="+inputDirectory, "-o="+outputDirectory, "-t="+title};
+        String[] args = {"generate", "-i=" + inputDirectory, "-o=" + outputDirectory, "-t=" + title};
 
         Application.main(args);
 
     }
 
     @Test
-    public void testXmlConf() throws Exception{
+    public void testXmlConf() throws Exception {
         String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                 "<oorexxdoc>\n" +
                 "\t<parser>\n" +
@@ -217,7 +234,7 @@ public class ApplicationTest {
 
     @Test
     public void testXmlFileConf() throws Exception {
-        String confPath= "/home/alex/test/doc.xml";
+        String confPath = "/home/alex/test/doc.xml";
         Application.main(new String[]{confPath});
     }
 
@@ -228,12 +245,12 @@ public class ApplicationTest {
     }
 
     @Test
-    public void testAnnotation() throws Exception{
+    public void testAnnotation() throws Exception {
         String inputDirectory = "/home/alex/test/test.rexx";
         String outputDirectory = "/home/alex/test/output";
         String title = "title";
 
-        String[] args = {"generate", "-i="+inputDirectory, "-o="+outputDirectory, "-t="+title};
+        String[] args = {"generate", "-i=" + inputDirectory, "-o=" + outputDirectory, "-t=" + title};
 
         Application.main(args);
     }

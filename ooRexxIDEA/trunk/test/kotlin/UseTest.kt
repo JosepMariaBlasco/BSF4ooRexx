@@ -1,10 +1,7 @@
-import TestUtils.Companion.getAst
-import TestUtils.Companion.printTree
-import org.junit.Ignore
-import org.junit.jupiter.api.Disabled
+import TestUtils.Companion.assertNoPsiError
+import TestUtils.Companion.getPsiFile
 import org.junit.jupiter.api.Test
 
-@Disabled
 class UseTest {
 
     @Test
@@ -15,8 +12,9 @@ class UseTest {
     use local allChars stream tmp len1  -- local variables (all others are attributes)
     use strict arg fileName
     """
-        val astNode = getAst(ooRexxSource)
-        printTree(astNode)
+        val astNode = getPsiFile(ooRexxSource)
+
+        assertNoPsiError(astNode)
     }
 
 

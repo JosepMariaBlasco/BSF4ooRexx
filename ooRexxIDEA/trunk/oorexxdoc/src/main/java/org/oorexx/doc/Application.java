@@ -1,8 +1,13 @@
 package org.oorexx.doc;
 
+import java.io.File;
+import java.util.Optional;
+import java.util.stream.Stream;
+
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.ParameterException;
+import com.beust.jcommander.internal.Console;
 import org.apache.commons.io.FileUtils;
 import org.oorexx.doc.generate.DocGeneratorBase;
 import org.oorexx.doc.generate.StandaloneDocGenerator;
@@ -11,24 +16,20 @@ import org.oorexx.doc.input.cli.HelpCommand;
 import org.oorexx.doc.input.model.xml.OoRexxDocXml;
 import org.oorexx.doc.input.xml.legacy.XmlParser;
 
-import java.io.File;
-import java.util.Optional;
-import java.util.stream.Stream;
-
 public class Application {
 
     private static JCommander jCommander;
     private static GenerateCommand generateCommand;
     private static HelpCommand helpCommand;
 
-    public static void main(String[] args) throws Exception{
+    public static void main(String[] args) throws Exception {
 
-        if(args.length == 0){
+        if (args.length == 0) {
             File file = null;
 
             try {
                 file = new File(System.getProperty("user.dir"));
-            }catch (Exception e){
+            } catch (Exception e) {
                 // not a file
                 e.printStackTrace();
             }
@@ -42,14 +43,14 @@ public class Application {
             }
         }
 
-        if(args.length == 1){
+        if (args.length == 1) {
             File file = null;
             try {
                 file = new File(args[0]);
-            }catch (Exception e){
+            } catch (Exception e) {
                 // not a file
             }
-            if(file != null && file.exists()){
+            if (file != null && file.exists()) {
                 generateXml(file);
                 return;
             }
@@ -60,27 +61,27 @@ public class Application {
         try {
             String parsedCommand = parse(args);
 
-            if("help".equals(parsedCommand)){
+            if ("help".equals(parsedCommand)) {
                 printHelp();
             }
 
-            if("generate".equals(parsedCommand)){
+            if ("generate".equals(parsedCommand)) {
                 generate();
             }
-        } catch (MissingCommandException e){
-            System.out.println(getUsage());
-        } catch (ParameterException e){
+        } catch (MissingCommandException e) {
+            jCommander.usage();
+        } catch (ParameterException e) {
             System.out.println(e.getMessage());
         }
 
-        if(args.length == 0) {
+        if (args.length == 0) {
             printHelp();
             return;
         }
 
     }
 
-    protected static void initCommands(){
+    protected static void initCommands() {
         generateCommand = new GenerateCommand();
         helpCommand = new HelpCommand();
         jCommander = JCommander
@@ -90,23 +91,17 @@ public class Application {
                 .build();
     }
 
-    protected static String parse(String[] args){
+    protected static String parse(String[] args) {
         jCommander.parse(args);
         return jCommander.getParsedCommand();
     }
 
 
-    private static void printHelp(){
-        System.out.println(getUsage());
+    private static void printHelp() {
+        jCommander.usage();
     }
 
-    protected static String getUsage(){
-        StringBuilder stringBuilder = new StringBuilder();
-        jCommander.usage(stringBuilder);
-        return stringBuilder.toString();
-    }
-
-    private static void generate() throws Exception{
+    private static void generate() throws Exception {
         DocGeneratorBase docGenerator = new StandaloneDocGenerator(generateCommand);
         docGenerator.generate();
     }
@@ -119,10 +114,18 @@ public class Application {
         return helpCommand;
     }
 
-    private static void generateXml(File file)throws Exception{
+    private static void generateXml(File file) throws Exception {
         String xmlContent = FileUtils.readFileToString(file, "UTF-8");
         OoRexxDocXml ooRexxDocXml = XmlParser.get(xmlContent);
         DocGeneratorBase docGenerator = new StandaloneDocGenerator(ooRexxDocXml);
         docGenerator.generate();
+    }
+
+    public static void setConsole(Console console) {
+        jCommander.setConsole(console);
+    }
+
+    public static void printUsage() {
+        jCommander.usage();
     }
 }

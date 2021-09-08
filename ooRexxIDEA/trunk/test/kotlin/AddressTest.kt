@@ -1,10 +1,8 @@
-import TestUtils.Companion.getAst
-import TestUtils.Companion.printTree
-import org.junit.Ignore
-import org.junit.jupiter.api.Disabled
+import TestUtils.Companion.assertNoPsiError
+import TestUtils.Companion.assertPsiError
+import TestUtils.Companion.getPsiFile
 import org.junit.jupiter.api.Test
 
-@Disabled
 class AddressTest {
 
     @Test
@@ -13,8 +11,8 @@ class AddressTest {
     """
     address "sh"
     """
-        val astNode = getAst(ooRexxSource)
-        printTree(astNode)
+        val astNode = getPsiFile(ooRexxSource)
 
+        assertNoPsiError(astNode)
     }
 }

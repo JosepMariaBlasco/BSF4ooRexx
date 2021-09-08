@@ -1,13 +1,11 @@
 buildscript {
     repositories {
-        jcenter()
+        mavenCentral()
         google()
     }
     dependencies {
-        classpath ('com.guardsquare:proguard-gradle:7.0.1'){
-            force = true
-        }
-        classpath('com.android.tools.build:gradle:3.1.2') {
+        classpath ('com.guardsquare:proguard-gradle:7.1.0')
+        classpath('com.android.tools.build:gradle:4.1.0') {
             exclude module: 'proguard-gradle'
         }
     }
@@ -18,9 +16,11 @@ plugins {
     id 'java'
     id 'org.jetbrains.intellij'
 }
+
 apply plugin: 'java'
 apply plugin: "idea"
 apply plugin: "org.jetbrains.intellij"
+
 
 sourceCompatibility = 1.11
 def intelliJCommunityEditionLibPath = project.findProperty('intelliJCommunityEditionLibPath')
@@ -34,16 +34,16 @@ repositories {
 
 dependencies {
     implementation project(':lang')
-    implementation "org.freemarker:freemarker:2.3.30"
-    implementation "com.beust:jcommander:1.69"
-    implementation "org.apache.commons:commons-lang3:3.11"
+    implementation "org.freemarker:freemarker:2.3.31"
+    implementation "com.beust:jcommander:1.81"
+    implementation "org.apache.commons:commons-lang3:3.12.0"
     implementation "org.apache.commons:commons-text:1.9"
     implementation "commons-io:commons-io:2.6"
     implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-xml', version: '2.11.0'
 
-    testImplementation "junit:junit:4.12"
+    testImplementation "junit:junit:4.13.2"
 
-    testImplementation files("${ooRexxDocDependencyPath}/Grammar-Kit-f75d0d8.jar")
+    testImplementation files("lib/Grammar-Kit-f75d0d8.jar")
 }
 
 
@@ -64,38 +64,42 @@ jar {
 }
 
 task proguard(type: proguard.gradle.ProGuardTask) {
-    def customFilter = '' +
-            '!search/**,' +
-            'messages/AnalysisBundle.properties,!messages/**,' +
-            'META-INF/MANIFEST.MF,!META-INF/**,'
-            '!vs/**,'
+    configuration {
 
-    injars "${buildDir}/libs/oorexxdoc.jar"
-    injars "${intelliJCommunityEditionLibPath}/platform-api.jar", filter: customFilter
-    injars "${intelliJCommunityEditionLibPath}/platform-impl.jar", filter: customFilter
-    injars "${intelliJCommunityEditionLibPath}/extensions.jar", filter: customFilter
-    injars "${intelliJCommunityEditionLibPath}/util.jar", filter: customFilter
-    injars "${intelliJCommunityEditionLibPath}/intellij-deps-fastutil-8.4.1-4.jar", filter: customFilter
-    injars "${intelliJCommunityEditionLibPath}/trove4j.jar", filter: customFilter
-    injars "${intelliJCommunityEditionLibPath}/guava-29.0-jre.jar", filter: customFilter
-    injars "${intelliJCommunityEditionLibPath}/asm-all-9.0.jar", filter: customFilter
-    injars "${intelliJCommunityEditionLibPath}/resources_en.jar", filter: customFilter
-    injars "${ooRexxDocDependencyPath}/Grammar-Kit-f75d0d8.jar", filter: customFilter
-    injars "${ooRexxDocDependencyPath}/commons-text-1.9.jar", filter: customFilter
-    injars "${ooRexxDocDependencyPath}/commons-io-2.6.jar", filter: customFilter
-    injars "${ooRexxDocDependencyPath}/commons-lang3-3.11.jar", filter: customFilter
-    injars "${ooRexxDocDependencyPath}/freemarker-2.3.30.jar", filter: customFilter
-    injars "${ooRexxDocDependencyPath}/jackson-core-2.11.0.jar", filter: customFilter
-    injars "${ooRexxDocDependencyPath}/jcommander-1.69.jar", filter: customFilter
 
-    libraryjars "${java11Path}/jmods/"
-    libraryjars "${intelliJCommunityEditionLibPath}"
-    libraryjars "${ooRexxDocLibraryPath}/AppleJavaExtensions-1.4.jar"
-    libraryjars "${ooRexxDocLibraryPath}/javax.servlet.jsp-api-2.3.3.jar"
+        def customFilter = '' +
+                '!search/**,' +
+                'messages/AnalysisBundle.properties,!messages/**,' +
+                'META-INF/MANIFEST.MF,!META-INF/**,'
+        '!vs/**,'
 
-    outjars "${buildDir}/proguard/output.jar"
+        injars "${buildDir}/libs/oorexxdoc.jar"
+        injars "${intelliJCommunityEditionLibPath}/platform-api.jar", filter: customFilter
+        injars "${intelliJCommunityEditionLibPath}/platform-impl.jar", filter: customFilter
+        injars "${intelliJCommunityEditionLibPath}/extensions.jar", filter: customFilter
+        injars "${intelliJCommunityEditionLibPath}/util.jar", filter: customFilter
+        injars "${intelliJCommunityEditionLibPath}/intellij-deps-fastutil-8.4.1-4.jar", filter: customFilter
+        injars "${intelliJCommunityEditionLibPath}/trove4j.jar", filter: customFilter
+        injars "${intelliJCommunityEditionLibPath}/guava-29.0-jre.jar", filter: customFilter
+        injars "${intelliJCommunityEditionLibPath}/asm-all-9.0.jar", filter: customFilter
+        injars "${intelliJCommunityEditionLibPath}/resources_en.jar", filter: customFilter
+        injars "${ooRexxDocDependencyPath}/Grammar-Kit-f75d0d8.jar", filter: customFilter
+        injars "${ooRexxDocDependencyPath}/commons-text-1.9.jar", filter: customFilter
+        injars "${ooRexxDocDependencyPath}/commons-io-2.6.jar", filter: customFilter
+        injars "${ooRexxDocDependencyPath}/commons-lang3-3.11.jar", filter: customFilter
+        injars "${ooRexxDocDependencyPath}/freemarker-2.3.30.jar", filter: customFilter
+        injars "${ooRexxDocDependencyPath}/jackson-core-2.11.0.jar", filter: customFilter
+        injars "${ooRexxDocDependencyPath}/jcommander-1.69.jar", filter: customFilter
 
-    configuration 'proguard.conf'
+        libraryjars "${java11Path}/jmods/"
+        libraryjars "${intelliJCommunityEditionLibPath}"
+        libraryjars "${ooRexxDocLibraryPath}/AppleJavaExtensions-1.4.jar"
+        libraryjars "${ooRexxDocLibraryPath}/javax.servlet.jsp-api-2.3.3.jar"
+
+        outjars "${buildDir}/proguard/output.jar"
+
+        configuration 'proguard.conf'
+    }
 }
 
 proguard.dependsOn(jar)

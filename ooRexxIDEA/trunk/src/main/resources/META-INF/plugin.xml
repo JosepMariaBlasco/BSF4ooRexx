@@ -1,13 +1,9 @@
 <idea-plugin>
   <id>org.oorexx.ide</id>
   <name>ooRexx for IntelliJ IDEA</name>
-  <version>2.0.4-GA</version>
   <vendor email="alexander.t.seik@gmail.com">Alexander Seik</vendor>
 
-  <description><![CDATA[
-      ooRexx plugin for IntelliJ IDEA
-    ]]></description>
-
+  <description>ooRexx plugin for IntelliJ IDEA</description>
 
 
   <extensions defaultExtensionNs="com.intellij">
