@@ -62,6 +62,14 @@
                    the file name) to the CLASSPATH environment variable. ; also adjust the
                    connection URL according to your database name, userid and password.
 
+                 - "Z" - H2 Database: <https://h2database.com/html/main.htm>, a very fast
+                   Open Source Cross Platform Db written in Java. DB can be run Embedded within 
+                   the application or in Network Server mode. In-memory Databases are supported 
+                   as well. Latest Stable Version is v1.4.199. There is a Windows Setup .exe program 
+                   or a Zip Archive for other Platforms, such as Linux and MAC OS X. Default
+                   Installations use port 8082 For Network Client Administration Console. For JDBC
+                   Access Deploy the Jar File, h2-1.4.199.jar to the Java Classpath. 
+
    changed:    - 20061128, rvj
                - 20061201, rvj
                - 20100822, rvj
@@ -72,6 +80,7 @@
                - 20180103, rgf: corrected HSQL statements (obviously the DataSource interface was never exercised)
                - 20200812, rgf: added MariaDB, MySQL, SQLite, adjusted hsql and PostgreSQL
                - 20200814, rgf: renamed to ".rex", fixed error in error branch
+               - 20210914, tfd: add Option for H2 Embedded Java Database
    license:    Apache License 2.0
 */
 
@@ -82,7 +91,7 @@ parse upper arg dbms kind .   -- get first two arguments  in uppercase
 
 -- say "... dbms="pp(dbms) "kind="pp(kind)
 
-dbms?="ADHLPY"~pos(dbms)>0    -- check valid dbms
+dbms?="ADHLPYZ"~pos(dbms)>0   -- check valid dbms
 if kind="" then kind="S"      -- default to DataSource
 kind?="SM"~pos(kind)>0        -- check valid kind
 
@@ -101,6 +110,7 @@ do
    say "    L ... SQLite *) , cf. https://github.com/xerial/sqlite-jdbc (RDBMS contained)"
    say "    P ... PostgreSQL, cf. https://https://www.postgresql.org/"
    say "    Y ... MySQL     , cf. https://www.mysql.com/products/connector/"
+   say "    Z ... H2 DB *)  , cf. ttps://h2database.com/html/download.html/"
    say "          *) ... RDBMS fully implemented in Java or contained in JDBC driver"
    say
    say "where 'kind' is optionally one of the letters:"
@@ -225,6 +235,27 @@ select
      end
   end
 
+  -- Added Generic H2 (Embedded) Database Option -- 20210914 --tfd
+  -- Javadoc Reference for H2 Database API
+  --   https://h2database.com/javadoc/index.html
+  -- Tested With H2 Jar File: h2-1.4.199.jar
+  when dbms = 'Z' then        -- 'H2': <https://h2database.com/html/main.html>
+  do
+     if bUseDriverManager=.true then
+     do
+        -- make the dbms connection and create a statement
+        statement = driverMgr~getConnection('jdbc:h2:~/test_rexx_db','sa','')~createStatement
+     end
+     else -- use implemented javax.sql.DataSource interface instead
+     do
+        ds=.bsf~new('org.h2.jdbcx.JdbcDataSource')
+        ds~user    ='sa' -- same as: ds~setUser('sa')
+        ds~password=''   -- same as: ds~setPassword('')
+        ds~setUrl('jdbc:h2:~/test_rexx_db')
+        statement=ds~getConnection~createStatement
+     end
+  end
+
   otherwise nop
 end
 
@@ -240,6 +271,7 @@ statement~executeUpdate("INSERT INTO test (name, place) VALUES('Lee Peedin',    
 statement~executeUpdate("INSERT INTO test (name, place) VALUES('Jeff Hennick',      'Fort Myers, FL, USA'  )")
 statement~executeUpdate("INSERT INTO test (name, place) VALUES('Rene Jansen',       'Amsterdam, Netherlands')")
 statement~executeUpdate("INSERT INTO test (name, place) VALUES('Rony G. Flatscher', 'Vienna, Austria'   )")
+statement~executeUpdate("INSERT INTO test (name, place) VALUES('Tony Dycks', 'Los Angeles County, CA, USA' )")
 
    -- select database content: specify query and execute to get result set
 rs = statement~executeQuery('select name, place from test order by name')
