@@ -20,7 +20,7 @@ public class RunConfigurationFactory extends ConfigurationFactory {
     }
 
     @Override
-    public String getName() {
+    public String getId() {
         return FACTORY_NAME;
     }
 }

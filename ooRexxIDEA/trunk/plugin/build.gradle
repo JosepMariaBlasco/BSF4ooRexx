@@ -1,0 +1,81 @@
+import org.apache.commons.io.FileUtils
+
+import java.time.LocalDate
+
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '1.5.30'
+    id 'org.jetbrains.intellij' version '1.1.3'
+    id "idea"
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation project(":oorexxdoc")
+    implementation project(":lang")
+    testImplementation "org.junit.jupiter:junit-jupiter-api:5.7.2"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.7.2"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.5.30"
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.12.5"
+    testImplementation files(rootDir.absolutePath + "/lib/Grammar-Kit-f75d0d8.jar")
+}
+
+// See https://github.com/JetBrains/gradle-intellij-plugin/
+intellij {
+    version = '2021.2.1'
+}
+
+
+//patchPluginXml {
+//    sinceBuild "212"
+//    untilBuild "213.*"
+//    version "${version}"
+//}
+
+runPluginVerifier {
+    ideVersions = ["IC-2021.2.1"]
+}
+
+test {
+    useJUnitPlatform()
+}
+
+sourceSets {
+    main.kotlin.srcDirs += "src/main/kotlin"
+    main.java.srcDirs += "src/main/java"
+    main.resources.srcDirs += "src/main/resources"
+
+    test.java.srcDirs += "test/java"
+    test.kotlin.srcDirs += "test/kotlin"
+    test.resources.srcDirs += "test/resources"
+}
+
+task prepareKotlinBuildScriptModel {
+
+}
+
+task copyReadMeAndLicenseTxt() {
+    dependsOn(build)
+
+    def distributionsDir = layout.buildDirectory.dir("distributions").get().asFile
+
+    def sourceDir = rootProject.layout.projectDirectory.dir(".").asFile
+
+    FileUtils.copyFileToDirectory(new File(sourceDir, "README.txt"), distributionsDir)
+    FileUtils.copyFileToDirectory(new File(sourceDir, "LICENSE.txt"), distributionsDir)
+
+    def readmeFile = file(distributionsDir.absolutePath + "/README.txt")
+
+    def replacedContent = new String(readmeFile.readBytes(), "UTF-8")
+            .replaceAll("##date##", LocalDate.now().toString())
+            .replaceAll("##version##", "${version}")
+            .replaceAll("##intelliJVersion##", "${intellij.version}")
+
+    readmeFile.write(replacedContent)
+}
+
+tasks.named("processResources") {
+    duplicatesStrategy = "include"
+}

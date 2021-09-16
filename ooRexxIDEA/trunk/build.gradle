@@ -1,83 +1,27 @@
-import org.apache.commons.io.FileUtils
+allprojects {
+    apply plugin: 'java'
 
-import java.time.LocalDate
+    group 'org.oorexx.idea'
+    version '2.0.5-GA'
 
-plugins {
-    id "idea"
-    id "java"
-    id "org.jetbrains.intellij" version "0.6.5"
-    id "org.jetbrains.kotlin.jvm" version "1.5.30"
-}
+    sourceCompatibility = 1.11
+    targetCompatibility = 1.11
 
-apply plugin: "idea"
-apply plugin: "kotlin"
-
-group = "org.oorexx.idea"
-version = "2.0.5-GA"
-
-sourceCompatibility = 1.11
-
-def ooRexxDocDependencyPath = project.findProperty("ooRexxDocDependencyPath")
-
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    implementation project(":oorexxdoc")
-    implementation project(":lang")
-    testImplementation "org.junit.jupiter:junit-jupiter-api:5.7.2"
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.7.2"
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.5.30"
-    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.12.5"
-    testImplementation files("lib/Grammar-Kit-f75d0d8.jar")
-}
-
-intellij {
-    version "2021.2"
-}
-runPluginVerifier {
-    ideVersions = ["IC-2021.2.1"]
-}
-patchPluginXml {
-    sinceBuild "212"
-    untilBuild "213.*"
-    version "${version}"
-}
-
-test {
-    useJUnitPlatform()
-}
-sourceSets {
-    main.kotlin.srcDirs += "src/main/kotlin"
-    main.java.srcDirs += "src/main/java"
-    main.resources.srcDirs += "src/main/resources"
-
-    test.java.srcDirs += "test/java"
-    test.kotlin.srcDirs += "test/kotlin"
-    test.resources.srcDirs += "test/resources"
-}
-
-rootProject.tasks.named("processResources") {
-    duplicatesStrategy = "include"
+    repositories {
+        mavenCentral()
+    }
 
 }
 
-task copyReadMeAndLicenseTxt() {
-    dependsOn(build)
+project(':oorexxdoc') {
 
-    def distributionsDir = layout.buildDirectory.dir("distributions").get().asFile
+    dependencies {
+        implementation project(':lang')
+    }
+}
 
-    FileUtils.copyFileToDirectory(new File("README.txt"), distributionsDir)
-    FileUtils.copyFileToDirectory(new File("LICENSE.txt"), distributionsDir)
-
-    def readmeFile = file(distributionsDir.absolutePath + "/README.txt")
-
-    def replacedContent = new String(readmeFile.readBytes(), "UTF-8")
-            .replaceAll("##date##", LocalDate.now().toString())
-            .replaceAll("##version##", "${version}")
-            .replaceAll("##intelliJVersion##", "${intellij.version}")
-
-    readmeFile.write(replacedContent)
+project(':plugin') {
+    dependencies {
+        implementation project(':oorexxdoc')
+    }
 }

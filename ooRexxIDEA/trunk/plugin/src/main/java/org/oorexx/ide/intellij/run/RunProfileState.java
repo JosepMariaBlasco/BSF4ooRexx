@@ -1,5 +1,7 @@
 package org.oorexx.ide.intellij.run;
 
+import java.io.File;
+
 import com.intellij.execution.ExecutionException;
 import com.intellij.execution.configurations.CommandLineState;
 import com.intellij.execution.configurations.GeneralCommandLine;
@@ -7,14 +9,10 @@ import com.intellij.execution.process.OSProcessHandler;
 import com.intellij.execution.process.ProcessHandler;
 import com.intellij.execution.process.ProcessTerminatedListener;
 import com.intellij.execution.runners.ExecutionEnvironment;
-import com.intellij.openapi.module.Module;
-import com.intellij.openapi.module.ModuleUtilCore;
-import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.oorexx.ide.intellij.run.configuration.RunConfiguration;
 
 /**
@@ -32,15 +30,17 @@ public class RunProfileState extends CommandLineState {
 
         RunConfiguration runConfiguration = (RunConfiguration) getEnvironment().getRunProfile();
 
-        VirtualFile file = runConfiguration.getScriptFile();
+        String scriptFile = runConfiguration.getScriptFile();
 
-        if (file == null) {
-            throw new ExecutionException("Script file: " + runConfiguration.getScriptFile() + " does not exist.");
+        if (scriptFile == null) {
+            throw new ExecutionException("Script file: " + scriptFile + " does not exist.");
         }
 
+        VirtualFile file = VfsUtil.findFileByIoFile(new File(scriptFile), true);
+
         GeneralCommandLine commandLine = new GeneralCommandLine();
-            commandLine.setExePath(runConfiguration.getExecutablePath());
-            commandLine.addParameter(FileUtil.toSystemDependentName(file.getPath()));
+        commandLine.setExePath(runConfiguration.getExecutablePath());
+        commandLine.addParameter(FileUtil.toSystemDependentName(file.getPath()));
 
 
         OSProcessHandler handler = new OSProcessHandler(commandLine.createProcess(), commandLine.getCommandLineString());

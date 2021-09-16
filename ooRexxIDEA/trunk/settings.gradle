@@ -1,1 +1,4 @@
-include 'oorexxdoc', 'lang'
+rootProject.name = 'ooRexxIDE-Parent'
+include 'lang'
+include 'oorexxdoc'
+include 'plugin'
