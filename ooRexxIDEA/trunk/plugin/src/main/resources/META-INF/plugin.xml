@@ -9,25 +9,30 @@
   <extensions defaultExtensionNs="com.intellij">
     <lang.foldingBuilder language="ooRexx" implementationClass="org.oorexx.ide.intellij.folding.FoldingBuilder"/>
     <colorSettingsPage implementation="org.oorexx.ide.intellij.highlighting.OoRexxColorSettingPage"/>
-    <lang.syntaxHighlighterFactory key="ooRexx" implementationClass="org.oorexx.ide.intellij.highlighting.OoRexxSyntaxHighlighterFactory"/>
+    <lang.syntaxHighlighterFactory key="ooRexx"
+                                   implementationClass="org.oorexx.ide.intellij.highlighting.OoRexxSyntaxHighlighterFactory"/>
     <lang.parserDefinition language="ooRexx" implementationClass="org.oorexx.ide.parser.OoRexxParserDefinition"/>
 
     <fileType name="ooRexx-File" implementationClass="org.oorexx.ide.file.OoRexxFileType"
-              fieldName="INSTANCE" language="ooRexx" extensions="cls;frm;jrexx;orx;rex;rexx;rexxj;rxj;rxo;testGroup;testUnit"/>
+              fieldName="INSTANCE" language="ooRexx"
+              extensions="cls;frm;jrexx;orx;rex;rexx;rexxj;rxj;rxo;testGroup;testUnit"/>
 
     <annotator language="ooRexx" implementationClass="org.oorexx.ide.intellij.annotator.UniqueConstraintAnnotator"/>
     <annotator language="ooRexx" implementationClass="org.oorexx.ide.intellij.annotator.KeywordHighlighter"/>
 
     <configurationType implementation="org.oorexx.ide.intellij.run.configuration.RunConfigurationType"/>
 
-    <lang.commenter language="ooRexx" implementationClass="org.oorexx.ide.intellij.commenter.OoRexxCommenter" />
+    <lang.commenter language="ooRexx" implementationClass="org.oorexx.ide.intellij.commenter.OoRexxCommenter"/>
 
     <runConfigurationProducer implementation="org.oorexx.ide.intellij.run.configuration.RunConfigurationProducer"/>
 
     <additionalTextAttributes scheme="Default" file="colorSchemes/ooRexxColors.xml"/>
-    <applicationConfigurable groupId="language"  displayName="ooRexx" id="ooRexx" instance="org.oorexx.ide.setting.OoRexxLanguageConfigurable" />
+    <applicationConfigurable groupId="language" displayName="ooRexx" id="ooRexx"
+                             instance="org.oorexx.ide.setting.OoRexxLanguageConfigurable"/>
     <applicationService serviceImplementation="org.oorexx.ide.setting.OoRexxLanguageSettings"/>
 
+    <projectService
+            serviceImplementation="org.oorexx.ide.intellij.action.configuration.OoRexxDocQuickActionPersistentStateComponent"/>
     <!-- Project -->
 
     <moduleType id="OOREXX_MODULE" implementationClass="org.oorexx.ide.intellij.project.OoRexxModuleType"/>

@@ -1,5 +1,18 @@
 package org.oorexx.ide.intellij.oorexxdoc;
 
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import javax.swing.*;
+import javax.swing.table.DefaultTableColumnModel;
+import javax.swing.table.TableColumn;
+
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.fileChooser.FileChooserDialog;
 import com.intellij.openapi.fileChooser.FileChooserFactory;
@@ -18,18 +31,12 @@ import org.oorexx.ide.file.OoRexxFileType;
 import org.oorexx.ide.intellij.oorexxdoc.model.FileNotFoundException;
 import org.oorexx.ide.intellij.util.OoRexxFileUtil;
 
-import javax.swing.*;
-import javax.swing.table.DefaultTableColumnModel;
-import javax.swing.table.TableColumn;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
 public class OoRexxDocForm {
+    private final DefaultListModel<VirtualFile> listModel = new DefaultListModel<>();
+    private final VirtualFile lastAdded = null;
+    private final List<KeyValuePair> keyValuePairs = new ArrayList<>();
+    private final AddEditRemovePanel<KeyValuePair> headerTable;
+    private final AddEditRemovePanel<VirtualFile> fileTable;
     private JPanel container;
     private JTextField title;
     private TextFieldWithBrowseButton output;
@@ -44,60 +51,8 @@ public class OoRexxDocForm {
     private JCheckBox variableReferences;
     private JCheckBox openDocumentationAfterCreation;
     private IntelliJGenerationCommand intelliJGenerationCommand = new IntelliJGenerationCommand();
-    private DefaultListModel<VirtualFile> listModel = new DefaultListModel<>();
-    private VirtualFile lastAdded = null;
-    private List<KeyValuePair> keyValuePairs = new ArrayList<>();
-    private AddEditRemovePanel<KeyValuePair> headerTable;
-    private AddEditRemovePanel<VirtualFile> fileTable;
 
-    public boolean isQuickSave() {
-        return quickConfiguration.isSelected();
-    }
-
-    private void createUIComponents() {
-        // TODO: place custom component creation code here
-    }
-
-    private class HeaderTableModel extends AddEditRemovePanel.TableModel<KeyValuePair> {
-        private int i = 0; // columnIndex always 0 so counting calls to function
-        @Override
-        public int getColumnCount() {
-            return 2;
-        }
-
-        @Nullable
-        @Override
-        public String getColumnName(int columnIndex) {
-            return new String[]{"Key", "Value"}[columnIndex];
-        }
-
-        @Override
-        public Object getField(KeyValuePair o, int columnIndex) {
-            i++;
-            return i%2==1 ? o.getKey() : o.getValue();
-        }
-    }
-
-    private class FileTableModel extends AddEditRemovePanel.TableModel<VirtualFile> {
-
-        @Override
-        public int getColumnCount() {
-            return 1;
-        }
-
-        @Nullable
-        @Override
-        public String getColumnName(int columnIndex) {
-            return new String[]{"File"}[columnIndex];
-        }
-
-        @Override
-        public Object getField(VirtualFile o, int columnIndex) {
-            return o;
-        }
-    }
-
-    public OoRexxDocForm(Project project, IntelliJGenerationCommand intelliJGenerationCommand){
+    public OoRexxDocForm(Project project, IntelliJGenerationCommand intelliJGenerationCommand) {
         this.intelliJGenerationCommand = intelliJGenerationCommand;
         DefaultTableColumnModel defaultTableColumnModel = new DefaultTableColumnModel();
         TableColumn key = new TableColumn();
@@ -107,7 +62,7 @@ public class OoRexxDocForm {
         value.setHeaderValue("Value");
         defaultTableColumnModel.addColumn(value);
 
-        if(intelliJGenerationCommand.getHeaders().isEmpty()) {
+        if (intelliJGenerationCommand.getHeaders().isEmpty()) {
             keyValuePairs.add(new KeyValuePair("Run-Date", "${.now?datetime}"));
         } else {
             intelliJGenerationCommand.getHeaders().forEach((s, s2) -> keyValuePairs.add(new KeyValuePair(s, s2)));
@@ -185,7 +140,7 @@ public class OoRexxDocForm {
         filePanel.add(fileTable, BorderLayout.CENTER);
         fileTable.getTable().setShowColumns(true);
 
-        if(this.intelliJGenerationCommand.getOutput() != null){
+        if (this.intelliJGenerationCommand.getOutput() != null) {
             output.setText(this.intelliJGenerationCommand.getOutput().toString());
         }
 
@@ -194,7 +149,7 @@ public class OoRexxDocForm {
             public void actionPerformed(ActionEvent e) {
                 PathChooserDialog pathChooser = FileChooserFactory.getInstance().createPathChooser(FileChooserDescriptorFactory.createSingleFolderDescriptor(), project, null);
                 pathChooser.choose(null, virtualFiles -> {
-                    if(!virtualFiles.isEmpty()) {
+                    if (!virtualFiles.isEmpty()) {
                         OoRexxDocForm.this.intelliJGenerationCommand.setOutput(virtualFiles.get(0));
                         output.setText(OoRexxDocForm.this.intelliJGenerationCommand.getOutput().toString());
                     }
@@ -202,11 +157,11 @@ public class OoRexxDocForm {
             }
         });
 
-        if(intelliJGenerationCommand.getOverview() != null){
+        if (intelliJGenerationCommand.getOverview() != null) {
             overview.setText(intelliJGenerationCommand.getOverview());
         }
 
-        if(intelliJGenerationCommand.getTitle() != null){
+        if (intelliJGenerationCommand.getTitle() != null) {
             title.setText(intelliJGenerationCommand.getTitle());
         }
 
@@ -217,15 +172,27 @@ public class OoRexxDocForm {
 
     }
 
+    public boolean isQuickSave() {
+        return quickConfiguration.isSelected();
+    }
+
+    private void createUIComponents() {
+        // TODO: place custom component creation code here
+    }
+
     private VirtualFile getVirtualFileStartingPoint(Project project) {
-        if(lastAdded != null && !lastAdded.isDirectory()){
+        if (lastAdded != null && !lastAdded.isDirectory()) {
             return lastAdded.getParent();
         }
         return lastAdded == null ? project.getProjectFile().getParent() : lastAdded;
     }
 
     public IntelliJGenerationCommand createCommand() {
-        intelliJGenerationCommand.setOutput(getVirtualFile(output.getText()));
+
+        File outputFile = getFile(output.getText());
+        VirtualFile outputDirectory = VfsUtil.findFileByIoFile(outputFile, true);
+
+        intelliJGenerationCommand.setOutput(outputDirectory);
         intelliJGenerationCommand.setInputs(OoRexxFileUtil.getFiles(fileTable.getData()));
         intelliJGenerationCommand.setTitle(title.getText());
         intelliJGenerationCommand.setHeaders(headerTable.getData().stream().filter(Objects::nonNull).collect(Collectors.toMap(KeyValuePair::getKey, KeyValuePair::getValue)));
@@ -239,41 +206,51 @@ public class OoRexxDocForm {
         return intelliJGenerationCommand;
     }
 
-    private VirtualFile getVirtualFile(String path) {
-        if(path.toLowerCase().startsWith("file://")){
+    private File getFile(String path) {
+        if (path.toLowerCase().startsWith("file://")) {
             path = path.replace("file://", "");
         }
+        File outputFile = new File(path);
+
+        if (!outputFile.exists()) {
+            try {
+                Files.createDirectories(outputFile.toPath());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
         try {
-            return VfsUtil.createDirectoryIfMissing(path);
-        } catch (IOException e) {
+            return new File(path);
+//            return VfsUtil.createDirectoryIfMissing(path);
+        } catch (Exception e) {
             throw new FileNotFoundException("could not find file " + path);
         }
     }
 
-    public String validateMessage(){
+    public String validateMessage() {
         List<String> messages = new ArrayList<>();
 
-        if(output.getText().trim().equals("")){
+        if (output.getText().trim().equals("")) {
             messages.add("Output required");
         }
 
-        if(fileTable.getData().isEmpty()){
+        if (fileTable.getData().isEmpty()) {
             messages.add("Input(s) required");
         }
         try {
-            VirtualFile virtualFile = getVirtualFile(output.getText());
-            if(!virtualFile.isDirectory()){
+            File file = getFile(output.getText());
+            if (!file.isDirectory()) {
                 messages.add("Output is not a directory");
             }
-        } catch (FileNotFoundException e){
+        } catch (FileNotFoundException e) {
             messages.add("Output directory not found");
         }
         return StringUtils.join(messages, ", ");
     }
 
-    public boolean isValid(){
+    public boolean isValid() {
         String message = validateMessage();
-        if(message.length() == 0){
+        if (message.length() == 0) {
             return true;
         }
 
@@ -282,11 +259,51 @@ public class OoRexxDocForm {
         return false;
     }
 
-    public JComponent getRoot(){
+    public JComponent getRoot() {
         return container;
     }
 
     public boolean isAutoOpen() {
         return openDocumentationAfterCreation.isSelected();
+    }
+
+    private class HeaderTableModel extends AddEditRemovePanel.TableModel<KeyValuePair> {
+        private int i = 0; // columnIndex always 0 so counting calls to function
+
+        @Override
+        public int getColumnCount() {
+            return 2;
+        }
+
+        @Nullable
+        @Override
+        public String getColumnName(int columnIndex) {
+            return new String[]{"Key", "Value"}[columnIndex];
+        }
+
+        @Override
+        public Object getField(KeyValuePair o, int columnIndex) {
+            i++;
+            return i % 2 == 1 ? o.getKey() : o.getValue();
+        }
+    }
+
+    private class FileTableModel extends AddEditRemovePanel.TableModel<VirtualFile> {
+
+        @Override
+        public int getColumnCount() {
+            return 1;
+        }
+
+        @Nullable
+        @Override
+        public String getColumnName(int columnIndex) {
+            return new String[]{"File"}[columnIndex];
+        }
+
+        @Override
+        public Object getField(VirtualFile o, int columnIndex) {
+            return o;
+        }
     }
 }
