@@ -85,14 +85,17 @@ Attribute          | Purpose
 File name                   | Purpose
 --------------------------- | --------------------------
 `readme.md`                 | this text file: brief infos, text file
-`script-bsf.tld`            | describes BSF taglib, text file, included in ScriptTagLibs.jar's META-INF directory;
-`script-jsr223.tld`         | describes JSR-223 taglib, text file, included in ScriptTagLibs.jar's META-INF directory;
-**`javax.`**`ScriptTagLibs.jar` | taglib library, uses "**javax.**" as the top level package name, binary file (Java EE 8 or earlier, e.g. Tomcat 9 or earlier);   copy into the shared `lib` directory of your Java based web server (e.g. Tomcat: `$CATALINA_HOME/lib`)
-**`jakarta.`**`ScriptTagLibs.jar` | taglib library, uses "**jakarta.**" as the top level package name, binary file (Jakarta EE 9 or later, e.g. Tomcat 10 or later); copy into the shared `lib` directory of your Java based web server (e.g. Tomcat: `$CATALINA_HOME/lib`)
+**`javax.`**`ScriptTagLibs.jar` | taglib library, uses "**javax.**" (JavaEE) as the top level package name, binary file (Java EE 8 or earlier, e.g. Tomcat 9 or earlier);   copy into the shared `lib` directory of your Java based web server (e.g. Tomcat: `$CATALINA_HOME/lib`)
+**`jakarta.`**`ScriptTagLibs.jar` | taglib library, uses "**jakarta.**" (JakartaEE) as the top level package name, binary file (Jakarta EE 9 or later, e.g. Tomcat 10 or later); copy into the shared `lib` directory of your Java based web server (e.g. Tomcat: `$CATALINA_HOME/lib`)
+`demoASF2021.war`           | use your Java-based web server's deploy "war"/"web module" feature to deploy (you need the latest ooRexx 5 and BSF4ooRexx installed on the system) or copy it into your Java based web server's `webapps` directory; used for the ApacheCon 2021 presentation
 `demoRexx.war`              | use your Java-based web server's deploy "war"/"web module" feature to deploy (you need the latest ooRexx 5 and BSF4ooRexx installed on the system) or copy it into your Java based web server's `webapps` directory; demonstrates usage of ooRexx
+`demoSTL-Core-SQL_ooRexx.war` | demonstrates STL-SQL and ooRexx ounterparts, includes SQLLite (first usage: run "ooRexx_reset_database.jsp"), JavaEE STL libraries
+`demoSTL-jakarta-Core-SQL_ooRexx.war` | demonstrates STL-SQL and ooRexx ounterparts, includes SQLLite (first usage: run "ooRexx_reset_database.jsp"), includes JakartaEE STL libraries
 `IntelliJ-oorexx-language-injections.xml` | Import file for ooRexx language injection support in IntelliJ (see addendum below)
 `demoJavaScript.war`        | use your Java-based web server's deploy "war"/"web module" feature to deploy or copy it into your Java based web server's `webapps` directory; demonstrates usage of Nashorn/JavaScript
 `demoRhino.war`             | use your Java-based web server's deploy "war"/"web module" feature to deploy or copy it into your Java based web server's `webapps` directory; demonstrates usage of Rhino/JavaScript
+`script-bsf.tld`            | describes BSF taglib, text file, included in ScriptTagLibs.jar's META-INF directory;
+`script-jsr223.tld`         | describes JSR-223 taglib, text file, included in ScriptTagLibs.jar's META-INF directory;
 
 
 ---
@@ -238,4 +241,4 @@ not have Java installed yet, then try to locate an installation package that inc
 
 ---
 
-rgf, as of: 2021-02-28, 2021-03-10, 2021-03-17, 2021-07-06
+rgf, as of: 2021-09-21
