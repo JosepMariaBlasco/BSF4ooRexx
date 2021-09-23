@@ -42,6 +42,7 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 -----------------------------------------------------------------------------
 
    Changes:
+        2021-09-14, ---rgf, - fixing a bug found by Michael Hall
 
         2021-07-05, ---rgf, - in order to make J2EE's JavaScriptTaglibs library Rexx agnostic:
                               added logic to cater for being used for a JSP (Java server page); if
@@ -281,7 +282,7 @@ public class RexxScriptEngine extends AbstractScriptEngine implements Compilable
      */
     public void setAddLatestPackageDynamically (boolean newValue)
     {
-        if (bAddLatestPackageDynamically==newValue)
+        if (bAddLatestPackageDynamically!=newValue)
         {
             bAddLatestPackageDynamically=newValue;
         }
