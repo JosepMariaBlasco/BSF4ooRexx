@@ -92,8 +92,11 @@ LINK_ORX_FLAGS  = -lrexx -lrexxapi
 #     in order on newer linkers to create RPATH and not RUNPATH one needs to use -Wl,--disable-new-dtags :(
 #     note: -rpath is claimed to also work for libraries (so no need to use -rpath-link which is not shown in the dynamic section anyway)
 #           to see effect of linking use: readelf -d path/to/binary
-RPATH           = $$'ORIGIN':$$'ORIGIN'/../lib:/usr/local/lib64:/usr/lib64:/usr/local/lib:/usr/lib:/opt/ooRexx/lib
+RPATH           = -rpath,$$'ORIGIN':$$'ORIGIN'/../lib:/usr/local/lib64:/usr/lib64:/usr/local/lib:/usr/lib:/opt/ooRexx/lib
 # RPATH           = $$'ORIGIN':$$'ORIGIN'/../lib:/usr/local/lib:/usr/lib:/opt/ooRexx/lib
+#
+# the following works as well on Linux, it seems that the above version creates the same RPATH definition
+# RPATH=-rpath,$$'ORIGIN',-rpath,$$'ORIGIN'/../lib,-rpath,/usr/local/lib64,-rpath,/usr/lib64,-rpath,/usr/local/lib,-rpath,/usr/lib,-rpath,/opt/ooRexx/lib
 
 BSF_SONAME      = libBSF4ooRexx.so
 BSF_OBJ_ORX     = $(BLD_PATH)/BSF4ooRexx-$(BITNESS)-$(ARCH).o
@@ -123,7 +126,7 @@ $(BSF_ORX_TARGET) : $(BSF_SRC)
 #	$(link) -Wl,-soname,$(BSF_SONAME),-rpath,$(RPATH) -o $@ $(BSF_OBJ_ORX) $(LIB_PATH) $(LINK_FLAGS) $(LINK_ORX_FLAGS)
 
 # newer gcc/ld: have to add "--disable-new-dtags"
-	$(link) -Wl,--disable-new-dtags,-soname,$(BSF_SONAME),-rpath,$(RPATH) -o $@ $(BSF_OBJ_ORX) $(LIB_PATH) $(LINK_FLAGS) $(LINK_ORX_FLAGS)
+	$(link) -Wl,--disable-new-dtags,-soname,$(BSF_SONAME),$(RPATH) -o $@ $(BSF_OBJ_ORX) $(LIB_PATH) $(LINK_FLAGS) $(LINK_ORX_FLAGS)
 
 
 	$(copy_cmd) $(BSF_ORX_TARGET) $(BSF4REXX)
