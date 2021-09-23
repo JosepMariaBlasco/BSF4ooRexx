@@ -9,6 +9,10 @@
 #         target 10.9, add to g++ "-std=c++11" (or "-std=gnu++11"); (and before Maverick: "-stdlib=libc++"; to force gnu without c++-11 support use: "-stdlib=libstdc++")
 #
 # rgf, 2021-08-21: adding -rpath when librexx.4.dylib gets sought 
+# rgf, 2021-09-22: usage of RPATH was wrong, if multiple paths then one needs to supply multiple -rpath switches (one for each directory)
+#                  using: @loader_path -> @loader_path/../lib -> /usr/local/lib-> /opt/oorexx/lib  -> /Library/Frameworks/ooRexx.framework/Libraries 
+
+# 
 
 # to support earlier versions of MacOSX export MACOSX_DEPLOYMENT_TARGET=min_version
 # before compiling (cf. "man g++"), e.g.:
@@ -96,7 +100,8 @@ LIB_INSTALL_NAME   = /usr/local/lib/libBSF4ooRexx.dylib
 
 # INC_PATH = -I/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/include -I .
 
-JDK_HOME = /Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home
+JDK_HOME = /Library/Java/JavaVirtualMachines/bellsoft-jdk8u302-full.jdk
+
 
 INC_PATH = -I ${JDK_HOME}/include -I ${JDK_HOME}/include/darwin -I .
 
@@ -136,9 +141,10 @@ INC_PATH_ALL_ARM64 = $(INC_PATH_ARM64) -I$(OOREXX_APP_INSTALL)/include
 #rpath for searching librexx[api].4.dylib, get infos: otool -l tmp/libBSF4ooRexx.dylib
 # RPATH = '$$ORIGIN:$$ORIGIN/../lib:/usr/local/lib:/Library/Frameworks/ooRexx.framework/Libraries:/opt/ooRexx/lib'
 # on MacOS: advice to use $loader_path
-# all other Unix versions use "/opt/ooRexx/lib", so we keep on using that casing on MacOS as well
-RPATH = @loader_path:@loader_path/../lib:/usr/local/lib:/Library/Frameworks/ooRexx.framework/Libraries:/opt/ooRexx/lib
 # RPATH = @loader_path:@loader_path/../lib:/usr/local/lib:/Library/Frameworks/ooRexx.framework/Libraries:/opt/oorexx/lib
+# ALL_RPATH =-rpath @loader_path -rpath @loader_path/../lib -rpath /usr/local/lib -rpath /Library/Frameworks/ooRexx.framework/Libraries -rpath /opt/oorexx/lib
+# on Linux the fallback directory is /opt/ooRexx/lib (note the capital "R"), therefore we use the same case on MacOS as well
+ALL_RPATH =-rpath @loader_path -rpath @loader_path/../lib -rpath /usr/local/lib -rpath /opt/ooRexx/lib -rpath /Library/Frameworks/ooRexx.framework/Libraries 
 
 
 # INC_PATH_ALL = $(INC_PATH) -I/System/Library/Frameworks/ooRexx.framework/Versions/Current/Headers $(ORX5_INCPATH_64)
@@ -160,7 +166,7 @@ x86_64: BSF4ooRexx.cc
 
 #	g++    -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_64)  $(BSF_OBJ_ORX_64) $(ORX_LIBS_64) -arch x86_64
 # experimenting with '-target' macOS 10.12: "Sierra", released 2016-06-13
-	g++    -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_64)  $(BSF_OBJ_ORX_64) $(ORX_LIBS_64) -rpath ${RPATH} -target x86_64-apple-macos10.12
+	g++    -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_64)  $(BSF_OBJ_ORX_64) $(ORX_LIBS_64) ${ALL_RPATH} -target x86_64-apple-macos10.13
 
 	install_name_tool -id $(LIB_INSTALL_NAME) $(BSF_ORX_TARGET_64)
 	cp -p $(BSF_ORX_TARGET_64) $(BSF4REXX)
@@ -176,7 +182,7 @@ arm64: BSF4ooRexx.cc
 
 #	g++    -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_ARM64) $(BSF_OBJ_ORX_ARM64) $(ORX_LIBS_64) -arch arm64
 # experimenting with '-target'
-	g++    -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_ARM64) $(BSF_OBJ_ORX_ARM64) $(ORX_LIBS_64)  -rpath ${RPATH} -target arm64-apple-macos11
+	g++    -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_ARM64) $(BSF_OBJ_ORX_ARM64) $(ORX_LIBS_64)  ${ALL_RPATH} -target arm64-apple-macos11
 
 	install_name_tool -id $(LIB_INSTALL_NAME) $(BSF_ORX_TARGET_ARM64)
 	cp -p $(BSF_ORX_TARGET_ARM64) $(BSF4REXX)
@@ -188,7 +194,7 @@ universal: BSF4ooRexx.cc x86_64 arm64
 #	lipo -create -output libBSF4ooRexx.dylib -arch x86_64 libBSF4ooRexx-x86_64.dylib -arch i386 libBSF4ooRexx-i386.dylib -arch ppc libBSF4ooRexx-ppc.dylib
 	lipo -create -output $(BSF4REXX)-universal -arch x86_64 $(BSF_ORX_TARGET_64) -arch arm64 $(BSF_ORX_TARGET_ARM64)
 
-	cp -p $(BSF4REXX)-universal $(BSF4REXX)
+#	cp -p $(BSF4REXX)-universal $(BSF4REXX)/Library/Java/JavaVirtualMachines/bellsoft-jdk8u302-full.jdk
 	cp -p $(BSF4REXX)-universal $(TGT_LIB_DIR)
 
 # ---------------------------------------------------
