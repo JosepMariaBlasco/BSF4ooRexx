@@ -1,3 +1,15 @@
+
+-------------------------------------- 2021-09-14 ----------------------------------
+
+- RexxScriptEngine.java
+
+        - bug fix in "public void setAddLatestPackageDynamically (boolean newValue)" (reported
+          by Michael Hall)
+
+- source_cc/Makefile-all-macosx
+
+        - fix RPATH definitions for MacOS
+
 -------------------------------------- 2021-08-29 ----------------------------------
 
 - BSF.CLS

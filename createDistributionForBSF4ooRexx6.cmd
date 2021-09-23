@@ -34,9 +34,9 @@ set CLASSPATH=%CLASSPATH%;%ooo_classes%\unoil.jar;%ooo_classes%\ridl.jar;%ooo_cl
 @echo adding javax.servlet.jsp and javax.servlet.http to CLASSPATH
 set CLASSPATH=%CLASSPATH%;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet.jsp.jar;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet-3.0.0.v201112011016.jar
 
-set releaseDate=20210829
-set runDate=20210829
-set doc_date=20210829
+set releaseDate=20210923
+set runDate=20210923
+set doc_date=20210923
 
 @rem values to use for creating the BSF jarfile
 @rem set bsfDate=20090910
@@ -87,7 +87,7 @@ rem copy %bsfJarNameBin% %bsfJarNameSource%
 
 @rem now remove sources from bin
 zip -d  %bsfJarNameBin% "*.java" "*.txt" "*.cmd" "*~" "*bkp*" "*tmp*"
-zip -9  %bsfJarNameBin% ApacheLicense2.0.txt
+zip -9  %bsfJarNameBin% Apache_LICENSE_2.0.txt
 rem zip -9  %bsfJarNameBin% asm_LICENSE.TXT
 zip -9  %bsfJarNameBin% janino_LICENSE.TXT
 zip -9  %bsfJarNameBin% xdg-utils_freedesktop_org_LICENSE.txt
@@ -126,7 +126,7 @@ zip -d bsf-rexx-engine.jar "/*txt"
 zip -d bsf-rexx-engine.jar "/*zip"
 zip -d bsf-rexx-engine.jar "/*~"
 rem make sure the ApacheLicense2.0.txt file is available
-zip -9r bsf-rexx-engine.jar ApacheLicense2.0.txt
+zip -9r bsf-rexx-engine.jar Apache_LICENSE_2.0.txt
 rem zip -9r bsf-rexx-engine.jar asm_LICENSE.TXT
 zip -9r bsf-rexx-engine.jar janino_LICENSE.TXT
 
@@ -143,8 +143,8 @@ zip -d BSF4ooRexx-apache-bsf.jar "*tmp*"
 zip -d BSF4ooRexx-apache-bsf.jar "*~"
 
 rem make sure the ApacheLicense2.0.txt file is available
-zip -9r BSF4ooRexx-apache-bsf.jar ApacheLicense2.0.txt
-zip -9r BSF4ooRexx-apache-bsf.jar  asm_LICENSE.TXT
+zip -9r BSF4ooRexx-apache-bsf.jar Apache_LICENSE_2.0.txt
+@rem zip -9r BSF4ooRexx-apache-bsf.jar  asm_LICENSE.TXT
 @rem pause
 
 @echo creating the binary and source jar-files ...
