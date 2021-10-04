@@ -196,11 +196,20 @@
                           rather Apple suggests to use "/usr/local/bin" instead (we need ooRexx to find BSF.CLS,
                           UNO.CLS, ...); also makes sure that PWD is set (defaults to Java system property "user.home")
 
+            2021-09-28, ---rgf
+                        - added better debugging support to learn about the cause of exceptions
+                        - new ScriptImpl.getJavaProperties()
+                        - new ScriptImpl.reportLoadingError(String msg, Throwable t)
+                          - will cause copying information to clipboard and write a
+                            debug file to "TMP/ScriptProviderForooRexx-reportLoadingError-X.txt" where
+                            X is counter
+
 */
 
 package com.sun.star.script.framework.provider.oorexx;
 
 // TODO: remove, rgf, 20190103 -->
+import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.io.IOException;
@@ -252,6 +261,12 @@ import java.util.Vector;
 import java.util.Map;
 import java.io.*;
 
+
+import java.util.Properties;        // rgf, 2021-09-28: for sorted Properties
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+
 import java.net.URL;
 import java.net.MalformedURLException;
 import java.net.URLDecoder;
@@ -273,7 +288,9 @@ import com.sun.star.script.framework.container.ScriptMetaData;
 
 public class ScriptProviderForooRexx
 {
-    static final private boolean bDebug                   = false; // true;       // 2014-03-24 interactive debug?
+    static final private boolean bDebug              = false; // true;       // 2014-03-24 interactive debug?
+    static final private boolean bDebugEngineLoading = false; // true; // false   // 2021-09-28: give all stack traces
+    static final private boolean bDebugRegistration  = false; // true;    // 2021-10-01
 
     static final String OOREXX_LANGUAGE           = "ooRexx";    // define string for script language
     static final String OOREXX_BSFLANGUAGE        = "rexx";    // define string for script language
@@ -335,31 +352,28 @@ public class ScriptProviderForooRexx
 
 
 // show PATH and PWD ---> TODO: remove!
-final boolean bDebugInfosToTmp=false;   // if false, should be removed alltogether by the Java compiler
-if (bDebugInfosToTmp)
+final boolean bDebugInfosToTmp = false; // true;   // if false, should be removed alltogether by the Java compiler
+if (bDebug && bDebugInfosToTmp)
 {
 
-
-
-    String s="\nScriptProviderForooRexx.getBSFManager(...), running on Mac OS; PATH and PWD in effect:\n"
+    String s="\nScriptProviderForooRexx.getBSFManager(...), PATH and PWD in effect:\n"
         +",\nPATH=["+System.getenv("PATH")+"]"
         +",\nPWD=["+System.getenv("PWD")+"]"
+        +",\ntmp=["+System.getenv("tmp")+"]"
         +",\nCLASSPATH=["+System.getenv("CLASSPATH")+"]"
         +",\nUSER=["+System.getenv("USER")+"]"
         +",\nLOGNAME=["+System.getenv("LOGNAME")+"]"
         +",\nSHELL=["+System.getenv("SHELL")+"]"
         +",\nHOME=["+System.getenv("HOME")+"]"
-
         +"\n---\n";
-    {
-        try
-        {
-            FileWriter fw = new FileWriter("/tmp/ScriptProviderForooRexx-debuginfo1.txt");
-            fw.append(s);
-            fw.close();
-        }
-        catch (IOException e) {}
-    }
+
+        StringBuilder sb=new StringBuilder();
+        sb.append(s);
+        sb.append("\njava.lang.System properties in effect:\n" + ScriptImpl.getJavaProperties());
+        String sdata=sb.toString();
+
+        ScriptImpl.debugPrintToTmpFile("ScriptProviderForooRexx-debuginfo-01.txt", sdata);
+        ScriptImpl.copy2clipboard(sdata);
 }
 // <--- TODO: remove!
 
@@ -369,7 +383,19 @@ if (bDebugInfosToTmp)
                 {
                     final int GETENV=1;
                     final int SETENV=2;
-                    org.rexxla.bsf.engines.rexx.RexxEngine  re = (RexxEngine) bsfManager.loadScriptingEngine("rexx");
+
+                    org.rexxla.bsf.engines.rexx.RexxEngine  re = null;
+                    try {
+                         re = (RexxEngine) bsfManager.loadScriptingEngine("rexx");
+                    }
+                    catch (BSFException be)
+                    {
+                        if (bDebugEngineLoading==true)
+                        {
+                            ScriptImpl.reportLoadingError("# 395: getBSFManager(), loaodScriptEngine(\"rexx\") for getting at MacOS debug infos", be);
+                        }
+                        throw be;    // re-throw
+                    }
 
                     // check PATH variable, define if needed, supplement if needed (we need "/usr/local/bin" on Mac PATH)
                     if (currPATH==null)   // on MacOSX
@@ -388,6 +414,7 @@ if (bDebugInfosToTmp)
                             {
                                 String s="ScriptProviderForooRexx.getBSFManager(...), MACOSX, set PATH to include \"/usr/local/bin\":\n"+
                                          "PATH=["+re.procEnvironment(GETENV,"PATH",null)+"]\n"+
+                                         "CLASSPATH=["+re.procEnvironment(GETENV,"CLASSPATH",null)+"]\n"+
                                          "PWD=["+re.procEnvironment(GETENV, "PWD", null)+"]";
                                 ;
                                 ScriptImpl.copy2clipboard(s);
@@ -405,6 +432,7 @@ if (bDebugInfosToTmp)
                     {
                         String s="ScriptProviderForooRexx.getBSFManager(...), running on Mac OS; PATH and PWD in effect:\n"+
                                  "PATH=["+re.procEnvironment(GETENV,"PATH",null)+"]\n"+
+                                 "CLASSPATH=["+re.procEnvironment(GETENV,"CLASSPATH",null)+"]\n"+
                                  "PWD=["+re.procEnvironment(GETENV, "PWD", null)+"]";
 
                         ;
@@ -415,17 +443,12 @@ if (bDebugInfosToTmp)
 // show PATH and PWD ---> TODO: remove!
 if (bDebugInfosToTmp)
 {
-    String s="\nScriptProviderForooRexx.getBSFManager(...), running on Mac OS; PATH and PWD in effect:\n"+
+    String s="\nScriptProviderForooRexx.getBSFManager(...) #2: running on Mac OS; PATH and PWD (now?) in effect:\n"+
              "PATH=["+re.procEnvironment(GETENV,"PATH",null)+"]\n"+
+             "CLASSPATH=["+re.procEnvironment(GETENV,"CLASSPATH",null)+"]\n"+
              "PWD=["+re.procEnvironment(GETENV, "PWD", null)+"]";
     {
-        try
-        {
-            FileWriter fw = new FileWriter("/tmp/ScriptProviderForooRexx-debuginfo2.txt");
-            fw.append(s);
-            fw.close();
-        }
-        catch (IOException e) {}
+        ScriptImpl.debugPrintToTmpFile("ScriptProviderForooRexx-debuginfo-02.txt", s);
     }
 }
 // <--- TODO: remove!
@@ -449,8 +472,9 @@ if (bDebugInfosToTmp)
 
                         final int GETENV=1;
                         org.rexxla.bsf.engines.rexx.RexxEngine  re = (RexxEngine) bsfManager.loadScriptingEngine("rexx");
-                        s=s+"\tPATH=["+re.procEnvironment(GETENV,"PATH",null)+"]\n"
-                           +"\tPWD =["+re.procEnvironment(GETENV,"PWD",null)+"]";
+                        s=s+"\tPATH=["+re.procEnvironment(GETENV,"PATH",null)+"]\n"+
+                            "CLASSPATH=["+re.procEnvironment(GETENV,"CLASSPATH",null)+"]\n"+
+                            "\tPWD =["+re.procEnvironment(GETENV,"PWD",null)+"]";
 
 
                         ScriptImpl.copy2clipboard(s);
@@ -476,9 +500,18 @@ if (bDebugInfosToTmp)
                 ScriptImpl.showErrorMessage(s);
             }
 
-
-
-            org.apache.bsf.BSFEngine eng=bsfManager.loadScriptingEngine("rexx");
+            org.apache.bsf.BSFEngine eng=null;
+            try {
+                eng=bsfManager.loadScriptingEngine("rexx");
+            }
+            catch (BSFException be)
+            {
+                if (bDebugEngineLoading==true)
+                {
+                    ScriptImpl.reportLoadingError("# 511: getBSFManager(), loaodScriptEngine(\"rexx\") for executing Rexx scripts", be);
+                }
+                throw be;
+            }
 
             if (bDebug==true)   // 2014-03-24, rgf
             {
@@ -674,15 +707,48 @@ if (bDebugInfosToTmp)
             XMultiServiceFactory multiFactory,
             XRegistryKey regKey )
     {
+        if (bDebugRegistration)
+        {
+            StringBuffer sb=new StringBuffer ();
+            sb.append("======> just arrived:\n");
+            sb.append("\n\targ1 'implName'=["+implName+"],\n\targ2 'multiFactory'=["+multiFactory+"],\n\targ3 'regKey'=["+regKey+"]:\n");
+            ScriptImpl.debugPrintToTmpFile("ScriptProviderForooRexx-debug-__getServiceFactory.txt", sb.toString());
+        }
+
         XSingleServiceFactory xSingleServiceFactory = null;
 
         if ( implName.equals( ScriptProviderForooRexx._ScriptProviderForooRexx.class.getName() ) )
         {
-            xSingleServiceFactory = FactoryHelper.getServiceFactory(
-                ScriptProviderForooRexx._ScriptProviderForooRexx.class,
-                "com.sun.star.script.provider.ScriptProviderForooRexx",  // service3 below ?
-                multiFactory,
-                regKey );
+/*
+            try
+*/
+            {
+                xSingleServiceFactory = FactoryHelper.getServiceFactory(
+                    ScriptProviderForooRexx._ScriptProviderForooRexx.class,
+                    "com.sun.star.script.provider.ScriptProviderForooRexx",  // service3 below ?
+                    multiFactory,
+                    regKey );
+            }
+/*
+            catch (Throwable t)
+            {
+                String tmpFn="ScriptProviderForooRexx-debug-__getServiceFactory.txt";
+                String title="FactoryHelper.getServiceFactory(...) threw ["+t.getMessage()+"]";
+                String stackTrace=ScriptImpl.getThrowableInfos(t);
+                String infos=title+":\n"+stackTrace;
+                ScriptImpl.copy2clipboard(tmpFn+" (cf. temp directory):\n\n"+infos);
+                // ScriptImpl.showErrorMessage(infos);
+                ScriptImpl.debugPrintToTmpFile(tmpFn, infos);
+                // throw new RuntimeException("unexpected Throwable",t);    // rethrow (if Java 1.6, then must be wrapped in a RuntimeException
+                throw t;    // rethrow
+            }
+*/
+        }
+
+        if (bDebugRegistration)
+        {
+            ScriptImpl.debugPrintToTmpFile("ScriptProviderForooRexx-debug-__getServiceFactory.txt",
+                "<====== returning xSingleServiceFactory=["+xSingleServiceFactory+"]");
         }
 
         return xSingleServiceFactory;
@@ -703,6 +769,11 @@ if (bDebugInfosToTmp)
 */
     public static boolean __writeRegistryServiceInfo( XRegistryKey regKey )
     {
+        if (bDebugRegistration)
+        {
+            ScriptImpl.debugPrintToTmpFile("ScriptProviderForooRexx-debug-__writeRegistryServiceInfo.txt",
+                "======> arg1 'regKey'=["+regKey+"]: just arrived");
+        }
         String impl = "com.sun.star.script.framework.provider.oorexx." +
             "ScriptProviderForooRexx$_ScriptProviderForooRexx";
 
@@ -716,7 +787,17 @@ if (bDebugInfosToTmp)
              FactoryHelper.writeRegistryServiceInfo(impl, service3, regKey) &&
              FactoryHelper.writeRegistryServiceInfo(impl, service4, regKey) )
         {
-                return true;
+            if (bDebugRegistration)
+            {
+                ScriptImpl.debugPrintToTmpFile("ScriptProviderForooRexx-debug-__writeRegistryServiceInfo.txt",
+                    "<====== regKey=["+regKey+"]: SUCCESS, returning true!");
+            }
+            return true;
+        }
+        if (bDebugRegistration)
+        {
+            ScriptImpl.debugPrintToTmpFile("ScriptProviderForooRexx-debug-__writeRegistryServiceInfo.txt",
+                "<====== regKey=["+regKey+"]: FAILURE, returning false!");
         }
         return false;
     }
@@ -727,7 +808,9 @@ if (bDebugInfosToTmp)
 
 class ScriptImpl implements XScript
 {
-    static final private boolean bDebug                   = false; // true;       // 2014-03-24 interactive debug?
+    static final private boolean bDebugScriptImpl = false; // true;       // 2014-03-24 interactive debug?
+
+    static int dbgCounter=0;    // rgf, 2021-09-28: debug counter for filename
 
     // the following static fields (populated in the static anonymous block) is
     // used for caching purposes;
@@ -802,6 +885,7 @@ class ScriptImpl implements XScript
         this.m_xContext = ctx;
         this.m_xModel = xModel;
 
+
         try
         {
             this.m_xMultiComponentFactory = m_xContext.getServiceManager();
@@ -809,6 +893,11 @@ class ScriptImpl implements XScript
         catch ( Exception e )
         {
             LogUtils.DEBUG( LogUtils.getTrace( e ) );
+            if (bDebugScriptImpl)
+            {
+                reportLoadingError("# 872 - ScriptImpl(XComponentContext, ScriptMetaData, XModel)",e);
+            }
+
             throw new com.sun.star.uno.RuntimeException(
                 "Error constructing  ScriptImpl [oorexx]: "
                 + e.getMessage() );
@@ -941,7 +1030,7 @@ public class com.sun.star.script.framework.provider.ClassLoaderFactory {
             }
             catch (Exception exc)   // try to appease AOO which mandates intercepting/throwing NoSuitableClassLoaderException
             {
-                if (bDebug==true)   // 2014-03-24, rgf
+                if (bDebugScriptImpl==true)   // 2014-03-24, rgf
                 {
                     String s="ScriptProviderForooRexx.ScriptImpl.invoke(...)-Exception exc:\n"+getThrowableInfos(exc);
                     ScriptImpl.copy2clipboard(s);
@@ -1020,7 +1109,7 @@ public class com.sun.star.script.framework.provider.ClassLoaderFactory {
                 t.setContextClassLoader(clTmp); // 20070920 rgf: re-set CL
 
                 // Framework error setting up context
-                if (bDebug==true)   // 2014-03-24, rgf
+                if (bDebugScriptImpl==true)   // 2014-03-24, rgf
                 {
                     String s="ScriptProviderForooRexx.ScriptImpl.invoke(...) while creating arguments for Rexx script:\n"+getThrowableInfos(e);
                     ScriptImpl.copy2clipboard(s);
@@ -1068,27 +1157,10 @@ public class com.sun.star.script.framework.provider.ClassLoaderFactory {
                     	ScriptFrameworkErrorType.UNKNOWN );
                 }
 
-
                 URL scriptSourceUrl=metaData.getSourceURL();    // get source URL from meta data
-
-                // String filename=(scriptSourceUrl==null ?"OOo.ScriptProviderForooRexx-ScriptProviderForooRexx.invoke()" :ScriptProviderForooRexx.makeFilenameLegible (scriptSourceUrl.getFile()));
-
-                // rgf, 2008-06-17
-                // String
                 filename=ScriptProviderForooRexx.getSystemPathFromFileURL(m_xContext,metaData);
-
-                // RexxEngine re=(RexxEngine) mgr.loadScriptingEngine("rexx"); // get Rexx BSF scripting engine
-
-// TODO: invokeLater ?? or is it already executing on a non-AppKit-thread ?
-
-                   // rgf, 2005-07-08
                 result=mgr.apply(ScriptProviderForooRexx.OOREXX_BSFLANGUAGE,
-                                 filename,
-                                 // (sourceUrl==null ? "OOo.ScriptProviderForooRexx-ScriptProviderForooRexx.invoke()" : ScriptProviderForooRexx.makeFilenameLegible (sourceUrl.getFile())+" ScriptProviderForooRexx"),
-                                 // "OOo.ScriptProviderForooRexx",
-                                 0, 0, source, null, args);
-
-            // rgf, 2009-10-31    re.terminate();     // let ooRexx halt the main thread of this invocation
+                                 filename, 0, 0, source, null, args);
 
 /*
                 RexxEngine re=(RexxEngine) mgr.loadScriptingEngine("rexx"); // get Rexx BSF scripting engine
@@ -1099,7 +1171,6 @@ public class com.sun.star.script.framework.provider.ClassLoaderFactory {
                                 // "OOo.ScriptProviderForooRexx",
                                 0, 0, source, null, args);
 */
-
 
                 t.setContextClassLoader(clTmp); // 20070920 rgf: re-set CL
                 if (result == null)
@@ -1113,7 +1184,7 @@ public class com.sun.star.script.framework.provider.ClassLoaderFactory {
             {
                 t.setContextClassLoader(clTmp); // 20070920 rgf: re-set CL
 
-                if (bDebug==true)   // 2014-03-24, rgf
+                if (bDebugScriptImpl==true)   // 2014-03-24, rgf
                 {
                     String s="ScriptProviderForooRexx.ScriptImpl.invoke(...) while trying to run a ooRexx script\nfilename=\""+filename+"\":\n"+getThrowableInfos(e);
                     ScriptImpl.copy2clipboard(s);
@@ -1205,11 +1276,14 @@ public class com.sun.star.script.framework.provider.ClassLoaderFactory {
             int i=0;
             StringBuilder sb=new StringBuilder();
 
+            sb.append(ta.toString()).append(":\n");
+/* TODO: rgf, 20210928, ran into a Java heap problem
             for (Throwable d=ta;d!=null;d.getCause())
             {
                 sb.append("Cause level # ").append(i++).
-                   append(' ').append(d.toString()).append(": [").append(d.getMessage()).append("]\n");
+                append(' ').append(d.toString()).append(": [").append(d.getMessage()).append("]\n");
             }
+*/
 
             // get stack trace as string
             StringWriter sw = new StringWriter();
@@ -1225,6 +1299,63 @@ public class com.sun.star.script.framework.provider.ClassLoaderFactory {
                     setContents(new StringSelection(s), null);;
         }
 
+        // rgf, 2021-09-28
+        final static String getJavaProperties()
+        {
+            Properties props = System.getProperties();
+            Set<String> keys = props.stringPropertyNames();
+            SortedSet<String> sortedKeys = new TreeSet<String>(keys);
 
+            StringBuilder sb=new StringBuilder();
+            for (String k : sortedKeys) {
+                sb.append(k).append("=[").append(props.get(k)).append("]\n");
+            }
+            return sb.toString();
+        }
+
+        // rgf, 2021-09-28: if loading the Rexx engine did not work, give as much info as possible
+        final static void reportLoadingError(String msg, Throwable t)
+        {
+            String sprops="\njava.lang.System properties in effect:\n" + getJavaProperties();
+            copy2clipboard(sprops);
+
+            String fn = "ScriptProviderForooRexx-reportLoadingError-"+(++dbgCounter)+".txt";
+            String s=msg+"\n"+getThrowableInfos(t);
+
+            copy2clipboard(s+sprops);
+            debugPrintToTmpFile(fn, s+sprops);
+            showErrorMessage(s);    // this might hang if using directly unopkg
+        }
+
+
+        // rgf, 2021-10-01
+        final static void debugPrintToTmpFile(String fn, String infos)
+        {
+            String strNow = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").format(new java.util.Date());
+
+                // write debug infos to file in tmp directory
+            String tmpDir=System.getProperty("java.io.tmpdir");
+            if (tmpDir==null)
+            {
+                tmpDir="/tmp";
+            }
+            fn = tmpDir+System.getProperty("file.separator") + fn;
+
+            File f = new File(fn);  // if temporary file exists already, delete it
+/*
+            if (f.exists())
+            {
+                f.delete();
+            }
+*/
+
+            try {
+                // FileWriter fw = new FileWriter(f);
+                FileWriter fw = new FileWriter(f, true);    // append to the end to get some history ...
+                fw.append("\n---/// "+strNow+" \\\\\\ \n---\n" + "fileName=["+fn+"]:\n\n"+infos+"\n------\n");
+                fw.close();
+            }
+            catch (Throwable t2) {}
+        }
 
 }      // end of ScriptImpl
