@@ -5,8 +5,10 @@
             without any knowledge about Java installation issues)
    Author:  Rony G. Flatscher
    Date:    2006-01-07
-   Version: 1.38
+   Version: 1.39
    Changed:
+            2021-11-16, - Linux arm32 name was wrong ("libBSF4ooRexx.so-32-arm" instead of "libBSF4ooRexx.so-32-arm32")
+
             2021-08-29, - make sure on Unix that "/usr/local/bin" and "/usr/local/lib"
                           exist and if not create them before placing links there
 
@@ -637,7 +639,7 @@ do
       select      -- determine location and name of library to use
          when cmd.eBitness=32   then
          do
-            if j.os.arch='arm'  then cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-32-arm"
+            if j.os.arch='arm'  then cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-32-arm32"
                                 else cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-32-x86"
          end
          when cmd.eBitness=64    then

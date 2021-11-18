@@ -37,7 +37,10 @@ javap com.sun.star.script.framework.provider.ClassLoaderFactory
 @echo .
 javap com.sun.star.script.framework.container.ScriptMetaData
 @echo ...
+rem 2021-10-04 - in Java 1.6 one cannot rethrow a Throwable if not listed as exception (if used for debugging)
 javac -source 1.6 -target 1.6 com/sun/star/script/framework/provider/oorexx/*.java
+rem 2021-10-04 - temporarily with 1.8 as then one can rethrow a Throwable
+rem javac -source 1.8 -target 1.8 com/sun/star/script/framework/provider/oorexx/*.java
 @rem
 pause
 
