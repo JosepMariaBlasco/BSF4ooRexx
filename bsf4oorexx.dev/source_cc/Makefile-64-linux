@@ -4,7 +4,7 @@
 #
 # ooRexx 4.x, 2005-06-07, 2009-09-08, 2017-01-08
 #
-# make -f Makefile-64-linux [ all | clean | clean_dll | rebuild ]
+# make -f Makefile-64-linux [ all | clean | clean_dll | rebuild |  b4r_debug ]
 #-------------------------------------------------------------------------
 
 # changes:
@@ -80,6 +80,7 @@ ARCH            = amd64
 # CFLAGS		= -c -O3 -D__cplusplus -DUNIX -m64 -DBSF4REXX_64_BIT
 CFLAGS		= -fPIC -c -O3 -D__cplusplus -DUNIX -m$(BITNESS) -DBSF4REXX_$(BITNESS)_BIT
 CFLAGS_ORX      = -DUSE_OREXX
+CFLAGS_DEBUG    = -g
 
 LINK_FLAGS      = -shared -rdynamic -lpthread -lc  -lm
 
@@ -98,10 +99,14 @@ RPATH           = -rpath,$$'ORIGIN':$$'ORIGIN'/../lib:/usr/local/lib64:/usr/lib6
 # the following works as well on Linux, it seems that the above version creates the same RPATH definition
 # RPATH=-rpath,$$'ORIGIN',-rpath,$$'ORIGIN'/../lib,-rpath,/usr/local/lib64,-rpath,/usr/lib64,-rpath,/usr/local/lib,-rpath,/usr/lib,-rpath,/opt/ooRexx/lib
 
-BSF_SONAME      = libBSF4ooRexx.so
-BSF_OBJ_ORX     = $(BLD_PATH)/BSF4ooRexx-$(BITNESS)-$(ARCH).o
-BSF_ORX_TARGET  = $(BLD_PATH)/$(BSF_SONAME)-$(BITNESS)-$(ARCH)
-BSF4REXX	= $(BLD_PATH)/$(BSF_SONAME)
+BSF_SONAME            = libBSF4ooRexx.so
+BSF_SONAME_DEBUG      = libBSF4ooRexx-debug.so
+BSF_OBJ_ORX           = $(BLD_PATH)/BSF4ooRexx-$(BITNESS)-$(ARCH).o
+BSF_OBJ_ORX_DEBUG     = $(BLD_PATH)/BSF4ooRexx-$(BITNESS)-$(ARCH)-debug.o
+BSF_ORX_TARGET        = $(BLD_PATH)/$(BSF_SONAME)-$(BITNESS)-$(ARCH)
+BSF_ORX_TARGET_DEBUG  = $(BLD_PATH)/$(BSF_SONAME)-$(BITNESS)-$(ARCH)-debug
+BSF4REXX	      = $(BLD_PATH)/$(BSF_SONAME)
+BSF4REXX_DEBUG        = $(BLD_PATH)/$(BSF_SONAME_DEBUG)
 
 # *************************************************************************** #
 # Rules									      #
@@ -111,10 +116,25 @@ BSF4REXX	= $(BLD_PATH)/$(BSF_SONAME)
 
 #---------------------------------------------------------- Generate library
 
-orexx :                $(BSF_ORX_TARGET)
+orexx :         $(BSF_ORX_TARGET)
+b4r_debug :	${BSF_ORX_TARGET_DEBUG}	
 #---------------------------------------------------------- END section
 
-# Object Rexx ----------------------------------------------
+# ------------------------------ debug version 
+$(BSF_ORX_TARGET_DEBUG) : $(BSF_SRC)
+	echo
+	echo Building $@ ...
+	echo
+
+	$(cc) $(CFLAGS) $(CFLAGS_ORX) ${CFLAGS_DEBUG} -o$(BSF_OBJ_ORX_DEBUG) $(INC_PATH) $(INC_PATH_ORX) $(LIB_PATH) $(BSF_SRC)
+
+	$(link) -Wl,--disable-new-dtags,-soname,$(BSF_SONAME_DEBUG),$(RPATH) -o $@ $(BSF_OBJ_ORX_DEBUG) $(LIB_PATH) $(LINK_FLAGS) $(LINK_ORX_FLAGS)
+
+
+	$(copy_cmd) $(BSF_ORX_TARGET_DEBUG) $(BSF4REXX)
+
+
+#------------------------------- release version 
 $(BSF_ORX_TARGET) : $(BSF_SRC)
 	echo
 	echo Building $@ ...
