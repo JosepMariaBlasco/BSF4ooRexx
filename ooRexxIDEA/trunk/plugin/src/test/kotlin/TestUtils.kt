@@ -11,17 +11,18 @@ class TestUtils {
     companion object {
         fun printTree(psiElement: PsiElement, level: Int = 0) {
             if (level == 0) {
-                println("\t".repeat(level) + psiElement.toString())
+                println("\t".repeat(level) + psiElement.toString() + "-> " + psiElement.text)
             }
             for (child in psiElement.children) {
-                println("\t".repeat(level) + child.toString())
+                println("\t".repeat(level) + child.toString() + "-> " + psiElement.text)
                 if (child.children.isNotEmpty()) {
                     printTree(child, level = level + 1)
                 }
             }
         }
 
-        fun getPsiFile(ooRexxSource: String) = LightPsi.parseFile("temporary.rexx", ooRexxSource, OoRexxStandaloneParserDefinition())!!
+        fun getPsiFile(ooRexxSource: String) =
+            LightPsi.parseFile("temporary.rexx", ooRexxSource, OoRexxStandaloneParserDefinition())!!
 
         fun assertNoPsiError(psiFile: PsiFile) {
             printTree(psiFile)

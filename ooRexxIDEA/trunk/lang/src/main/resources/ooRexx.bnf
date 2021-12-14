@@ -390,7 +390,7 @@ private stream_expr ::= identifier | string_lit | (LPAREN expr RPAREN)
 
 standalone_keyword_message_term ::= &(keyword_list TILDE) expr
 
-message_term ::=  (message_term_receiver message_term_tail+)
+message_term ::=  namespace_prefix? (message_term_receiver message_term_tail+)
 
 message_term_tail ::= (message_term_tilde | message_term_brack)
 message_term_brack ::= (LBRACK (expr | COMMA)* RBRACK)
@@ -543,7 +543,7 @@ directive_class_inherit_name ::= symbol_or_string
 // ::Constant
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-directive_constant ::= CONSTANT symbol_or_string directive_constant_value instruction_terminator{implements = "org.oorexx.ide.lang.core.DirectiveHeader" pin = 1}
+directive_constant ::= CONSTANT (symbol_or_string | lit) directive_constant_value instruction_terminator{implements = "org.oorexx.ide.lang.core.DirectiveHeader" pin = 1}
 directive_constant_value ::= (expr | lit)?
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -699,14 +699,15 @@ keyword_expose ::= EXPOSE <<paren symbol_or_string>>+{pin = 1}
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Forward
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-keyword_forward ::= FORWARD (keyword_forward_continue | keyword_forward_arguments | keyword_forward_array | keyword_forward_message | keyword_forward_class | keyword_forward_to)*{pin = 1}
+keyword_forward ::= FORWARD (keyword_forward_continue | keyword_forward_message | keyword_forward_arguments | keyword_forward_array  | keyword_forward_class | keyword_forward_to)*{pin = 1}
 
 keyword_forward_continue ::= CONTINUE {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
-keyword_forward_arguments ::= (ARGUMENTS <<excluding_expr (MESSAGE | CONTINUE | CLASS | TO)>>) {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint" pin = 1}
+keyword_forward_arguments ::= (("ARGUMENTS(" <<excluding_expr (MESSAGE | CONTINUE | CLASS | TO)>> RPAREN) | (ARGUMENTS <<excluding_expr (MESSAGE | CONTINUE | CLASS | TO)>>)) {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint" pin = 1}
 keyword_forward_array ::= ("ARRAY(" expr RPAREN) | (ARRAY LPAREN expr RPAREN) {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 
-keyword_forward_message ::= (MESSAGE <<excluding_expr (ARGUMENTS | CONTINUE | CLASS | TO)>>) {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint" pin = 1}
-keyword_forward_class ::= (CLASS <<excluding_expr (MESSAGE | CONTINUE | ARGUMENTS | TO)>>) {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint" pin = 1}
+keyword_forward_message ::=  ((MESSAGE <<excluding_expr (ARGUMENTS | CONTINUE | CLASS | TO)>>) | ("MESSAGE(" <<excluding_expr (ARGUMENTS | CONTINUE | CLASS | TO)>> RPAREN))
+{implements = "org.oorexx.ide.lang.constraint.UniqueConstraint" pin = 1}
+keyword_forward_class ::= (("CLASS(" <<excluding_expr (MESSAGE | CONTINUE | ARGUMENTS | TO)>> RPAREN) | (CLASS <<excluding_expr (MESSAGE | CONTINUE | ARGUMENTS | TO)>>)) {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint" pin = 1}
 keyword_forward_to ::= ( (TO string_lit ) | ("TO(" <<excluding_expr (MESSAGE | CONTINUE | CLASS | ARGUMENTS)>> RPAREN) | (TO LPAREN <<excluding_expr (MESSAGE | CONTINUE | CLASS | ARGUMENTS)>> RPAREN ))
 
 {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
@@ -844,7 +845,7 @@ keyword_select ::= SELECT keyword_select_1 instruction_terminator (keyword_selec
 
 private keyword_select_1 ::= (keyword_select_case | keyword_select_label)*
 keyword_select_label ::= LABEL symbol_or_string {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
-keyword_select_case ::= CASE <<excluding_expr (WHEN | OTHERWISE | LABEL)>> {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
+keyword_select_case ::= (("CASE(" <<excluding_expr (WHEN | OTHERWISE | LABEL)>> RPAREN) | (CASE <<excluding_expr (WHEN | OTHERWISE | LABEL)>>)) {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 
 keyword_select_when ::= WHEN <<excluding_expr THEN>> instruction_terminator? THEN instruction_terminator? instruction
 keyword_select_otherwise ::= OTHERWISE instruction_terminator? instruction*
@@ -883,7 +884,7 @@ BIF_REVERSE | BIF_RIGHT | BIF_RXFUNCADD | BIF_RXFUNCDROP | BIF_RXFUNCQUERY | BIF
 BIF_TRUNC | BIF_UPPER | BIF_USERID | BIF_VALUE | BIF_VAR | BIF_VERIFY | BIF_WORD | BIF_WORDINDEX | BIF_WORDLENGTH | BIF_WORDPOS | BIF_WORDS | BIF_X2B | BIF_X2C | BIF_X2D | BIF_XRANGE
 
 
-private built_in_functions ::= built_in_abbrev | built_in_abs | built_in_address | built_in_arg | built_in_b2x | built_in_beep | built_in_bitand | built_in_bitor | built_in_bitxor | built_in_c2d | built_in_c2x | built_in_center  | built_in_changestr | built_in_charin |
+built_in_functions ::= built_in_abbrev | built_in_abs | built_in_address | built_in_arg | built_in_b2x | built_in_beep | built_in_bitand | built_in_bitor | built_in_bitxor | built_in_c2d | built_in_c2x | built_in_center  | built_in_changestr | built_in_charin |
                                built_in_charout | built_in_chars | built_in_compare | built_in_condition | built_in_copies | built_in_countstr | built_in_d2c | built_in_d2x | built_in_datatype | built_in_date | built_in_delstr | built_in_delword | built_in_digits
                                | built_in_directory | built_in_endlocal | built_in_errortext | built_in_filespec | built_in_form | built_in_format | built_in_fuzz | built_in_insert | built_in_lastpos | built_in_left | built_in_length | built_in_linein | built_in_lineout | built_in_lines | built_in_lower | built_in_max | built_in_min | built_in_overlay
                                | built_in_pos | built_in_qualify | built_in_queued | built_in_random | built_in_reverse | built_in_right | built_in_rxfuncadd | built_in_rxfuncdrop |  built_in_rxfuncquery | built_in_rxqueue | built_in_setlocal | built_in_sign | built_in_sourceline | built_in_space | built_in_stream | built_in_strip | built_in_substr | built_in_subword | built_in_symbol
@@ -952,7 +953,7 @@ built_in_rxqueue ::= BIF_RXQUEUE LPAREN ((CREATE (COMMA parameter_expr)?) |
 built_in_setlocal ::= BIF_SETLOCAL LPAREN RPAREN
 built_in_sign ::= BIF_SIGN LPAREN parameter_expr RPAREN
 built_in_sourceline ::= BIF_SOURCELINE LPAREN parameter_expr? RPAREN
-built_in_space ::= BIF_SPACE LPAREN parameter_expr COMMA parameter_expr? (COMMA parameter_expr) RPAREN
+built_in_space ::= BIF_SPACE LPAREN parameter_expr ((COMMA parameter_expr)? (COMMA parameter_expr)*) RPAREN
 built_in_stream ::= BIF_STREAM LPAREN parameter_expr COMMA (STATE | (COMMAND COMMA parameter_expr) | DESCRIPTION )? RPAREN // TODO
 built_in_strip ::= BIF_STRIP LPAREN parameter_expr COMMA ("B" | parameter_expr)? (COMMA parameter_expr)? RPAREN
 built_in_substr ::= BIF_SUBSTR LPAREN parameter_expr COMMA parameter_expr COMMA parameter_expr? (COMMA parameter_expr)? RPAREN

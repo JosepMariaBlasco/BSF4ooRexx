@@ -1,71 +1,73 @@
 <idea-plugin>
-  <id>org.oorexx.ide</id>
-  <name>ooRexx for IntelliJ IDEA</name>
-  <vendor email="alexander.t.seik@gmail.com">Alexander Seik</vendor>
+    <id>org.oorexx.ide</id>
+    <name>ooRexx for IntelliJ IDEA</name>
+    <vendor email="alexander.t.seik@gmail.com">Alexander Seik</vendor>
 
-  <description>ooRexx plugin for IntelliJ IDEA</description>
-
-
-  <extensions defaultExtensionNs="com.intellij">
-    <lang.foldingBuilder language="ooRexx" implementationClass="org.oorexx.ide.intellij.folding.FoldingBuilder"/>
-    <colorSettingsPage implementation="org.oorexx.ide.intellij.highlighting.OoRexxColorSettingPage"/>
-    <lang.syntaxHighlighterFactory key="ooRexx"
-                                   implementationClass="org.oorexx.ide.intellij.highlighting.OoRexxSyntaxHighlighterFactory"/>
-    <lang.parserDefinition language="ooRexx" implementationClass="org.oorexx.ide.parser.OoRexxParserDefinition"/>
-
-    <fileType name="ooRexx-File" implementationClass="org.oorexx.ide.file.OoRexxFileType"
-              fieldName="INSTANCE" language="ooRexx"
-              extensions="cls;frm;jrexx;orx;rex;rexx;rexxj;rxj;rxo;testGroup;testUnit"/>
-
-    <annotator language="ooRexx" implementationClass="org.oorexx.ide.intellij.annotator.UniqueConstraintAnnotator"/>
-    <annotator language="ooRexx" implementationClass="org.oorexx.ide.intellij.annotator.KeywordHighlighter"/>
-
-    <configurationType implementation="org.oorexx.ide.intellij.run.configuration.RunConfigurationType"/>
-
-    <lang.commenter language="ooRexx" implementationClass="org.oorexx.ide.intellij.commenter.OoRexxCommenter"/>
-
-    <runConfigurationProducer implementation="org.oorexx.ide.intellij.run.configuration.RunConfigurationProducer"/>
-
-    <additionalTextAttributes scheme="Default" file="colorSchemes/ooRexxColors.xml"/>
-    <applicationConfigurable groupId="language" displayName="ooRexx" id="ooRexx"
-                             instance="org.oorexx.ide.setting.OoRexxLanguageConfigurable"/>
-    <applicationService serviceImplementation="org.oorexx.ide.setting.OoRexxLanguageSettings"/>
-
-    <projectService
-            serviceImplementation="org.oorexx.ide.intellij.action.configuration.OoRexxDocQuickActionPersistentStateComponent"/>
-    <!-- Project -->
-
-    <moduleType id="OOREXX_MODULE" implementationClass="org.oorexx.ide.intellij.project.OoRexxModuleType"/>
+    <description>ooRexx plugin for IntelliJ IDEA</description>
 
 
-  </extensions>
-  <depends>com.intellij.modules.lang</depends>
+    <extensions defaultExtensionNs="com.intellij">
+        <lang.foldingBuilder language="ooRexx" implementationClass="org.oorexx.ide.intellij.folding.FoldingBuilder"/>
+        <colorSettingsPage implementation="org.oorexx.ide.intellij.highlighting.OoRexxColorSettingPage"/>
+        <lang.syntaxHighlighterFactory key="ooRexx"
+                                       implementationClass="org.oorexx.ide.intellij.highlighting.OoRexxSyntaxHighlighterFactory"/>
+        <additionalTextAttributes scheme="Default" file="colorSchemes/ooRexxColors.xml"/>
 
-  <actions>
-    <action id="ooRexx.NewOoRexxFile.Rexx"
-            class="org.oorexx.ide.intellij.action.NewOoRexxFile"
-            text="ooRexx File"
-            description="Create new ooRexx file">
-      <add-to-group group-id="NewGroup" anchor="before" relative-to-action="NewFile"/>
-    </action>
-    <action id="ooRexx.NewOoRexxFile.Cls"
-            class="org.oorexx.ide.intellij.action.NewOoRexxClsFile"
-            text="ooRexx CLS File"
-            description="Create new CLS file">
-      <add-to-group group-id="NewGroup" anchor="before" relative-to-action="NewFile"/>
-    </action>
-    <action id="ooRexx.SearchAction"
-            class="org.oorexx.ide.intellij.action.OoRexxSearchAction">
-    </action>
-    <action id="ooRexx.ooRexxDocAction" class="org.oorexx.ide.intellij.action.OoRexxDocAction"
-            text="Create 'ooRexxDoc' Documentation ..." description="Create an ooRexxDoc">
-      <add-to-group group-id="EditorPopupMenu" anchor="last"/>
-      <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
-    </action>
-    <action id="ooRexx.ooRexxDocQuickAction" class="org.oorexx.ide.intellij.action.OoRexxDocQuickAction"
-            text="Quick Create 'ooRexxDoc' Documentation ..." description="Quick Create an ooRexxDoc">
-      <add-to-group group-id="EditorPopupMenu" anchor="last"/>
-      <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
-    </action>
-  </actions>
+        <lang.parserDefinition language="ooRexx" implementationClass="org.oorexx.ide.parser.OoRexxParserDefinition"/>
+
+        <fileType name="ooRexx-File" implementationClass="org.oorexx.ide.file.OoRexxFileType"
+                  fieldName="INSTANCE" language="ooRexx"
+                  extensions="cls;frm;jrexx;orx;rex;rexx;rexxj;rxj;rxo;testGroup;testUnit"/>
+
+        <annotator language="ooRexx" implementationClass="org.oorexx.ide.intellij.annotator.UniqueConstraintAnnotator"/>
+        <annotator language="ooRexx" implementationClass="org.oorexx.ide.intellij.annotator.KeywordHighlighter"/>
+
+        <configurationType implementation="org.oorexx.ide.intellij.run.configuration.RunConfigurationType"/>
+
+        <lang.commenter language="ooRexx" implementationClass="org.oorexx.ide.intellij.commenter.OoRexxCommenter"/>
+
+        <runConfigurationProducer implementation="org.oorexx.ide.intellij.run.configuration.RunConfigurationProducer"/>
+
+
+        <applicationConfigurable groupId="language" displayName="ooRexx" id="ooRexx"
+                                 instance="org.oorexx.ide.setting.OoRexxLanguageConfigurable"/>
+        <applicationService serviceImplementation="org.oorexx.ide.setting.OoRexxLanguageSettings"/>
+
+        <projectService
+                serviceImplementation="org.oorexx.ide.intellij.action.configuration.OoRexxDocQuickActionPersistentStateComponent"/>
+        <!-- Project -->
+
+        <moduleType id="OOREXX_MODULE" implementationClass="org.oorexx.ide.intellij.project.OoRexxModuleType"/>
+
+
+    </extensions>
+    <depends>com.intellij.modules.lang</depends>
+
+    <actions>
+        <action id="ooRexx.NewOoRexxFile.Rexx"
+                class="org.oorexx.ide.intellij.action.NewOoRexxFile"
+                text="ooRexx File"
+                description="Create new ooRexx file">
+            <add-to-group group-id="NewGroup" anchor="before" relative-to-action="NewFile"/>
+        </action>
+        <action id="ooRexx.NewOoRexxFile.Cls"
+                class="org.oorexx.ide.intellij.action.NewOoRexxClsFile"
+                text="ooRexx CLS File"
+                description="Create new CLS file">
+            <add-to-group group-id="NewGroup" anchor="before" relative-to-action="NewFile"/>
+        </action>
+        <action id="ooRexx.SearchAction"
+                class="org.oorexx.ide.intellij.action.OoRexxSearchAction">
+        </action>
+        <action id="ooRexx.ooRexxDocAction" class="org.oorexx.ide.intellij.action.OoRexxDocAction"
+                text="Create 'ooRexxDoc' Documentation ..." description="Create an ooRexxDoc">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+        </action>
+        <action id="ooRexx.ooRexxDocQuickAction" class="org.oorexx.ide.intellij.action.OoRexxDocQuickAction"
+                text="Quick Create 'ooRexxDoc' Documentation ..." description="Quick Create an ooRexxDoc">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+        </action>
+    </actions>
 </idea-plugin>

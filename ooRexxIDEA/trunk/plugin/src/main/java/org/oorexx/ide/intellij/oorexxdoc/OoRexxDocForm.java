@@ -221,7 +221,6 @@ public class OoRexxDocForm {
         }
         try {
             return new File(path);
-//            return VfsUtil.createDirectoryIfMissing(path);
         } catch (Exception e) {
             throw new FileNotFoundException("could not find file " + path);
         }

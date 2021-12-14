@@ -1,14 +1,24 @@
 package org.oorexx.doc.analyse.model;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
 import com.intellij.psi.PsiElement;
 import org.apache.commons.lang3.StringUtils;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class OoRexxMethod extends OoRexxNamedElement {
 
 
+    public static final Comparator<OoRexxMethod> METHOD_COMPARATOR = (lhs, rhs) -> {
+        if (lhs.getName().equalsIgnoreCase("init")) {
+            return 1;
+        } else if (rhs.getName().equalsIgnoreCase("init")) {
+            return 1;
+        } else {
+            return lhs.getSanitizedName().toLowerCase().compareTo(rhs.getSanitizedName().toLowerCase());
+        }
+    };
     private AccessModifier accessModifier = AccessModifier.PUBLIC;
     private boolean guarded = true;
     private boolean unprotected = true;
@@ -17,7 +27,6 @@ public class OoRexxMethod extends OoRexxNamedElement {
     private boolean abstractMethod = false;
     private String delegate;
     private String external;
-
     private List<String> variableReferences = new ArrayList<>();
     private List<String> exposedVariables = new ArrayList<>();
     private String useArg = "";
@@ -27,15 +36,15 @@ public class OoRexxMethod extends OoRexxNamedElement {
         super(psiElement);
     }
 
-    public String getExposedString(){
-        if(hasExpose()){
+    public String getExposedString() {
+        if (hasExpose()) {
             return StringUtils.join(exposedVariables, " ");
         }
 
         return "";
     }
 
-    public boolean hasExpose(){
+    public boolean hasExpose() {
         return exposedVariables.size() > 0;
     }
 
@@ -134,4 +143,5 @@ public class OoRexxMethod extends OoRexxNamedElement {
     public void setVariableReferences(List<String> variableReferences) {
         this.variableReferences = variableReferences;
     }
+
 }

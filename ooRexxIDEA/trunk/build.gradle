@@ -7,6 +7,7 @@ allprojects {
     sourceCompatibility = 1.11
     targetCompatibility = 1.11
 
+
     repositories {
         mavenCentral()
     }
@@ -18,6 +19,7 @@ project(':oorexxdoc') {
     dependencies {
         implementation project(':lang')
     }
+
 }
 
 project(':plugin') {

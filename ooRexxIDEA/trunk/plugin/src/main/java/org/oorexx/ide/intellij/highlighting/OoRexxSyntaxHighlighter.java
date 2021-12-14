@@ -1,5 +1,8 @@
 package org.oorexx.ide.intellij.highlighting;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.intellij.lexer.Lexer;
 import com.intellij.openapi.editor.DefaultLanguageHighlighterColors;
 import com.intellij.openapi.editor.HighlighterColors;
@@ -10,9 +13,6 @@ import org.jetbrains.annotations.NotNull;
 import org.oorexx.ide.intellij.util.KeywordHelper;
 import org.oorexx.ide.lexer.OoRexxLexerAdapter;
 import org.oorexx.ide.lexer.token.OoRexxTokenType;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static com.intellij.openapi.editor.colors.TextAttributesKey.createTextAttributesKey;
 
@@ -63,62 +63,65 @@ public class OoRexxSyntaxHighlighter extends SyntaxHighlighterBase {
     @Override
     public TextAttributesKey[] getTokenHighlights(IElementType tokenType) {
 
-        if(tokenType instanceof OoRexxTokenType) {
+        if (tokenType instanceof OoRexxTokenType) {
 
             OoRexxTokenType ooRexxTokenType = (OoRexxTokenType) tokenType;
 
-            if(ooRexxTokenType.getTokenName().equals("+") ||
-                            ooRexxTokenType.getTokenName().equals("-") ||
-                            ooRexxTokenType.getTokenName().equals("*") ||
-                            ooRexxTokenType.getTokenName().equals("/") ||
-                            ooRexxTokenType.getTokenName().equals("%") ||
-                            ooRexxTokenType.getTokenName().equals("<") ||
-                            ooRexxTokenType.getTokenName().equals(">") ||
-                            ooRexxTokenType.getTokenName().equals("=") ||
-                            ooRexxTokenType.getTokenName().equals("\\") ||
-                            ooRexxTokenType.getTokenName().equals("~")
+            if (ooRexxTokenType.getTokenName().equals("+") ||
+                    ooRexxTokenType.getTokenName().equals("-") ||
+                    ooRexxTokenType.getTokenName().equals("*") ||
+                    ooRexxTokenType.getTokenName().equals("/") ||
+                    ooRexxTokenType.getTokenName().equals("%") ||
+                    ooRexxTokenType.getTokenName().equals("<") ||
+                    ooRexxTokenType.getTokenName().equals(">") ||
+                    ooRexxTokenType.getTokenName().equals("=") ||
+                    ooRexxTokenType.getTokenName().equals("\\") ||
+                    ooRexxTokenType.getTokenName().equals("~")
 
-                    )
+            ) {
                 return OPERATOR_KEYS;
+            }
 
-            if(ooRexxTokenType.getTokenName().startsWith("BIF_"))
-                return BUILT_IN_KEYS;
-
-            if(ooRexxTokenType.getTokenName().equals(".LOCAL") || ooRexxTokenType.getTokenName().equals(".ENVIRONMENT"))
+            if (ooRexxTokenType.getTokenName().equals(".LOCAL") || ooRexxTokenType.getTokenName().equals(".ENVIRONMENT")) {
                 return SPECIAL_ENVIRONMENT_KEYS;
+            }
 
-            if(ooRexxTokenType.getTokenName().equals("ENV_IDENTIFIER"))
+            if (ooRexxTokenType.getTokenName().equals("ENV_IDENTIFIER")) {
                 return ENVIRONMENT_KEYS;
+            }
 
 
             if (ooRexxTokenType.getTokenName().equals("STRING_LITERAL")
                     || ooRexxTokenType.getTokenName().equals("EMPTY_STRING_LITERAL")
                     || ooRexxTokenType.getTokenName().equals("BYTE_STRING_LITERAL")
                     || ooRexxTokenType.getTokenName().equals("HEX_STRING_LITERAL")
-                    )
+            ) {
                 return STRING_KEYS;
+            }
 
-            if(ooRexxTokenType.getTokenName().equals("INTEGER_LITERAL") | ooRexxTokenType.getTokenName().equals("FLOAT_LITERAL"))
+            if (ooRexxTokenType.getTokenName().equals("INTEGER_LITERAL") | ooRexxTokenType.getTokenName().equals("FLOAT_LITERAL")) {
                 return NUMBER_KEYS;
+            }
 
-            if(ooRexxTokenType.getTokenName().equals("EOL_COMMENT")) {
+            if (ooRexxTokenType.getTokenName().equals("EOL_COMMENT")) {
                 return LINE_COMMENT_KEYS;
             }
 
-            if(ooRexxTokenType.getTokenName().equals(".NIL") | ooRexxTokenType.getTokenName().equals(".TRUE") | ooRexxTokenType.getTokenName().equals(".FALSE")){
+            if (ooRexxTokenType.getTokenName().equals(".NIL") | ooRexxTokenType.getTokenName().equals(".TRUE") | ooRexxTokenType.getTokenName().equals(".FALSE")) {
                 return BOOL_NIL_KEYS;
             }
 
-            if(ooRexxTokenType.getTokenName().equals("SELF") || ooRexxTokenType.getTokenName().equals("SUPER"))
+            if (ooRexxTokenType.getTokenName().equals("SELF") || ooRexxTokenType.getTokenName().equals("SUPER")) {
                 return SELF_KEYS;
+            }
 
-            if(ooRexxTokenType.getTokenName().equals("BLOCK_COMMENT") ||
+            if (ooRexxTokenType.getTokenName().equals("BLOCK_COMMENT") ||
                     ooRexxTokenType.getTokenName().equals("DOC_COMMENT")
-                    ) {
+            ) {
                 return BLOCK_COMMENT_KEYS;
             }
 
-            if(ooRexxTokenType.getTokenName().equals("SHEBANG_LINE")){
+            if (ooRexxTokenType.getTokenName().equals("SHEBANG_LINE")) {
                 return SHEBANG_LINE_KEYS;
             }
         }

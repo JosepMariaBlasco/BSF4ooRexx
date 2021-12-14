@@ -16,7 +16,7 @@ public class RunConfigurationFactory extends ConfigurationFactory {
 
     @Override
     public RunConfiguration createTemplateConfiguration(Project project) {
-        return new RunConfiguration(project, this, "OoRexx");
+        return new RunConfiguration(project, this, "ooRexx");
     }
 
     @Override

@@ -1,26 +1,48 @@
 package org.oorexx.doc.analyse;
 
-import org.oorexx.doc.analyse.model.*;
-import org.oorexx.doc.analyse.model.reference.ClassReference;
-import org.oorexx.doc.generate.Settings;
-import org.oorexx.ide.lang.psi.*;
-
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.oorexx.doc.analyse.model.AccessModifier;
+import org.oorexx.doc.analyse.model.OoRexxAnnotation;
+import org.oorexx.doc.analyse.model.OoRexxAttribute;
+import org.oorexx.doc.analyse.model.OoRexxClass;
+import org.oorexx.doc.analyse.model.OoRexxConstant;
+import org.oorexx.doc.analyse.model.OoRexxMethod;
+import org.oorexx.doc.analyse.model.OoRexxNamedElement;
+import org.oorexx.doc.analyse.model.OoRexxPackage;
+import org.oorexx.doc.analyse.model.reference.ClassReference;
+import org.oorexx.doc.generate.Settings;
+import org.oorexx.ide.lang.psi.OoRexxDirectiveAccessPrivate;
+import org.oorexx.ide.lang.psi.OoRexxDirectiveAccessPublic;
+import org.oorexx.ide.lang.psi.OoRexxDirectiveAnnotate;
+import org.oorexx.ide.lang.psi.OoRexxDirectiveAttribute;
+import org.oorexx.ide.lang.psi.OoRexxDirectiveClass;
+import org.oorexx.ide.lang.psi.OoRexxDirectiveClassAbstract;
+import org.oorexx.ide.lang.psi.OoRexxDirectiveClassAccess;
+import org.oorexx.ide.lang.psi.OoRexxDirectiveClassInheritName;
+import org.oorexx.ide.lang.psi.OoRexxDirectiveClassMetaclassName;
+import org.oorexx.ide.lang.psi.OoRexxDirectiveClassMixinclassName;
+import org.oorexx.ide.lang.psi.OoRexxDirectiveClassName;
+import org.oorexx.ide.lang.psi.OoRexxDirectiveClassSubclassName;
+import org.oorexx.ide.lang.psi.OoRexxDirectiveConstant;
+import org.oorexx.ide.lang.psi.OoRexxDirectiveMethod;
+
 import static com.intellij.psi.util.PsiTreeUtil.findChildOfType;
 import static com.intellij.psi.util.PsiTreeUtil.findChildrenOfType;
+import static org.oorexx.doc.analyse.model.OoRexxMethod.METHOD_COMPARATOR;
 
-public class ClassAnalyzer extends Analyzer{
+public class ClassAnalyzer extends Analyzer {
 
-    private MethodAnalyzer methodAnalyzer;
-    private ConstantAnalyzer constantAnalyzer;
+    private final MethodAnalyzer methodAnalyzer;
+    private final ConstantAnalyzer constantAnalyzer;
+    private final AttributeAnalyzer attributeAnalyzer;
+    private final AnnotationAnalyzer annotationAnalyzer;
     private OoRexxDirectiveClass directiveClass;
-    private AttributeAnalyzer attributeAnalyzer;
-    private AnnotationAnalyzer annotationAnalyzer;
 
     public ClassAnalyzer(Settings settings, CommentContext commentContext) {
         super(settings, commentContext);
@@ -49,7 +71,7 @@ public class ClassAnalyzer extends Analyzer{
 
         AccessModifier accessModifier = getAccessModifier();
 
-        if(accessModifier != null){
+        if (accessModifier != null) {
             ooRexxClass.setAccessModifier(accessModifier);
         }
 
@@ -69,7 +91,7 @@ public class ClassAnalyzer extends Analyzer{
 
         annotations.forEach(ooRexxAnnotation -> {
             Optional<OoRexxNamedElement> any = allAnnotateableElements.stream().filter(ooRexxAnnotation::appliesTo).findAny();
-            if(any.isPresent()){
+            if (any.isPresent()) {
                 OoRexxNamedElement ooRexxNamedElement = any.get();
                 ooRexxNamedElement.getAnnotations().add(ooRexxAnnotation);
             }
@@ -78,25 +100,27 @@ public class ClassAnalyzer extends Analyzer{
         return ooRexxClass;
     }
 
-    private List<OoRexxAnnotation> analyzeAnnotations(OoRexxPackage ooRexxPackage,Collection<OoRexxDirectiveAnnotate> annotates) {
+    private List<OoRexxAnnotation> analyzeAnnotations(OoRexxPackage ooRexxPackage, Collection<OoRexxDirectiveAnnotate> annotates) {
         return annotates.stream().map(directive -> annotationAnalyzer.analyze(ooRexxPackage, directive)).collect(Collectors.toList());
     }
 
     private List<OoRexxAttribute> analyzeAttributes(Collection<OoRexxDirectiveAttribute> attributes) {
         return attributes.stream()
-                .filter(filterByDirectiveAccess(OoRexxDirectiveAccessPublic.class))
-                .map(directive -> attributeAnalyzer.analyze(directive))
-                .collect(Collectors.toList());
+                         .filter(filterByDirectiveAccess(OoRexxDirectiveAccessPublic.class))
+                         .map(attributeAnalyzer::analyze)
+                         .sorted(Comparator.comparing(o -> o.getSanitizedName().toLowerCase()))
+                         .collect(Collectors.toList());
     }
 
-    private List<OoRexxConstant> getConstants(){
+    private List<OoRexxConstant> getConstants() {
         return findChildrenOfType(directiveClass, OoRexxDirectiveConstant.class)
                 .stream()
-                .map(directive -> constantAnalyzer.analyze(directive))
+                .map(constantAnalyzer::analyze)
+                .sorted(Comparator.comparing(o -> o.getSanitizedName().toLowerCase()))
                 .collect(Collectors.toList());
     }
 
-    private ClassReference getMetaClass(){
+    private ClassReference getMetaClass() {
         String name = getText(directiveClass, OoRexxDirectiveClassMetaclassName.class);
         return createClassReference(name);
     }
@@ -106,26 +130,27 @@ public class ClassAnalyzer extends Analyzer{
         return createClassReference(name);
     }
 
-    private List<ClassReference> getMixinClasses(){
+    private List<ClassReference> getMixinClasses() {
         Collection<OoRexxDirectiveClassMixinclassName> mixins = findChildrenOfType(directiveClass, OoRexxDirectiveClassMixinclassName.class);
         return mixins.stream()
-                .map(name -> name.getText() == null ? null : new ClassReference(name.getText()))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                     .map(name -> name.getText() == null ? null : new ClassReference(name.getText()))
+                     .filter(Objects::nonNull)
+                     .collect(Collectors.toList());
     }
 
     private List<OoRexxMethod> analyzeMethods(Collection<OoRexxDirectiveMethod> directiveMethods) {
         return directiveMethods.stream()
-                .filter(filterByDirectiveAccess(OoRexxDirectiveAccessPublic.class))
-                .map(method -> methodAnalyzer.analyze(method))
-                .collect(Collectors.toList());
+                               .filter(filterByDirectiveAccess(OoRexxDirectiveAccessPublic.class))
+                               .map(methodAnalyzer::analyze)
+                               .sorted(METHOD_COMPARATOR)
+                               .collect(Collectors.toList());
     }
 
     private List<ClassReference> getInheritClasses() {
         Collection<OoRexxDirectiveClassInheritName> inherit = findChildrenOfType(directiveClass, OoRexxDirectiveClassInheritName.class);
         return inherit.stream().map(name -> name.getText() == null ? null : new ClassReference(name.getText()))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                      .filter(Objects::nonNull)
+                      .collect(Collectors.toList());
     }
 
     private boolean isAbstract() {
@@ -133,24 +158,24 @@ public class ClassAnalyzer extends Analyzer{
         return name != null;
     }
 
-    private AccessModifier getAccessModifier(){
+    private AccessModifier getAccessModifier() {
         OoRexxDirectiveClassAccess access = findChildOfType(directiveClass, OoRexxDirectiveClassAccess.class);
         OoRexxDirectiveAccessPublic publicAccess = findChildOfType(access, OoRexxDirectiveAccessPublic.class);
 
-        if(publicAccess != null){
+        if (publicAccess != null) {
             return AccessModifier.PUBLIC;
         }
 
         OoRexxDirectiveAccessPrivate privateAccess = findChildOfType(access, OoRexxDirectiveAccessPrivate.class);
 
-        if(privateAccess != null){
+        if (privateAccess != null) {
             return AccessModifier.PRIVATE;
         }
 
         return null;
     }
 
-    private ClassReference createClassReference(String name){
+    private ClassReference createClassReference(String name) {
         return name != null ? new ClassReference(name) : null;
     }
 }
