@@ -12,7 +12,7 @@ public class ExecutorParserUtil {
             return OoRexxParser.method_named_argument(b, l);
         }
 
-        return true;
+        return false;
     }
 
     public static boolean parseUseKeywordHook(PsiBuilder b, int l) {
@@ -20,7 +20,16 @@ public class ExecutorParserUtil {
             return OoRexxParser.keyword_use_named(b, l);
         }
 
-        return true;
+        return false;
     }
+
+    public static boolean parseBlockHook(PsiBuilder b, int l) {
+        if (active) {
+            return OoRexxParser.block(b, l);
+        }
+
+        return false;
+    }
+
 
 }

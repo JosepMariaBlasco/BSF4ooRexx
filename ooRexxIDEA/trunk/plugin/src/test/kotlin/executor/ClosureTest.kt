@@ -2,9 +2,26 @@ package executor
 
 import TestUtils.Companion.assertNoPsiError
 import TestUtils.Companion.getPsiFile
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.oorexx.ide.util.ExecutorParserUtil
 
 class ClosureTest {
+
+    companion object {
+        @BeforeAll
+        @JvmStatic
+        fun setup() {
+            ExecutorParserUtil.active = true
+        }
+
+        @AfterAll
+        @JvmStatic
+        fun tearDown() {
+            ExecutorParserUtil.active = false
+        }
+    }
 
     @Test
     fun testExample1() {

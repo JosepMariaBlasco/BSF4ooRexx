@@ -335,6 +335,7 @@ package ::= shebang? (new_line | instruction)* (directive)*
 shebang ::= SHEBANG_LINE
 
 private meta paren ::= <<p>> | (LPAREN (<<paren  <<p>>>>| <<p>>) RPAREN)
+external block_hook ::= parseBlockHook
 
 environment_id ::= ENV_IDENTIFIER | ENV_ENVIRONMENT | ENV_LOCAL
 id ::= (SELF TILDE)? (namespace_prefix (new_line* !assignments_and_keywords))? (identifier | environment_id | keyword_list){
@@ -356,7 +357,7 @@ keyword_list ::= (ROUTINE) | (METHOD) | (STATE) | (COMMAND) | (OPEN) | (DELETE) 
 | (THEN) | (TO) | (UNTIL) | (UPPER) | (USER) | (VALUE) | (VAR) | (VERSION) | (WHEN) | (WHILE) | (WITH) | (ITEM) | (INDEX)
 | (INPUT) | (OUTPUT) | REPLACE | APPEND | WITH | STEM | STREAM | USING | LOCAL
 
-private assignments_and_keywords ::= ( (block !TILDE) | assignment |  <<excluding_expr keyword_list>> | (keyword_instruction) )
+private assignments_and_keywords ::= ( (block_hook !TILDE) | assignment |  <<excluding_expr keyword_list>> | (keyword_instruction) )
 instruction ::= (SEMICOLON | label_instruction | ((assignments_and_keywords | (!END keyword_list))  instruction_terminator))
 
 function_call ::= built_in_functions | (namespace_prefix? function_call_without_namespace)
@@ -400,7 +401,7 @@ message_term_tail ::= (message_term_tilde | message_term_brack)
 message_term_brack ::= (LBRACK (expr | COMMA)* RBRACK)
 message_term_tilde ::= (message_term_operator
                                (
-                                   ((symbol_or_string | number_lit)? block) |
+                                   ((symbol_or_string | number_lit)? block_hook) |
                                    (LPAREN (COMMA | (parameter_expr))* RPAREN) |
                                    ((symbol_or_string COLON)? function_call_without_namespace) |
                                    ((symbol_or_string) (COLON symbol_or_string)?)
@@ -409,7 +410,7 @@ message_term_tilde ::= (message_term_operator
 
                                )
                            )
-message_term_receiver ::= ((block &TILDE) | keyword_list | array_term_parenthized | lit | id | function_call)
+message_term_receiver ::= ((block_hook &TILDE) | keyword_list | array_term_parenthized | lit | id | function_call)
 message_term_operator ::= (TILDE TILDE) | TILDE
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -453,7 +454,7 @@ private meta factor ::= NEGATION? <<primary <<p>>>> <<mul_expr <<p>>>> *
 meta left mul_expr  ::= mul_op NEGATION? <<primary <<p>>>>
 private mul_op ::= (MUL MUL)|MUL|(DIV DIV)| DIV|INTDIV
 
-private meta primary ::=  ( message_term | block | literal_expr | <<ref_expr <<p>>>> | function_call  | paren_expr )
+private meta primary ::=  ( message_term | block_hook | literal_expr | <<ref_expr <<p>>>> | function_call  | paren_expr )
 
 meta paren_expr ::= MINUS? '(' expr ')' {pin=2}
 meta ref_expr ::= (namespace_prefix (new_line* !assignments_and_keywords))? MINUS? (function_call | identifier_expr | environment_id | (!<<p>> keyword_list) ) // ID
