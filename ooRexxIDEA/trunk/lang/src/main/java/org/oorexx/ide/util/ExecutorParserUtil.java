@@ -5,7 +5,7 @@ import org.oorexx.ide.parser.OoRexxParser;
 
 public class ExecutorParserUtil {
 
-    public static boolean active = true;
+    public static boolean active = false;
 
     public static boolean parseParameterHook(PsiBuilder b, int l) {
         if (active) {
