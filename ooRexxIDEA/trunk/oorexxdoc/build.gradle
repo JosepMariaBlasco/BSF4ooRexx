@@ -4,8 +4,8 @@ buildscript {
         google()
     }
     dependencies {
-        classpath('com.guardsquare:proguard-gradle:7.1.0')
-        classpath('com.android.tools.build:gradle:4.1.0') {
+        classpath('com.guardsquare:proguard-gradle:7.1.1')
+        classpath('com.android.tools.build:gradle:7.0.4') {
             exclude module: 'proguard-gradle'
         }
     }
@@ -69,28 +69,28 @@ task proguard(type: proguard.gradle.ProGuardTask) {
                 'META-INF/MANIFEST.MF,!META-INF/**,'
         '!vs/**,'
 
-        injars "${buildDir}/libs/oorexxdoc.jar"
-        injars "${intelliJCommunityEditionLibPath}/platform-api.jar", filter: customFilter
-        injars "${intelliJCommunityEditionLibPath}/platform-impl.jar", filter: customFilter
-        injars "${intelliJCommunityEditionLibPath}/extensions.jar", filter: customFilter
-        injars "${intelliJCommunityEditionLibPath}/util.jar", filter: customFilter
-        injars "${intelliJCommunityEditionLibPath}/intellij-deps-fastutil-8.4.1-4.jar", filter: customFilter
-        injars "${intelliJCommunityEditionLibPath}/trove4j.jar", filter: customFilter
-        injars "${intelliJCommunityEditionLibPath}/guava-29.0-jre.jar", filter: customFilter
-        injars "${intelliJCommunityEditionLibPath}/asm-all-9.0.jar", filter: customFilter
-        injars "${intelliJCommunityEditionLibPath}/resources_en.jar", filter: customFilter
-        injars "${ooRexxDocDependencyPath}/Grammar-Kit-f75d0d8.jar", filter: customFilter
-        injars "${ooRexxDocDependencyPath}/commons-text-1.9.jar", filter: customFilter
-        injars "${ooRexxDocDependencyPath}/commons-io-2.6.jar", filter: customFilter
-        injars "${ooRexxDocDependencyPath}/commons-lang3-3.11.jar", filter: customFilter
-        injars "${ooRexxDocDependencyPath}/freemarker-2.3.30.jar", filter: customFilter
-        injars "${ooRexxDocDependencyPath}/jackson-core-2.11.0.jar", filter: customFilter
-        injars "${ooRexxDocDependencyPath}/jcommander-1.69.jar", filter: customFilter
-
-        libraryjars "${java11Path}/jmods/"
-        libraryjars "${intelliJCommunityEditionLibPath}"
-        libraryjars "${ooRexxDocLibraryPath}/AppleJavaExtensions-1.4.jar"
-        libraryjars "${ooRexxDocLibraryPath}/javax.servlet.jsp-api-2.3.3.jar"
+        injars "${buildDir}/libs/oorexxdoc-2.0.5-GA.jar"
+//        injars "${intelliJCommunityEditionLibPath}/platform-api.jar", filter: customFilter
+//        injars "${intelliJCommunityEditionLibPath}/platform-impl.jar", filter: customFilter
+//        injars "${intelliJCommunityEditionLibPath}/extensions.jar", filter: customFilter
+//        injars "${intelliJCommunityEditionLibPath}/util.jar", filter: customFilter
+//        injars "${intelliJCommunityEditionLibPath}/intellij-deps-fastutil-8.4.1-4.jar", filter: customFilter
+//        injars "${intelliJCommunityEditionLibPath}/trove4j.jar", filter: customFilter
+//        injars "${intelliJCommunityEditionLibPath}/guava-29.0-jre.jar", filter: customFilter
+//        injars "${intelliJCommunityEditionLibPath}/asm-all-9.0.jar", filter: customFilter
+//        injars "${intelliJCommunityEditionLibPath}/resources_en.jar", filter: customFilter
+//        injars "${ooRexxDocDependencyPath}/Grammar-Kit-f75d0d8.jar", filter: customFilter
+//        injars "${ooRexxDocDependencyPath}/commons-text-1.9.jar", filter: customFilter
+//        injars "${ooRexxDocDependencyPath}/commons-io-2.6.jar", filter: customFilter
+//        injars "${ooRexxDocDependencyPath}/commons-lang3-3.11.jar", filter: customFilter
+//        injars "${ooRexxDocDependencyPath}/freemarker-2.3.30.jar", filter: customFilter
+//        injars "${ooRexxDocDependencyPath}/jackson-core-2.11.0.jar", filter: customFilter
+//        injars "${ooRexxDocDependencyPath}/jcommander-1.69.jar", filter: customFilter
+//
+//        libraryjars "${java11Path}/jmods/"
+//        libraryjars "${intelliJCommunityEditionLibPath}"
+//        libraryjars "${ooRexxDocLibraryPath}/AppleJavaExtensions-1.4.jar"
+//        libraryjars "${ooRexxDocLibraryPath}/javax.servlet.jsp-api-2.3.3.jar"
 
         outjars "${buildDir}/proguard/output.jar"
 
@@ -100,8 +100,30 @@ task proguard(type: proguard.gradle.ProGuardTask) {
 
 proguard.dependsOn(jar)
 
-task wrapper(type: Wrapper) { gradleVersion = "7.2" }
+task wrapper(type: Wrapper) { gradleVersion = "7.3.1" }
 
 task prepareKotlinBuildScriptModel {
 
+}
+
+jar {
+    manifest {
+        attributes "Main-Class": "org.oorexx.doc.Application"
+    }
+
+}
+
+task fatJar(type: Jar) {
+    manifest.from jar.manifest
+    classifier = 'all'
+    duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+    from {
+        // change here: runtimeClasspath instead of runtime
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    } {
+        exclude "META-INF/.SF"
+        exclude "META-INF/.DSA"
+        exclude "META-INF/*.RSA"
+    }
+    with jar
 }

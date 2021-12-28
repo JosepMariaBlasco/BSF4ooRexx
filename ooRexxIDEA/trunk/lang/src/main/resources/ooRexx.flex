@@ -188,6 +188,8 @@ DEC_LITERAL = [0-9] [0-9_]*
   "]"                             { return RBRACK; }
   "("                             { return LPAREN; }
   ")"                             { return RPAREN; }
+    "{"                             { return LCURLY; }
+    "}"                             { return RCURLY; }
 
   ":"                             { return COLON; }
   ";"                             { return SEMICOLON; }
@@ -224,6 +226,7 @@ DEC_LITERAL = [0-9] [0-9_]*
   {DIRECTIVE_START} "OPTIONS"   { return OPTIONS; }
   {DIRECTIVE_START} "REQUIRES"   { return REQUIRES; }
   {DIRECTIVE_START} "ROUTINE"   { return ROUTINE; }
+      {DIRECTIVE_START} "COACTIVITY"   { return COACTIVITY; }
 //  {DIRECTIVE_START} "RESOURCE"   { yybegin(IN_RESOURCE); yypushback(1);}
 
   "ABBREV" / "(" {return BIF_ABBREV;}

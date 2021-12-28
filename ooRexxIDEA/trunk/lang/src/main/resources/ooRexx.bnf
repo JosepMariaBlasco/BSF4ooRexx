@@ -12,7 +12,8 @@
   elementTypeClass="org.oorexx.ide.lang.OoRexxElementType"
   tokenTypeClass="org.oorexx.ide.lexer.token.OoRexxTokenType"
 
-  parserImports=["static org.oorexx.ide.util.ResourceDelimiterParser.*"]
+
+  parserImports=["static org.oorexx.ide.util.ResourceDelimiterParser.*" "static org.oorexx.ide.util.ExecutorParserUtil.*"]
 
 
     tokens = [
@@ -48,6 +49,7 @@
             CASE = 'CASE'
             CASELESS = 'CASELESS'
             CLASS = 'CLASS'
+            COACTIVITY = 'COACTIVITY'
             CONSTANT = 'CONSTANT'
             METHOD = 'METHOD'
             OPTIONS = 'OPTIONS'
@@ -222,6 +224,8 @@
             RPAREN = ')'
             LBRACK = '['
             RBRACK = ']'
+            LCURLY = '{'
+            RCURLY = '}'
             SEMICOLON = ';'
             SUPER = 'SUPER'
             STATE = 'STATE'
@@ -339,7 +343,7 @@ id ::= (SELF TILDE)? (namespace_prefix (new_line* !assignments_and_keywords))? (
 
                                                                                                                            }
 keyword_list ::= (ROUTINE) | (METHOD) | (STATE) | (COMMAND) | (OPEN) | (DELETE) | (EXIST) | (CREATE) | (CASE) | (COUNT) | (COUNTER)
-| (SUPER) | (PACKAGE) | (ABSTRACT) | (ANNOTATE) | (ATTRIBUTE) | (CLASS) | (CONDITION) | (DIGITS) | (EXTERNAL) | (FORM)
+| (SUPER) | (PACKAGE) | (ABSTRACT) | (ANNOTATE) | (ATTRIBUTE) | (CLASS) | (COACTIVITY) | (CONDITION) | (DIGITS) | (EXTERNAL) | (FORM)
 | (FUZZ) | (GET) | (GUARDED) | (INHERIT) | (LIBRARY) | (METACLASS) | (MIXINCLASS) | (NAMESPACE) | (NOPROLOG) | (PRIVATE)
 | (PROLOG) | (PROTECTED) | (PUBLIC) | (RESOURCE) | (RESOURCE_DATA) | (SET) | (SUBCLASS) | (TRACE) | (UNGUARDED) | (UNPROTECTED)
 | (ADDRESS) | (ARG) | (CALL) | (DO) | (DROP) | (EXIT) | (EXPOSE) | (FORWARD) | (GUARD) | (IF) | (INTERPRET) | (ITERATE)
@@ -352,12 +356,12 @@ keyword_list ::= (ROUTINE) | (METHOD) | (STATE) | (COMMAND) | (OPEN) | (DELETE) 
 | (THEN) | (TO) | (UNTIL) | (UPPER) | (USER) | (VALUE) | (VAR) | (VERSION) | (WHEN) | (WHILE) | (WITH) | (ITEM) | (INDEX)
 | (INPUT) | (OUTPUT) | REPLACE | APPEND | WITH | STEM | STREAM | USING | LOCAL
 
-private assignments_and_keywords ::= ( assignment |  <<excluding_expr keyword_list>> | (keyword_instruction) )
+private assignments_and_keywords ::= ( (block !TILDE) | assignment |  <<excluding_expr keyword_list>> | (keyword_instruction) )
 instruction ::= (SEMICOLON | label_instruction | ((assignments_and_keywords | (!END keyword_list))  instruction_terminator))
 
 function_call ::= built_in_functions | (namespace_prefix? function_call_without_namespace)
-private function_call_without_namespace ::= ((FUNC_IDENTIFIER | built_in_functions_keyword_list) LPAREN (COMMA | (parameter_expr))* RPAREN){pin = 2}
-
+private function_call_without_namespace ::= ((FUNC_IDENTIFIER | built_in_functions_keyword_list) LPAREN (supplier | (COMMA | (parameter_expr))*) RPAREN){pin = 2}
+supplier ::= expr TILDE expr
 template_list ::= ( (expr (COMMA expr)*)+ | COMMA | DOT | ( (EQ | MINUS | PLUS) <<paren expr>>))+
 
 namespace_prefix ::= (identifier | keyword_list) COLON
@@ -396,10 +400,16 @@ message_term_tail ::= (message_term_tilde | message_term_brack)
 message_term_brack ::= (LBRACK (expr | COMMA)* RBRACK)
 message_term_tilde ::= (message_term_operator
                                (
-                                   ((symbol_or_string COLON)? function_call_without_namespace) | ((symbol_or_string) (COLON symbol_or_string)?)
+                                   ((symbol_or_string | number_lit)? block) |
+                                   (LPAREN (COMMA | (parameter_expr))* RPAREN) |
+                                   ((symbol_or_string COLON)? function_call_without_namespace) |
+                                   ((symbol_or_string) (COLON symbol_or_string)?)
+
+
+
                                )
                            )
-message_term_receiver ::= (keyword_list | array_term_parenthized | lit | id | function_call)
+message_term_receiver ::= ((block &TILDE) | keyword_list | array_term_parenthized | lit | id | function_call)
 message_term_operator ::= (TILDE TILDE) | TILDE
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -413,7 +423,7 @@ array_term_parenthized ::= LPAREN array_term RPAREN
 // Assignment
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-assignment ::= (message_term | id) extended_assignment expr{pin = 2}
+assignment ::= (message_term | id) extended_assignment (expr){pin = 2}
 
 extended_assignment ::= EQ  | ( (PLUS | MINUS | (MUL MUL) | MUL | (DIV DIV) | DIV | INTDIV | (PIPE PIPE) | PIPE | (AND AND) | AND) EQ)
 
@@ -430,9 +440,10 @@ variable_reference_operator ::= "<" | ">"
 meta excluding_expr ::=  <<meta_expr (<<p>>)>> | (LPAREN (expr) RPAREN !<<p>>)
 parameter_expr ::= DOT | <<parameter_meta_expr DUMMYOBJECT>>
 expr ::= <<meta_expr DUMMYOBJECT>>
-private meta parameter_meta_expr ::= !COMMA (<<expr_raw <<p>>>> (((PIPE PIPE))? !COMMA <<meta_expr <<p>>>>)*)
-private meta meta_expr ::= COMMA? (<<expr_raw <<p>>>> ((COMMA |(PIPE PIPE))? <<meta_expr <<p>>>>)*)
-private meta expr_raw ::= NEGATION? <<summand <<p>>>> message_term_tail* <<bool_expr <<p>>>> *
+external parameter_before_hook ::= parseParameterHook
+private meta parameter_meta_expr ::= !COMMA ( parameter_before_hook? <<expr_raw <<p>>>> (((PIPE PIPE))? !COMMA <<meta_expr <<p>>>>)*)
+private meta meta_expr ::= COMMA? (parameter_before_hook? <<expr_raw <<p>>>> ((COMMA |(PIPE PIPE))? <<meta_expr <<p>>>>)*)
+private meta expr_raw ::= NEGATION? <<summand <<p>>>> (message_term_tail*) <<bool_expr <<p>>>> *
 meta left bool_expr ::= comparator <<meta_expr <<p>>>>
 private meta summand ::= <<factor <<p>>>> <<plus_expr <<p>>>>*
 meta left plus_expr ::= plus_op <<factor <<p>>>>
@@ -442,7 +453,7 @@ private meta factor ::= NEGATION? <<primary <<p>>>> <<mul_expr <<p>>>> *
 meta left mul_expr  ::= mul_op NEGATION? <<primary <<p>>>>
 private mul_op ::= (MUL MUL)|MUL|(DIV DIV)| DIV|INTDIV
 
-private meta primary ::=  (  message_term | literal_expr | <<ref_expr <<p>>>> | function_call  | paren_expr )
+private meta primary ::=  ( message_term | block | literal_expr | <<ref_expr <<p>>>> | function_call  | paren_expr )
 
 meta paren_expr ::= MINUS? '(' expr ')' {pin=2}
 meta ref_expr ::= (namespace_prefix (new_line* !assignments_and_keywords))? MINUS? (function_call | identifier_expr | environment_id | (!<<p>> keyword_list) ) // ID
@@ -608,7 +619,7 @@ keyword_instruction ::= (keyword_address | keyword_arg | keyword_call_variants |
 
 private keyword_instruction_recovery ::= !instruction_terminator
 
-instruction_terminator ::= (EOL+ | (SEMICOLON+ new_line*) | <<eof>>)
+instruction_terminator ::= (EOL+ | (SEMICOLON+ new_line*) | <<eof>> | (&RCURLY))
 
 private comma_separated_expr ::= (expr (COMMA+ expr)*)
 private comma_separated_expr_with_references ::= (variable_reference_operator? expr (COMMA+ variable_reference_operator? expr)*)
@@ -871,9 +882,9 @@ keyword_trace_keyword_part ::= "?"* (NORMAL|ALL|COMMANDS|ERROR|FAILURE|INTERMEDI
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Use
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-
+external keyword_use_keyword_hook ::= parseUseKeywordHook
 keyword_use_variants ::= USE (keyword_use | keyword_use_local){pin = 1}
-keyword_use ::= STRICT? ARG keyword_use_template_list
+keyword_use ::= STRICT? keyword_use_keyword_hook? ARG keyword_use_template_list
 keyword_use_template_list ::= (COMMA | (assignment | <<excluding_expr ",">>) )*
 keyword_use_local ::= LOCAL id*
 
@@ -977,3 +988,14 @@ built_in_x2b ::= BIF_X2B LPAREN parameter_expr RPAREN
 built_in_x2c ::= BIF_X2C LPAREN parameter_expr RPAREN
 built_in_x2d ::= BIF_X2D LPAREN parameter_expr (COMMA parameter_expr)? RPAREN
 built_in_xrange ::= BIF_XRANGE LPAREN parameter_expr (COMMA parameter_expr)? RPAREN
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Executor Add Ons
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+method_named_argument ::= &(identifier | keyword_list) ((identifier | keyword_list) COLON)
+keyword_use_named ::= "AUTO"? "NAMED"?
+
+block ::= LCURLY (directive_start directive_coactivity)? (new_line | instruction)* (directive)* RCURLY
+directive_coactivity ::= COACTIVITY (new_line | instruction)* END
