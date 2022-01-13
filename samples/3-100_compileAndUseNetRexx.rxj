@@ -1,0 +1,76 @@
+#!/usr/bin/env rexx
+/*
+   name:    3-100_compileAndUseNetRexx.rxj
+
+   purpose: Demonstrate how to compile and use a NetRexx program embedded as resource
+            in this ooRexx program, cf. http://www.netrexx.org or https://www.rexxla.org;
+            the NetRexx program does an abmysal amount of array processing (a pure
+            interpreter cannot possibly match performance of a compiled program in this
+            case) which is fast if compiled and executed by Java; ooRexx in this case
+            hosts the NetRexx program and instrumentates it.
+            This demonstrates how easy it is to create external compiled classes/functionality
+            from ooRexx and directly use it.
+
+   invoke:  "rexx 3-100_compileAndUseNetRexx.rxj"
+            ... Rexx script will demonstrate compiling and using an embedded NetRexx program
+
+            "rexxj2 3-100_compileAndUseNetRexx.rxj"      (Windows)
+            "rexxj2.sh 2-110_compileAndUseNetRexx.rxj"   (Unix)
+            ... Java will load Rexx and execute the Rexx script that compiles and uses
+                embedded NetRexx program
+
+   needs:   NetRexx on class or module path and at least Java 8
+
+   author:  Rony G. Flatscher
+
+   Date:    2022-01-13
+
+   Purpose: compiles a NetRexx program and runs it
+
+   license: AL 2.0, at the end of this program
+*/
+
+/* A compiled NetRexx program has a static main method that expects an
+   array of type String (representing supplied command line arguments).
+*/
+d1=.dateTime~new
+clzNrx=bsf.compile("squares", .resources~squares.nrx, "NetRexx")
+d2=.dateTime~new
+clzNrx~main(.nil)          -- run the NetRexx program
+d3=.dateTime~new
+say "compiling NetRexx program:" d2-d1
+say "running NetRexx program  :" d3-d2
+
+::RESOURCE squares.nrx     -- NetRexx source code
+    /* NetRexx: squares.nrx  */
+    options binary    /* in this case we want speed */
+    items = 10000000
+    s = long[items]   /* define a Java array of type long       */
+    loop i=1 to items
+       n=long i       /* for multiplication we want to use long */
+       s[i-1] = n * n
+    end
+    /* use a Java stream (introduced with Java 8) 	*/
+    say java.util.Arrays.stream(s).max.getAsLong
+::END
+
+::requires BSF.CLS      -- get Java support
+
+/*
+   license:
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2022 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/

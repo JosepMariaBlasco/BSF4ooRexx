@@ -1,3 +1,22 @@
+
+-------------------------------------- 2022-01-13 ----------------------------------
+
+- BSF.CLS
+
+        - add ability to compile NetRexx programs to routine bsf.compile()
+
+- added new samples
+
+        - samples/1-090_formattingDateDecimal.rxj ... localized formatting
+
+        - samples/1-100_setGetClibboard.rxj       ... using system clipboard
+
+        - samples/2-110_compileAndUseNetRexx.rxj  ... compile and use NetRexx program
+
+        - samples/3-100_compileAndUseNetRexx.rxj  ... compile and use NetRexx program
+
+        - samples/3-110_compileAndUseNetRexx.rxj  ... compile and use NetRexx class
+
 -------------------------------------- 2021-11-16 ----------------------------------
 
 - install/setupBSF.rex

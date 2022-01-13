@@ -1,0 +1,128 @@
+#!/usr/bin/env rexx
+/*
+   name:    3-110_compileAndUseNetRexx.rxj
+
+   purpose: Demonstrate how to compile and use a NetRexx program embedded as resource
+            in this ooRexx program, cf. http://www.netrexx.org or https://www.rexxla.org;
+            the NetRexx program does an abmysal amount of array processing (a pure
+            interpreter cannot possibly match performance of a compiled program in this
+            case) which is fast if compiled and executed by Java; ooRexx in this case
+            hosts the NetRexx program and instrumentates it.
+            This demonstrates how easy it is to create external compiled classes/functionality
+            from ooRexx and directly use it.
+
+   invoke:  "rexx 3-110_compileAndUseNetRexx.rxj"
+            ... Rexx script will demonstrate compiling and using an embedded NetRexx program
+
+            "rexxj2 3-110_compileAndUseNetRexx.rxj"      (Windows)
+            "rexxj2.sh 2-110_compileAndUseNetRexx.rxj"   (Unix)
+            ... Java will load Rexx and execute the Rexx script that compiles and uses
+                embedded NetRexx program
+
+   needs:   NetRexx on class or module path and at least Java 8
+
+   author:  Rony G. Flatscher
+
+   Date:    2022-01-13
+
+   Purpose: compiles a NetRexx program and runs it
+
+   license: AL 2.0, at the end of this program
+*/
+
+/* A compiled NetRexx program has a static main method that expects an
+   array of type String (representing supplied command line arguments).
+*/
+d1=.dateTime~new
+clzNrx=bsf.compile("squares_class", .resources~squares_class.nrx, "NetRexx")
+d2=.dateTime~new
+clzNrx~main(.nil)          -- run the NetRexx program
+d3=.dateTime~new
+say "compiling NetRexx program:" d2-d1
+say "running NetRexx program  :" d3-d2
+say "---"
+
+/* now using the NetRexx class to do the same as its main method */
+say
+items = 10000000
+clzArrays=bsf.loadClass("java.util.Arrays")
+t1=.dateTime~new
+say "ooRexx: let NetRexx/Java create the array for" pp(items) "items ..."
+s=clzNrx~createArray(items)
+t2=.dateTime~new
+
+say "ooRexx: received Java long array" pp(s)", getting a stream and asking it for its maximum:"
+t3=.dateTime~new
+say clzArrays~stream(s)~max~getAsLong
+t4=.dateTime~new
+say "duration of creating array                 :" t2-t1
+say "duration of creating stream and getting max:" t3-t2
+say "---"
+
+/* now employing all long stream functions         */
+say
+messages=("average","count","findFirst","max","min","sum","summaryStatistics")
+w=27     /* width for numbers */
+say "getting infos by sending ooRexx messages dynamically:" messages~toString(,', ')
+s01=.dateTime~new                -- get time
+loop msg over messages
+   s1=.dateTime~new              -- get time
+   val=clzArrays~stream(s)~send(msg)
+   s2=.dateTime~new              -- get time
+   if val~isA(.bsf) then
+   do
+      objectName=val~objectName     /* get objectName=beanName    */
+      select
+         when objectName~startsWith("java.util.OptionalLong")   then val=val~asLong   ~right(w)
+         when objectName~startsWith("java.util.OptionalDouble") then val=val~asDouble ~right(w)
+         otherwise val=val~toString
+      end
+   end
+   else val=val~right(w)
+   say "   " msg~left(20,'.')":" val "duration:" s2-s1
+end
+s02=.dateTime~new                -- get time
+say
+say "totalDuration:" s02-s01
+
+::RESOURCE squares_class.nrx     -- NetRexx source code
+    /* NetRexx: squares_class.nrx  */
+    options binary    /* in this case we want speed */
+    class squares_class
+
+    method main(arg=String[]) static
+      items = 10000000
+      s = createArray(items)
+      /* use a Java stream (introduced with Java 8) 	*/
+      say java.util.Arrays.stream(s).max.getAsLong
+
+    method createArray(items) static returns long[]
+      s = long[items]   /* define a Java array of type long       */
+      loop i=1 to items
+         n=long i       /* for multiplication we want to use long */
+         s[i-1] = n * n
+      end
+      return s          /* return array                           */
+::END
+
+::requires BSF.CLS      -- get Java support
+
+
+/*
+   license:
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2022 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/

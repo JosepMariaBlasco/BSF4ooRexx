@@ -54,10 +54,12 @@ o~main(args)                           -- invoke the class method "main"
 
 ::requires "BSF.CLS" -- get Java support
 
-   -- source of a Java program, defining the class "rony.Oha" with three methods
-   -- - the static method "main" and
-   -- - the static method "oha" and
-   -- - the instance method "myInfo"
+   /* source of a Java program, defining the class "rony.Oha" with three methods:
+
+      - the static method "main" and
+      - the static method "oha" and
+      - the instance method "myInfo"
+   */
 ::RESOURCE Oha.java  -- Java source code, defining a class "rony.Oha"
 
    package rony;

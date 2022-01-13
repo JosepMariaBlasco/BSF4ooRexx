@@ -1,0 +1,61 @@
+#!/usr/bin/env rexx
+/*
+   name:    1-100_setGetClibboard.rxj
+   invoke:  "rexx 1-100_setGetClibboard.rxj"
+            ... Rexx script to demonstrate exchanging strings via the clipboard
+
+            "rexxj2 1-100_setGetClibboard.rxj"      (Windows)
+            "rexxj2.sh 1-100_setGetClibboard.rxj"   (Unix)
+             ... Java will load Rexx and execute the Rexx script, which uses Java classes
+
+   purpose: this program demonstrates how to set and get strings using the clipboard
+            for e.g. "javadoc java.awt.Toolkit" or "javadoc Clipboard" and the like
+
+   date:    2022-01-13
+
+   changed: --
+
+   author:  Rony G. Flatscher
+
+   last change: $Revision: $ $Author: $ $Date: $
+
+   license(s): see end of this file
+*/
+
+   /* get the system clipboard                              */
+clipboard=bsf.loadClass("java.awt.Toolkit")~getDefaultToolkit~getSystemClipboard
+say "system's clipboard:" pp(clipboard)
+
+   /* setting the system clipboard to a string              */
+say "setting system's clipboard to .bsf4rexx~display.version ..."
+s=.bsf4rexx~display.version "queried at" pp(.dateTime~new)
+transferable=.bsf~new("java.awt.datatransfer.StringSelection", s)
+clipboard~setContents(transferable, .nil)
+
+   /* getting the system clipboard's current string value   */
+say "getting current system's clipboard string value:"
+stringFlavor=bsf.loadClass("java.awt.datatransfer.DataFlavor")~stringFlavor
+say clipboard~getData(stringFlavor)
+
+::requires BSF.CLS
+
+
+/*
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2022 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/

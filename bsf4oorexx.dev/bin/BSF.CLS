@@ -19,6 +19,7 @@
           .BSF in .environment;
 
    date:
+         2022-01-13, ---rgf, - add ability to compile NetRexx programs to routine bsf.compile()
          2021-08-29, ---rgf, - add System's "os.arch" property in quotes to the Java chunk in
                                "display.version" entry
 
@@ -893,7 +894,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="641.20211118" -- set version (date distribution got created)
+      .bsf4rexx~version="641.20220113" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -6006,21 +6007,36 @@ syntax:
 
 
 /* ================================================================================================= */
-/* rgf, 2018-03-05 */
+/* rgf, 2018-03-05, 2022-01-13 */
 
 /** Routine that compiles a Java source file and returns the class object.
 
    @param className  the fully qualified class name (package plus class name in source)
    @param code       a mandatory string or array of strings representing the Java or NetRexx source code of a class
+   @param language   optional, defaults to &quot;Java&quot;, alternatively can be &quot;NetRexx&quot;
    @return           the compiled Java class object
 */
 
--- TODO: support NetRexx compilations
 ::routine bsf.compile   public
-   use strict arg className, code
+   use strict arg className, code, language="Java"
 
    signal on syntax
    if code~isA(.array) then code=code~toString  -- turn string array into a string
+
+   if language~left(1)~upper="N" then     -- NetRexx compilation!
+   do
+      signal on syntax name nrxSyntax
+      nrc=bsf.loadClass("org.netrexx.process.NetRexxC")
+      al=.bsf~new("java.util.ArrayList")
+      res=nrc~main(className "-noverbose",code,.nil,al)
+      if res<>0 then
+      do
+         errMsg = "BSF.CLS/routine/bsf.compile(), hint: NetRexx compiler indicates problem, return value was:" res
+         raise syntax 40.900 array (errMsg)
+      end
+      newClass=al~get(0)~findClass(className)
+      return newClass
+   end
 
    sc=.bsf~new("org.codehaus.janino.SimpleCompiler")
    clzLdr=.bsf~bsf.loadClass("java.lang.Thread")~currentThread~getContextClassLoader
@@ -6034,6 +6050,9 @@ syntax:
    newClass=sc~getClassLoader~loadClass(className)
    newClass=.bsf~bsf.import(className, .nil, newClass)   -- do not place it into the environment
    return newClass
+
+nrxSyntax:
+   raise propagate
 
 syntax:
    extractedName=extractJavaClassName(code)     -- extract Java class name from source code
