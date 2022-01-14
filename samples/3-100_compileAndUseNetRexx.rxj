@@ -31,30 +31,30 @@
 */
 
 /* A compiled NetRexx program has a static main method that expects an
-   array of type String (representing supplied command line arguments).
-*/
+   array of type String (representing supplied command line arguments). */
+say "ooRexx: use embedded NetRexx program: fetch, compile & run it ..."
 d1=.dateTime~new
 clzNrx=bsf.compile("squares", .resources~squares.nrx, "NetRexx")
 d2=.dateTime~new
-clzNrx~main(.nil)          -- run the NetRexx program
+clzNrx~main(.nil)          /* run the NetRexx program           */
 d3=.dateTime~new
 say "compiling NetRexx program:" d2-d1
 say "running NetRexx program  :" d3-d2
 
-::RESOURCE squares.nrx     -- NetRexx source code
-    /* NetRexx: squares.nrx  */
-    options binary    /* in this case we want speed */
+::RESOURCE squares.nrx     /* NetRexx source code               */
+    /* NetRexx: squares.nrx                                     */
+    options binary    /* in this case we want speed             */
     items = 10000000
     s = long[items]   /* define a Java array of type long       */
     loop i=1 to items
        n=long i       /* for multiplication we want to use long */
        s[i-1] = n * n
     end
-    /* use a Java stream (introduced with Java 8) 	*/
-    say java.util.Arrays.stream(s).max.getAsLong
+    /* use java.util.Arrays' stream(.) (introduced with Java 8) */
+    say Arrays.stream(s).max.getAsLong
 ::END
 
-::requires BSF.CLS      -- get Java support
+::requires BSF.CLS      /* get full bidirectional Java support  */
 
 /*
    license:

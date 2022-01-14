@@ -30,8 +30,7 @@ say "ooRexx: parse source  s:" pp(s)
 say "---"
 
 /* A compiled NetRexx program has a static main method that expects an
-   array of type String (representing supplied command line arguments).
-*/
+   array of type String (representing supplied command line arguments). */
 clzNrx=bsf.compile("SomeClassName", .resources~helloWorld.nrx, "NetRexx")
 clzNrx~main(.nil)          -- run the NetRexx program
 
@@ -43,7 +42,7 @@ clzNrx~main(.nil)          -- run the NetRexx program
    say "NetRexx: parse source  s:" '['s']'
 ::END
 
-::requires BSF.CLS      -- get Java support
+::requires BSF.CLS      /* get full bidirectional Java support */
 
 /*
    license:

@@ -33,21 +33,22 @@
 /* A compiled NetRexx program has a static main method that expects an
    array of type String (representing supplied command line arguments).
 */
+say "a) ooRexx: use embedded NetRexx program: fetch, compile & run it ..."
 d1=.dateTime~new
 clzNrx=bsf.compile("squares_class", .resources~squares_class.nrx, "NetRexx")
 d2=.dateTime~new
-clzNrx~main(.nil)          -- run the NetRexx program
+clzNrx~main(.nil)          /* run the NetRexx program             */
 d3=.dateTime~new
 say "compiling NetRexx program:" d2-d1
 say "running NetRexx program  :" d3-d2
 say "---"
 
 /* now using the NetRexx class to do the same as its main method */
-say
+say "b) ooRexx: use embedded NetRexx program to create array, proceed in ooRexx ..."
 items = 10000000
 clzArrays=bsf.loadClass("java.util.Arrays")
-t1=.dateTime~new
 say "ooRexx: let NetRexx/Java create the array for" pp(items) "items ..."
+t1=.dateTime~new
 s=clzNrx~createArray(items)
 t2=.dateTime~new
 
@@ -60,41 +61,52 @@ say "duration of creating stream and getting max:" t3-t2
 say "---"
 
 /* now employing all long stream functions         */
-say
-messages=("average","count","findFirst","max","min","sum","summaryStatistics")
-w=27     /* width for numbers */
-say "getting infos by sending ooRexx messages dynamically:" messages~toString(,', ')
-s01=.dateTime~new                -- get time
+messages=("average", "count", "max", "min", "sum") /* array of message names  */
+w=20     /* width for numbers */
+say "c) getting infos by sending ooRexx messages dynamically:" messages~toString(,', ')
+say "   (timings include generation of new stream in each loop)"
 loop msg over messages
-   s1=.dateTime~new              -- get time
+   s1=.dateTime~new              /* get time                      */
    val=clzArrays~stream(s)~send(msg)
-   s2=.dateTime~new              -- get time
-   if val~isA(.bsf) then
+   s2=.dateTime~new              /* get time                      */
+   if val~isA(.bsf) then         /* a Java object in hand?        */
    do
-      objectName=val~objectName     /* get objectName=beanName    */
-      select
-         when objectName~startsWith("java.util.OptionalLong")   then val=val~asLong   ~right(w)
-         when objectName~startsWith("java.util.OptionalDouble") then val=val~asDouble ~right(w)
-         otherwise val=val~toString
-      end
+      objectName=val~objectName     /* get objectName/beanName    */
+      if objectName~pos("OptionalLong")>0 then
+         val=val~asLong   ~right(w)
+      else
+         val=val~asDouble ~right(w)
    end
    else val=val~right(w)
    say "   " msg~left(20,'.')":" val "duration:" s2-s1
 end
-s02=.dateTime~new                -- get time
-say
-say "totalDuration:" s02-s01
 
-::RESOURCE squares_class.nrx     -- NetRexx source code
-    /* NetRexx: squares_class.nrx  */
-    options binary    /* in this case we want speed */
+/* say now using Rexx' parse keyword instruction */
+say "---"
+say "d) using method 'summaryStatistics' and parsing the returned string ..."
+
+t1=.dateTime~new
+parse value clzArrays~stream(s)~summaryStatistics~toString with -
+      "count=" count ", sum=" sum ", min=" min ", average=" average ", max=" max "}"
+t2=.dateTime~new
+say "   " "duration:" t2-t1", values:"
+say "   " "average"~left(20,'.')":" average~right(w)
+say "   " "count"  ~left(20,'.')":" count  ~right(w)
+say "   " "max"    ~left(20,'.')":" max    ~right(w)
+say "   " "min"    ~left(20,'.')":" min    ~right(w)
+say "   " "sum"    ~left(20,'.')":" sum    ~right(w)
+say "---"
+
+::RESOURCE squares_class.nrx     /* NetRexx source code           */
+    /* NetRexx: squares_class.nrx                                 */
+    options binary    /* in this case we want speed               */
     class squares_class
 
     method main(arg=String[]) static
       items = 10000000
       s = createArray(items)
-      /* use a Java stream (introduced with Java 8) 	*/
-      say java.util.Arrays.stream(s).max.getAsLong
+     /* use java.util.Arrays' stream(.) (introduced with Java 8)  */
+      say Arrays.stream(s).max.getAsLong
 
     method createArray(items) static returns long[]
       s = long[items]   /* define a Java array of type long       */
@@ -105,7 +117,7 @@ say "totalDuration:" s02-s01
       return s          /* return array                           */
 ::END
 
-::requires BSF.CLS      -- get Java support
+::requires BSF.CLS      /* get full bidirectional Java support    */
 
 
 /*
