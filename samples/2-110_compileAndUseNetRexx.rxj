@@ -32,7 +32,7 @@ say "---"
 /* A compiled NetRexx program has a static main method that expects an
    array of type String (representing supplied command line arguments). */
 clzNrx=bsf.compile("SomeClassName", .resources~helloWorld.nrx, "NetRexx")
-clzNrx~main(.nil)          -- run the NetRexx program
+clzNrx~main(.nil)          -- run the NetRexx program, invoke its implicit static main method
 
 ::RESOURCE helloWorld.nrx  -- NetRexx source code
    say "NetRexx: Hello, world from NetRexx! (http://www.netrexx.org)"

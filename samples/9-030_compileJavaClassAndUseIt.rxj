@@ -7,6 +7,10 @@
 
    date:    2018-03-06
 
+   changed: 2022-01-15, rgf:  - changed Java code slightly,
+                              - changed Java class name and method names
+                              - added syntax condition handler for demonstration
+
    usage:   rexx 9-030_compileJavaClassAndUseIt.rxj
 
    needs:   ooRexx 5.0 or higher
@@ -14,7 +18,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2018 Rony G. Flatscher
+       Copyright (C) 2018-2022 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -36,50 +40,58 @@ do
    say "this program needs ooRexx 5.0 or later, aborting"
    exit -1
 end
+
+signal on syntax     /* in case a condition gets raised           */
    -- compile a Java program and fetch the returned Java class object
-clz=bsf.compile("rony.Oha", .resources~oha.java)
+clz=bsf.compile("rgf.MyTestClass", .resources~MyTestClass.java, "Java")
 say 'clz~oha("aha"):' pp(clz~oha("abc"))  -- use the static method "oha" from Rexx
 say "-"~copies(60)
 
 o=clz~new            -- create an instance of the Java class
-say 'o=clz~new     :' pp(o)
+say 'o=clz~new     :' pp(o) "(ooRexx)"
 say "o~oha('zyx')  :" pp(o~oha('zyx')) -- invoke the class method "oha"
-say "o~myInfo      :" pp(o~myInfo)     -- invoke the instance method "myInfo"
+say "o~thisInfo    :" pp(o~thisInfo)   -- invoke the instance method "thisInfo"
 say "-"~copies(60)
 
 say "now invoking the main method from ooRexx:"
 args=.bsf~bsf.createArrayOf("java.lang.String", "Hello", "from", "ooRexx!")
 o~main(args)                           -- invoke the class method "main"
+exit
+
+syntax:  /* in case of an error                                */
+   co=condition('object')  /* get all condition information    */
+   say ppJavaExceptionChain(co)  /* show Java exception chain  */
+   raise propagate         /* let ooRexx interpreter handle it */
 
 
 ::requires "BSF.CLS" -- get Java support
 
-   /* source of a Java program, defining the class "rony.Oha" with three methods:
+   /* source of a Java program, defining the class "rgf.MyTestClass" with three methods:
 
       - the static method "main" and
       - the static method "oha" and
-      - the instance method "myInfo"
+      - the instance method "thisInfo"
    */
-::RESOURCE Oha.java  -- Java source code, defining a class "rony.Oha"
-
-   package rony;
+::RESOURCE MyTestClass.java  -- Java source code, defining a class "rgf.MyTestClass"
+   package rgf;
    import  java.util.Arrays;
 
-   public class Oha {
+   public class MyTestClass {
 
        public static void main (String args[])
        {
-           System.out.println("rony.Oha.main(), received arguments: "+Arrays.deepToString(args));
+           System.out.println("rgf.MyTestClass.main(String args[]), received arguments: "+
+                               Arrays.deepToString(args)+" (Java)");
        }
 
        public static String oha(String str) // Java static method
        {
-           return "oha->"+str+"<-oha";
+           return "--->"+str+"<--- (Java)";
        }
 
-       public String myInfo()             // Java instance method
+       public String thisInfo()             // Java instance method
        {
-           return "oha///"+this+"\\\\\\oha";
+           return "===>"+this+"<=== (Java)";
        }
    }
 ::END

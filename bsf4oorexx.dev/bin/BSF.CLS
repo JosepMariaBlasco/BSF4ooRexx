@@ -19,6 +19,13 @@
           .BSF in .environment;
 
    date:
+         2022-01-15, ---rgf, - add more error message hints in bsf.compile(), check arguments
+                             - camouflage NetRexx class object as ooRexx class object (add
+                               class methods new and newStrict)
+                             - bsf.compile() NetRexx compiler expects unqualified class name for
+                               compilation, but fully qualified for looking up the generated
+                               class object; adjust for this such that packages can be defined
+                               in inline NetRexx programs
          2022-01-13, ---rgf, - add ability to compile NetRexx programs to routine bsf.compile()
          2021-08-29, ---rgf, - add System's "os.arch" property in quotes to the Java chunk in
                                "display.version" entry
@@ -894,7 +901,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="641.20220113" -- set version (date distribution got created)
+      .bsf4rexx~version="641.20220115" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -6020,6 +6027,17 @@ syntax:
 ::routine bsf.compile   public
    use strict arg className, code, language="Java"
 
+   if className="" | \className~isA(.string) then
+      raise syntax 40.900 array ("BSF.CLS/routine/bsf.compile(): argument 'className' must be a string and not empty")
+
+   if code~isNil then
+      raise syntax 40.900 array ("BSF.CLS/routine/bsf.compile(): argument 'code' must not be .nil")
+
+   lang=language~left(1)~upper
+   if pos(lang,"JN")=0 then
+      raise syntax 40.900 array ("BSF.CLS/routine/bsf.compile(): argument 'language' must be" -
+         '"J[ava]" or "N[etRexx]", found:"' lang)
+
    signal on syntax
    if code~isA(.array) then code=code~toString  -- turn string array into a string
 
@@ -6028,13 +6046,24 @@ syntax:
       signal on syntax name nrxSyntax
       nrc=bsf.loadClass("org.netrexx.process.NetRexxC")
       al=.bsf~new("java.util.ArrayList")
+
+      qualifiedClassName=className
+      -- if package in name, extract unqualified class name
+      p=qualifiedClassName~pos(.)
+      if p>0 then
+         parse var qualifiedClassName pkgName +(p) className
+
+      -- compiler expects unqualified class name!
       res=nrc~main(className "-noverbose",code,.nil,al)
       if res<>0 then
       do
-         errMsg = "BSF.CLS/routine/bsf.compile(), hint: NetRexx compiler indicates problem, return value was:" res
+         errMsg = "BSF.CLS/routine/bsf.compile(), hint: NetRexx compiler indicates a problem, return value was:" res
          raise syntax 40.900 array (errMsg)
       end
-      newClass=al~get(0)~findClass(className)
+
+      newClass=al~get(0)~findClass(qualifiedClassName)
+      -- camouflage NetRexxJava class object as ooRexx class object, add class methods new and newStrict
+      newClass=.bsf~bsf.import(qualifiedClassName, .nil, newClass)   -- do not place it into the environment
       return newClass
    end
 
@@ -6058,10 +6087,10 @@ syntax:
    extractedName=extractJavaClassName(code)     -- extract Java class name from source code
    errMsg=""
    if extractedName="" then
-      errMsg = "BSF.CLS/routine/bsf.compile(), hint: cannot extract className, maybe the Java class is not ""public"" ?"
+      errMsg = "BSF.CLS/routine/bsf.compile(), hint: cannot extract className, maybe not given or the Java class is not ""public"" ?"
    else if className<>extractedName then
    do
-      errMsg = "BSF.CLS/routine/bsf.compile(), hint: supplied class name" pp(className) "does not match the first found public class name" pp(extracedName) "in the source file"
+      errMsg = "BSF.CLS/routine/bsf.compile(), hint: supplied class name" pp(className) "does not match the first found public class name" pp(extractedName) "in the source file"
    end
 
    if errMsg="" then raise propagate
@@ -6074,10 +6103,8 @@ extractJavaClassName: procedure
 
    parse var code "package" pkgName ";"
    parse var code "public" . "class" clzName "{"
--- say .line "clzName="pp(clzName)
    -- replace contained CR-LF with blanks; remove leading/trailing blanks, get first word
    clzName=clzName~translate("  ", "0d0a"x)~strip~word(1)
--- say .line "clzName="pp(clzName)
 
    if pkgName="" then return clzName
    return pkgName~strip"."clzName

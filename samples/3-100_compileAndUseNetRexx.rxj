@@ -23,35 +23,45 @@
 
    author:  Rony G. Flatscher
 
-   Date:    2022-01-13
+   date:    2022-01-13
 
-   Purpose: compiles a NetRexx program and runs it
+   changed: 2022-01-15, rgf:  - added syntax condition handler for demonstration
+
+   purpose: compiles a NetRexx program and runs it
 
    license: AL 2.0, at the end of this program
 */
 
+signal on syntax     /* in case a condition gets raised         */
 /* A compiled NetRexx program has a static main method that expects an
    array of type String (representing supplied command line arguments). */
 say "ooRexx: use embedded NetRexx program: fetch, compile & run it ..."
-d1=.dateTime~new
-clzNrx=bsf.compile("squares", .resources~squares.nrx, "NetRexx")
-d2=.dateTime~new
-clzNrx~main(.nil)          /* run the NetRexx program           */
-d3=.dateTime~new
-say "compiling NetRexx program:" d2-d1
-say "running NetRexx program  :" d3-d2
+d1=.dateTime~new        /* for timings                         */
+clzSquares=bsf.compile("squares", .resources~squares.nrx, "NetRexx")
+d2=.dateTime~new        /* for timings                         */
+clzSquares~main(.nil)   /* run the NetRexx program             */
+d3=.dateTime~new        /* for timings                         */
+say "compiling NetRexx program:" d2-d1 /* show duration        */
+say "running NetRexx program  :" d3-d2 /* show duration        */
+exit
+
+syntax:  /* in case of an error                                 */
+   co=condition('object')  /* get all condition information     */
+   say ppJavaExceptionChain(co)  /* show Java exception chain   */
+   raise propagate         /* let ooRexx interpreter handle it  */
+
 
 ::RESOURCE squares.nrx     /* NetRexx source code               */
-    /* NetRexx: squares.nrx                                     */
-    options binary    /* in this case we want speed             */
-    items = 10000000
-    s = long[items]   /* define a Java array of type long       */
-    loop i=1 to items
-       n=long i       /* for multiplication we want to use long */
-       s[i-1] = n * n
-    end
-    /* use java.util.Arrays' stream(.) (introduced with Java 8) */
-    say Arrays.stream(s).max.getAsLong
+   /* NetRexx: squares.nrx                                     */
+   options binary    /* in this case we want speed             */
+   items = 10000000
+   s = long[items]   /* define a Java array of type long       */
+   loop i=1 to items
+      n=long i       /* for multiplication we want to use long */
+      s[i-1] = n * n
+   end
+   /* use java.util.Arrays' stream()  (introduced with Java 8) */
+   say Arrays.stream(s).max.getAsLong
 ::END
 
 ::requires BSF.CLS      /* get full bidirectional Java support  */

@@ -1,3 +1,30 @@
+-------------------------------------- 2022-01-13 ----------------------------------
+
+- BSF.CLS
+
+        - add ability to compile NetRexx programs to routine bsf.compile()
+
+- 3-100_compileAndUseNetRexx.rxj
+
+        - added syntax condition handler for demonstration
+
+- 3-110_compileAndUseNetRexx.rxj
+
+        - added syntax condition handler for demonstration
+
+- 9-030_compileJavaClassAndUseIt.rxj
+
+        - changed Java code slightly,
+        - changed Java class name and method names
+        - added syntax condition handler for demonstration
+
+- added new samples
+
+        - 3-100_compileAndUseJava.rxj ... counterpart to 3-100_compileAndUseNetRexx.rxj
+
+        - 3-110_compileAndUseJava.rxj ... counterpart to 3-110_compileAndUseNetRexx.rxj
+
+        - 9-030_compileNetRexxClassAndUseIt.rxj ... counterpart to 9-030_compileJavaClassAndUseIt.rxj
 
 -------------------------------------- 2022-01-13 ----------------------------------
 

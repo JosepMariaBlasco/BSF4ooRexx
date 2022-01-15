@@ -23,9 +23,11 @@
 
    author:  Rony G. Flatscher
 
-   Date:    2022-01-13
+   date:    2022-01-13
 
-   Purpose: compiles a NetRexx program and runs it
+   changed: 2022-01-15, rgf:  - added syntax condition handler for demonstration
+
+   purpose: compiles a NetRexx program and runs it
 
    license: AL 2.0, at the end of this program
 */
@@ -33,21 +35,22 @@
 /* A compiled NetRexx program has a static main method that expects an
    array of type String (representing supplied command line arguments).
 */
+signal on syntax     /* in case a condition gets raised           */
 say "a) ooRexx: use embedded NetRexx program: fetch, compile & run it ..."
 d1=.dateTime~new
 clzNrx=bsf.compile("squares_class", .resources~squares_class.nrx, "NetRexx")
 d2=.dateTime~new
 clzNrx~main(.nil)          /* run the NetRexx program             */
 d3=.dateTime~new
-say "compiling NetRexx program:" d2-d1
-say "running NetRexx program  :" d3-d2
+say "compiling NetRexx program:" d2-d1    /* show duration        */
+say "running NetRexx program  :" d3-d2    /* show duration        */
 say "---"
 
 /* now using the NetRexx class to do the same as its main method */
-say "b) ooRexx: use embedded NetRexx program to create array, proceed in ooRexx ..."
+say "b) ooRexx: use embedded NetRexx program to create square array, proceed in ooRexx ..."
 items = 10000000
 clzArrays=bsf.loadClass("java.util.Arrays")
-say "ooRexx: let NetRexx/Java create the array for" pp(items) "items ..."
+say "ooRexx: let NetRexx/Java create the square array for" pp(items) "items ..."
 t1=.dateTime~new
 s=clzNrx~createArray(items)
 t2=.dateTime~new
@@ -56,15 +59,15 @@ say "ooRexx: received Java long array" pp(s)", getting a stream and asking it fo
 t3=.dateTime~new
 say clzArrays~stream(s)~max~getAsLong
 t4=.dateTime~new
-say "duration of creating array                 :" t2-t1
-say "duration of creating stream and getting max:" t3-t2
+say "duration of creating square array          :" t2-t1 /* show duration     */
+say "duration of creating stream and getting max:" t3-t2 /* show duration     */
 say "---"
 
 /* now employing all long stream functions         */
 messages=("average", "count", "max", "min", "sum") /* array of message names  */
-w=20     /* width for numbers */
+w=20     /* width for right adjusting numbers     */
 say "c) getting infos by sending ooRexx messages dynamically:" messages~toString(,', ')
-say "   (timings include generation of new stream in each loop)"
+say "   (timings include generation of a new stream in each loop)"
 loop msg over messages
    s1=.dateTime~new              /* get time                      */
    val=clzArrays~stream(s)~send(msg)
@@ -73,29 +76,36 @@ loop msg over messages
    do
       objectName=val~objectName     /* get objectName/beanName    */
       if objectName~pos("OptionalLong")>0 then
-         val=val~asLong   ~right(w)
+         val=val~asLong   ~right(w) /* right adjust number        */
       else
-         val=val~asDouble ~right(w)
+         val=val~asDouble ~right(w) /* right adjust number        */
    end
-   else val=val~right(w)
-   say "   " msg~left(20,'.')":" val "duration:" s2-s1
+   else val=val~right(w)            /* right adjust number        */
+   say "   " msg~left(20,'.')":" val "duration:" s2-s1   /* show duration     */
 end
 
 /* say now using Rexx' parse keyword instruction */
 say "---"
-say "d) using method 'summaryStatistics' and parsing the returned string ..."
+say "d) using method 'summaryStatistics' and parsing its string representation ..."
 
 t1=.dateTime~new
 parse value clzArrays~stream(s)~summaryStatistics~toString with -
       "count=" count ", sum=" sum ", min=" min ", average=" average ", max=" max "}"
 t2=.dateTime~new
-say "   " "duration:" t2-t1", values:"
+say "   " "duration:" t2-t1", values:"    /* show duration        */
 say "   " "average"~left(20,'.')":" average~right(w)
 say "   " "count"  ~left(20,'.')":" count  ~right(w)
 say "   " "max"    ~left(20,'.')":" max    ~right(w)
 say "   " "min"    ~left(20,'.')":" min    ~right(w)
 say "   " "sum"    ~left(20,'.')":" sum    ~right(w)
 say "---"
+exit
+
+syntax:  /* in case of an error                                   */
+   co=condition('object')     /* get all condition information    */
+   say ppJavaExceptionChain(co)  /* show Java exception chain     */
+   raise propagate            /* let ooRexx interpreter handle it */
+
 
 ::RESOURCE squares_class.nrx     /* NetRexx source code           */
     /* NetRexx: squares_class.nrx                                 */
