@@ -38,9 +38,9 @@
 signal on syntax     /* in case a condition gets raised           */
 say "a) ooRexx: use embedded NetRexx program: fetch, compile & run it ..."
 d1=.dateTime~new
-clzNrx=bsf.compile("squares_class", .resources~squares_class.nrx, "NetRexx")
+clzSquares=bsf.compile("squares_class", .resources~squares_class.nrx, "NetRexx")
 d2=.dateTime~new
-clzNrx~main(.nil)          /* run the NetRexx program             */
+clzSquares~main(.nil)      /* run the NetRexx program             */
 d3=.dateTime~new
 say "compiling NetRexx program:" d2-d1    /* show duration        */
 say "running NetRexx program  :" d3-d2    /* show duration        */
@@ -52,7 +52,7 @@ items = 10000000
 clzArrays=bsf.loadClass("java.util.Arrays")
 say "ooRexx: let NetRexx/Java create the square array for" pp(items) "items ..."
 t1=.dateTime~new
-s=clzNrx~createArray(items)
+s=clzSquares~createArray(items)
 t2=.dateTime~new
 
 say "ooRexx: received Java long array" pp(s)", getting a stream and asking it for its maximum:"
