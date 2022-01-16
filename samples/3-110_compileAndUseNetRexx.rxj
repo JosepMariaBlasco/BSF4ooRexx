@@ -31,14 +31,15 @@
 
    license: AL 2.0, at the end of this program
 */
-
-/* A compiled NetRexx program has a static main method that expects an
-   array of type String (representing supplied command line arguments).
-*/
 signal on syntax     /* in case a condition gets raised           */
+
+/* ************************************************************************** */
+/* A compiled NetRexx program has a static main method that expects an        */
+/* array of type String (representing supplied command line arguments).       */
+/* ************************************************************************** */
 say "a) ooRexx: use embedded NetRexx program: fetch, compile & run it ..."
 d1=.dateTime~new
-clzSquares=bsf.compile("squares_class", .resources~squares_class.nrx, "NetRexx")
+clzSquares=bsf.compile("squares", .resources~squares.nrx, "NetRexx")
 d2=.dateTime~new
 clzSquares~main(.nil)      /* run the NetRexx program             */
 d3=.dateTime~new
@@ -46,7 +47,9 @@ say "compiling NetRexx program:" d2-d1    /* show duration        */
 say "running NetRexx program  :" d3-d2    /* show duration        */
 say "---"
 
-/* now using the NetRexx class to do the same as its main method */
+/* ************************************************************************** */
+/* now using the NetRexx class to do the same as its main method in ooRexx    */
+/* ************************************************************************** */
 say "b) ooRexx: use embedded NetRexx program to create square array, proceed in ooRexx ..."
 items = 10000000
 clzArrays=bsf.loadClass("java.util.Arrays")
@@ -63,7 +66,9 @@ say "duration of creating square array          :" t2-t1 /* show duration     */
 say "duration of creating stream and getting max:" t3-t2 /* show duration     */
 say "---"
 
-/* now employing all long stream functions         */
+/* ************************************************************************** */
+/* now employing all long stream functions dynamically in ooRexx              */
+/* ************************************************************************** */
 messages=("average", "count", "max", "min", "sum") /* array of message names  */
 w=20     /* width for right adjusting numbers     */
 say "c) getting infos by sending ooRexx messages dynamically:" messages~toString(,', ')
@@ -83,11 +88,12 @@ loop msg over messages
    else val=val~right(w)            /* right adjust number        */
    say "   " msg~left(20,'.')":" val "duration:" s2-s1   /* show duration     */
 end
-
-/* say now using Rexx' parse keyword instruction */
 say "---"
-say "d) using method 'summaryStatistics' and parsing its string representation ..."
 
+/* ************************************************************************** */
+/* say now using Rexx' parse keyword instruction                              */
+/* ************************************************************************** */
+say "d) using method 'summaryStatistics' and parsing its string representation ..."
 t1=.dateTime~new
 parse value clzArrays~stream(s)~summaryStatistics~toString with -
       "count=" count ", sum=" sum ", min=" min ", average=" average ", max=" max "}"
@@ -107,10 +113,10 @@ syntax:  /* in case of an error                                   */
    raise propagate            /* let ooRexx interpreter handle it */
 
 
-::RESOURCE squares_class.nrx     /* NetRexx source code           */
-    /* NetRexx: squares_class.nrx                                 */
+::RESOURCE squares.nrx     /* NetRexx source code           */
+    /* NetRexx: squares.nrx                                 */
     options binary    /* in this case we want speed               */
-    class squares_class
+    class squares
 
     method main(arg=String[]) static
       items = 10000000
