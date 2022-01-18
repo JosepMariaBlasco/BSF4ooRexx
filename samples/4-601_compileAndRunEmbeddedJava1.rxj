@@ -1,7 +1,6 @@
 #!/usr/bin/env rexx
 /*
-   name:    3-100_compileAndUseJava.rxj
-
+   name:    4-601_compileAndRunEmbeddedJava1.rxj
    purpose: Demonstrate how to compile and use a Java program embedded as resource
             in this ooRexx program;
             the Java program does an abmysal amount of array processing (a pure
@@ -10,23 +9,17 @@
             hosts the Java program and instrumentates it.
             This demonstrates how easy it is to create external compiled classes/functionality
             from ooRexx and directly use it.
-
-   invoke:  "rexx 3-100_compileAndUseJava.rxj"
+   needs:   ooRexx 5.0 or later
+   invoke:  "rexx 4-601_compileAndRunEmbeddedJava1.rxj"
             ... Rexx script will demonstrate compiling and using an embedded Java program
-
-            "rexxj2 3-100_compileAndUseJava.rxj"      (Windows)
-            "rexxj2.sh 2-110_compileAndUseJava.rxj"   (Unix)
+            "rexxj2 4-601_compileAndRunEmbeddedJava1.rxj"      (Windows)
+            "rexxj2.sh 4-601_compileAndRunEmbeddedJava1.rxj"   (Unix)
             ... Java will load Rexx and execute the Rexx script that compiles and uses
                 embedded Java program
-
-   needs:   Java on class or module path and at least Java 8
-
+   needs:   ooRexx 5.0 or later
    author:  Rony G. Flatscher
-
-   Date:    2022-01-15
-
-   Purpose: compiles a Java program and runs it
-
+   date:    2022-01-15
+   changed: 2022-01-18 rgf, renamed sample, added hint to ooRexx 5.0 to signal handler
    license: AL 2.0, at the end of this program
 */
 
@@ -46,6 +39,7 @@ exit
 syntax:  /* in case of an error                                 */
    co=condition('object')  /* get all condition information     */
    say ppJavaExceptionChain(co)  /* show Java exception chain   */
+   say "---> this program needs ooRexx 5.0 or later"
    raise propagate         /* let ooRexx interpreter handle it  */
 
 

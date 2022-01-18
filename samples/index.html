@@ -154,6 +154,12 @@ example is to be expected:
     <dd>List all Java system properties of your Java installation. Loads explicitly the
         Java class <code>java.lang.System</code> and interrogates it.
 
+    <dt><a href="2-031_GetJavaSystemProperties.rxj">2-031_GetJavaSystemProperties.rxj</a>
+    <dd>List all Java system properties of your Java installation. Loads explicitly the
+        Java class <code>java.lang.System</code> and demonstrates using the supplier
+        'do with ... over' introduced with ooRexx 5.0 with the Java system properties
+        (an instance of <code>java.util.Properties</code>)
+
     <dt><a href="2-040_GetJavaSystemProperties1.rxj">2-040_GetJavaSystemProperties1.rxj</a>
     <dd>List all Java system properties of your Java installation. Uses the existing
         reference to the Java class <code>java.lang.System</code>, which gets set up
@@ -162,8 +168,13 @@ example is to be expected:
 
     <dt><a href="2-050_GetJavaSystemProperties2.rxj">2-050_GetJavaSystemProperties2.rxj</a>
     <dd>Same as <code>GetJavaSystemProperties.rxj</code> but lists the properties
-        alphabetically sorted in ascending order by employing the Java class
+        alphabetically <em>sorted in ascending order</em> by employing the Java class
         <code>java.util.TreeSet</code>.
+
+    <dt><a href="2-051_GetJavaSystemProperties2.rxj">2-051_GetJavaSystemProperties2.rxj</a>
+    <dd>Same as <code>GetJavaSystemProperties.rxj</code> but lists the properties
+        alphabetically <em>sorted in ascending order</em> by turning the system properties
+        keys into an ooRexx array which then gets sorted.
 
     <dt><a href="2-060_GetJavaSystemProperties3.rxj">2-060_GetJavaSystemProperties3.rxj</a>
     <dd>Same as <code>GetJavaSystemProperties.rxj</code> but uses the methods
@@ -187,16 +198,6 @@ example is to be expected:
 
     <dt><a href="2-100_functionsPerFile.rxj">2-100_functionsPerFile.rxj</a>
     <dd>Lists which BSF4ooRexx functions are used in which script in a folder.
-
-    <dt><a href="2-110_compileAndUseNetRexx.rxj">2-110_compileAndUseNetRexx.rxj</a>
-    <dd>Demonstrates how to compile and use a NetRexx class in ooRexx:
-        <ul>
-            <li>The NetRexx source code is stored with the help of the ooRexx
-                RESOURCE directive
-            <li>&quot;BSF.CLS&quot; public routine <code>bsf.compile(...)</code>
-                gets used to compile the NetRexx source and returns the (NetRexx/Java)
-                class object wrapped up as an ooRexx class object
-        </ul>
 
     <dt><a href="3-010_clock.rxj">3-010_clock.rxj</a>
     <dd>Creates and updates a graphical clock using a <code>JPanel</code>.
@@ -248,7 +249,61 @@ example is to be expected:
         from a non awt (non-GUI) thread using the methods of the public class
         <code>.AwtGuiThread</code> defined in <code>BSF.CLS</code>.
 
-    <dt><a href="3-100_compileAndUseNetRexx.rxj">3-100_compileAndUseNetRexx.rxj</a>
+
+    <dt><a href="4-010_demo-j8-lambda.rxj">4-010_demo-j8-lambda.rxj</a>
+    <dd>Demonstrates how to use ooRexx code to be used in Java 8's lambda-related
+        functional programming patterns.
+
+        <br><em>Attention! This example needs at least Java 8 (1.8)</em>
+
+    <dt><a href="4-020_EuroCalcJava.rxj">4-020_EuroCalcJava.rxj</a>
+    <dd>Using Java's &quot;awt (abstract window toolkit)&quot; classes to create a portable GUI for
+        converting Euro amounts to/from any of the original Euro currencies.
+
+    <dt><a href="4-030_demoJSO.rxj">4-030_demoJSO.rxj</a>
+    <dd>Demonstrates
+        <ul>
+        <li>
+            the usage of the new BSF methods and routines that contain the &quot;JSO&quot; suffix
+            in their name.  &quot;JSO&quot; is the abbrevation for &quot;Java string object&quot;. Using
+            these variants of the methods and routines will return values of the Java types <code>String</code> or
+            <code>NetRexx</code> as references (as Rexx proxies), rather then returning a Rexx string, which
+            may be helpful in special use cases,
+
+        <li>
+            how to handle different encodings of strings between Rexx and Java taking
+            advantage of the JSO-functionality,
+
+        <li>
+            platform independent beeping.
+        </ul>
+        Please read the comments in the prolog of this program.
+
+    <dt><a href="4-040_PrintFile.rxj">4-040_PrintFile.rxj</a>
+    <dd>Allows to pick a file that then gets printed (user is allowed to pick the printer as well).
+        Java <em>&quot;awt&quot;</em> version.
+
+    <dt><a href="4-050_JPrintFile.rxj">4-050_JPrintFile.rxj</a>
+    <dd>Allows to pick a file that then gets printed (user is allowed to pick the printer as well).
+        Java <em>&quot;swing&quot;</em> version.
+
+    <dt><a href="4-060_runJavaClassMainMethod.rxj">4-060_runJavaClassMainMethod.rxj</a>
+    <dd>Demonstrates how to invoke the static main() method of the given Java class, supplying optionally
+        arguments given on the command line to Rexx (by <a href="http://www.well.com/%7Ejax/rcfb/rexx.html">Jack Woehr</a>).
+        If the Java class does not contain a public static main()-method, then an appropriate runtime
+        error will be generated.
+
+    <dt><a href="4-500_compileAndRunEmbeddedNetRexx.rxj">4-500_compileAndRunEmbeddedNetRexx.rxj</a>
+    <dd>Demonstrates how to compile and use a NetRexx class in ooRexx:
+        <ul>
+            <li>The NetRexx source code is stored with the help of the ooRexx
+                RESOURCE directive
+            <li>&quot;BSF.CLS&quot; public routine <code>bsf.compile(...)</code>
+                gets used to compile the NetRexx source and returns the (NetRexx/Java)
+                class object wrapped up as an ooRexx class object
+        </ul>
+
+    <dt><a href="4-600_compileAndRunEmbeddedNetRexx1.rxj">4-600_compileAndRunEmbeddedNetRexx1.rxj</a>
     <dd>Demonstrates how to compile and use a NetRexx class in ooRexx:
         <ul>
             <li>The NetRexx source code is stored with the help of the ooRexx
@@ -263,7 +318,7 @@ example is to be expected:
         </ul>
         This program needs Java 8 (introduced streams) or later.
 
-    <dt><a href="3-100_compileAndUseJava.rxj">3-100_compileAndUseJava.rxj</a>
+    <dt><a href="4-601_compileAndRunEmbeddedJava1.rxj">4-601_compileAndRunEmbeddedJava1.rxj</a>
     <dd>Demonstrates how to compile and use a Java class in ooRexx:
         <ul>
             <li>The Java source code is stored with the help of the ooRexx
@@ -278,7 +333,7 @@ example is to be expected:
         </ul>
         This program needs Java 8 (introduced streams) or later.
 
-    <dt><a href="3-110_compileAndUseNetRexx.rxj">3-110_compileAndUseNetRexx.rxj</a>
+    <dt><a href="4-610_compileAndUseEmbeddedNetRexx2.rxj">4-610_compileAndUseEmbeddedNetRexx2.rxj</a>
     <dd>Demonstrates how to compile and use a NetRexx program embedded in the
     ooRexx program: the compiled NetRexx program can create abmysal sized arrays
     quickly (sometimes even faster than compiled C++!), but uses ooRexx to work
@@ -319,7 +374,7 @@ example is to be expected:
         </ul>
         This program needs Java 8 (introduced streams) or later.
 
-    <dt><a href="3-110_compileAndUseJava.rxj">3-110_compileAndUseJava.rxj</a>
+    <dt><a href="4-611_compileAndUseEmbeddedJava2.rxj">4-611_compileAndUseEmbeddedJava2.rxj</a>
     <dd>Demonstrates how to compile and use a Java program embedded in the
     ooRexx program: the compiled Java program can create abmysal sized arrays
     quickly (sometimes even faster than compiled C++!), but uses ooRexx to work
@@ -360,49 +415,16 @@ example is to be expected:
         </ul>
         This program needs Java 8 (introduced streams) or later.
 
+    <dt><a href="4-700_compileAndUseEmbeddedNetRexx3.rxj">4-700_compileAndUseEmbeddedNetRexx3.rxj</a>
+    <dd>Demonstrates how to store a NetRexx class in source code with the help of the ooRexx
+        RESOURCE directive, compile it at runtime with the public routine <code>bsf.compile(...)</code>
+        from &quot;BSF.CLS&quot;  and immediately use it from the running Rexx program.
 
-    <dt><a href="4-010_demo-j8-lambda.rxj">4-010_demo-j8-lambda.rxj</a>
-    <dd>Demonstrates how to use ooRexx code to be used in Java 8's lambda-related
-        functional programming patterns.
+    <dt><a href="4-701_compileAndUseEmbeddedJava3.rxj">4-701_compileAndUseEmbeddedJava3.rxj</a>
+    <dd>Demonstrates how to store a Java class in source code with the help of the ooRexx
+        RESOURCE directive, compile it at runtime with the public routine <code>bsf.compile(...)</code>
+        from &quot;BSF.CLS&quot;  and immediately use it from the running Rexx program.
 
-        <br><em>Attention! This example needs at least Java 8 (1.8)</em>
-
-    <dt><a href="4-020_EuroCalcJava.rxj">4-020_EuroCalcJava.rxj</a>
-    <dd>Using Java's &quot;awt (abstract window toolkit)&quot; classes to create a portable GUI for
-        converting Euro amounts to/from any of the original Euro currencies.
-
-    <dt><a href="4-030_demoJSO.rxj">4-030_demoJSO.rxj</a>
-    <dd>Demonstrates
-        <ul>
-        <li>
-            the usage of the new BSF methods and routines that contain the &quot;JSO&quot; suffix
-            in their name.  &quot;JSO&quot; is the abbrevation for &quot;Java string object&quot;. Using
-            these variants of the methods and routines will return values of the Java types <code>String</code> or
-            <code>NetRexx</code> as references (as Rexx proxies), rather then returning a Rexx string, which
-            may be helpful in special use cases,
-
-        <li>
-            how to handle different encodings of strings between Rexx and Java taking
-            advantage of the JSO-functionality,
-
-        <li>
-            platform independent beeping.
-        </ul>
-        Please read the comments in the prolog of this program.
-
-    <dt><a href="4-040_PrintFile.rxj">4-040_PrintFile.rxj</a>
-    <dd>Allows to pick a file that then gets printed (user is allowed to pick the printer as well).
-        Java <em>&quot;awt&quot;</em> version.
-
-    <dt><a href="4-050_JPrintFile.rxj">4-050_JPrintFile.rxj</a>
-    <dd>Allows to pick a file that then gets printed (user is allowed to pick the printer as well).
-        Java <em>&quot;swing&quot;</em> version.
-
-    <dt><a href="9-010_ExecuteMainMethodInJavaClass.rxj">9-010_ExecuteMainMethodInJavaClass.rxj</a>
-    <dd>Demonstrates how to invoke the static main() method of the given Java class, supplying optionally
-        arguments given on the command line to Rexx (by <a href="http://www.well.com/%7Ejax/rcfb/rexx.html">Jack Woehr</a>).
-        If the Java class does not contain a public static main()-method, then an appropriate runtime
-        error will be generated.
 
     <dt><a href="9-020_swt_snippet108.rxj">9-020_swt_snippet108.rxj</a>
     <dd>Transcription of the Eclipse GUI class library
@@ -417,21 +439,11 @@ example is to be expected:
         the environment variable
         <code>CLASSPATH</code> point to the <code>swt.jar</code> library!</em>
 
-    <dt><a href="9-030_compileJavaClassAndUseIt.rxj">9-030_compileJavaClassAndUseIt.rxj</a>
-    <dd>Demonstrates how to store a Java class in source code with the help of the ooRexx
-        RESOURCE directive, compile it at runtime with the public routine <code>bsf.compile(...)</code>
-        from &quot;BSF.CLS&quot;  and immediately use it from the running Rexx program.
-
-    <dt><a href="9-030_compileNetRexxClassAndUseIt.rxj">9-030_compileNetRexxClassAndUseIt.rxj</a>
-    <dd>Demonstrates how to store a NetRexx class in source code with the help of the ooRexx
-        RESOURCE directive, compile it at runtime with the public routine <code>bsf.compile(...)</code>
-        from &quot;BSF.CLS&quot;  and immediately use it from the running Rexx program.
-
 </dl>
 
 <p>
 <hr>
 <p style="font-size: 80%;">
-Rony G. Flatscher, 2010-08-22, ..., 2022-01-15, Wien/Vienna, Austria, Europe
+Rony G. Flatscher, 2010-08-22, ..., 2022-01-18, Wien/Vienna, Austria, Europe
 </body>
 

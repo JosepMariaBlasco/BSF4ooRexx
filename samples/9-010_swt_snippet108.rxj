@@ -1,6 +1,6 @@
 #!/usr/bin/env rexx
 /*
-    name:      9-020_swt_snippet108.rxj
+    name:      9-010_swt_snippet108.rxj
     purpose:   Transcribe the swt Java example 'Snippet108' to ooRexx using BSF4Rexx
     author:    Rony G. Flatscher
     date:      2006-02-03
@@ -19,14 +19,15 @@
                     MacOS, Windows), cf. <http://www.eclipse.org/swt/>
 
      changes:
-            2010-05-16, rgf, - replacing bsf.addEventListener[WithEventObject] with Rexx event handlers
+            2010-05-16, rgf, replacing bsf.addEventListener[WithEventObject] with Rexx event handlers
+            2022-01-18, rgf, renamed sample
 
    last change: $Revision: 691 $ $Author: rony $ $Date: 2010-05-18 15:53:47 +0200 (Tue, 18 May 2010) $
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2001-2010 Rony G. Flatscher
+       Copyright (C) 2001-2022 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.

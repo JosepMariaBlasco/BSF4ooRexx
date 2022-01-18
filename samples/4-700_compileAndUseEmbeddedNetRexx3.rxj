@@ -1,22 +1,15 @@
 #!/usr/bin/env rexx
 /*
-   name:    9-030_compileJavaClassAndUseIt.rxj
+   name:    4-700_compileAndUseEmbeddedNetRexx3.rxj
    author:  Rony G. Flatscher
-   purpose: Uses bsf.compile() to compile a Java class from a string or array of strings
+   purpose: Uses bsf.compile() to compile a NetRexx class from a string or array of strings
             and uses it immediately thereafter from ooRexx
-
+   needs:   NetRexx on class or module path, ooRexx 5.0 or later
    date:    2018-03-06
-
-   changed: 2022-01-15, rgf:  - changed Java code slightly,
-                              - changed Java class name and method names
-                              - added syntax condition handler for demonstration
-
-   usage:   rexx 9-030_compileJavaClassAndUseIt.rxj
-
+   changed: 2022-01-18 rgf, renamed sample, added hint to ooRexx 5.0 to signal handler
+   usage:   rexx 4-700_compileAndUseEmbeddedNetRexx3.rxj
    needs:   ooRexx 5.0 or higher
-
    license:
-
     ------------------------ Apache Version 2.0 license -------------------------
        Copyright (C) 2018-2022 Rony G. Flatscher
 
@@ -34,16 +27,9 @@
     -----------------------------------------------------------------------------
 */
 
-parse version "_" v "."
-if v<5 then
-do
-   say "this program needs ooRexx 5.0 or later, aborting"
-   exit -1
-end
-
 signal on syntax     /* in case a condition gets raised           */
    -- compile a Java program and fetch the returned Java class object
-clz=bsf.compile("rgf.MyTestClass", .resources~MyTestClass.java, "Java")
+clz=bsf.compile("rgf.MyTestClass", .resources~MyTestClass.nrx, "NetRexx")
 say 'clz~oha("aha"):' pp(clz~oha("abc"))  -- use the static method "oha" from Rexx
 say "-"~copies(60)
 
@@ -61,37 +47,30 @@ exit
 syntax:  /* in case of an error                                */
    co=condition('object')  /* get all condition information    */
    say ppJavaExceptionChain(co)  /* show Java exception chain  */
+   say "---> this program needs NetRexx and ooRexx 5.0 or later"
    raise propagate         /* let ooRexx interpreter handle it */
 
 
 ::requires "BSF.CLS" -- get Java support
 
-   /* source of a Java program, defining the class "rgf.MyTestClass" with three methods:
+   /* source of a NetRexx program, defining the class "rgf.MyTestClass" with three methods:
 
       - the static method "main" and
       - the static method "oha" and
       - the instance method "thisInfo"
    */
-::RESOURCE MyTestClass.java  -- Java source code, defining a class "rgf.MyTestClass"
-   package rgf;
-   import  java.util.Arrays;
+::RESOURCE MyTestClass.nrx -- Java source code, defining a class "rgf.MyTestClass"
+   package rgf
 
-   public class MyTestClass {
+   class MyTestClass
 
-       public static void main (String args[])
-       {
-           System.out.println("rgf.MyTestClass.main(String args[]), received arguments: "+
-                               Arrays.deepToString(args)+" (Java)");
-       }
+   method main(args=String[]) static
+      say "rgf.MyTestClass.main(String args[]), received arguments:" -
+           Arrays.deepToString(args) "(NetRexx)"
 
-       public static String oha(String str) // Java static method
-       {
-           return "--->"+str+"<--- (Java)";
-       }
+   method oha(str) static
+      return "--->"str"<--- (NetRexx)"
 
-       public String thisInfo()             // Java instance method
-       {
-           return "===>"+this+"<=== (Java)";
-       }
-   }
+   method thisInfo
+      return "===>"this"<=== (NetRexx)"
 ::END

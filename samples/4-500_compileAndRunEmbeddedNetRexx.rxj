@@ -1,24 +1,18 @@
 #!/usr/bin/env rexx
 /*
-   name:    2-110_compileAndUseNetRexx.rxj
-
+   name:    4-500_compileAndRunEmbeddedNetRexx.rxj
    purpose: Demonstrate how to compile and use a NetRexx program embedded as resource
             in this ooRexx program, cf. http://www.netrexx.org or https://www.rexxla.org
-
-   invoke:  "rexx 2-110_compileAndUseNetRexx.rxj"
+   needs:   access to the NetRexx jar files (cf. http://www.netrexx.org)
+   invoke:  "rexx 4-500_compileAndRunEmbeddedNetRexx.rxj"
             ... Rexx script will demonstrate compiling and using an embedded NetRexx program
-
-            "rexxj2 2-110_compileAndUseNetRexx.rxj"      (Windows)
-            "rexxj2.sh 2-110_compileAndUseNetRexx.rxj"   (Unix)
+            "rexxj2 4-500_compileAndRunEmbeddedNetRexx.rxj"      (Windows)
+            "rexxj2.sh 4-500_compileAndRunEmbeddedNetRexx.rxj"   (Unix)
             ... Java will load Rexx and execute the Rexx script that compiles and uses
                 embedded NetRexx program
-
    author:  Rony G. Flatscher
-
-   Date:    2022-01-13
-
-   Purpose: compiles a NetRexx program and runs it
-
+   date:    2022-01-13
+   changed: 2022-01-18 rgf, renamed sample, extract program name from parse source for help
    license: AL 2.0, at the end of this program
 */
 

@@ -1,21 +1,19 @@
 #!/usr/bin/env rexx
 /*
-   name:    9-010_RunJavaClass.rxj
+   name:    4-060_runJavaClassMainMethod.rxj
    author:  Jack Woehr, <http://www.well.com/%7Ejax/rcfb/rexx.html>
    purpose: Calls the static void main() method of a class, supplying optionally
             arguments given on the command line
    date:    2008-09-03
-            2009-07-06 Walter Pachl  add help
+   changed: 2009-07-06 Walter Pachl  add help
             2016-11-07 rgf, hint the user to test with the org.oorexx.datergf.DateRGF Java
                        class which is supplied with BSF4ooRexx and got a static main method
                        added for this hint text
-
-
-   usage:   RunJavaClass fullyQualifiedJavaClassName [arg] ...
+            2022-01-18 rgf, renamed sample, extract program name from parse source for help
+   usage:   4-060_runJavaClassMainMethod.rxj fullyQualifiedJavaClassName [arg] ...
    license:
-
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2001-2016 Rony G. Flatscher
+       Copyright (C) 2001-2022 Jack Woehr, Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -29,20 +27,20 @@
        See the License for the specific language governing permissions and
        limitations under the License.
     -----------------------------------------------------------------------------
-
 */
 
 If arg()=0 | arg(1)='?' Then Do
   Parse Source source
   Say source
+  thisPgm=source~substr(source~lastPos(.file~separator)+1)
   Say 'This program shows how the (static) main method of a Java class'
   Say 'can be called from ooRexx, usage:'
   Say
-  Say '  rexx 9-010_ExecuteMainMethodInJavaClass.rxj fullyQualifiedJavaClassName [arg] ... '
+  Say '  rexx' thisPgm 'fullyQualifiedJavaClassName [arg] ... '
   Say
   Say 'For example:                                            '
   Say
-  Say '  rexx 9-010_ExecuteMainMethodInJavaClass.rxj org.oorexx.datergf.DateRGF'
+  Say '  rexx' thisPgm 'org.oorexx.datergf.DateRGF'
   Exit
   End
 
