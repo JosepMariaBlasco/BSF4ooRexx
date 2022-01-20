@@ -1,0 +1,69 @@
+#!/usr/bin/env rexx
+/*  Author:     Rony G. Flatscher
+    Name:       1-071_demoDoOver_Enum.rxj
+    Date:       2016-11-07 (refactored from 1070_demoDoOver.rxj)
+    Purpose:    Demonstrate how to use DO...OVER and (starting with ooRexx 5) DO WITH...OVER with
+                - java.lang.Enum class objects
+                     - MAKEARRAY will supply all enum Java objects
+                     - SUPPLIER will supply as index the ordinal value and as item the enum Java object
+    Needs:      - BSF4ooRexx
+                - ooRexx 5.0 or later
+    Changed:    2016-12-21, rgf: make sure that "DO WITH" gets run on ooRexx 5.0 or higher
+                2018-10-07, rgf: use new entry .bsf4rexx~rexx.version
+                2022-01-20, rgf: - removed checks for ooRexx 5.0 or later as previous versions of ooRexx
+                                   would cause a syntax error already
+                                 - refactored the routines to proper Rexx programs to ease spotting
+                                   DoOver samples that may be of interest to the programmer
+    License:
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2022 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+tab="    "                 -- define indentation
+line="-"~copies(79)        -- define line
+
+-- demonstrates iterating over a java.lang.Enum class'es defined enum values
+say "Demo DO..OVER a java.lang.Enum class object's enum values"
+say
+javaClz="org.oorexx.misc.OldGreekAlphabetEnum"  -- a demo Enum class
+say tab "loading the Java enum class" pp(javaClz) "..."
+clz=bsf.loadClass(javaClz)
+say
+
+say tab "a) iterating over all enum values after explicitly sending MAKEARRAY to the Java Enum class:"
+say
+do e over clz~makearray
+   say tab tab "ordinal:" pp(e~ordinal~right(2)) "name:" pp(e~name)
+end
+say
+
+say tab "b) iterating over all enum values using DO...OVER (sends MAKEARRAY message implicitly):"
+say
+do e over clz  -- "do e over clz" will cause ooRexx to send the MAKEARRAY message to "clz"
+      -- on enum value: instead of "name" one could use "toString" as well to get at its string representation
+   say tab tab "ordinal:" pp(e~ordinal~right(2)) "name:" pp(e~name)
+end
+say
+
+say tab "c) iterating over all enum values using DO WITH...OVER (sends SUPPLIER message implicitly):"
+say
+do with index o item e over clz
+   say tab tab "index (ordinal):" pp(o~right(2)) "item (name):" pp(e~name)
+end
+
+say line
+
+::requires "BSF.CLS" -- get Java support
