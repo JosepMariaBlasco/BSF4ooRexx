@@ -1,3 +1,35 @@
+-------------------------------------- 2022-01-20 ----------------------------------
+
+- BSF.CLS
+
+        - added optional fourth argument to bsf.compile(): by default .true
+          and returns the newClass processed with bsf.importClass() such
+          that it understands the ooRexx class message "new" and "newStrict";
+          in the case that someone needs to define an abstract class then
+          this fourth argument needs to not be .true such that the plain
+          Java class proxy gets returned unprocessed (bsf.import() would
+          raise an error, if the supplied Java class is abstract)
+
+-------------------------------------- 2022-01-18 ----------------------------------
+
+- added new samples
+
+        - 2-031_GetJavaSystemProperties.rxj  ... demonstrates "do with ... over" on java.util.Properties
+
+        - 2-051_GetJavaSystemProperties2.rxj ... demonstrates "makeArray" on java.util.Properites
+
+- renamed samples:
+
+      - 2-110_compileAndUseNetRexx.rxj          --> 4-500_compileAndRunEmbeddedNetRexx.rxj
+      - 3-100_compileAndUseJava.rxj             --> 4-601_compileAndRunEmbeddedJava1.rxj
+      - 3-100_compileAndUseNetRexx.rxj          --> 4-600_compileAndRunEmbeddedNetRexx1.rxj
+      - 3-110_compileAndUseJava.rxj             --> 4-611_compileAndUseEmbeddedJava2.rxj
+      - 3-110_compileAndUseNetRexx.rxj          --> 4-610_compileAndUseEmbeddedNetRexx2.rxj
+      - 9-010_ExecuteMainMethodInJavaClass.rxj  --> 4-060_runJavaClassMainMethod.rxj
+      - 9-020_swt_snippet108.rxj                --> 9-010_swt_snippet108.rxj
+      - 9-030_compileJavaClassAndUseIt.rxj      --> 4-701_compileAndUseEmbeddedJava3.rxj
+      - 9-030_compileNetRexxClassAndUseIt.rxj   --> 4-700_compileAndUseEmbeddedNetRexx3.rxj
+
 -------------------------------------- 2022-01-13 ----------------------------------
 
 - BSF.CLS

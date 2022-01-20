@@ -19,6 +19,13 @@
           .BSF in .environment;
 
    date:
+         2022-01-20, ---rgf, - add fourth optional argument to bsf.compile(): by default .true
+                               and returns the newClass processed with bsf.importClass() such
+                               that it understands the ooRexx class message "new" and "newStrict";
+                               in the case that someone needs to define an abstract class then
+                               this fourth argument needs to not be .true such that the plain
+                               Java class proxy gets returned unprocessed (bsf.import() would
+                               raise an error, if the supplied Java class is abstract)
          2022-01-15, ---rgf, - add more error message hints in bsf.compile(), check arguments
                              - camouflage NetRexx class object as ooRexx class object (add
                                class methods new and newStrict)
@@ -901,7 +908,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="641.20220115" -- set version (date distribution got created)
+      .bsf4rexx~version="641.20220120" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -6021,11 +6028,13 @@ syntax:
    @param className  the fully qualified class name (package plus class name in source)
    @param code       a mandatory string or array of strings representing the Java or NetRexx source code of a class
    @param language   optional, defaults to &quot;Java&quot;, alternatively can be &quot;NetRexx&quot;
+   @param import     logical, if set to .true (default) will box newClass using bsf.import()
+                     allowing ooRexx new to be sent), otherwise the Java class object gets returned as is
    @return           the compiled Java class object
 */
 
 ::routine bsf.compile   public
-   use strict arg className, code, language="Java"
+   use strict arg className, code, language="Java", bImport=.true
 
    if className="" | \className~isA(.string) then
       raise syntax 40.900 array ("BSF.CLS/routine/bsf.compile(): argument 'className' must be a string and not empty")
@@ -6063,7 +6072,8 @@ syntax:
 
       newClass=al~get(0)~findClass(qualifiedClassName)
       -- camouflage NetRexxJava class object as ooRexx class object, add class methods new and newStrict
-      newClass=.bsf~bsf.import(qualifiedClassName, .nil, newClass)   -- do not place it into the environment
+      if bImport=.true then   -- wrap it up as an ooRexx class understanding the new and newStrict messages
+         newClass=.bsf~bsf.import(qualifiedClassName, .nil, newClass)   -- do not place it into the environment
       return newClass
    end
 
@@ -6077,7 +6087,8 @@ syntax:
    sc~setParentClassLoader(clzLdr)
    sc~cook(code)
    newClass=sc~getClassLoader~loadClass(className)
-   newClass=.bsf~bsf.import(className, .nil, newClass)   -- do not place it into the environment
+   if bImport=.true then   -- wrap it up as an ooRexx class understanding the new and newStrict messages
+      newClass=.bsf~bsf.import(className, .nil, newClass)   -- do not place it into the environment
    return newClass
 
 nrxSyntax:
