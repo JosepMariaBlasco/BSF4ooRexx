@@ -10,6 +10,13 @@
           Java class proxy gets returned unprocessed (bsf.import() would
           raise an error, if the supplied Java class is abstract)
 
+- samples renamed to better indicate their purpose
+
+        - 2-031_GetJavaSystemProperties.rxj    --> 2-031_GetJavaSystemProperties_doWith.rxj
+        - 2-050_GetJavaSystemProperties2.rxj   --> 2-050_GetJavaSystemProperties2_sortWithTreeSet.rxj
+        - 2-051_GetJavaSystemProperties2.rxj   --> 2-051_GetJavaSystemProperties2_sortWithRexx.rxj
+        - 2-060_GetJavaSystemProperties3.rxj   --> 2-060_GetJavaSystemProperties3_toXML.rxj
+
 -------------------------------------- 2022-01-18 ----------------------------------
 
 - added new samples

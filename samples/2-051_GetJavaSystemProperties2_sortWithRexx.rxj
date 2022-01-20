@@ -1,10 +1,11 @@
 #!/usr/bin/env rexx
 /*
-   name:      2-051_GetJavaSystemProperties2.rxj
-   purpose:   show an easier way to sort the property keys (a java.util.Enumeration) by turning
-              them into an ooRexx array
-   needs:     ooRexx 5.0 or later
-   date:      18 February 2022
+   name:       2-051_GetJavaSystemProperties2_sortWithRexx.rxj
+   purpose:    show an easier way to sort the property keys (a java.util.Enumeration) by turning
+               them into an ooRexx array
+   needs:      ooRexx 5.0 or later
+   date:       18 February 2022
+   changed:    2022-01-20, rename program to indicate what it demonstrates
    last change: $Revision: 564 $ $Author: rony $ $Date: 2010-02-10 18:03:08 +0100 (Wed, 10 Feb 2010) $
    license:
     ------------------------ Apache Version 2.0 license -------------------------

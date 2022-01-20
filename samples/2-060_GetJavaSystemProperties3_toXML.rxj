@@ -1,13 +1,12 @@
 #!/usr/bin/env rexx
 /*
-   name:    2-031_GetJavaSystemProperties.rxj
-   purpose: demonstrate ooRexx 5 "do with ..." loop with a java.util.Properties object
-   needs:   ooRexx 5.0 or later
-   date:    2022-01-18
+   name:    2-060_GetJavaSystemProperties3_toXML.rxj
+   changed: - 05 July 2009 Walter Pachl add help and display line separator in hex
+            - 2022-01-20, rgf, rename program to indicate what it demonstrates
    last change: $Revision: 564 $ $Author: rony $ $Date: 2010-02-10 18:03:08 +0100 (Wed, 10 Feb 2010) $
    license:
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2022 Rony G. Flatscher
+       Copyright (C) 2001-2009 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -27,20 +26,22 @@ If arg(1)='?' Then Do
   Parse Source source
   Say source
   Say 'Get the Java System Properties from java.lang.System'
-  Say 'using the services set up by "BSF.CLS" and show them'
-  say 'on the console'
+  Say 'and show them on the console'
+  Say '  (1) using store'
+  Say '  (2) using storeToXML'
+  Say 'This is the only one showing user.timezone correctly'
   Exit
   End
 
-   -- get the "System" class object using the services set up by "BSF.CLS", e.g. ".bsf4rexx"
-system=bsf.loadClass('java.lang.System')  -- use routine "bsf.loadClass(...)"
-   /* get System properties (java.lang.Properties) and use ooRexx 5.0+
-      to iterate                                               */
-do with index key item value over system~getProperties
-   If key='line.separator' Then
-     say "key:" left("["key"]",30) "value: ['"c2x(value)"'x]"
-   Else
-     say "key:" left("["key"]",30) "value: ["value"]"
-end
+system=.bsf~bsf.loadClass("java.lang.System")   -- get the class object
+outStream=system~out    -- get the standard output stream
 
-::requires BSF.CLS      -- load the bidirectional ooRexx-Java bridge
+      -- store all properties in the property file format to standard out (the console)
+system~getProperties~store(outStream, "this is from ooRexx on:" date("S") time())
+
+say copies("=",70)
+      -- store all properties in the XML property file format to standard out (the console)
+      -- needs Java >= 1.5
+system~getProperties~storeToXML(outStream, "this is from ooRexx on:" date("S") time())
+
+::requires BSF.CLS      -- get the BSF4Rexx support for ooRexx

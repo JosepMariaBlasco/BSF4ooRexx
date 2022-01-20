@@ -154,7 +154,7 @@ example is to be expected:
     <dd>List all Java system properties of your Java installation. Loads explicitly the
         Java class <code>java.lang.System</code> and interrogates it.
 
-    <dt><a href="2-031_GetJavaSystemProperties.rxj">2-031_GetJavaSystemProperties.rxj</a>
+    <dt><a href="2-031_GetJavaSystemProperties_doWith.rxj">2-031_GetJavaSystemProperties_doWith.rxj</a>
     <dd>List all Java system properties of your Java installation. Loads explicitly the
         Java class <code>java.lang.System</code> and demonstrates using the supplier
         'do with ... over' introduced with ooRexx 5.0 with the Java system properties
@@ -164,19 +164,20 @@ example is to be expected:
     <dd>List all Java system properties of your Java installation. Uses the existing
         reference to the Java class <code>java.lang.System</code>, which gets set up
         by the ooRexx package <code>BSF.CLS</code> and stored to an ooRexx directory
-        that is always available by its environment symbol <code>.BSF4Rexx</code>.
+        that is always available by its environment symbol <code>.BSF4Rexx</code> and
+        its entry <code>System.class</code>.
 
-    <dt><a href="2-050_GetJavaSystemProperties2.rxj">2-050_GetJavaSystemProperties2.rxj</a>
+    <dt><a href="2-050_GetJavaSystemProperties2_sortWithTreeSet.rxj">2-050_GetJavaSystemProperties2_sortWithTreeSet.rxj</a>
     <dd>Same as <code>GetJavaSystemProperties.rxj</code> but lists the properties
         alphabetically <em>sorted in ascending order</em> by employing the Java class
         <code>java.util.TreeSet</code>.
 
-    <dt><a href="2-051_GetJavaSystemProperties2.rxj">2-051_GetJavaSystemProperties2.rxj</a>
+    <dt><a href="2-051_GetJavaSystemProperties2_sortWithRexx.rxj">2-051_GetJavaSystemProperties2_sortWithRexx.rxj</a>
     <dd>Same as <code>GetJavaSystemProperties.rxj</code> but lists the properties
         alphabetically <em>sorted in ascending order</em> by turning the system properties
         keys into an ooRexx array which then gets sorted.
 
-    <dt><a href="2-060_GetJavaSystemProperties3.rxj">2-060_GetJavaSystemProperties3.rxj</a>
+    <dt><a href="2-060_GetJavaSystemProperties3_toXML.rxj">2-060_GetJavaSystemProperties3_toXML.rxj</a>
     <dd>Same as <code>GetJavaSystemProperties.rxj</code> but uses the methods
         <code>store</code> and <code>storeToXML</code> of the Java class
         <code>java.lang.System</code> to print all properties to the standard
