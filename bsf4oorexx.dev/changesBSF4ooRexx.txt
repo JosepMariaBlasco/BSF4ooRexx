@@ -1,3 +1,15 @@
+-------------------------------------- 2022-01-26 ----------------------------------
+
+- rexxCutil.rex
+
+        - if an error, show debug information
+
+        - ooRexx r12326 (as of 2021-11-28) changed image format, but did not
+          increase METAVERSION ("imageVersion") field from 42 to 43
+
+        - imageVersion now 43: starting with ooRexx 5.0 r12349 (as of 2022-01-26)
+          or later
+
 -------------------------------------- 2022-01-20 ----------------------------------
 
 - BSF.CLS
