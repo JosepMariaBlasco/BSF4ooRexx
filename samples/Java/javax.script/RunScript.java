@@ -19,7 +19,7 @@ import javax.script.SimpleScriptContext;
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015-2019 Rony G. Flatscher
+   Copyright 2015-2022 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -37,10 +37,12 @@ import javax.script.SimpleScriptContext;
     changed: 2016-12-06, rgf: if no argument is given, show the help after the list of
                               currently available javax.script engines
 
-    changed: 2016-12-07, rgf: reformat getProgram()-output such that line comments are replaced by
+             2016-12-07, rgf: reformat getProgram()-output such that line comments are replaced by
                               block comments
 
-    changed: 2019-11-17, rgf: add getName()
+             2019-11-17, rgf: add getName()
+
+             2022-01-29, rgf: expicitly do a System.exit(0)
 */
 
 
@@ -102,7 +104,7 @@ public class RunScript
             }
             System.out.println();
             showHelp();
-            return;
+            System.exit(0);             // make sure Java exits
         }
         else    // process the first argument to decide what we need to do
         {
@@ -122,7 +124,7 @@ public class RunScript
                     {
                         showEngineProperties(key, n2sef.get(key));
                     }
-                    return;
+                    System.exit(0);             // make sure Java exits
                 }
 
                 else if (uSwitch.equals("T"))  // list all engines, test them
@@ -131,13 +133,13 @@ public class RunScript
                     {
                         testEngine(key, n2sef.get(key),  n2se.get(key));
                     }
-                    return;
+                    System.exit(0);             // make sure Java exits
                 }
 
                 else if (uSwitch.equals("H"))   // -h ... help text
                 {
                     showHelp();
-                    return;
+                    System.exit(0);             // make sure Java exits
                 }
 
                 else if (uSwitch.equals("E"))   // -e engineName fileName [arg... ]
@@ -244,6 +246,8 @@ public class RunScript
         {
             throw new IllegalArgumentException(exc);
         }
+
+        System.exit(0);     // explicitly exit
     }
 
 
@@ -317,13 +321,12 @@ public class RunScript
     static void showHelp()
     {
         System.out.println("usage: java RunScript [{-i | -t | -e enginename filename [args...] | filename [args...]}]\n");
-        System.out.println("          ... no arguments lists the available javax.script engines");
+        System.out.println("          ... (no arguments) lists the available javax.script engines followed by this help text");
         System.out.println("       -h ... 'help', gives this usage text");
         System.out.println("       -i ... lists the available javax.script engines and informs about their properties");
         System.out.println("       -t ... lists the available javax.script engines and tests evaluating their \"getOutputStatement(String)\" method");
         System.out.println("       -e  enginename filename [args...] ... uses \"enginename\" to evaluate \"filename\" supplying the arguments \"args...\"");
         System.out.println("       filename [args...] ... the \"filename\" extension determines the script engine to evaluate it, supplying the arguments \"args...\"");
-        return;
     }
 }
 

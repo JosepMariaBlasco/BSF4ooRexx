@@ -1,6 +1,13 @@
+-------------------------------------- 2022-01-29 ----------------------------------
+
+- rexxcUtil.rex
+
+        - add sanity checks to prohibit running on incompatible ooRexx interpreter:
+          METAVERSION increased to 43 on 26 Jan 2022, committed with revision 12349
+
 -------------------------------------- 2022-01-26 ----------------------------------
 
-- rexxCutil.rex
+- rexxcUtil.rex
 
         - if an error, show debug information
 

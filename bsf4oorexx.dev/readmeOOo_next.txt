@@ -1,4 +1,4 @@
-Some information on the OpenOffice/LibreOffice support   19 July 2021 (Gamma)
+Some information on the OpenOffice/LibreOffice support   31 January 2022 (GA)
 ======================================================   ====================
 
 The ooRexx Apache OpenOffice.org (OOo/AOO)/LibreOffice (LO, a fork of AOO) support

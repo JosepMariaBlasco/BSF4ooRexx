@@ -1,4 +1,4 @@
-The ooRexx OpenOffice.org Support (Using BSF4ooRexx)     19 July 2021 (Gamma)
+The ooRexx OpenOffice.org Support (Using BSF4ooRexx)     31 January 2022 (GA)
 ====================================================     ====================
 
 This adds support for interfacing with OpenOffice/StarOffice/LibreOffice using

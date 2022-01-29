@@ -70,6 +70,9 @@
                                    - imageVersion now 43: starting with ooRexx 5.0 r12349 (as of 2022-01-26)
                                      or later
 
+               2022-01-29, ---rgf: - add sanity checks to prohibit running on incompatible ooRexx interpreter:
+                                     METAVERSION increased to 43 on 26 Jan 2022, committed with revision 12349
+
 
    license: dual licensed as CPL 1.0 (cf. <https://opensource.org/licenses/cpl1.0.php>) and
                              AL 2.0 <https://opensource.org/licenses/Apache-2.0>
@@ -93,7 +96,7 @@ additional information for analyzing data cf.:
 
        char fileTag[16];               1-16      // special header for file tagging, currently the string: "/**/@REXX"
     *) uint16_t       magicNumber;    17-18      // special tag to indicate good meta data, currently: 11111
-   **) uint16_t       imageVersion;   19-20      // version identifier for validity, currently supported only: 42
+   **) uint16_t       imageVersion;   19-20      // version identifier for validity
        uint16_t       wordSize;       21-22      // size of a word, currently: 32 or 64
        uint16_t       bigEndian;      23-24      // true if this is a big-endian platform, currently either 0 or 1
   ***) uint32_t       requiredLevel;  25-28      // required language level for execution, currently: 60500
@@ -111,6 +114,18 @@ additional information for analyzing data cf.:
    x) introduced with r12326, November 28, 2021
 */
 
+-- sanity checks first
+cmp_date=.rexxinfo~date    -- date ooRexx got compiled
+cmp_rev =.rexxinfo~revision
+min_date="26 Jan 2022"     -- date METAINFO got increased to 43
+min_rev =12349             -- revision METAINFO got increased to 43
+
+cmp_dt=.dateTime~fromNormalDate(cmp_date) -- compilation date of current ooRexx
+min_dt=.dateTime~fromNormalDate(min_date) -- date METAINFO got increased the last time
+if \cmp_rev~isNil, cmp_rev>0, cmp_rev<min_rev then
+   raise syntax 98.900 array ('ooRexx too old: revision "'cmp_rev'" too low, revision must be at least "'min_rev'" (committed on 'min_date')')
+else if cmp_dt<min_dt then
+   raise syntax 98.900 array ('ooRexx too old: compiled on "'cmp_date'", must be compiled on "'min_date'" or later')
 
    -- setup
 pkgLocal=.context~package~local

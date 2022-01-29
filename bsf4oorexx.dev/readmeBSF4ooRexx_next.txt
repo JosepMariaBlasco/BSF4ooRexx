@@ -1,4 +1,4 @@
-Additional information on BSF4ooRexx that may be interesting 19 July 2021 (Gamma)
+Additional information on BSF4ooRexx that may be interesting 31 January 2022 (GA)
 ============================================================ ====================
 
 BSF4ooRexx is an extension to Rexx and ooRexx, consisting of an external Rexx

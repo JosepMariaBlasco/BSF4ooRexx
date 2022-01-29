@@ -1,4 +1,4 @@
-BSF4ooRexx, 6.41                                         19 July 2021 (Gamma)
+BSF4ooRexx, 6.41                                         31 January 2022 (GA)
 ================                                         ====================
 
 This is a package that creates a bridge between ooRexx and Java. For that
