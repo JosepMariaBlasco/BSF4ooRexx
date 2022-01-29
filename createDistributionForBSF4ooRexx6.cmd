@@ -10,6 +10,7 @@
 @rem 2016-11-24, adding JavaFX support, basing on Java 1.6/6.0, hence version "600" (6.00)
 @rem 2021-07-30, copy new NOTICE.txt to bsf4rexx
 @rem 2022-09-29, TODO: add module-info.{java|class} to allow package to be used as a module
+@rem                   not called anymore: createScriptProviderForooRexx.cmd
 
 @rem @echo createDistribution.cmd (for BSF4ooRexx)
 @echo %0 (for BSF4ooRexx)
@@ -88,6 +89,8 @@ rem copy %bsfJarNameBin% %bsfJarNameSource%
 
 @rem now remove sources from bin
 zip -d  %bsfJarNameBin% "*.java" "*.txt" "*.cmd" "*~" "*bkp*" "*tmp*"
+
+@rem add license files
 zip -9  %bsfJarNameBin% Apache_LICENSE_2.0.txt
 rem zip -9  %bsfJarNameBin% asm_LICENSE.TXT
 zip -9  %bsfJarNameBin% janino_LICENSE.TXT
@@ -103,7 +106,8 @@ rem zip -d %bsfJarNameSource% "*.class"  "*~"
 rem zip -9 %bsfJarNameSource% ApacheLicense2.0.txt
 
 
-call createScriptProviderForooRexx.cmd
+@rem 2022-01-29, rgf: from now on do not create the script provider automatically
+@rem call createScriptProviderForooRexx.cmd
 
 @echo creating BSF Rexx engine jar file, containing the OOo support and datergf...
 jar cvMf bsf-rexx-engine.jar org/rexxla/ org/oorexx/
@@ -397,6 +401,8 @@ zip -9 BSF4ooRexx_sources *.mf
 zip -9r BSF4ooRexx_sources com/sun/*
 zip -9r BSF4ooRexx_sources org/*
 zip -9r BSF4ooRexx_sources %devName%/*
+@rem 2022-01-29: add module-info.java to make it available
+zip -9  BSF4ooRexx_sources module-info.java
 
 zip -d BSF4ooRexx_sources "*.svn*" "*.idea*" "*bkp*" "*tmp*" "*~"   "*.idea*" "bin.iml"
 zip -d BSF4ooRexx_sources "*class" "*dll" "*lib" "*pdf" "*exe"
