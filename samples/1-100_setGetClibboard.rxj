@@ -37,7 +37,7 @@ say "getting current system's clipboard string value:"
 stringFlavor=bsf.loadClass("java.awt.datatransfer.DataFlavor")~stringFlavor
 say clipboard~getData(stringFlavor)
 
-::requires BSF.CLS
+::requires BSF.CLS      -- get Java bridge
 
 
 /*
