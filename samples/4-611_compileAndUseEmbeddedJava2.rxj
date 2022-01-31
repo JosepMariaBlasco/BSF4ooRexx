@@ -1,0 +1,156 @@
+#!/usr/bin/env rexx
+/*
+   name:    4-611_compileAndUseEmbeddedJava2.rxj
+   purpose: Demonstrate how to compile and use a Java program embedded as resource
+            in this ooRexx program;
+            the Java program does an abmysal amount of array processing (a pure
+            interpreter cannot possibly match performance of a compiled program in this
+            case) which is fast if compiled and executed by Java; ooRexx in this case
+            hosts the Java program and instrumentates it.
+            This demonstrates how easy it is to create external compiled classes/functionality
+            from ooRexx and directly use it.
+   needs:   ooRexx 5.0 or later
+   invoke:  "rexx 4-611_compileAndUseEmbeddedJava2.rxj"
+            ... Rexx script will demonstrate compiling and using an embedded Java program
+
+            "rexxj2 4-611_compileAndUseEmbeddedJava2.rxj"      (Windows)
+            "rexxj2.sh 4-611_compileAndUseEmbeddedJava2.rxj"   (Unix)
+            ... Java will load Rexx and execute the Rexx script that compiles and uses
+                embedded Java program
+   needs:   Java on class or module path and at least Java 8
+   author:  Rony G. Flatscher
+   date:    2022-01-15
+   changed: 2022-01-18 rgf, renamed sample, added hint to ooRexx 5.0 to signal handler
+   license: AL 2.0, at the end of this program
+*/
+
+signal on syntax     /* in case a condition gets raised           */
+
+/* ************************************************************************** */
+/* A compiled Java program has a static main method that expects an           */
+/* array of type String (representing supplied command line arguments).       */
+/* ************************************************************************** */
+say "a) ooRexx: use embedded Java program: fetch, compile & run it ..."
+d1=.dateTime~new
+clzSquares=bsf.compile("squares", .resources~squares.java, "Java")
+d2=.dateTime~new
+clzSquares~main(.nil)         /* run the Java program             */
+d3=.dateTime~new
+say "compiling Java program:" d2-d1    /* show duration        */
+say "running Java program  :" d3-d2    /* show duration        */
+say "---"
+
+/* ************************************************************************** */
+/* now using the Java class to do the same as its main method in ooRexx       */
+/* ************************************************************************** */
+say "b) ooRexx: use embedded Java program to create square array, proceed in ooRexx ..."
+items = 10000000
+clzArrays=bsf.loadClass("java.util.Arrays")
+say "ooRexx: let Java/Java create the square array for" pp(items) "items ..."
+t1=.dateTime~new
+s=clzSquares~createArray(items)
+t2=.dateTime~new
+
+say "ooRexx: received Java long array" pp(s)", getting a stream and asking it for its maximum:"
+t3=.dateTime~new
+say clzArrays~stream(s)~max~getAsLong
+t4=.dateTime~new
+say "duration of creating square array          :" t2-t1 /* show duration     */
+say "duration of creating stream and getting max:" t3-t2 /* show duration     */
+say "---"
+
+/* ************************************************************************** */
+/* now employing all long stream functions dynamically in ooRexx              */
+/* ************************************************************************** */
+messages=("average", "count", "max", "min", "sum") /* array of message names  */
+w=20     /* width for right adjusting numbers     */
+say "c) getting infos by sending ooRexx messages dynamically:" messages~toString(,', ')
+say "   (timings include generation of a new stream in each loop)"
+loop msg over messages
+   s1=.dateTime~new              /* get time                      */
+   val=clzArrays~stream(s)~send(msg)
+   s2=.dateTime~new              /* get time                      */
+   if val~isA(.bsf) then         /* a Java object in hand?        */
+   do
+      objectName=val~objectName     /* get objectName/beanName    */
+      if objectName~pos("OptionalLong")>0 then
+         val=val~asLong   ~right(w) /* right adjust number        */
+      else
+         val=val~asDouble ~right(w) /* right adjust number        */
+   end
+   else val=val~right(w)            /* right adjust number        */
+   say "   " msg~left(20,'.')":" val "duration:" s2-s1   /* show duration     */
+end
+say "---"
+
+/* ************************************************************************** */
+/* say now using Rexx' parse keyword instruction                              */
+/* ************************************************************************** */
+say "d) using method 'summaryStatistics' and parsing its string representation ..."
+t1=.dateTime~new
+parse value clzArrays~stream(s)~summaryStatistics~toString with -
+      "count=" count ", sum=" sum ", min=" min ", average=" average ", max=" max "}"
+t2=.dateTime~new
+say "   " "duration:" t2-t1", values:"    /* show duration        */
+say "   " "average"~left(20,'.')":" average~right(w)
+say "   " "count"  ~left(20,'.')":" count  ~right(w)
+say "   " "max"    ~left(20,'.')":" max    ~right(w)
+say "   " "min"    ~left(20,'.')":" min    ~right(w)
+say "   " "sum"    ~left(20,'.')":" sum    ~right(w)
+say "---"
+exit
+
+syntax:  /* in case of an error                                   */
+   co=condition('object')     /* get all condition information    */
+   say ppJavaExceptionChain(co)  /* show Java exception chain     */
+   say "---> this program needs ooRexx 5.0 or later"
+   raise propagate            /* let ooRexx interpreter handle it */
+
+
+::RESOURCE squares.java    /* Java source code              */
+   /* Java: squares.java                                    */
+   import java.util.Arrays;
+
+   public class squares
+   {
+       public static void main (String args[])
+       {
+           int items = 10000000;
+           long [] s = createArray(items);
+           System.out.println(Arrays.stream(s).max().getAsLong());
+       }
+
+       public static long [] createArray (int items)
+       {
+           long [] s = new long [items];
+           for (int i=1; i<=items; i++)
+           {
+               long n=i;
+               s[i-1] = n * n;
+           }
+           return s;
+       }
+   }
+::END
+
+::requires BSF.CLS      /* get full bidirectional Java support    */
+
+
+/*
+   license:
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2022 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/

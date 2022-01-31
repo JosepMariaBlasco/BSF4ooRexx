@@ -1,3 +1,131 @@
+-------------------------------------- 2022-01-31 ----------------------------------
+
+- samples/1-110_messageDigest.rxj: new (last minute) sample
+
+        - this program demonstrates the external function BsfRawBytes() to turn a
+          Rexx string into a Java byte array, a Java byte array into a Rexx string
+          which makes it easy to take advantage of Java methods that expect or return
+          Java byte arrays as is the case with some methods in the Java class
+          java.security.MessageDigest
+
+-------------------------------------- 2022-01-29 ----------------------------------
+
+- rexxcUtil.rex
+
+        - add sanity checks to prohibit running on incompatible ooRexx interpreter:
+          METAVERSION increased to 43 on 26 Jan 2022, committed with revision 12349
+
+-------------------------------------- 2022-01-26 ----------------------------------
+
+- rexxcUtil.rex
+
+        - if an error, show debug information
+
+        - ooRexx r12326 (as of 2021-11-28) changed image format, but did not
+          increase METAVERSION ("imageVersion") field from 42 to 43
+
+        - imageVersion now 43: starting with ooRexx 5.0 r12349 (as of 2022-01-26)
+          or later
+
+-------------------------------------- 2022-01-20 ----------------------------------
+
+- BSF.CLS
+
+        - added optional fourth argument to bsf.compile(): by default .true
+          and returns the newClass processed with bsf.importClass() such
+          that it understands the ooRexx class message "new" and "newStrict";
+          in the case that someone needs to define an abstract class then
+          this fourth argument needs to not be .true such that the plain
+          Java class proxy gets returned unprocessed (bsf.import() would
+          raise an error, if the supplied Java class is abstract)
+
+- samples renamed to better indicate their purpose
+
+        - 2-031_GetJavaSystemProperties.rxj    --> 2-031_GetJavaSystemProperties_doWith.rxj
+        - 2-050_GetJavaSystemProperties2.rxj   --> 2-050_GetJavaSystemProperties2_sortWithTreeSet.rxj
+        - 2-051_GetJavaSystemProperties2.rxj   --> 2-051_GetJavaSystemProperties2_sortWithRexx.rxj
+        - 2-060_GetJavaSystemProperties3.rxj   --> 2-060_GetJavaSystemProperties3_toXML.rxj
+
+-------------------------------------- 2022-01-18 ----------------------------------
+
+- added new samples
+
+        - 2-031_GetJavaSystemProperties.rxj  ... demonstrates "do with ... over" on java.util.Properties
+
+        - 2-051_GetJavaSystemProperties2.rxj ... demonstrates "makeArray" on java.util.Properites
+
+- renamed samples:
+
+      - 2-110_compileAndUseNetRexx.rxj          --> 4-500_compileAndRunEmbeddedNetRexx.rxj
+      - 3-100_compileAndUseJava.rxj             --> 4-601_compileAndRunEmbeddedJava1.rxj
+      - 3-100_compileAndUseNetRexx.rxj          --> 4-600_compileAndRunEmbeddedNetRexx1.rxj
+      - 3-110_compileAndUseJava.rxj             --> 4-611_compileAndUseEmbeddedJava2.rxj
+      - 3-110_compileAndUseNetRexx.rxj          --> 4-610_compileAndUseEmbeddedNetRexx2.rxj
+      - 9-010_ExecuteMainMethodInJavaClass.rxj  --> 4-060_runJavaClassMainMethod.rxj
+      - 9-020_swt_snippet108.rxj                --> 9-010_swt_snippet108.rxj
+      - 9-030_compileJavaClassAndUseIt.rxj      --> 4-701_compileAndUseEmbeddedJava3.rxj
+      - 9-030_compileNetRexxClassAndUseIt.rxj   --> 4-700_compileAndUseEmbeddedNetRexx3.rxj
+
+-------------------------------------- 2022-01-13 ----------------------------------
+
+- BSF.CLS
+
+        - add ability to compile NetRexx programs to routine bsf.compile()
+
+- 3-100_compileAndUseNetRexx.rxj
+
+        - added syntax condition handler for demonstration
+
+- 3-110_compileAndUseNetRexx.rxj
+
+        - added syntax condition handler for demonstration
+
+- 9-030_compileJavaClassAndUseIt.rxj
+
+        - changed Java code slightly,
+        - changed Java class name and method names
+        - added syntax condition handler for demonstration
+
+- added new samples
+
+        - 3-100_compileAndUseJava.rxj ... counterpart to 3-100_compileAndUseNetRexx.rxj
+
+        - 3-110_compileAndUseJava.rxj ... counterpart to 3-110_compileAndUseNetRexx.rxj
+
+        - 9-030_compileNetRexxClassAndUseIt.rxj ... counterpart to 9-030_compileJavaClassAndUseIt.rxj
+
+-------------------------------------- 2022-01-13 ----------------------------------
+
+- BSF.CLS
+
+        - add ability to compile NetRexx programs to routine bsf.compile()
+
+- added new samples
+
+        - samples/1-090_formattingDateDecimal.rxj ... localized formatting
+
+        - samples/1-100_setGetClibboard.rxj       ... using system clipboard
+
+        - samples/2-110_compileAndUseNetRexx.rxj  ... compile and use NetRexx program
+
+        - samples/3-100_compileAndUseNetRexx.rxj  ... compile and use NetRexx program
+
+        - samples/3-110_compileAndUseNetRexx.rxj  ... compile and use NetRexx class
+
+-------------------------------------- 2021-11-16 ----------------------------------
+
+- install/setupBSF.rex
+
+        - Linux arm32 name was wrong ("libBSF4ooRexx.so-32-arm" instead of
+          "libBSF4ooRexx.so-32-arm32")
+
+-------------------------------------- 2021-10-04 ----------------------------------
+
+- MacOS AOO installation/uninstallation
+
+        - creates $HOME/Java/Extensions if it does not exist yet and also links
+          libBSF4ooRexx.dylib there (needed on some AOO installations)
+
 
 -------------------------------------- 2021-09-14 ----------------------------------
 

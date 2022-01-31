@@ -1,0 +1,63 @@
+#!/usr/bin/env rexx
+/*
+   name:    1-110_messageDigest.rxj
+   invoke:  "rexx 1-110_messageDigest.rxj"
+            ... Rexx script to demonstrate creating a digest from arbitrary data
+                using the SHA-256 algorithm in this case (search with "javadoc
+                MessageDigest" to see additional algorithms one can use);
+                it demonstrates turning Rexx strings into Java byte arrays
+                and Java byte arrays into Rexx strings using the external function
+                BsfRawBytes()
+
+            "rexxj2 1-110_messageDigest.rxj"      (Windows)
+            "rexxj2.sh 1-110_messageDigest"   (Unix)
+             ... Java will load Rexx and execute the Rexx script, which uses Java classes
+
+   purpose: this program demonstrates the external function BsfRawBytes() to turn a
+            Rexx string into a Java byte array, a Java byte array into a Rexx string
+            which makes it easy to take advantage of Java methods that expect or return
+            Java byte arrays as is the case with some methods in the Java class
+            java.security.MessageDigest
+
+   date:    2022-01-31
+
+   changed: --
+
+   author:  Rony G. Flatscher
+
+   last change: $Revision: $ $Author: $ $Date: $
+
+   license(s): see end of this file
+*/
+
+clz       = bsf.loadClass("java.security.MessageDigest") -- load the Java class
+md        = clz~getInstance("SHA-256") -- get instance for the SHA-256 algorithm
+data      = "Hello, my beloved world." -- data to be digested
+arrData   = BsfRawBytes(data)          -- turn Rexx string into a Java byte array
+arrDigest = md~digest(arrData)         -- returns digest as a Java byte array
+digest    = BsfRawBytes(arrDigest)     -- turn Java byte array into a Rexx string
+say "data        :" pp(data)           -- show digested data
+say "digest (raw):" pp(digest)         -- show raw digest
+say "digest (hex):" digest~c2x         -- show digest as hex
+
+::requires BSF.CLS      -- get Java bridge
+
+/*
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2022 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/

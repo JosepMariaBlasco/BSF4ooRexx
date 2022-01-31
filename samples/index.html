@@ -137,6 +137,17 @@ example is to be expected:
     <dd>Demonstrate how to use the public routine <code>bsf.iconv(string,inCharset,outCharset)</code> on
         German umlauts and German sharp-s.
 
+    <dt><a href="1-090_formattingDateDecimal.rxj">1-090_formattingDateDecimal.rxj</a>
+    <dd>Demonstrate how to use localization for formatting dates and decimal numbers.
+
+    <dt><a href="1-100_setGetClibboard.rxj">1-100_setGetClibboard.rxj</a>
+    <dd>Demonstrate how to set and get a string to/from the system's clipboard.
+
+    <dt><a href="1-110_messageDigest.rxj">1-110_messageDigest.rxj</a>
+    <dd>Demonstrate how to create a SHA-256 digest from data, taking advantage of
+        the external Rexx function BsfRawData() to turn a Rexx string into
+        a Java byte array and a Java byte array into a Rexx string.
+
     <dt><a href="2-010_demoJavaArrays.rxj">2-010_demoJavaArrays.rxj</a>
     <dd>Demonstrate how to create and use Java array objects.
 
@@ -148,18 +159,30 @@ example is to be expected:
     <dd>List all Java system properties of your Java installation. Loads explicitly the
         Java class <code>java.lang.System</code> and interrogates it.
 
+    <dt><a href="2-031_GetJavaSystemProperties_doWith.rxj">2-031_GetJavaSystemProperties_doWith.rxj</a>
+    <dd>List all Java system properties of your Java installation. Loads explicitly the
+        Java class <code>java.lang.System</code> and demonstrates using the supplier
+        'do with ... over' introduced with ooRexx 5.0 with the Java system properties
+        (an instance of <code>java.util.Properties</code>)
+
     <dt><a href="2-040_GetJavaSystemProperties1.rxj">2-040_GetJavaSystemProperties1.rxj</a>
     <dd>List all Java system properties of your Java installation. Uses the existing
         reference to the Java class <code>java.lang.System</code>, which gets set up
         by the ooRexx package <code>BSF.CLS</code> and stored to an ooRexx directory
-        that is always available by its environment symbol <code>.BSF4Rexx</code>.
+        that is always available by its environment symbol <code>.BSF4Rexx</code> and
+        its entry <code>System.class</code>.
 
-    <dt><a href="2-050_GetJavaSystemProperties2.rxj">2-050_GetJavaSystemProperties2.rxj</a>
+    <dt><a href="2-050_GetJavaSystemProperties2_sortWithTreeSet.rxj">2-050_GetJavaSystemProperties2_sortWithTreeSet.rxj</a>
     <dd>Same as <code>GetJavaSystemProperties.rxj</code> but lists the properties
-        alphabetically sorted in ascending order by employing the Java class
+        alphabetically <em>sorted in ascending order</em> by employing the Java class
         <code>java.util.TreeSet</code>.
 
-    <dt><a href="2-060_GetJavaSystemProperties3.rxj">2-060_GetJavaSystemProperties3.rxj</a>
+    <dt><a href="2-051_GetJavaSystemProperties2_sortWithRexx.rxj">2-051_GetJavaSystemProperties2_sortWithRexx.rxj</a>
+    <dd>Same as <code>GetJavaSystemProperties.rxj</code> but lists the properties
+        alphabetically <em>sorted in ascending order</em> by turning the system properties
+        keys into an ooRexx array which then gets sorted.
+
+    <dt><a href="2-060_GetJavaSystemProperties3_toXML.rxj">2-060_GetJavaSystemProperties3_toXML.rxj</a>
     <dd>Same as <code>GetJavaSystemProperties.rxj</code> but uses the methods
         <code>store</code> and <code>storeToXML</code> of the Java class
         <code>java.lang.System</code> to print all properties to the standard
@@ -270,11 +293,144 @@ example is to be expected:
     <dd>Allows to pick a file that then gets printed (user is allowed to pick the printer as well).
         Java <em>&quot;swing&quot;</em> version.
 
-    <dt><a href="9-010_ExecuteMainMethodInJavaClass.rxj">9-010_ExecuteMainMethodInJavaClass.rxj</a>
+    <dt><a href="4-060_runJavaClassMainMethod.rxj">4-060_runJavaClassMainMethod.rxj</a>
     <dd>Demonstrates how to invoke the static main() method of the given Java class, supplying optionally
         arguments given on the command line to Rexx (by <a href="http://www.well.com/%7Ejax/rcfb/rexx.html">Jack Woehr</a>).
         If the Java class does not contain a public static main()-method, then an appropriate runtime
         error will be generated.
+
+    <dt><a href="4-500_compileAndRunEmbeddedNetRexx.rxj">4-500_compileAndRunEmbeddedNetRexx.rxj</a>
+    <dd>Demonstrates how to compile and use a NetRexx class in ooRexx:
+        <ul>
+            <li>The NetRexx source code is stored with the help of the ooRexx
+                RESOURCE directive
+            <li>&quot;BSF.CLS&quot; public routine <code>bsf.compile(...)</code>
+                gets used to compile the NetRexx source and returns the (NetRexx/Java)
+                class object wrapped up as an ooRexx class object
+        </ul>
+
+    <dt><a href="4-600_compileAndRunEmbeddedNetRexx1.rxj">4-600_compileAndRunEmbeddedNetRexx1.rxj</a>
+    <dd>Demonstrates how to compile and use a NetRexx class in ooRexx:
+        <ul>
+            <li>The NetRexx source code is stored with the help of the ooRexx
+                RESOURCE directive
+            <li>&quot;BSF.CLS&quot; public routine <code>bsf.compile(...)</code>
+                gets used to compile the NetRexx source and returns the (NetRexx/Java)
+                class object wrapped up as an ooRexx class object
+            <li>NetRexx (Java) gets used to quickly create and fill the abmysal array
+                of primitive type <code>long</code> where each element is the square
+                of its index, and then finding the maximum value<br>
+                Java runs sometimes even faster than C++ for this type of problem!
+        </ul>
+        This program needs Java 8 (introduced streams) or later.
+
+    <dt><a href="4-601_compileAndRunEmbeddedJava1.rxj">4-601_compileAndRunEmbeddedJava1.rxj</a>
+    <dd>Demonstrates how to compile and use a Java class in ooRexx:
+        <ul>
+            <li>The Java source code is stored with the help of the ooRexx
+                RESOURCE directive
+            <li>&quot;BSF.CLS&quot; public routine <code>bsf.compile(...)</code>
+                gets used to compile the Java source and returns the
+                class object wrapped up as an ooRexx class object
+            <li>Java gets used to quickly create and fill the abmysal array
+                of primitive type <code>long</code> where each element is the square
+                of its index, and then finding the maximum value<br>
+                Java runs sometimes even faster than C++ for this type of problem!
+        </ul>
+        This program needs Java 8 (introduced streams) or later.
+
+    <dt><a href="4-610_compileAndUseEmbeddedNetRexx2.rxj">4-610_compileAndUseEmbeddedNetRexx2.rxj</a>
+    <dd>Demonstrates how to compile and use a NetRexx program embedded in the
+    ooRexx program: the compiled NetRexx program can create abmysal sized arrays
+    quickly (sometimes even faster than compiled C++!), but uses ooRexx to work
+    on that array using Java streams that were introduced with Java 8
+
+    <dd>Demonstrates how to compile and use a NetRexx class in ooRexx:
+        <ul>
+            <li>The NetRexx source code is stored with the help of the ooRexx
+                RESOURCE directive
+
+            <li>&quot;BSF.CLS&quot; public routine <code>bsf.compile(...)</code>
+                gets used to compile the NetRexx source and returns the (NetRexx/Java)
+                class object wrapped up as an ooRexx class object
+
+            <li>NetRexx (Java) gets used to quickly create and fill the abmysal array
+                of primitive type <code>long</code> where each element is the square
+                of its index<br>
+                Java runs sometimes even faster than C++ for this type of problem!
+
+            <li>ooRexx then uses the returned Java class object to
+            <ol>
+                <li>run the NetRexx (Java) static <code>main</code> method which
+                    creates an abmysal sized (10,000,000 elements) long array (using
+                    its static <code>createArray</code> method) and uses a Java stream
+                    funciton to find the maximum value stored in the array
+
+                <li>create the abmysal sized (10,000,000 elements) array quickly on
+                    the ooRexx side with the help of the NetRexx static <code>createArray</code>
+                    method and then employs the Java stream functionality from ooRexx
+
+                <li>demonstrates how easy it is to send ooRexx messags from a string
+                    array to run various Java stream functions
+
+                <li>demonstrates the use of Rexx parsing for the string representation
+                    of the result of the stream function <code>summaryStatistics</code>
+            </ol>
+
+        </ul>
+        This program needs Java 8 (introduced streams) or later.
+
+    <dt><a href="4-611_compileAndUseEmbeddedJava2.rxj">4-611_compileAndUseEmbeddedJava2.rxj</a>
+    <dd>Demonstrates how to compile and use a Java program embedded in the
+    ooRexx program: the compiled Java program can create abmysal sized arrays
+    quickly (sometimes even faster than compiled C++!), but uses ooRexx to work
+    on that array using Java streams that were introduced with Java 8
+
+    <dd>Demonstrates how to compile and use a Java class in ooRexx:
+        <ul>
+            <li>The Java source code is stored with the help of the ooRexx
+                RESOURCE directive
+
+            <li>&quot;BSF.CLS&quot; public routine <code>bsf.compile(...)</code>
+                gets used to compile the Java source and returns the
+                class object wrapped up as an ooRexx class object
+
+            <li>Java gets used to quickly create and fill the abmysal array
+                of primitive type <code>long</code> where each element is the square
+                of its index<br>
+                Java runs sometimes even faster than C++ for this type of problem!
+
+            <li>ooRexx then uses the returned Java class object to
+            <ol>
+                <li>run the Java static <code>main</code> method which
+                    creates an abmysal sized (10,000,000 elements) long array (using
+                    its static <code>createArray</code> method) and uses a Java stream
+                    funciton to find the maximum value stored in the array
+
+                <li>create the abmysal sized (10,000,000 elements) array quickly on
+                    the ooRexx side with the help of the Java static <code>createArray</code>
+                    method and then employs the Java stream functionality from ooRexx
+
+                <li>demonstrates how easy it is to send ooRexx messags from a string
+                    array to run various Java stream functions
+
+                <li>demonstrates the use of Rexx parsing for the string representation
+                    of the result of the stream function <code>summaryStatistics</code>
+            </ol>
+
+        </ul>
+        This program needs Java 8 (introduced streams) or later.
+
+    <dt><a href="4-700_compileAndUseEmbeddedNetRexx3.rxj">4-700_compileAndUseEmbeddedNetRexx3.rxj</a>
+    <dd>Demonstrates how to store a NetRexx class in source code with the help of the ooRexx
+        RESOURCE directive, compile it at runtime with the public routine <code>bsf.compile(...)</code>
+        from &quot;BSF.CLS&quot;  and immediately use it from the running Rexx program.
+
+    <dt><a href="4-701_compileAndUseEmbeddedJava3.rxj">4-701_compileAndUseEmbeddedJava3.rxj</a>
+    <dd>Demonstrates how to store a Java class in source code with the help of the ooRexx
+        RESOURCE directive, compile it at runtime with the public routine <code>bsf.compile(...)</code>
+        from &quot;BSF.CLS&quot;  and immediately use it from the running Rexx program.
+
 
     <dt><a href="9-020_swt_snippet108.rxj">9-020_swt_snippet108.rxj</a>
     <dd>Transcription of the Eclipse GUI class library
@@ -289,16 +445,11 @@ example is to be expected:
         the environment variable
         <code>CLASSPATH</code> point to the <code>swt.jar</code> library!</em>
 
-    <dt><a href="9-030_compileJavaClassAndUseIt.rxj">9-030_compileJavaClassAndUseIt.rxj</a>
-    <dd>Demonstrates how to store a Java class in source code with the help of the ooRexx 5.0
-        RESOURCE directive, compile it at runtime with the public routine &quot;bsf.compile()&quot;
-        from &quot;BSF.CLS&quot; and immediately use it from the running Rexx program.
-
 </dl>
 
 <p>
 <hr>
 <p style="font-size: 80%;">
-Rony G. Flatscher, 2010-08-22, 2014-06-26, 2016-08-14, 2016-11-18, 2018-03-06, 2018-07-20, Wien/Vienna, Austria, Europe
+Rony G. Flatscher, 2010-08-22, ..., 2022-01-18, Wien/Vienna, Austria, Europe
 </body>
 

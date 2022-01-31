@@ -21,7 +21,7 @@ import java.io.*;       // exception handling
  *
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2012 Rony G. Flatscher
+ *    Copyright (C) 2001-2022 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -50,24 +50,24 @@ import java.io.*;       // exception handling
                        to not be invoked at all)
     - 2015-08-04, rgf: split logic to allow Java4Rexx to sucessfully set the Rexx interpreter ids (rii_IDs) in
                        RexxEngine and its companion RexxAndJava instance
+    - 2022-01-29, rgf: in anticipation that eventually access to private members from JNI will get
+                       prohibited; package private is safe enough anyway
 */
 
 class Java4Rexx {
-    /** Version string indicating version of this class (majorVersion*100+minorVersion
-     *  concatenated with a dot and the sorted date of last change.
-     */
-    static public String version = "452.20150804";
+    /** Version string indicating version of this class. */
+    static public String version = "641.20220129";
 
     final static boolean bDebug= // true;
                                  false;
 
 
   /**  BSF-manager to be used to get (instantiate) the Rexx engine. */
-  static private BSFManager bsfMgr=null;
+  static BSFManager bsfMgr=null;
 
   /** The Rexx engine loaded via {@link #bsfMgr}. */
   // static private BSFEngine  rxEngine=null;
-  static private RexxEngine  rxEngine=null;
+  static RexxEngine  rxEngine=null;
 
   /** This method allows Rexx to load Java, then initialize
    *  the BSF4ooRexx infrastructure from the Java side, and
@@ -77,7 +77,7 @@ class Java4Rexx {
    * can <em>only</em> be invoked by JNI.
    *
     */
-  private static void createInterface4Rexx() throws IOException {
+  static void createInterface4Rexx() throws IOException {
 
     try {
         bsfMgr  = new BSFManager ();   // create and initialize a BSFManager
@@ -117,7 +117,7 @@ if (bDebug) System.err.println("///\\\\\\ Java4Rexx.createInterface4Rexx() ///\\
    *
    * @since 2015-08-04
    */
-  private static void set_rii_ids ()
+  static void set_rii_ids ()
   {
           // now call into the DLL ("BSF4ooRexx.dll") in order to initialize; will set JVM in BSF4ooRexx.cc
       RexxAndJava raj=null;

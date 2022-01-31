@@ -6,15 +6,16 @@
                 this allows one to run Rexx programs and aggregate all public routines
                 and public classes
 
-    Changed:    2014-07-11, ---rgf: demonstrate redirecting ooRexx standard streams to Java
-                2018-01-03, ---rgf: make sure code argument is submitted as a Rexx array
+    Changed:    - 2014-07-11, ---rgf: demonstrate redirecting ooRexx standard streams to Java
+                - 2018-01-03, ---rgf: make sure code argument is submitted as a Rexx array
+                - 2022-01-29, rgf: expicitly do a System.exit(0)
 
     Needs:      ooRexx 4.0, BSF4ooRexx
 
     License:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2014-2018 Rony G. Flatscher
+       Copyright (C) 2014-2022 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -95,6 +96,7 @@ public class JavaRunRexx_06
         rp3.sendMessage2("call", "argument from Java", new Object());  // call (execute) the Rexx routine with arguments
 
         mgr.terminate();    // make sure that the Rexx interpreter instance gets terminated!
+        System.exit(0);
     }
 }
 

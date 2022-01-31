@@ -1,0 +1,85 @@
+#!/usr/bin/env rexx
+/*
+   name:    4-601_compileAndRunEmbeddedJava1.rxj
+   purpose: Demonstrate how to compile and use a Java program embedded as resource
+            in this ooRexx program;
+            the Java program does an abmysal amount of array processing (a pure
+            interpreter cannot possibly match performance of a compiled program in this
+            case) which is fast if compiled and executed by Java; ooRexx in this case
+            hosts the Java program and instrumentates it.
+            This demonstrates how easy it is to create external compiled classes/functionality
+            from ooRexx and directly use it.
+   needs:   ooRexx 5.0 or later
+   invoke:  "rexx 4-601_compileAndRunEmbeddedJava1.rxj"
+            ... Rexx script will demonstrate compiling and using an embedded Java program
+            "rexxj2 4-601_compileAndRunEmbeddedJava1.rxj"      (Windows)
+            "rexxj2.sh 4-601_compileAndRunEmbeddedJava1.rxj"   (Unix)
+            ... Java will load Rexx and execute the Rexx script that compiles and uses
+                embedded Java program
+   needs:   ooRexx 5.0 or later
+   author:  Rony G. Flatscher
+   date:    2022-01-15
+   changed: 2022-01-18 rgf, renamed sample, added hint to ooRexx 5.0 to signal handler
+   license: AL 2.0, at the end of this program
+*/
+
+signal on syntax     /* in case a condition gets raised         */
+/* A compiled Java program has a static main method that expects an
+   array of type String (representing supplied command line arguments). */
+say "ooRexx: use embedded Java program: fetch, compile & run it ..."
+d1=.dateTime~new        /* for timings                         */
+clzSquares=bsf.compile("squares", .resources~squares.java, "Java")
+d2=.dateTime~new        /* for timings                         */
+clzSquares~main(.nil)   /* run the Java program             */
+d3=.dateTime~new        /* for timings                         */
+say "compiling Java program:" d2-d1 /* show duration        */
+say "running Java program  :" d3-d2 /* show duration        */
+exit
+
+syntax:  /* in case of an error                                 */
+   co=condition('object')  /* get all condition information     */
+   say ppJavaExceptionChain(co)  /* show Java exception chain   */
+   say "---> this program needs ooRexx 5.0 or later"
+   raise propagate         /* let ooRexx interpreter handle it  */
+
+
+::RESOURCE squares.java     /* Java source code                 */
+   /* Java: squares.java                                        */
+   import java.util.Arrays;
+
+   public class squares
+   {
+       public static void main (String args[])
+       {
+           int items = 10000000;
+           long [] s = new long [items];
+           for (int i=1; i<=items; i++)
+           {
+               long n=i;
+               s[i-1] = n * n;
+           }
+           System.out.println(Arrays.stream(s).max().getAsLong());
+       }
+   }
+::END
+
+::requires BSF.CLS      /* get full bidirectional Java support  */
+
+/*
+   license:
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2022 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/

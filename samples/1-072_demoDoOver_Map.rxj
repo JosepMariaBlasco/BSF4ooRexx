@@ -1,0 +1,71 @@
+#!/usr/bin/env rexx
+/*
+    Author:     Rony G. Flatscher
+    Name:       1-072_demoDoOver_Map.rxj
+    Date:       2016-11-07 (refactored from 1070_demoDoOver.rxj)
+    Purpose:    Demonstrate how to use DO...OVER and (starting with ooRexx 5) DO WITH...OVER with
+                - java.util.Map
+                     - MAKEARRAY will supply the key values
+                     - SUPPLIER will supply as index the key and as item the value stored with the key
+    Needs:      - BSF4ooRexx
+                - ooRexx 5.0 or later
+    Changed:    2016-12-21, rgf: make sure that "DO WITH" is run on ooRexx 5.0.0 or higher
+                2018-10-07, rgf: use new entry .bsf4rexx~rexx.version
+                2022-01-20, rgf: - removed checks for ooRexx 5.0 or later as previous versions of ooRexx
+                                   would cause a syntax error already
+                                 - refactored the routines to proper Rexx programs to ease spotting
+                                   DoOver samples that may be of interest to the programmer
+    License:
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2022 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+tab="    "                 -- define indentation
+line="-"~copies(79)        -- define line
+
+-- demonstrates iterating over a java.util.Map
+say "Demo DO..OVER a java.util.Map object"
+say
+   -- Rexx languages in historical order
+hm=.BSF~new("java.util.HashMap")       -- create a HashMap object and add values to it
+hm~put("key1", "Rexx is great!")
+hm~put("key2", "Regina is great!")
+hm~put("key3", "NetRexx is great!")
+hm~put("key4", "ooRexx is great!")
+hm~put("key5", "BSF4ooRexx is great!")
+
+say tab "a) iterating over all keys after explicitly sending MAKEARRAY to the Java object and sort the Rexx array:"
+say
+do k over hm~makearray~sort   -- turn into an ooRexx array which can be sorted
+   say tab tab "key:" pp(k)   "item:" pp(hm~get(k))
+end
+say
+
+say tab "b) iterating over all keys using DO...OVER (sends MAKEARRAY message implicitly, unsorted):"
+say
+do k over hm
+   say tab tab "key:" pp(k)   "item:" pp(hm~get(k))
+end
+say
+
+say tab "c) iterating over all key/value pairs using DO WITH...OVER (sends SUPPLIER message implicitly, unsorted):"
+say
+do with index i item v over hm
+   say tab tab "index:" pp(i) "item:" pp(v)
+end
+say line
+
+::requires "BSF.CLS" -- get Java support

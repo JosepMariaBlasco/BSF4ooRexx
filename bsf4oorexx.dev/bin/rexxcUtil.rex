@@ -1,7 +1,7 @@
 #!/usr/bin/env rexx
 /*
    author:     Rony G. Flatscher
-   date:       2020-03-09
+   date:       2022-01-26
    name:       rexxcUtil.rex
    purpose:    get information about rexxc compiled programs, allow for base64 encoding
                and base64 decoding such files;
@@ -27,9 +27,9 @@
                of plain text that needs to be code page translated before usage (first observed
                with BSF4ooRexx)
 
-   needs:      ooRexx 5.0 or later
+   needs:      ooRexx 5.0 r12349 (as of 2022-01-26) or later
 
-   version:    1.08
+   version:    1.09
    changed:    2019-05-07, ---rgf,
                         - fix parsing of file names, check whether input file exists
                           supply return code for calling program:
@@ -64,12 +64,23 @@
                                    adjusting the test for languageLevel accordingly
                2021-06-26, ---rgf: correct "?" handling in argument
 
+               2022-01-25, ---rgf: - if an error, show debug information
+                                   - ooRexx r12326 (as of 2021-11-28) changed image format, but did not
+                                     increase METAVERSION ("imageVersion") field from 42 to 43
+                                   - imageVersion now 43: starting with ooRexx 5.0 r12349 (as of 2022-01-26)
+                                     or later
+
+               2022-01-29, ---rgf: - add sanity checks to prohibit running on incompatible ooRexx interpreter:
+                                     METAVERSION increased to 43 on 26 Jan 2022, committed with revision 12349
+
+
    license: dual licensed as CPL 1.0 (cf. <https://opensource.org/licenses/cpl1.0.php>) and
                              AL 2.0 <https://opensource.org/licenses/Apache-2.0>
 
 additional information for analyzing data cf.:
 
 --> working with ProgramMetaData.* and LanguageLevel.hpp from r11875 which sets imageVersion to 42
+--> working with ProgramMetaData.hpp only, from r12326 which causes an increase of imageVersion to 43
 
    interpreter/classes/support/ProgramMetaData.hpp: defines the fields characterizing the compiled Rexx script
 
@@ -85,21 +96,36 @@ additional information for analyzing data cf.:
 
        char fileTag[16];               1-16      // special header for file tagging, currently the string: "/**/@REXX"
     *) uint16_t       magicNumber;    17-18      // special tag to indicate good meta data, currently: 11111
-   **) uint16_t       imageVersion;   19-20      // version identifier for validity, currently supported only: 42
+   **) uint16_t       imageVersion;   19-20      // version identifier for validity
        uint16_t       wordSize;       21-22      // size of a word, currently: 32 or 64
        uint16_t       bigEndian;      23-24      // true if this is a big-endian platform, currently either 0 or 1
-  ***) LanguageLevel  requiredLevel;  25-28      // required language level for execution, currently: 60500
+  ***) uint32_t       requiredLevel;  25-28      // required language level for execution, currently: 60500
        uint32_t       reserved;       29-32      // padding to bring imageSize to a 64-bit boundary
- ****) size_t         imageSize;      33-{36|40} // size of the image; "size_t" is either 32 or 64 bit depending on wordsize
+    x) size_t         pad             33-{36|40} // "size_t" is either 32 or 64 bit depending on wordsize
+ ****) size_t         imageSize;      {37|41}-{40|44} // size of the image; "size_t" is either 32 or 64 bit depending on wordsize
        char           imageData[4];              // the copied image data; start of the image data which is always 'imageSize' long
        ... cut ..
 
-   *) conatant value: 11111
+   *) constant value: 11111
   **) value: 42 (this file layout version introduced "reserved" and zeroes fileTag before using it)
- ***) enum forced to 32 bits
+ OLD (42) ***) enum forced to 32 bits
 ****) size_t may be uint32_t or uint64_t depending on the platform; wordSize/8 gives the number of bytes to use
+
+   x) introduced with r12326, November 28, 2021
 */
 
+-- sanity checks first
+cmp_date=.rexxinfo~date    -- date ooRexx got compiled
+cmp_rev =.rexxinfo~revision
+min_date="26 Jan 2022"     -- date METAINFO got increased to 43
+min_rev =12349             -- revision METAINFO got increased to 43
+
+cmp_dt=.dateTime~fromNormalDate(cmp_date) -- compilation date of current ooRexx
+min_dt=.dateTime~fromNormalDate(min_date) -- date METAINFO got increased the last time
+if \cmp_rev~isNil, cmp_rev>0, cmp_rev<min_rev then
+   raise syntax 98.900 array ('ooRexx too old: revision "'cmp_rev'" too low, revision must be at least "'min_rev'" (committed on 'min_date')')
+else if cmp_dt<min_dt then
+   raise syntax 98.900 array ('ooRexx too old: compiled on "'cmp_date'", must be compiled on "'min_date'" or later')
 
    -- setup
 pkgLocal=.context~package~local
@@ -108,9 +134,9 @@ pkgLocal~compiledHeaderLength=.compiledHeader~length
 pkgLocal~encodedHeader       ="/**/@REXX@" || "0A"x   -- cf. ProgramMetaData.cpp
 pkgLocal~encodedHeaderLength =.encodedHeader~length
 pkgLocal~magicNumber         =11111       -- cf. ProgramMetaData.?pp
-pkgLocal~imageVersion        =42          -- only supported image version, cf. ProgramMetaData.?pp
+pkgLocal~imageVersion        =43          -- only supported image version, cf. ProgramMetaData.?pp
 pkgLocal~encodingChunkLength =72
-pkgLocal~bDebug              =.false -- .true       -- if .true, then use sayDebug to show state of decoding at point in error
+pkgLocal~bDebug              =.true -- .false -- .true       -- if .true, then use sayDebug to show state of decoding at point in error
 
    -- get and process arguments
 parse arg args
@@ -256,9 +282,10 @@ end
 ::attribute  bigEndian?        -- pos 23, uint16_t
 ::attribute  requiredLevel    -- pos 25, uint32_t (enum 32 bits wide)
 ::attribute  reserved         -- pos 29, uint32_t
-::attribute  imageSize        -- pos 33, size_t (uint32_t) or uint64_t depending on wordSize
+::attribute  pad              -- pos 33, size_t (uint32_t) or uint64_t depending on wordSize
+::attribute  imageSize        -- pos 37|41, size_t (uint32_t) or uint64_t depending on wordSize
 
-::attribute  imageData        -- pos 33, char [4]
+::attribute  imageData        -- pos 41|45, char [4]
 
 -- ::attribute  allChars         -- content of file
 
@@ -269,7 +296,7 @@ end
 ::attribute  returnCode       -- return code: 0 or error-number
 
 ::method init                 -- constructor
-  use local allChars stream tmp len1  -- local variables (all others are attributes)
+  use local allChars stream tmp len1 nextPos -- local variables (all others are attributes)
   use strict arg fileName
 
    -- set default values for attributes
@@ -281,9 +308,10 @@ end
   imageVersion    =.nil
   wordSize        =.nil
   wordSizeBytes   =.nil
-  bigEndian?       =.nil
+  bigEndian?      =.nil
   requiredLevel   =.nil
   reserved        =.nil
+  pad             =.nil
   imageSize       =.nil
   imageData       =.nil
   allCharsBinary  =.nil
@@ -307,12 +335,12 @@ end
   startOfCompiledHeader=allChars~pos(.compiledHeader)      -- get starting position for compiledHeader
   if startOfCompiledHeader=0 then               -- not a rexxc compiled Rexx program
   do
+     returnCode=51     -- error: compiledHeader not found
      if .bDebug=.true then
      do
         .error~say("error: file" pp(fileName)": string" pp(.compiledHeader) "not found, aborting...")
         self~sayDebug
      end
-     returnCode=51     -- error: compiledHeader not found
      return
   end
 
@@ -337,104 +365,116 @@ end
   fileTag=allCharsBinary[1,16]      -- "/**/@REXX"
   if fileTag[1,.compiledHeaderLength]<>.compiledHeader then -- fileTag value must be equal to .compiledHeader
   do
+     returnCode=52     -- error: byte after compiledHeader not '00'x nor '40'x ('@')
      if .bDebug=.true then
      do
         .error~say("error: file" pp(fileName)': fileTag has illegal value "'||fileTag|'", expecting value "'.compiledHeader'", aborting...' )
         self~sayDebug
      end
-     returnCode=52     -- error: byte after compiledHeader not '00'x nor '40'x ('@')
      return
   end
 
    -- get endianness before interpreting integer values
   bigEndian?=(allCharsBinary[23,2]~c2x~x2d=.true)
 
+   -- magic number
   tmp=allCharsBinary[17,2]
   if \bigEndian? then tmp=tmp~reverse
   magicNumber=tmp~c2x~x2d
   if magicNumber<>.magicNumber then
   do
+     returnCode=53     -- error: illegal magicNumber
      if .bDebug=.true then
      do
         .error~say("error: file" pp(fileName)': magic number' pp(magicNumber) 'does not match' pp(.magicNumber)', aborting...')
         self~sayDebug
      end
-     returnCode=53     -- error: illegal magicNumber
      return
   end
 
+   -- imageVersion
   tmp=allCharsBinary[19,2]
   if \bigEndian? then tmp=tmp~reverse   -- if little endian, reverse characters
   imageVersion=tmp~c2x~x2d
 
   if imageVersion<>.imageVersion then
   do
+     returnCode=54     -- error: imageVersion in rexxc image does not match the one supported by this program
      if .bDebug=.true then
      do
         .error~say("error: file" pp(fileName)': imageVersion' pp(imageVersion) 'does not match' pp(.imageVersion)', aborting...')
         self~sayDebug
      end
-     returnCode=54     -- error: imageVersion in rexxc image does not match the one supported by this program
      return
   end
 
-
+   -- wordSize
   tmp=allCharsBinary[21,2]
   if \bigEndian? then tmp=tmp~reverse   -- if little endian, reverse characters
   wordSize=tmp~c2x~x2d                 -- # of bits for a word (32, 64)
   if "32 64"~wordpos(wordSize)=0 then
   do
+     returnCode=55     -- error: illegal wordSize, must be 32 or 64
      if .bDebug=.true then
      do
         .error~say("error: file" pp(fileName)': illegal wordSize' pp(wordSize) 'must be 32 or 64, aborting...')
         self~sayDebug
      end
-     returnCode=55     -- error: illegal wordSize, must be 32 or 64
      return
   end
 
   wordSizeBytes=wordSize/8
 
+   -- requiredLevel
   tmp=allCharsBinary[25,4]
   if \bigEndian? then tmp=tmp~reverse   -- if little endian, reverse characters
   requiredLevel=tmp~c2x~x2d
   if requiredLevel>.rexxinfo~languageLevel*10000 then
   do
+     returnCode=56     -- error: required languageLevel does not match the interpreter's languageLevel
      if .bDebug=.true then
      do
         .error~say("error: file" pp(fileName)': requiredLevel' pp(requiredLevel/10000) "is larger than the current interpreter's languageLevel" pp(.rexxinfo~languageLevel)", aborting...")
         self~sayDebug
      end
-     returnCode=56     -- error: required languageLevel does not match the interpreter's languageLevel
      return
   end
 
+   -- reserved
   tmp=allCharsBinary[29,4]
   if \bigEndian? then tmp=tmp~reverse   -- if little endian, reverse characters
   reserved=tmp~c2x~x2d
 
+   -- pad
   tmp=allCharsBinary[33,wordsizeBytes] -- 4 or 8 bytes depending on wordSize !
   if \bigEndian? then tmp=tmp~reverse   -- if little endian, reverse characters
+  pad=tmp~c2x~x2d
+  nextPos=33+wordsizeBytes
+
+   -- imageSize
+  tmp=allCharsBinary[nextPos,wordsizeBytes] -- 4 or 8 bytes depending on wordSize !
+  if \bigEndian? then tmp=tmp~reverse   -- if little endian, reverse characters
   imageSize=tmp~c2x~x2d
+  nextPos=nextPos+wordsizeBytes
 
-  imageData=allCharsBinary~substr(33+wordSizeBytes)
-
+   -- imageData
+  imageData=allCharsBinary~substr(nextPos)
   if imageSize<>imageData~length then
   do
+     returnCode=57     -- error: illegal imageSize does not match imageData length
      if .bDebug=.true then
      do
         .error~say("error: file" pp(fileName)': imageSize' pp(imageSize) 'does not match the length of imageData' pp(imageData~length)', aborting...')
         self~sayDebug
      end
-     returnCode=57     -- error: illegal imageSize does not match imageData length
      return
   end
-  rexxc?=.true       -- we have a rexxc compiled program in hand
+  rexxc?=.true       -- we have a valid rexxc compiled program in hand
 
 
 
 ::method sayDebug
-  use local
+  use local tmp
   say "   fileName............" pp(fileName)
   say "   rexxc? ............." pp(rexxc?)
   say "   encoded? ..........." pp(encoded?)
@@ -442,8 +482,12 @@ end
   if leadin~isNil then
      say "   leadin ............." pp(leadin)
   else
-     say "   leadin ............." pp(leadin~changeStr("0d"x,'')~changeStr("0a"x,''))
-  say "   compiledHeader ....." pp(.compiledHeader)
+  do
+     -- make sure that we only extract the length of the expected leadin, but expect it to not be present
+     tmp=leadin~left(19)~changeStr("0d"x,'"0d"x')~changeStr("0a"x,'"0a"x')
+     say "   leadin ............." pp(tmp)
+  end
+  say "   compiledHeader ....." pp(.compiledHeader) "(needle to look for)"
   say "   magicNumber ........" pp(magicNumber)
   say "   imageVersion ......." pp(imageVersion)
   say "   wordSize ..........." pp(wordSize)
@@ -454,6 +498,7 @@ end
   else
      say "   requiredLevel ......" pp(requiredLevel) '(should match ".RexxInfo~languageLevel * 10000")'
   say "   reserved ..........." pp(reserved)
+  say "   pad      ..........." pp(pad)
   say "   imageSize .........." pp(imageSize)
   if imageData~isNil then
      say "   imageData .........." pp(imageData)
@@ -517,7 +562,7 @@ end
 
 /*
    -------------------- Apache License 2.0 --------------------
-      Copyright 2019-2021 Rony G. Flatscher
+      Copyright 2019-2022 Rony G. Flatscher
 
       Licensed under the Apache License, Version 2.0 (the "License");
       you may not use this file except in compliance with the License.

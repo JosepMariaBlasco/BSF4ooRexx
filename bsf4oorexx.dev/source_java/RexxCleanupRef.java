@@ -102,7 +102,7 @@ public class RexxCleanupRef extends PhantomReference
     private final static ReferenceQueue refQueue=new ReferenceQueue();
 
 
-    /** Learned that <code>PhantomReferences</code> must be rerenced themselves
+    /** Learned that <code>PhantomReferences</code> must be refenced themselves
      *  otherwise they may never be put on the reference queue, so storing them
      *  in this <code>IdentityHashMap</code> until the reference is being put on
      *  the reference queue for processing, at which time the reference will be

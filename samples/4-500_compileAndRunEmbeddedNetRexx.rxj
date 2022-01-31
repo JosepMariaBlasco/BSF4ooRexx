@@ -1,0 +1,58 @@
+#!/usr/bin/env rexx
+/*
+   name:    4-500_compileAndRunEmbeddedNetRexx.rxj
+   purpose: Demonstrate how to compile and use a NetRexx program embedded as resource
+            in this ooRexx program, cf. http://www.netrexx.org or https://www.rexxla.org
+   needs:   access to the NetRexx jar files (cf. http://www.netrexx.org)
+   invoke:  "rexx 4-500_compileAndRunEmbeddedNetRexx.rxj"
+            ... Rexx script will demonstrate compiling and using an embedded NetRexx program
+            "rexxj2 4-500_compileAndRunEmbeddedNetRexx.rxj"      (Windows)
+            "rexxj2.sh 4-500_compileAndRunEmbeddedNetRexx.rxj"   (Unix)
+            ... Java will load Rexx and execute the Rexx script that compiles and uses
+                embedded NetRexx program
+   author:  Rony G. Flatscher
+   date:    2022-01-13
+   changed: 2022-01-18 rgf, renamed sample, extract program name from parse source for help
+   license: AL 2.0, at the end of this program
+*/
+
+say "ooRexx: Hello, world from ooRexx! (https://www.oorexx.org)"
+parse version v
+say "ooRexx: parse version v:" pp(v)
+parse source  s
+say "ooRexx: parse source  s:" pp(s)
+say "---"
+
+/* A compiled NetRexx program has a static main method that expects an
+   array of type String (representing supplied command line arguments). */
+clzNrx=bsf.compile("SomeClassName", .resources~helloWorld.nrx, "NetRexx")
+clzNrx~main(.nil)          -- run the NetRexx program, invoke its implicit static main method
+
+::RESOURCE helloWorld.nrx  -- NetRexx source code
+   say "NetRexx: Hello, world from NetRexx! (http://www.netrexx.org)"
+   parse version v
+   say "NetRexx: parse version v:" '['v']'
+   parse source  s
+   say "NetRexx: parse source  s:" '['s']'
+::END
+
+::requires BSF.CLS      /* get full bidirectional Java support */
+
+/*
+   license:
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2022 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/

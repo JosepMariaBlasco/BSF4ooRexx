@@ -5,11 +5,14 @@
   * class file as "Alert$AlertType"
   */
 
+call bsf.import "javafx.scene.control.Alert",                  "fx.Alert"
+call bsf.import "javafx.scene.control.Alert$AlertType",        "fx.Alert.Type"
+
   /* *************************************************************************************************** */
 /* --------------------------------------------------------------------------------------------------- */
 /* This routine will be called from the Rexx code defined with the "onAction" event attribute; cf.
  */
- 
+
 ::routine saveFile public
     use arg slotDir
 
@@ -36,8 +39,8 @@
     htmlEditorText = htmlEditor~getHtmlText                               -- extract the html input
 
 	parse var htmlEditorText pre 'contenteditable="true"' post			-- filter contenteditable out
-	htmlEditorText = pre post											
-	
+	htmlEditorText = pre post
+
     FileChooser = .bsf~new("javafx.stage.FileChooser")                  -- instantiate the javafx FileChooser class
     FileChooser~setTitle("Save file as")                                -- set the title for the FileChooser Dialog
     extensions = bsf.createJavaArrayOf("java.lang.String", "*.html", "*.htm", "*.php")
@@ -104,7 +107,7 @@
 				nextLine~changeStr("<body", '<body contenteditable="true"')
 			htmlEditor~setHtmlText(htmlEditor~getHtmlText || nextLine) /* append the content of the file to our
                                                                                    html editor */
-																		   
+
 		end
         rexxStream~close
         .my.app~alreadySavedFile = file

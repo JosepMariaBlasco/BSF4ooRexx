@@ -1,0 +1,134 @@
+#!/usr/bin/env rexx
+/*
+   name:    1-090_formattingDateDecimal.rxj
+   invoke:  "rexx 1-090_formattingDateDecimal.rxj"
+            ... Rexx script will demonstrate localized formatting of dates & times and
+                of decimal numbers
+
+            "rexxj2 1-090_formattingDateDecimal.rxj"      (Windows)
+            "rexxj2.sh 1-090_formattingDateDecimal.rxj"   (Unix)
+             ... Java will load Rexx and execute the Rexx script, which uses Java classes
+
+   purpose: this program demonstrates localized formatting of dates and decimal numbers;
+            to get to the Java documentation ("javadoc") of the employed Java classes search
+            for e.g. "javadoc java.util.Locale" or "javadoc DecimalFormat" and the like
+
+   date:    2022-01-12
+
+   changed: --
+
+   author:  Rony G. Flatscher
+
+   last change: $Revision: $ $Author: $ $Date: $
+
+   license(s): see end of this file
+*/
+
+say "Working with current Locale (determines language/cultural formats):"
+
+   /* import Java class and camouflage it as an ooRexx class      */
+clzLocale=bsf.importClass("java.util.Locale")
+defaultLocale=clzLocale~getDefault     -- get current Locale
+say "locale :" defaultLocale~toString "(current/default Locale)"
+
+   /* import Java class and camouflage it as an ooRexx class      */
+clzDecimalFormat=bsf.importClass("java.text.DecimalFormat")
+/* Use the Java class method "getInstance" (uses current Locale)  */
+currentDecimalFormat=clzDecimalFormat~getInstance
+symbols=currentDecimalFormat~getDecimalFormatSymbols
+
+   /* on Windows one may want to use UTF-7: "chmod 65000" in command line
+      window to correctly display a Unicode non-breaking-space    */
+say "For localized formatting of numbers the following settings are in effect:"
+say "   Group   separator is" pp(symbols~getGroupingSeparator)
+say "   Decimal separator is" pp(symbols~getDecimalSeparator)
+
+
+/* ************************************************************** */
+/* localize date & time formatting                                */
+say "-"~copies(79)
+say "Demonstrating localized formatting of date and time values:"
+arrLocale = .array~of(defaultLocale, clzLocale~new("de","AT"),            -
+                      clzLocale~new("en","US"), clzLocale~new("en","CA"))
+/* get Java class                                                    */
+clzDateFormat = bsf.loadClass("java.text.DateFormat")
+kind = clzDateFormat~SHORT    /* get constant (format to short)      */
+currJavaDate = .bsf~new("java.util.Date") /* get current date & time */
+do locale over arrLocale      /* localized formatting of date        */
+   formatter = clzDateFormat~getDateTimeInstance(kind, kind, locale)
+   say "  " locale~toString":" formatter~format(currJavaDate)
+end
+
+/* ************************************************************** */
+/* localize decimal number formatting                             */
+say "-"~copies(79)
+say "Localized formatting of decimal numbers:"
+
+number  = 123456789.123
+pattern = "#,##0.000"
+say "   number :" number
+say "   pattern:" pattern
+say "   locale :" defaultLocale~toString "(default/current locale)"
+symbols = .bsf~new("java.text.DecimalFormatSymbols", defaultLocale)
+decimalFormat = .bsf~new("java.text.DecimalFormat", pattern, symbols)
+say "   number :" number "formatted:" decimalFormat~format(number)
+
+-- Demo de_AT formatting
+say
+say "Use explicitly the 'de_AT' Locale for formatting:"
+locale = .bsf~new("java.util.Locale", "de", "AT") -- German, Austrian variant
+say "   locale :" locale~toString
+symbols = .bsf~new("java.text.DecimalFormatSymbols", locale)
+decimalFormat = .bsf~new("java.text.DecimalFormat", pattern, symbols)
+say "   number:" number "formatted:" decimalFormat~format(number)
+
+-- Demo en_US formatting
+say
+say "Use explicitly the 'en_US' Locale for formatting:"
+locale = .bsf~new("java.util.Locale", "en", "US") -- English, US variant
+say "   locale :" locale~toString
+
+symbols = .bsf~new("java.text.DecimalFormatSymbols", locale)
+decimalFormat = .bsf~new("java.text.DecimalFormat", pattern, symbols)
+say "   number:" number "formatted:" decimalFormat~format(number)
+say
+
+-- Demo effect of changing grouping separator
+say "changing 'groupingSeparator' to underscore (_):"
+symbols~groupingSeparator="_"
+decimalFormat = .bsf~new("java.text.DecimalFormat", pattern, symbols)
+formattedNumber=decimalFormat~format(number)
+say "   number:" number "formatted:" formattedNumber
+
+-- Demo parsing of formatted decimal numbers
+say "formatting and parsing the formatted Number:"
+parsePosition = .bsf~new("java.text.ParsePosition",0) -- Java is 0-based
+parsedNumber = decimalFormat~parse(formattedNumber, parsePosition)
+say "   formattedNumber:" formattedNumber "parsedNumber:" parsedNumber
+say "   parsedNumber (after adding 0):" parsedNumber+0 "(note: Rexx defaults to 9 numeric digts)"
+say "changing numeric digits to 15 ..."
+numeric digits 15
+say "   parsedNumber (after adding 0):" parsedNumber+0
+
+::requires BSF.CLS
+
+
+/*
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2022 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/

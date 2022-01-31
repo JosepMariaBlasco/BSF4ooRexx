@@ -7,14 +7,14 @@
                 its entries into .local; finally, a value is saved in .host by Rexx under
                 the index "rexx.hey" that upon return is fetched from Java.
 
-    Changed:    ---
+    Changed:    - 2022-01-29, rgf: expicitly do a System.exit(0)
 
-    Needs:      ooRexx 4.0, BSF4ooRexx
+    Needs:      ooRexx 4.1, BSF4ooRexx
 
     License:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2014 Rony G. Flatscher
+       Copyright (C) 2014-2022 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -77,6 +77,7 @@ public class JavaRunRexx_05
                              rexxDotHost.sendMessage1("entry", "rexx.hey")+"]");
 
         mgr.terminate();    // make sure that the Rexx interpreter instance gets terminated!
+        System.exit(0);
     }
 }
 

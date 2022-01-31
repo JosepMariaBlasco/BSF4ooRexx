@@ -1,4 +1,4 @@
-BSF4ooRexx - Installation Directions for Linux           19 July 2021 (Gamma)
+BSF4ooRexx - Installation Directions for Linux           31 January 2022 (GA)
 ==============================================           ====================
 Home: <http://sourceforge.net/projects/bsf4oorexx/>
 

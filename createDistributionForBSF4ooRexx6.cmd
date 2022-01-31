@@ -9,6 +9,8 @@
 @rem 2016-08-15, adding .NET/CLR support
 @rem 2016-11-24, adding JavaFX support, basing on Java 1.6/6.0, hence version "600" (6.00)
 @rem 2021-07-30, copy new NOTICE.txt to bsf4rexx
+@rem 2022-09-29, TODO: add module-info.{java|class} to allow package to be used as a module
+@rem                   not called anymore: createScriptProviderForooRexx.cmd
 
 @rem @echo createDistribution.cmd (for BSF4ooRexx)
 @echo %0 (for BSF4ooRexx)
@@ -34,9 +36,9 @@ set CLASSPATH=%CLASSPATH%;%ooo_classes%\unoil.jar;%ooo_classes%\ridl.jar;%ooo_cl
 @echo adding javax.servlet.jsp and javax.servlet.http to CLASSPATH
 set CLASSPATH=%CLASSPATH%;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet.jsp.jar;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet-3.0.0.v201112011016.jar
 
-set releaseDate=20210923
-set runDate=20210923
-set doc_date=20210923
+set releaseDate=20220131
+set runDate=20220131
+set doc_date=20220131
 
 @rem values to use for creating the BSF jarfile
 @rem set bsfDate=20090910
@@ -87,6 +89,8 @@ rem copy %bsfJarNameBin% %bsfJarNameSource%
 
 @rem now remove sources from bin
 zip -d  %bsfJarNameBin% "*.java" "*.txt" "*.cmd" "*~" "*bkp*" "*tmp*"
+
+@rem add license files
 zip -9  %bsfJarNameBin% Apache_LICENSE_2.0.txt
 rem zip -9  %bsfJarNameBin% asm_LICENSE.TXT
 zip -9  %bsfJarNameBin% janino_LICENSE.TXT
@@ -102,7 +106,8 @@ rem zip -d %bsfJarNameSource% "*.class"  "*~"
 rem zip -9 %bsfJarNameSource% ApacheLicense2.0.txt
 
 
-call createScriptProviderForooRexx.cmd
+@rem 2022-01-29, rgf: from now on do not create the script provider automatically
+@rem call createScriptProviderForooRexx.cmd
 
 @echo creating BSF Rexx engine jar file, containing the OOo support and datergf...
 jar cvMf bsf-rexx-engine.jar org/rexxla/ org/oorexx/
@@ -112,6 +117,7 @@ jar uf   bsf-rexx-engine.jar META-INF/
 rem pause
 rem zip -d bsf-rexx-engine.jar "*.svn*" "*.html" "*.css" "*.txt"
 zip -d bsf-rexx-engine.jar "*.svn*"
+zip -d bsf-rexx-engine.jar "*.idea*"
 zip -d bsf-rexx-engine.jar "*.css"
 zip -d bsf-rexx-engine.jar "*.html"
 zip -d bsf-rexx-engine.jar "*.java"
@@ -138,6 +144,7 @@ jar cvMf BSF4ooRexx-apache-bsf.jar org/
 @echo removing unneeded entries
 zip -d BSF4ooRexx-apache-bsf.jar org/apache/commons
 zip -d BSF4ooRexx-apache-bsf.jar "*.svn*"
+zip -d BSF4ooRexx-apache-bsf.jar "*.idea*"
 zip -d BSF4ooRexx-apache-bsf.jar "*bkp*"
 zip -d BSF4ooRexx-apache-bsf.jar "*tmp*"
 zip -d BSF4ooRexx-apache-bsf.jar "*~"
@@ -153,6 +160,7 @@ copy BSF4ooRexx-apache-bsf.jar BSF4ooRexx-apache-bsf-source.jar
 zip -9r BSF4ooRexx-apache-bsf-source.jar com/sun/
 
 zip -d BSF4ooRexx-apache-bsf-source.jar "*.svn*"
+zip -d BSF4ooRexx-apache-bsf-source.jar "*.idea*"
 zip -d BSF4ooRexx-apache-bsf-source.jar "*bkp*"
 zip -d BSF4ooRexx-apache-bsf-source.jar "*tmp*"
 zip -d BSF4ooRexx-apache-bsf-source.jar "*~"
@@ -339,7 +347,7 @@ xcopy samples\*                         bsf4oorexx\samples\   /s/e/i/r/k/y
 
 del %releaseInstallZip%.zip
 zip -9r %releaseInstallZip% bsf4oorexx/*
-zip -d  %releaseInstallZip% "*.svn*" "*bkp*" "*tmp*" "*cachedir*" "*~"  "*.idea*" "bin.iml"
+zip -d  %releaseInstallZip% "*.svn*" "*.idea*" "*bkp*" "*tmp*" "*cachedir*" "*~"  "*.idea*" "bin.iml"
 zip -9r %releaseInstallZip% ApacheLicense2.0.txt
 zip -9 %releaseInstallZip% NOTICE*
 
@@ -367,7 +375,7 @@ zip -d  %releaseInstallZip% "*samples/deprecated*" "*samples/LeePeedin/deprecate
 del BSF4ooRexx_tests.zip
 zip -9r BSF4ooRexx_tests test/*
 zip -9r BSF4ooRexx_tests ApacheLicense2.0.txt
-zip -d BSF4ooRexx_tests "*.svn*" "*bkp*" "*_bkp*" "*tmp*"  "*~"  "*.idea*" "bin.iml"
+zip -d BSF4ooRexx_tests "*.svn*" "*.idea*" "*bkp*" "*_bkp*" "*tmp*"  "*~"  "*.idea*" "bin.iml"
 @rem pause
 
 
@@ -376,7 +384,7 @@ zip -d BSF4ooRexx_tests "*.svn*" "*bkp*" "*_bkp*" "*tmp*"  "*~"  "*.idea*" "bin.
 del BSF4ooRexx_testUnits.zip
 zip -9r BSF4ooRexx_testUnits %devName%/testUnits/*
 zip -9r BSF4ooRexx_testUnits ApacheLicense2.0.txt
-zip -d  BSF4ooRexx_testUnits "*.svn*" "*bkp*" "*_bkp*" "*tmp*"  "*~"  "*.idea*" "bin.iml"
+zip -d  BSF4ooRexx_testUnits "*.svn*" "*.idea*" "*bkp*" "*_bkp*" "*tmp*"  "*~"  "*.idea*" "bin.iml"
 @rem pause
 
 
@@ -393,8 +401,10 @@ zip -9 BSF4ooRexx_sources *.mf
 zip -9r BSF4ooRexx_sources com/sun/*
 zip -9r BSF4ooRexx_sources org/*
 zip -9r BSF4ooRexx_sources %devName%/*
+@rem 2022-01-29: add module-info.java to make it available
+zip -9  BSF4ooRexx_sources module-info.java
 
-zip -d BSF4ooRexx_sources "*.svn*"  "*bkp*" "*tmp*" "*~"   "*.idea*" "bin.iml"
+zip -d BSF4ooRexx_sources "*.svn*" "*.idea*" "*bkp*" "*tmp*" "*~"   "*.idea*" "bin.iml"
 zip -d BSF4ooRexx_sources "*class" "*dll" "*lib" "*pdf" "*exe"
 zip -d BSF4ooRexx_sources "*zip" "*.o" "*obj" "*exp" "*swp" "*so"
 

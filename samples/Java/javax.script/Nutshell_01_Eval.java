@@ -7,7 +7,7 @@ import org.rexxla.bsf.engines.rexx.jsr223.*;
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015-2020 Rony G. Flatscher
+   Copyright 2015-2022 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -22,7 +22,8 @@ import org.rexxla.bsf.engines.rexx.jsr223.*;
    limitations under the License.
 -----------------------------------------------------------------------------
 
-    changed:    2020-01-26, rgf: spelling of "Rexx" to "rexx"
+    changed:    - 2020-01-26, rgf: spelling of "Rexx" to "rexx"
+                - 2022-01-29, rgf: expicitly do a System.exit(0)
 */
 
 /** Demonstrate evaluating a Rexx script, once without supplying arguements and once supplying
@@ -65,6 +66,7 @@ public class Nutshell_01_Eval
             System.err.println(exc);
             System.exit(-1);
         }
+        System.exit(0);
     }
 }
 

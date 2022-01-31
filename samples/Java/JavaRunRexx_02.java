@@ -24,12 +24,14 @@
                             was carried out BSF4ooRexx gets changed to supply the arguments
                             directly as objects (and not as strings representing the objects)
 
-    Needs:      ooRexx 4.0, BSF4ooRexx
+                2022-01-29, rgf: expicitly do a System.exit(0)
+
+    Needs:      ooRexx 4.1, BSF4ooRexx
 
     License:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2009-2019 Rony G. Flatscher
+       Copyright (C) 2009-2022 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -77,5 +79,6 @@ public class JavaRunRexx_02
         rexxEngine.apply ("InvokeFromJavaRunRexx_02.java", 0, 0, rexxCode, null, vArgs);
 
         mgr.terminate();    // make sure that the Rexx interpreter instance gets terminated!
+        System.exit(0);
     }
 }

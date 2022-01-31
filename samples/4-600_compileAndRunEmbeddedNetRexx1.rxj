@@ -1,0 +1,78 @@
+#!/usr/bin/env rexx
+/*
+   name:    4-600_compileAndRunEmbeddedNetRexx1.rxj
+   purpose: Demonstrate how to compile and use a NetRexx program embedded as resource
+            in this ooRexx program, cf. http://www.netrexx.org or https://www.rexxla.org;
+            the NetRexx program does an abmysal amount of array processing (a pure
+            interpreter cannot possibly match performance of a compiled program in this
+            case) which is fast if compiled and executed by NetRexx; ooRexx in this case
+            hosts the NetRexx program and runs it.
+            This demonstrates how easy it is to create external compiled classes/functionality
+            from ooRexx and directly run it.
+   needs:   - access to the NetRexx jar files (cf. http://www.netrexx.org), ooRexx 5.0 or later
+   invoke:  "rexx 4-600_compileAndRunEmbeddedNetRexx1.rxj"
+            ... Rexx script will demonstrate compiling and using an embedded NetRexx program
+            "rexxj2 4-600_compileAndRunEmbeddedNetRexx1.rxj"      (Windows)
+            "rexxj2.sh 4-600_compileAndRunEmbeddedNetRexx1.rxj"   (Unix)
+            ... Java will load Rexx and execute the Rexx script that compiles and uses
+                embedded NetRexx program
+   author:  Rony G. Flatscher
+   date:    2022-01-13
+   changed: 2022-01-15 rgf, added syntax condition handler for demonstration
+            2022-01-18 rgf, renamed sample, added hint to ooRexx 5.0 to signal handler
+   license: AL 2.0, at the end of this program
+*/
+
+signal on syntax     /* in case a condition gets raised         */
+/* A compiled NetRexx program has a static main method that expects an
+   array of type String (representing supplied command line arguments). */
+say "ooRexx: use embedded NetRexx program: fetch, compile & run it ..."
+d1=.dateTime~new        /* for timings                         */
+clzSquares=bsf.compile("squares", .resources~squares.nrx, "NetRexx")
+d2=.dateTime~new        /* for timings                         */
+clzSquares~main(.nil)   /* run the NetRexx program             */
+d3=.dateTime~new        /* for timings                         */
+say "compiling NetRexx program:" d2-d1 /* show duration        */
+say "running NetRexx program  :" d3-d2 /* show duration        */
+exit
+
+syntax:  /* in case of an error                                 */
+   co=condition('object')  /* get all condition information     */
+   say ppJavaExceptionChain(co)  /* show Java exception chain   */
+   say "---> this program needs NetRexx and ooRexx 5.0 or later"
+   raise propagate         /* let ooRexx interpreter handle it  */
+
+
+::RESOURCE squares.nrx     /* NetRexx source code               */
+   /* NetRexx: squares.nrx                                     */
+   options binary    /* in this case we want speed             */
+   items = 10000000
+   s = long[items]   /* define a Java array of type long       */
+   loop i=1 to items
+      n=long i       /* for multiplication we want to use long */
+      s[i-1] = n * n
+   end
+   /* use java.util.Arrays' stream()  (introduced with Java 8) */
+   say Arrays.stream(s).max.getAsLong
+::END
+
+::requires BSF.CLS      /* get full bidirectional Java support  */
+
+/*
+   license:
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2022 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/

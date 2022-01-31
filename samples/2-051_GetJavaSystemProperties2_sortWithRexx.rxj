@@ -1,0 +1,57 @@
+#!/usr/bin/env rexx
+/*
+   name:       2-051_GetJavaSystemProperties2_sortWithRexx.rxj
+   purpose:    show an easier way to sort the property keys (a java.util.Enumeration) by turning
+               them into an ooRexx array
+   needs:      ooRexx 5.0 or later
+   date:       18 February 2022
+   changed:    2022-01-20, rename program to indicate what it demonstrates
+   last change: $Revision: 564 $ $Author: rony $ $Date: 2010-02-10 18:03:08 +0100 (Wed, 10 Feb 2010) $
+   license:
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2022 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+If arg(1)='?' Then Do
+  Parse Source source
+  Say source
+  Say 'Get the Java System Properties from java.lang.System'
+  Say 'using the "BSF" proxy class object, employing its class method "bsf.loadClass(...)"'
+  Say 'and show them on the console in sorted order, show "line.separator" in hex and'
+  Say 'break up paths to ease legibility.'
+  Exit
+  End
+
+   /* Java class 'java.lang.System' is preloaded by BSF, use its environment symbol */
+properties=.java.lang.System~getProperties      -- get the System properties
+pSep=properties~getProperty("path.separator")
+nl  =properties~getProperty("line.separator")
+tab ="09"x                                      -- TAB character
+pSep2=pSep || nl || tab                         -- replacement to break up and indent
+   /* turn enumeration into an ooRexx array, sort it  */
+arrSortedKeys=.java.lang.System~getProperties~makeArray~sort
+w = arrSortedKeys~items~length                  -- get length to right adjust counter
+do counter i key over arrSortedKeys
+   value=properties~getProperty(key)            -- get key's value
+   if key='line.separator' then                 -- escape as hex string
+      value='"'c2x(properties~getProperty(key))'"x'
+   else if key~pos("path")>0, \key~startsWith("path") then
+      value=value~changeStr(pSep,pSep2)         -- break up and indent directories
+
+   say i~right(w)":" pp(key) "->" pp(value)
+end
+
+::requires BSF.CLS      -- load the bidirectional ooRexx-Java bridge
