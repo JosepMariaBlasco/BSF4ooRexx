@@ -110,6 +110,7 @@
             2019-02-04, rgf: - replace "bsf.loadClass2environment()" with "bsf.loadClass()"
             2021-07-06, rgf: - ExecuteThread::run: unlike ooRexx 4.x ooRexx 5.0 will raise an error condition
                                if .mm.dir~tempFile is .nil when being used in SysFileExists(.mm.dir~tempFile)
+            2022-01-31, rgf: - Apple changed name from MacOS to Darwin, readjust for this program (use "M", if first letter is "D")
 */
 
 /*----------------------------------------------------------------------------*/
@@ -134,7 +135,7 @@
 /*Based on ooRexxTry.rex and code samples from Lee Peedin and Dr. Rony G. Flatscher*/
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
-/* Copyright (c) 2007-2009 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2007-2022 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -5852,6 +5853,7 @@ say str
 
 
     PARSE SOURCE version +1                     -- Get the first letter of operation system name
+    if version="D" then version="M"       -- Apple changed name from MacOS to Darwin, readjust for this program
     .local~mm.dir~opSys = version
     if .mm.dir~isdebug == true then say .mm.dir~title version
 
