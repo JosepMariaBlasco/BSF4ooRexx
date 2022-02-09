@@ -5,6 +5,7 @@
             OpenOffice (AOO) or LibreOffice (LO) can be found, then make it available
    Usage:   rexx setupbsf4oorexx.rex
    Date:    2022-02-07
+   Changed: 2022-02-09, rgf - have CLASSPATH to BSF4ooRexx use "*"
    Needs:   Java to get the UNO CLASSPATH definition from AOO/LO
    license:
     ------------------------ Apache Version 2.0 license -------------------------
@@ -55,6 +56,7 @@ _location=filespec("location",fullpath)
 
 _bsf4oorexx_bin=_location"bin"
 
+/*
    -- collect jar-files (could be more than one over time)
 _bsf4oorexx_classpath=""
 fileSpec=_location"jars".dirSep"*.jar"
@@ -65,6 +67,9 @@ do i=1 to files.0
    if i>1 then _bsf4oorexx_classpath=_bsf4oorexx_classpath || .pathSep || files.i
           else _bsf4oorexx_classpath=files.i
 end
+*/
+   -- use the wildcard version, such that all jar-files get honored (makes it easy to add e.g. NetRexx jars)
+_bsf4oorexx_classpath=_location"jars".dirSep"*"
 
 filespec=_bsf4oorexx_bin || .dirSep || "UNO*"
 call sysfiletree fileSpec, files., "FO"
@@ -89,8 +94,11 @@ do
          say "    (you may want to check out <https://www.openoffice.org/>)"
       end
    end
+   say "Hit enter to proceed ..."
+   parse pull .
    say
 end
+
 
 if .bIsWindows=.true then
 do
