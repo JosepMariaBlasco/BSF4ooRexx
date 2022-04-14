@@ -1,0 +1,9 @@
+#idElapsedTime {
+    -fx-alignment       : center;
+    -fx-font-size       : 18pt;
+    -fx-font-family     : Consolas,Monaco,Terminus,monospace;
+    -fx-text-fill       : red;
+    -fx-background-color: black;
+    -fx-font-weight     : bold;
+}
+

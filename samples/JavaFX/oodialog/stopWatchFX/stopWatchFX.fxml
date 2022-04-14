@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.input.KeyCodeCombination?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+
+<?language rexx?>
+
+<VBox prefHeight="178.0" prefWidth="308.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1">
+
+  <fx:script source="stopWatchFXController.rex" />
+
+  <children>
+    <MenuBar VBox.vgrow="NEVER">
+      <menus>
+        <Menu mnemonicParsing="false" text="_File">
+          <items>
+            <MenuItem onAction="call exitApp arg(arg()) /* slotDir */" text="E_xit">
+                     <accelerator>
+                        <KeyCodeCombination alt="DOWN" code="F4" control="UP" meta="UP" shift="UP" shortcut="UP" />
+                     </accelerator></MenuItem>
+          </items>
+               <accelerator>
+                  <KeyCodeCombination alt="ANY" code="F" control="UP" meta="UP" shift="UP" shortcut="UP" />
+               </accelerator>
+        </Menu>
+        <Menu mnemonicParsing="false" text="_Edit">
+          <items>
+            <MenuItem onAction="call menuCopy arg(arg()) /* slotDir */" text="_Copy">
+                     <accelerator>
+                        <KeyCodeCombination alt="UP" code="C" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
+                     </accelerator></MenuItem>
+          </items>
+               <accelerator>
+                  <KeyCodeCombination alt="ANY" code="E" control="UP" meta="UP" shift="UP" shortcut="UP" />
+               </accelerator>
+        </Menu>
+      </menus>
+    </MenuBar>
+    <AnchorPane maxHeight="-1.0" maxWidth="-1.0" prefHeight="139.0" prefWidth="310.0" VBox.vgrow="ALWAYS">
+      <children>
+            <Label id="idElapsedTime" fx:id="lblElapsedTime" layoutX="39.0" layoutY="36.0" prefHeight="23.0" prefWidth="230.0" stylesheets="@stopWatchFX.css" text="00:00:00.000" textFill="#ee1f1f" />
+            <Button fx:id="btnStart" layoutX="39.0" layoutY="80.0" mnemonicParsing="false" onAction="call btnStart arg(arg()) /* slotDir */" prefHeight="31.0" prefWidth="103.0" text="Start" />
+            <Button fx:id="btnExit" layoutX="166.0" layoutY="80.0" mnemonicParsing="false" onAction="call btnExit  arg(arg()) /* slotDir */" prefHeight="31.0" prefWidth="103.0" text="Exit" />
+      </children>
+    </AnchorPane>
+  </children>
+
+</VBox>
