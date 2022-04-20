@@ -7,6 +7,9 @@
    changed:    --
    changed:    2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
                                 - removing dependency on "rgf_util2.rex"
+               2022-04-20, rgf: - Morgage.fxml - call to MortageController.rex moved before
+                                  Button definition such that button's event code can get
+                                  to see its public routines
 
    purpose:    - demonstrates event filtering for assuring that numeric text fields
                  only contain valid numbers (otherwise an Alert error window pups

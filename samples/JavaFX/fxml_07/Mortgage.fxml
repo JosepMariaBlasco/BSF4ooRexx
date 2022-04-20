@@ -79,14 +79,15 @@
                 <TextField fx:id="idTotalAccumulatedPaymentsTextField" disable="true" alignment="BASELINE_RIGHT"
                                         GridPane.columnIndex="2" GridPane.rowIndex="5" />
 
+                <!-- let the controller finish up initialization, make public routine 'klickButton' available via RexxScriptEngine -->
+                <fx:script source="MortgageController.rex" />
+
                 <Button maxWidth="135.0" text="Calculate" defaultButton="true"
                                         onAction="call rexxCalculateButtonPressed arg(arg()) /* pass on slotDir argument*/"
                                         prefHeight="22.0" prefWidth="135.0"
                                         GridPane.columnIndex="2" GridPane.rowIndex="6" />
          </children>
 
-         <!-- let the controller finish up initialization, make public routine 'klickButton' available via RexxScriptEngine -->
-         <fx:script source="MortgageController.rex" />
 
       </GridPane>
     </children>

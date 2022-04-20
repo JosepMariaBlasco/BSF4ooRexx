@@ -1,6 +1,7 @@
 #!/usr/bin/env rexx
 /* called by FXMLLoader on the "FX Application Thread" */
 
+/*
 /* initialize JavaFX objects, define public routines for event handling */
 fxml=.my.app~fxml_pb.fxml  -- get the corresponding FXML Rexx directory
 
@@ -9,6 +10,7 @@ fxml~idLabelCurrent ~text=""
 fxml~idLabelStart   ~text=""
 fxml~idLabelEnd     ~text=""
 fxml~idLabelDuration~text=""
+*/
 
 ::routine onActionButtonStart public   -- toggle button, start
 --  slotDir=arg(arg())     -- supplied by BSF4ooRexx, not needed, but available

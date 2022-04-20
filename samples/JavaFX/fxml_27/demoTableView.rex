@@ -6,6 +6,10 @@
    changes: 2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
                              - removing dependency on "rgf_util2.rex"
 
+            2022-04-20, rgf: - demoTableView.fxml - putting call to "demoTableViewController.rex"
+                               before the children section to make its public members available
+                               to all event code
+
    purpose: demonstrate - TableView with cells containing text and graphics
                         - Setting TableView item to null as a whole as opposed to removing the item
                         - Enabling/disabling menu options

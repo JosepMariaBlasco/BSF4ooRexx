@@ -17,6 +17,9 @@
 
 <VBox fx:id="id_vbox" prefHeight="592.0" prefWidth="612.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1">
   <children>
+    <!-- make public routines visible to event handler Rexx code defined in here -->
+    <fx:script source="demoListViewController.rex" />
+
                 <!-- define a ToggleGroup (cannot be done in SceneBuilder) to place RadioMenuItems into it -->
     <fx:define>
         <ToggleGroup fx:id="id_toggleGroup" />
@@ -68,6 +71,4 @@
   <!-- make sure fx:id objects get put into .my.app~demoListView.fxml -->
   <fx:script source="put_FXID_objects_into.my.app.rex" />
 
-  <!-- make public routines visible to event handler Rexx code defined in here -->
-  <fx:script source="demoListViewController.rex" />
 </VBox>

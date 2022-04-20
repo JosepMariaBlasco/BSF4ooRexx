@@ -8,6 +8,10 @@
 
             2020-08-30, rgf: - demonstrate usage of BSF's bsf.exit-method
 
+            2022-04-20, rgf: - demoListView.fxml - putting call to "demoListViewController.rex"
+                               before the children section to make its public members available
+                               to all event code
+
    purpose: demonstrate - ListView with cells containing text and graphics
                         - Setting ListView cell to null as opposed to removing the cell
                         - Setting ToolTips with a graphic and a text to the cells in the RexxCellFactory

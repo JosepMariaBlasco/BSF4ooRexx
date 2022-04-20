@@ -7,6 +7,9 @@
    changed:    2018-03-24, rgf: make sure that we change into the directory of this program
                2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
                                 - removing dependency on "rgf_util2.rex"
+               2022-04-20, rgf: - fxml_pb.fxml: set labels text property to empty string
+                                  or remove text property (has same effect)
+                                - fxml_pb_controller.rex: do not set labels in prolog
 
    purpose:    - demonstrate how JavaFX controls can be updated from another thread
                  than the mandatory "JavaFX Application Thread" in ooRexx; the solution

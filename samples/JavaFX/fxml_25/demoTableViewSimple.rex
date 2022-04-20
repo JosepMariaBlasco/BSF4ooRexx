@@ -7,6 +7,10 @@
                              - removing dependency on "rgf_util2.rex"
             2021-06-19, rgf: - removed unused class RexxCellValueFactory
 
+            2022-04-20, rgf: - demoTableViewSimple.fxml - putting call to "demoTableViewSimpleController.rex"
+                               before the children section to make its public members available
+                               to all event code
+
    purpose: demonstrate - TableView with editing, binding Person's simple properties with cell values
                         - Setting TableView item to null as a whole as opposed to removing the item
                         - Enabling/disabling menu options
