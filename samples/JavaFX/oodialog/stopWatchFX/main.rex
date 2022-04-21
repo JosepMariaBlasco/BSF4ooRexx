@@ -13,6 +13,7 @@ signal on syntax
 rxApp=.RexxApplication~new -- create Rexx object that will control the FXML set up
 jrxApp=BSFCreateRexxProxy(rxApp, ,"javafx.application.Application")
 jrxApp~launch(jrxApp~getClass, .nil)    -- launch the application, invokes "start"
+call sysSleep .1        -- sleep a bit to let ooRexx on Windows do some housekeeping :)
 
 ::requires "BSF.CLS"    -- get Java support
 
