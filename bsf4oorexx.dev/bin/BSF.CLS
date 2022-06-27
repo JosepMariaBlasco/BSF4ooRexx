@@ -19,6 +19,10 @@
           .BSF in .environment;
 
    date:
+         2022-06-27, ---rgf, - class .uno_proxy is usually not visible to BSF.CLS, adjust
+                               *createArrayOf routines/methods accordingly (use class id
+                               to determine whether instance of uno_proxy)
+
          2022-01-20, ---rgf, - add fourth optional argument to bsf.compile(): by default .true
                                and returns the newClass processed with bsf.importClass() such
                                that it understands the ooRexx class message "new" and "newStrict";
@@ -908,7 +912,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="641.20220131" -- set version (date distribution got created)
+      .bsf4rexx~version="641.20220627" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -2622,13 +2626,11 @@ syntax:
   signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
 
-  bUnoProxy=.uno_proxy~isA(.class)     -- is UNO (AOO) support loaded?
   tmpArr=.array~new
   do i=1 to arg()
      a=arg(i)
       -- make sure we leave .UNO_PROXY objects unwrapped
-     if bUnoProxy then aBSF=a~isA(.uno_proxy)
-                  else aBSF=.false
+     if i>1 then aBSF=(a~class~id="UNO_PROXY")
 
      if i>1, \a~isA(.string), \a~isA(.bsf), \aBSF, a<>.nil then
          tmpArr~append(rBsfCreateRexxProxy~call(a))   -- make Rexx object available to Java
@@ -3344,14 +3346,12 @@ syntax:
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
 
   -- code from class method:
-  bUnoProxy=.uno_proxy~isA(.class)     -- is UNO (AOO) support loaded?
   tmpArr=.array~new
   rBsfCreateRexxProxy=.routines~xBsfCreateRexxProxy   -- fetch routine Object
   do i=1 to arg()
      a=arg(i)
       -- make sure we leave .UNO_PROXY objects unwrapped
-     if bUnoProxy then aBSF=a~isA(.uno_proxy)
-                  else aBSF=.false
+     if i>1 then aBSF=(a~class~id="UNO_PROXY")
 
      if i>1, \a~isA(.string), \a~isA(.bsf), \aBSF, a<>.nil then
          tmpArr~append(rBsfCreateRexxProxy~call(a))   -- make Rexx object available to Java
@@ -3397,14 +3397,12 @@ syntax:
   signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
 
-  bUnoProxy=.uno_proxy~isA(.class)     -- is UNO (AOO) support loaded?
   tmpArr=.array~new
   rBsfCreateRexxProxy=.routines~xBsfCreateRexxProxy   -- fetch routine Object
   do i=1 to arg()
      a=arg(i)
       -- make sure we leave .UNO_PROXY objects unwrapped
-     if bUnoProxy then aBSF=a~isA(.uno_proxy)
-                  else aBSF=.false
+     if i>1 then aBSF=(a~class~id="UNO_PROXY")
 
      if i>1, \a~isA(.string), \a~isA(.bsf), \aBSF, a<>.nil then
          tmpArr~append(rBsfCreateRexxProxy~call(a))   -- make Rexx object available to Java
