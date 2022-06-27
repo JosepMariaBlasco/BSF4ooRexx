@@ -30,6 +30,7 @@
                              - removing dependency on "rgf_util2.rex"
             2021-06-19, rgf: - use newer version of json-rgf.cls which includes utility class methods
                                for easying reading and writing JSON files
+            2022-06-09, rgf: - extract numeric part of "javafx.runtime.version" to compare to >= 8
 
    purpose: this is the ooRexx version of the pure Java tutorial on how to use JavaFX, demonstrating
             among other things also TableView and ObservableList; cf. the excellent tutorial as
@@ -209,7 +210,10 @@ syntax:
    -- starting with JavaFX 8u40 true dialogs got introduced; taking advantage of them if running on Java 1.8 or higher
    -- get the JavaFX runtime version (only available when running it), e.g. "8.0.111-b14"
 
-  bAlertsAvailable=(.java.lang.system~getProperty("javafx.runtime.version")>8)
+  fxVersion=.java.lang.system~getProperty("javafx.runtime.version")  -- can be e.g. "17+b01"
+  pos=verify(fxVersion,"0123456789")   -- get position of non numerical letter
+  if pos>0 then fxVersion=fxVersion~substr(1,pos-1)   -- extract number portion
+  bAlertsAvailable=(fxVersion>=8)
   .my.app~bDialogsAlertsAvailable=bAlertsAvailable  -- determine availability
   if bAlertsAvailable then    -- available since JavaFX 8u40
   do
