@@ -81,6 +81,8 @@ inline jint impl_jniRexxHaltInterpreterInstance (JNIEnv *env, jobject jobj, jstr
                    "-Djava.library.path=..." via the command line; this way we can help Java locate
                    libBSF4ooRexx.so/libBSF4ooRexx.dylib
 
+    6.0.0   2022-06-07, rgf: - correct synopsis (comment) for BsfContextVariables() (drop was wrong)
+
     6.0.0   2021-03-20, rgf: - removed a warning by explicitly using strcmp():
                                MacOS: BSF4ooRexx.cc:8349:31: warning: result of comparison against a string literal is unspecified (use an explicit string comparison function
       instead) [-Wstring-compare]
@@ -7025,7 +7027,7 @@ RexxRoutine2(RexxObjectPtr, BsfJavaException, OPTIONAL_CSTRING, option, OPTIONAL
     // ---rgf, 2015-06-04 - 2015-06-07: allow to get, set and drop context variables, usage
     //                    allows to get, set and drop context variables in caller, usage
     //
-    //                     BsfContextVariables( [get [, name]] | set, nameOrDir[, value]] | drop, nameOrDir[, value]])
+    //                     BsfContextVariables( [get [, name]] | set, nameOrDir[, value]] | drop, name])
     //                           ... optional, return directory of all context variables
     //
     //                     "g"   ... "get", return value of context variable "name";
@@ -7036,8 +7038,7 @@ RexxRoutine2(RexxObjectPtr, BsfJavaException, OPTIONAL_CSTRING, option, OPTIONAL
     //                                                      else must be a .Directory or .StringTable (anticipating ooRexx 5.0)
     //
     //                     "d"   ... "drop", drop context variable
-    //                                      "nameOrDir" ... if string, then drop that variable
-    //                                                      else must be a .Directory or .StringTable (anticipating ooRexx 5.0)
+    //                                      "name" ... name of variable to drop
     // ---rgf, 2017-02-14: if an operation succeeded (like SET or DROP) will return .true instaed of NULL which indicates no return value!
     //
 RexxRoutine3( RexxObjectPtr, BsfContextVariables, OPTIONAL_CSTRING, argSwitch, OPTIONAL_RexxObjectPtr, nameOrDir, OPTIONAL_RexxObjectPtr, value)    // 2015-06-07
