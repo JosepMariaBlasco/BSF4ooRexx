@@ -1,0 +1,126 @@
+#!/usr/bin/env rexx
+/*
+   name:    simpress_present.rxo
+   author:  Rony G. Flatscher
+   purpose: Use UNO.CLS to have a fully portable AOO/LO application
+            which runs unchanged on Windows, Linux and MacOS; this
+            is the equivalent OLE-only version distributed with
+            ooRexx 5.0
+   needs:   BSF4ooRexx (ooRexx-Java bridge)
+   date:    2022-06-28
+   changed: ---
+   usage:   rexx simpress_present.rxo
+   needs:   ooRexx 5.0 or higher
+   license:
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2022 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+/**********************************************************************
+ simpress_present.rxo: using UNO.CLS (i.e. Java UNO under the hood) with ooRexx
+
+ Links:  <https://OpenOffice.org>
+         <https://wiki.openoffice.org/wiki/Documentation/DevGuide/ProUNO/Bridge/Automation_Bridge>
+         <https://www.pitonyak.org/oo.php>
+         <https://www.openoffice.org/udk/common/man/spec/ole_bridge.html>
+
+ Using UNO.CLS create a new simpress presentation about REXX and ooRexx and then
+ display it as a presentation. Demonstrates how to use enumeration to
+ enumerate paragraphs of a text and query their 'NumberingLevel' property.
+***********************************************************************/
+
+/* create a presentation, then start it */
+xDesktop=uno.createDesktop()        -- bootstrap & get access to XDesktop
+xcl=xDesktop~XComponentLoader       -- get XComponentLoader interface
+
+uri="private:factory/simpress"      -- new simpress document
+document=xcl~loadComponentFromURL(uri,"_blank",0,.uno~noProps)
+
+xDrawPages = document~XDrawPagesSupplier~getDrawPages   -- get DrawPages
+   -- first page
+drawPage=xDrawPages~getByIndex(0)  -- get first (empty) page
+
+drawPage~XPropertySet~setPropertyValue("Layout", box("short",0))  -- "Title Slide"
+xShapes=drawPage~XShapes           -- get access to its shapes
+
+---
+title = "ooRexx"
+xShapes~getByIndex(0)~XText~setString(title)
+
+shape = xShapes~getByIndex(1)~XText
+cursor = shape~createTextCursor~XTextCursor  -- create cursor, get XTextCursor
+cr="0d"x
+shape~insertString(cursor,"Open Object Rexx (ooRexx)"cr, .false)
+
+textRange=shape~getEnd                 -- get a XTextRange
+textRange~XPropertySet~setPropertyValue("CharHeight", box('short',15))  -- use 15 pixel height
+info="(Presentation created:" .dateTime~new")"
+textRange~setString(info)              -- set it to this string
+
+   -- add a second page
+drawPage=xDrawPages~~insertNewByIndex(1)~getByIndex(1) -- insert at end, get access
+
+-- drawPage=drawPages~~insertNewByIndex(1)~getByIndex(1) -- insert at end, get access
+drawPage~XPropertySet~setPropertyValue("Layout", box('short',1))  -- "Title Content"
+xShapes = drawPage~XShapes
+xshapes~getByIndex(0)~XText~setString("Open Object Rexx (ooRexx)")  -- first shape
+
+text=xShapes~getByIndex(1)~XText             -- get second shape (listing)
+-- add string, supply level
+call addItem text, "REXX (IBM)",                                   0
+call addItem text, "First released in 1979 for IBM mainframes",    1
+call addItem text, "Object REXX (IBM)",                            0
+call addItem text, "Object-oriented successor to REXX",            1
+call addItem text, "First released in 1994 with IBM's OS/2 Warp",  1
+call addItem text, "Negotiations about open-sourcing with RexxLA", 1
+call addItem text, "Rexx Language Association (www.RexxLA.org)",   2
+call addItem text, "Source code handed over to RexxLA in 2003",    2
+call addItem text, "Open Object Rexx (ooRexx by RexxLA)",          0
+call addItem text, "First released in 2004 by RexxLA",             1, .false
+
+document~XModifiable~setModified(.false)     -- inhibit save-as popup
+/* "start" would be found in the ooRexx root class .Object, hence forcing
+   the message to be dispatched to the Java object             */
+document~XPresentationSupplier~getPresentation~~bsf.dispatch("start")  -- start presentation
+
+say "double-check: dump NumberingLevel of each text paragraph:"
+call dumpItems text                    -- demonstrates enumerating listing text
+
+::requires UNO.CLS      -- get UNO support, will require BSF.CLS (ooRexx-Java bridge)
+
+
+::routine addItem                -- adds string at the given (0-based outline) level
+  use arg xText, string, level, bNewParagraph=.true
+
+  xTR=xText~getEnd               -- get XTextRange
+  xTR~XPropertySet~setPropertyValue("NumberingLevel",level) -- set XTextRange level
+  xTR~setString(string)          -- set string
+
+  if bNewParagraph=.true then    -- add new paragraph
+     xTR~getEnd~setString("0a"x) -- add linefeed character -> new paragraph
+
+::routine dumpItems              -- show level and string from XText
+  use arg xText
+
+  enum=xText~XEnumerationAccess~createEnumeration  -- enumerate paragraphs
+  do i=1 while enum~hasMoreElements
+    xtr=enum~nextElement         -- we need XTextRange's string & properties
+    nl=xtr~XPropertySet~getPropertyValue("NumberingLevel")
+    say "     item #" i": NumberingLevel="pp(nl) pp(xtr~XTextRange~getString)
+  end
+  return
+pp: -- "pretty print", internal routine: return argument enclosed in square brackets
+  return "["arg(1)"]"

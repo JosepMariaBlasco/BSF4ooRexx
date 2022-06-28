@@ -1,0 +1,104 @@
+#!/usr/bin/env rexx
+/*
+   name:    scalc_chart.rxo
+   author:  Rony G. Flatscher
+   purpose: Use UNO.CLS to have a fully portable AOO/LO application
+            which runs unchanged on Windows, Linux and MacOS; this
+            is the equivalent OLE-only version distributed with
+            ooRexx 5.0
+   needs:   BSF4ooRexx (ooRexx-Java bridge)
+   date:    2022-06-28
+   changed: ---
+   usage:   rexx scalc_chart.rxo
+   needs:   ooRexx 5.0 or higher
+   license:
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2022 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+/**********************************************************************
+ scalc_chart.rxo: using UNO.CLS (i.e. Java UNO under the hood) with ooRexx
+
+ Links:  <https://OpenOffice.org>
+         <https://wiki.openoffice.org/wiki/Documentation/DevGuide/ProUNO/Bridge/Automation_Bridge>
+         <https://www.pitonyak.org/oo.php>
+         <https://www.openoffice.org/udk/common/man/spec/ole_bridge.html>
+
+ Using UNO.CLS create a new scalc worksheet, create random data and a chart based on it.
+ Demonstrates how to incorporate UNO_CONSTANTS and UNO_ENUM values into a
+ Rexx directory-like collection for easier use.
+***********************************************************************/
+
+/* create spreadsheet, get first sheet */
+xDesktop=uno.createDesktop()        -- bootstrap & get access to XDesktop
+xcl=xDesktop~XComponentLoader       -- get XComponentLoader interface
+
+uri="private:factory/scalc"         -- new scalc document
+doc=xcl~loadComponentFromURL(uri,"_blank",0,.uno~noProps)
+
+xSheets=doc~XSpreadSheetDocument~getSheets~XIndexAccess
+sheet =xSheets~getByIndex(0)~XSpreadSheet    -- get first spreadsheet
+
+
+/* note values can be assigned to cells with "string", "formula" or "value" (for numbers) */
+/* create the titles, pretend the last two yers */
+year   = date()~right(4)-2
+titles = "Quarter", year, year+1 /* title array */
+do col = 1 to titles~items
+   call uno.setCell sheet, col-1, 0, titles[col]
+end
+/* get all UNO_ENUM values in a Rexx directory */
+justify = .uno_enum~new("com.sun.star.table.CellHoriJustify")
+say "justify:" justify
+
+props=sheet~XCellRange~getCellRangeByName("B1:C1")~XPropertySet
+props~setPropertyValue("HoriJustify", justify~right)
+
+/* get all UNO_CONSTANTS values in a Rexx directory */
+weights = .uno_constants~new("com.sun.star.awt.FontWeight")
+say "weights:" weights
+props=sheet~XCellRange~getCellRangeByName("A1:C1")~XPropertySet
+props~setPropertyValue("CharWeight", weights~bold)
+
+/* create random values for the quarter numbers  */
+do line = 1 to 4
+   call uno.setCell sheet, 0,line, "Q"line   /* title in first column   */
+   call uno.setCell sheet, 1,line, random(0,500000)/100
+   call uno.setCell sheet, 2,line, random(0,750000)/100
+end
+
+props=sheet~XCellRange~getCellRangeByName("A2:A5")~XPropertySet
+props~setPropertyValue("CharWeight", weights~bold)
+/* format numbers, predefined style, format: "#,##0.00" */
+props=sheet~XCellRange~getCellRangeByName("B2:C5")~XPropertySet
+props~setPropertyValue("NumberFormat",4)
+
+/* create a chart from the data */
+structRect = .bsf~new("com.sun.star.awt.Rectangle")
+structRect~X      =   300           -- x-offset:  0.300 cm
+structRect~Y      =  2250           -- y-offset:  2.250 cm
+structRect~Width  = 16000           -- width:    16.000 cm
+structRect~Height =  8000           -- height:    8.000 cm
+
+range       = sheet~XCellRange~getCellRangeByName("A1:C5")     -- data to be used for the chart
+rangeAddr   = range~XCellRangeAddressable~getRangeAddress
+arrOfAddr   = bsf.createArrayOf(rangeAddr~getClass, rangeAddr) -- create array
+
+tableCharts = sheet~XTableChartsSupplier~getCharts    -- get chart collection & insert
+tableCharts~addNewByName("FirstChart", structRect, arrOfAddr, .true, .true)
+
+::requires UNO.CLS      -- get UNO support, will require BSF.CLS (ooRexx-Java bridge)
+

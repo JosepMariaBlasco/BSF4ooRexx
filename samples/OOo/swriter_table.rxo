@@ -1,0 +1,178 @@
+#!/usr/bin/env rexx
+/*
+   name:    swriter_table.rxo
+   author:  Rony G. Flatscher
+   purpose: Use UNO.CLS to have a fully portable AOO/LO application
+            which runs unchanged on Windows, Linux and MacOS; this
+            is the equivalent OLE-only version distributed with
+            ooRexx 5.0
+   needs:   BSF4ooRexx (ooRexx-Java bridge)
+   date:    2022-06-28
+   changed: ---
+   usage:   rexx swriter_table.rxo
+   needs:   ooRexx 5.0 or higher
+   license:
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2022 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+/**********************************************************************
+ swriter_table.rxo: using UNO.CLS (i.e. Java UNO under the hood) with ooRexx
+
+ Links:  <https://OpenOffice.org>
+         <https://wiki.openoffice.org/wiki/Documentation/DevGuide/ProUNO/Bridge/Automation_Bridge>
+         <https://www.pitonyak.org/oo.php>
+         <https://www.openoffice.org/udk/common/man/spec/ole_bridge.html>
+
+ This is the ooRexx version (which includes corrections) of the VBScript
+ "A Quick Tour" example from the AOO (Apache OpenOffice) DevGuide, chapter
+ "Automation_Bridge" documentation.
+
+ Using UNO.CLS create a new swriter document, a TextTable, a TextFrame, paragraphs
+ and apply various formattings.
+***********************************************************************/
+
+  -- Create the Desktop
+  xDesktop=uno.createDesktop()        -- bootstrap & get access to XDesktop
+  xcl=xDesktop~XComponentLoader       -- get XComponentLoader interface
+
+  -- Open a new empty writer document
+  uri="private:factory/swriter"       -- new swriter document
+  objDocument=xcl~loadComponentFromURL(uri,"_blank",0,.uno~noProps)
+
+  -- Create a text object
+  objText= objDocument~XTextDocument~getText
+
+  -- Create a cursor object
+  objCursor= objText~createTextCursor
+
+  -- Inserting some Text
+  vbLf = "0a"x    -- line-feed character
+  objText~insertString( objCursor, "The first line in the newly created text document."vbLf, .false)
+
+  -- Inserting a second line
+  objText~insertString( objCursor, "Now we-- re in the second line", .false)
+
+  -- query interface XMultiServiceFactory
+  objDocument = objDocument~XMultiServiceFactory
+
+  -- Create instance of a text table with 4 columns and 4 rows
+  objTable= objDocument~createInstance( "com.sun.star.text.TextTable")~XTextTable
+  objTable~initialize( 4, 4 )
+
+  -- Insert the table
+  objText~insertTextContent( objCursor, objTable, .false)
+
+  -- Get first row
+  objRows= objTable~getRows
+  objRow= objRows~getByIndex( 0)
+
+  -- Set the table background color
+  objTable~XPropertySet~setPropertyValue( "BackTransparent", .false)
+  objTable~XPropertySet~setPropertyValue( "BackColor", 13421823)
+
+  -- Set a different background color for the first row
+  objRow~XPropertySet~setPropertyValue( "BackTransparent", .false)
+  objRow~XPropertySet~setPropertyValue( "BackColor", 6710932)
+
+  -- Fill the first table row
+  call insertIntoCell "A1","FirstColumn", objTable -- insertIntoCell is a helper function, see below
+  call insertIntoCell "B1","SecondColumn", objTable
+  call insertIntoCell "C1","ThirdColumn", objTable
+  call insertIntoCell "D1","SUM", objTable
+
+  objTable~getCellByName("A2")~setValue( 22.5     )
+  objTable~getCellByName("B2")~setValue( 5615.3   )
+  objTable~getCellByName("C2")~setValue( -2315.7  )
+  objTable~getCellByName("D2")~setFormula( "=sum <A2>+<B2>+<C2>"  )
+
+  objTable~getCellByName("A3")~setValue( 21.5     )
+  objTable~getCellByName("B3")~setValue( 615.3    )
+  objTable~getCellByName("C3")~setValue( -315.7   )
+  objTable~getCellByName("D3")~setFormula( "sum <A3>+<B3>+<C3>" )
+
+  objTable~getCellByName("A4")~setValue( 121.5    )
+  objTable~getCellByName("B4")~setValue( -615.3   )
+  objTable~getCellByName("C4")~setValue( 415.7    )
+  objTable~getCellByName("D4")~setFormula( "sum <A4>+<B4>+<C4>" )
+
+  range=objTable~XCellRange~getCellRangeByName("A2:D4")
+  range~XPropertySet~setPropertyValue("NumberFormat", box("short",4))   -- set number format
+  -- use ParaAdjust: com.sun.star.style.ParagraphAdjust.RIGHT
+  right=.uno_enum~new("com.sun.star.style.ParagraphAdjust")~right
+  range~XPropertySet~setPropertyValue("ParaAdjust", right)  -- align right
+
+  -- Change the CharColor and add a Shadow
+  objCursor~XPropertySet~setPropertyValue( "CharColor", 255)
+  objCursor~XPropertySet~setPropertyValue( "CharShadowed", .true)
+
+  -- Create a paragraph break
+  -- The second argument is a com::sun::star::text::ControlCharacter::PARAGRAPH_BREAK constant
+  objText~insertControlCharacter( objCursor, 0 , .false)
+
+  -- Inserting colored Text.
+  objText~insertString( objCursor, " This is a colored Text - blue with shadow"vbLf, .false)
+
+  -- Create a paragraph break ( ControlCharacter::PARAGRAPH_BREAK).
+  objText~insertControlCharacter( objCursor, 0, .false)
+
+  -- Create a TextFrame~
+  objTextFrame= objDocument~createInstance("com.sun.star.text.TextFrame")~XTextFrame
+
+  -- Create a Size struct~
+  objSize = .bsf~new("com.sun.star.awt.Size")
+  objSize~Width= 15000
+  objSize~Height= 400
+  objTextFrame~XShape~setSize( objSize)
+
+  --  TextContentAnchorType.AS_CHARACTER = 1
+  objTextFrame~XPropertySet~setPropertyValue( "AnchorType", 1)
+
+  -- insert the frame
+  objText~insertTextContent( objCursor, objTextFrame, .false)
+
+  -- Get the text object of the frame
+  objFrameText= objTextFrame~getText
+
+  -- Create a cursor object
+  objFrameTextCursor= objFrameText~createTextCursor
+
+  -- Inserting some Text
+  objFrameText~insertString( objFrameTextCursor, "The first line in the newly created text frame.", -
+                             .false)
+  objFrameText~insertString( objFrameTextCursor, -
+           vbLf"With this second line the height of the frame raises.", .false)
+
+  -- Create a paragraph break
+  -- The second argument is a com::sun::star::text::ControlCharacter::PARAGRAPH_BREAK constant
+  objFrameText~insertControlCharacter( objCursor, 0 , .false)
+
+  -- Change the CharColor and remove the Shadow
+  objCursor~XPropertySet~setPropertyValue( "CharColor", 65536)
+  objCursor~XPropertySet~setPropertyValue( "CharShadowed", .false)
+
+  -- Insert another string
+  objText~insertString( objCursor, " That-- s all for now !!", .false)
+
+::requires UNO.CLS   -- get UNO support
+
+::routine insertIntoCell
+  use arg strCellName, strText, objTable
+
+  objCellText= objTable~getCellByName( strCellName)~XText
+  objCellCursor= objCellText~createTextCursor
+  objCellCursor~XPropertySet~setPropertyValue( "CharColor",16777215)
+  objCellText~insertString( objCellCursor, strText, .false)

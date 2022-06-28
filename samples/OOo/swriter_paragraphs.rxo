@@ -1,0 +1,73 @@
+#!/usr/bin/env rexx
+/*
+   name:    swriter_paragraphs.rxo
+   author:  Rony G. Flatscher
+   purpose: Use UNO.CLS to have a fully portable AOO/LO application
+            which runs unchanged on Windows, Linux and MacOS; this
+            is the equivalent OLE-only version distributed with
+            ooRexx 5.0
+   needs:   BSF4ooRexx (ooRexx-Java bridge)
+   date:    2022-06-28
+   changed: ---
+   usage:   rexx swriter_paragraphs.rxo
+   needs:   ooRexx 5.0 or higher
+   license:
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2022 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+/**********************************************************************
+ swriter_paragraphs.rxo: using UNO.CLS (i.e. Java UNO under the hood) with ooRexx
+
+ Links:  <https://OpenOffice.org>
+         <https://wiki.openoffice.org/wiki/Documentation/DevGuide/ProUNO/Bridge/Automation_Bridge>
+         <https://www.pitonyak.org/oo.php>
+         <https://www.openoffice.org/udk/common/man/spec/ole_bridge.html>
+
+ Using UNO.CLS create a new swriter document, add paragraphs that get aligned
+ in four different ways. Demonstrates how to incorporate UNO_CONSTANTS and
+ UNO_ENUM values into a Rexx directory-like collection for easier use.
+***********************************************************************/
+
+/* create a text document, demonstrate how to align paragraphs */
+xDesktop=uno.createDesktop()        -- bootstrap & get access to XDesktop
+xcl=xDesktop~XComponentLoader       -- get XComponentLoader interface
+
+uri="private:factory/swriter"       -- new swriter document
+doc=xcl~loadComponentFromURL(uri,"_blank",0,.uno~noProps)
+
+xText=doc~XTextDocument~getText     -- get text object
+xText~setString("Hello, this is ooRexx on:" .DateTime~new"!")
+
+xTextCursor=xText~createTextCursor  -- create the character based cursor
+   -- make paragraph's properties accessible:
+xParaProps=xTextCursor~XParagraphCursor~XPropertySet
+
+ctlChars=.uno_constants~new("com.sun.star.text.ControlCharacter") -- UNO_CONSTANT
+paraBreak=ctlChars~paragraph_break  -- get paragraph break constant
+
+paraAdj =.uno_enum~new("com.sun.star.style.ParagraphAdjust")   -- UNO_ENUM
+
+arr=.array~of("right", "center", "block", "left")  -- adjustments
+do adj over arr   -- iterate over adjustments, create string, adjust
+   xTextCursor~gotoEnd(.false)      -- position at end
+   xText~insertControlCharacter(xTextCursor, paraBreak, .false)
+   string=("This paragraph will be" adj"-adjusted. ")~copies(8)
+   xText~insertString(xTextCursor, string, .true)
+   xParaProps~setPropertyValue("ParaAdjust", paraAdj~send(adj))
+end
+
+::requires UNO.CLS   -- get UNO support
