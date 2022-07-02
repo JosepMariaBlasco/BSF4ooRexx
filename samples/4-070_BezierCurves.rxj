@@ -1,0 +1,488 @@
+#!/usr/bin/env rexx
+/*
+   name:    4-070_BezierCurves.rxj
+   author:  Rony G. Flatscher
+   purpose: ooRexx solution of Ruurd Idenburg's NetRexx BezierCurves demo program
+   date:    2022-06-11
+   changed: --
+   usage:   4-070_BezierCurves.rxj
+   license:
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2022 Woehr, Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+/* ooRexx */
+-- using package (this program's) local directory to save an entry named bDebug; doing
+-- so allows us to refer to its value with the environment symbol .bDebug (note the dot);
+-- to show the debug output change the value of bDebug to .true
+.context~package~local~bDebug=.false -- store in this package/program local directory
+
+signal on syntax              -- intercept Java exceptions
+jFrame=.bsf~new("javax.swing.JFrame")  -- create a JFrame
+   -- create and add a Rexx WindowListener to jFrame
+rxEH=.RexxEventHandler~new    -- create a Rexx object for event handling
+   -- wrap up as a Java object, telling Java it implements the WindowListener interface
+jEH=BSFCreateRexxProxy(rxEH,,"java.awt.event.WindowListener")
+jFrame~addWindowListener(jEH) -- add wrapped Rexx object to JFrame
+call setupJFrame jFrame       -- setup JFrame further
+
+if .bDebug=.true then say "..." pp(.DateTime~new) "Rexx main program, now waiting until JFrame gets closed ..."
+rxEH~wait                     -- wait (block) until JFrame closes
+if .bDebug=.true then say "..." pp(.DateTime~new) "Rexx main program, JFrame got closed."
+exit
+
+syntax:                       -- in case of a Java exception
+  co=condition('o')
+  say ppJavaExceptionChain(co,.true)   -- this will show the Java exception chain
+  say "---"
+  raise propagate
+
+/* ========================================================================= */
+::requires BSF.CLS   -- get ooRexx-Java bridge
+
+/* ========================================================================= */
+::routine setupJFrame
+  use arg jFrame
+
+  signal on syntax  -- intercept Java exceptions
+-- A modeless JDialog with this (JFrame) as parent
+  myDialog = .bsf~new("javax.swing.JDialog", jFrame, "Exploring Bezier curves with ooRexx", .false)
+-- The wanted dimensions for  the JDialog
+  dialog_width  = 550
+  dialog_height = 700
+
+  myPane = .bsf~new("javax.swing.JEditorPane")
+  myPane~editable=.false
+  myPane~contentType="text/html"
+-- The help info in html (cf. ::RESOURCE html_text directive at the end)
+  myPane~setText(.resources~html_text~makeString)
+-- The HyperlinkListener enables browsing of the referred websites
+  rexxHll = .myHyperlinkListener~new
+  jHll = BsfCreateRexxProxy(rexxHll, , "javax.swing.event.HyperlinkListener")
+  myPane~addHyperlinkListener(jHll)
+-- Add the JEditorPane to the JDialog
+  center=bsf.getConstant("java.awt.BorderLayout","CENTER")
+  myDialog~getContentPane~add(myPane, center)
+-- and set the necessary options for the JDialog
+  myDialog~setDefaultCloseOperation(myDialog~DISPOSE_ON_CLOSE)
+  myDialog~pack
+  myDialog~setSize(dialog_width,dialog_height)
+  myDialog~setVisible(.true)
+
+-- Create the canvas for drawing the curves
+   -- create a proxy class for ooRexx from JPanel add interface classes we want to handle
+  strClasses="javax.swing.JPanel"                  -  -- Java class to proxy
+             "java.awt.event.MouseListener"        -  -- interface class we implement in ooRexx
+             "java.awt.event.MouseMotionListener"     -- interface class we implement in ooRexx
+  strMethods="javax.swing.JComponent paintComponent"  -- method we implement in ooRexx
+  jClz=bsf.createProxyClass(strClasses, "org.rexxla.DrawCanvas", strMethods)
+   -- create Rexx instance
+  rexxDC=.DrawCanvas~new(25)        -- create Rexx object with initial flattening steps
+  jDC   =BSFCreateRexxProxy(rexxDC) -- wrap it as a Java object
+  myCanvas=jClz~new( jDC )          -- create JPanel instance, supply wrapped Rexx object
+  rexxDC~setupDrawCanvas(myCanvas)  -- setup canvas, supply Java peer object
+-- The wanted dimensions for the canvas (a JPanel)
+  canvas_width  = 350
+  canvas_height = 350
+  myCanvas~setPreferredSize(.bsf~new("java.awt.Dimension", canvas_width, canvas_height))
+-- Add the drawing canvas to the JFrame
+  jFrame~getContentPane~add(myCanvas)
+-- and set the necessary options for the JFrame
+  jFrame~setTitle("Exploring Beziercurves.....")
+  jFrame~setDefaultCloseOperation(jFrame~EXIT_ON_CLOSE)
+  jFrame~pack
+  jFrame~setSize(canvas_width,canvas_height)
+  jFrame~setLocationRelativeTo(.nil)
+  jFrame~setVisible(.true)
+  return
+
+syntax:                             -- in case of a Java exception
+  co=condition('o')
+  say ppJavaExceptionChain(co,.true) -- this will show the Java exception chain
+  say "---"
+  raise propagate                   -- let ooRexx get to see this condition and report it as well
+
+
+/* ========================================================================= */
+::class DrawCanvas   -- will be used to paint the curves
+
+::method init
+  expose points curvePoint curvePointRadius skeletonAxesIncrement flatteningSteps
+  use arg flatteningSteps=10
+-- first point is start, last point is end, in between are control
+  points=.array~new           -- we use an ooRexx array
+-- Create the initial start-, end- and control-points
+  points~append(110 150)
+  points~append(25 190)
+  points~append(210 250)
+  points~append(230 110)
+  points~append(210 30)
+-- curvePoint is updated every flattening step
+-- size of a curvepoint
+  curvePointRadius = 5
+-- distance between X and also Y axes
+  skeletonAxesIncrement = 25
+-- The number of flattening steps to calculate the Bezier curve
+
+-- load the color constants and the font we use, save the values in package~local
+-- and can refer to them with their environment symbols (just preceed the index with a dot)
+  pkgLocal=.context~package~local
+  clzColor=bsf.loadClass("java.awt.Color")      -- the colors we use in the canvas
+  pkgLocal~color.lightgray=clzColor~lightgray
+  pkgLocal~color.black    =clzColor~black
+  pkgLocal~color.blue     =clzColor~blue
+  pkgLocal~color.green    =clzColor~green
+  pkgLocal~color.red      =clzColor~red
+
+  clzFont =bsf.importClass("java.awt.Font")     -- the font we use in the canvas
+  pkgLocal~font.mono      =clzFont~new("Monospaced", clzFont~bold, 10)
+
+::method setupDrawCanvas
+   expose points bsfDialog
+   use arg thisJO    -- fetch the Java peer object to interact with it
+-- Set the mouse listeners we need and implement
+   thisJO~addMouseListener(thisJO)
+   thisJO~addMouseMotionListener(thisJO)
+   bsfDialog=.bsf.dialog~new(thisJO)   -- let the dialogs be modal (from BSF4ooRexx)
+
+::method mouseDragged
+  if .bDebug=.true then say "#" .line":" pp(arg(1)~toString)
+  forward message ("moveCurvePoint")
+
+::method mouseReleased
+  if .bDebug=.true then say "#" .line":" pp(arg(1)~toString)
+  forward message ("moveCurvePoint")
+
+-- we are not interested in other mouse events like mouseMoved, mouseExited ...
+-- those unintercepted messages will be routed to the unknown method, if present
+::method unknown  -- intercept unknown messages and show them
+  if .bDebug=.true then do
+     use arg mName, mArgs
+     tab="09"x
+     say "#" .line "-" self":unknown, messageName="pp(mName) "args:" pp(mArgs~toString(,','))
+     say "#" .line tab "event:" mArgs[1]~toString
+     slotDir=mArgs~lastItem
+     say "#" .line tab "slotDir:" slotDir
+     do counter c idx over slotDir~allIndexes~sort
+        val=slotDir[idx]
+        if val~isA(.BSF) then val=val "~toString:" pp(val~toString)
+        say tab "  " c":" pp(idx) "value:" val
+     end
+     say
+  end
+
+::method moveCurvePoint
+  expose points curvePointRadius
+  use arg event, slotDir
+
+  ex = event~getX
+  ey = event~getY
+  r = curvePointRadius
+  loop label redraw i=1 while i<=points~size
+      parse value points[i] with px py
+      if (ex>=px-r & px<=px+r & ey>=py-r & ey<=py+r) then do
+          points[i]= ex ey
+          slotdir~javaObject~repaint
+          leave redraw
+      end
+  end
+
+/**
+ * Handle single click and double click and left or right mouse action
+ * Double click allows altering the number of flattenening steps
+ * Single click with left mouse button allows adding a control point
+ * Single click with right mouse button allows removing a control point
+ */
+::method mouseClicked
+  expose points curvePointRadius flatteningSteps bsfDialog
+  use arg event, slotDir
+
+  if .bDebug=.true then say "#" .line":" pp(event~toString)
+
+  if event~getClickCount>1 & \event~isConsumed then do
+      event~consume
+      input = bsfDialog~inputBox("Enter the number of curve flattening steps" "0a"x "Should be in the range 0-100",flatteningSteps)
+
+      if (input\=.nil & input<>"") then do
+          if (input~dataType('W') & input>=0 & input<=100) then do
+              flatteningSteps = input
+              slotdir~javaObject~repaint
+          end
+          else do
+              msg="You entered:" input "0a"x -
+                  "Number of flattening steps not numeric or not in the range 0-100!"
+              bsfDialog~messageBox(msg, "Wrong Input", "error")
+          end
+
+      end
+  end
+  if event~getClickCount=1 then do
+      ex = event~getX
+      ey = event~getY
+      r = curvePointRadius
+      loop label redraw i=1 while i<=points~size
+          parse value points[i] with px py
+          if (ex>=px-r & px<=px+r & ey>=py-r & ey<=py+r) then do
+              mouseButton = event~getButton
+              if mouseButton==event~BUTTON1 then self~addControlPoint(i, slotDir)
+              if mouseButton==event~BUTTON3 then self~removeControlPoint(i, slotDir)
+              leave redraw
+          end
+      end
+  end
+
+/**
+ * A new control point is added halfway between the clicked one and the next control point.
+ * Adding a control point beyond the end point is not allowed
+ */
+::method addControlPoint
+  expose points bsfDialog
+  use arg i, slotDir
+  if i<points~size then do
+      parse value points[i] points[i+1] with x1 y1 x2 y2
+      newX = ((x1+x2)/2)~format(,0)
+      newY = ((y1+y2)/2)~format(,0)
+      points~insert(newX newY, i) -- insert point
+      slotdir~javaObject~repaint
+  end
+  else do
+      bsfDialog~messageBox("Adding a Controlpoint after Endpoint is not allowed!", "User Error", "error")
+  end
+
+/**
+ * Removing start or end point is not allowed, dragging them is the way to change them.
+ */
+::method removeControlPoint -- (i)
+  expose points bsfDialog
+  use arg i, slotDir
+
+  if (i>1 & i<points~size) then do
+      oldpts = points
+      points = .array~new
+      loop j=1 while j<=oldpts~size
+          if j<>i then points~append(oldpts[j])
+      end
+      slotdir~javaObject~repaint
+  end
+  else do
+      bsfDialog~messageBox("Removing start or end point is not allowed!", "User Error", "error")
+  end
+
+/**
+ * The code to (re)paint the drawing canvas
+ */
+::method paintComponent
+  expose points curvePoint curvePointRadius skeletonAxesIncrement flatteningSteps
+  use arg g, slotdir
+
+  javaObject=slotdir~javaObject     -- get peer Java object
+  javaObject~paintComponent_forwardToSuper(g) -- invoke paintComponent in super (in Java peer)
+
+-- draw the skeleton
+  incr = skeletonAxesIncrement
+  height = javaObject~getHeight
+  width  = javaObject~getWidth
+  g~setColor(.Color.lightgray)
+  loop i=0 by incr while i<=height~max(width)
+      g~drawLine(i,0,i,height)
+      g~drawLIne(0,i,width,i)
+  end
+-- show the number of flattening steps
+  g~setColor(.Color.BLACK)
+  g~setFont(.font.mono)
+  xPos = 5
+  yPos = height-5
+  g~drawString("Flattening steps:" flatteningSteps, xPos, yPos)
+-- draw the lines between the points
+  if points~size>1 then do
+      px = 0
+      py = 0
+      loop i=1 while i<=points~size
+          x = points[i]~word(1)
+          y = points[i]~word(2)
+          if i>1 then g~drawLine(px,py,x,y)
+          px = x
+          py = y
+      end
+  end
+-- draw the points and information text
+  if points~size>0 then do
+      loop i=1 while i<=points~size
+          parse value points[i] with tx ty
+          coords = i "("tx","ty")"
+          g~setColor(.Color.BLACK)
+          g~drawString(coords,tx+8, ty+8)
+          if .bDebug=.true then say "... point #" coords
+          g~setColor(.Color.blue)
+          if i=1 then g~setColor(.Color.green)
+          if i=points~size then g~setColor(.Color.red)
+          g~fillOval(tx-4, ty-4, 8, 8)
+      end
+      if .bDebug=.true then say
+  end
+-- draw the flattened Bezier curve
+  if points~size>1 then do
+      t = 0.0
+      prevptx = 0
+      prevpty = 0
+      loop while t<=1
+          g~setColor(.Color.blue)
+          self~stepCurvePoint(points, t)
+          parse var curvePoint ptx pty
+          g~drawOval(ptx-1, pty-1, 2, 2)
+          if t<>0 then do
+              g~drawLine(prevptx, prevpty, ptx, pty)
+          end
+          prevptx = ptx
+          prevpty = pty
+          t = t+(100/flatteningSteps/100)
+      end
+  end
+
+/**
+ * If we want to draw Bézier curves, we can run through all values of t from 0 to 1 and
+ * then compute the weighted basis function at each value, getting the x/y values we need
+ * to plot. Unfortunately, the more complex the curve gets, the more expensive this
+ * computation becomes. Instead, we can use de Casteljau's algorithm to draw curves.
+ * This is a geometric approach to curve drawing, and it's really easy to implement.
+ * So easy, in fact, you can do it by hand with a pencil and ruler.
+ * <ol>
+ * <li> Treat t as a ratio (which it is). t=0 is 0% along a line, t=1 is 100% along a line.
+ * <li> Take all lines between the curve's defining points. For an order n curve, that's n lines.
+ * <li> Place markers along each of these line, at distance t. So if t is 0.2, place the mark at 20% from the start, 80% from the end.
+ * <li> Now form lines between those points. This gives n-1 lines.
+ * <li> Place markers along each of these line at distance t.
+ * <li> Form lines between those points. This'll be n-2 lines.
+ * <li> Place markers, form lines, place markers, etc.
+ * <li> Repeat this until you have only one line left. The point t on that line coincides with the original curve point at t.
+ * </ol>
+ */
+::method stepCurvePoint    -- will be used recursively
+  expose curvePoint
+  use arg _points, t
+
+  if _points~size>1 then do
+      newPoints= .array~new
+      loop i=1 while i<_points~size
+          parse value _points[i] _points[i+1] with x1 y1 x2 y2
+          x = (1-t)*x1+t*x2
+          y = (1-t)*y1+t*y2
+          newPoints~append(x y)
+      end
+      self~stepCurvePoint(newPoints, t)
+  end
+  else do
+      parse value _points[1] with x y
+      curvePoint = x~format(,0) y~format(,0)
+  end
+
+
+/* ========================================================================= */
+/**
+ * The HyperlinkListener is triggered by the hyperlinkUpdate event
+ * The event type can be ENTERED, EXITED or ACTIVATED. If the hyperlink is activated
+ * the (default) desktop browser is invoked to try to browse the activated link.
+ */
+::class myHyperlinkListener -- implements javax.swing.event.HyperlinkListener
+::method init
+  expose activated desktop  -- buffers the ACTIVATED constant and the desktop object
+   -- save the string value of this Java constant object
+  activated = bsf.loadClass("javax.swing.event.HyperlinkEvent$EventType")~activated~toString
+  desktop= bsf.loadClass("java.awt.Desktop")~getDesktop
+
+::method hyperlinkUpdate
+  expose activated desktop
+  use arg event
+  if event~getEventType~toString = activated then do
+      theURL = event~getURL
+      if \theURL~isNil then
+         desktop~browse(theURL~toURI)
+  end
+
+/* ========================================================================= */
+/* The following Rexx class implements the event handler for a java.awt.event.WindowListener to be
+   able to learn when the JFrame gets closed (event "windowClosing").
+*/
+::class RexxEventHandler    -- handles java.awt.event.WindowListener events
+::method init     -- constructor for initialization
+  expose lock     -- object variable to serve as a control variable
+  lock=.true      -- initialize lock
+
+::method wait     -- method to allow for blocking
+  expose lock
+  guard on when lock<>.true   -- the caller will be blocked until this condition turns to .false
+
+::method windowClosing        -- Window event when window gets closed, release wait lock
+  expose lock
+  lock=.false     -- release lock
+
+-- we are not interested in other windows events like windowActivated, windowIconified ...
+-- those unintercepted messages will be routed to the unknown method, if present
+::method unknown  -- catch all other window-events that we are ignoring
+  if .bDebug=.true then do
+     use arg mName, mArgs
+     tab="09"x
+     say "#" .line "-" self":unknown, messageName="pp(mName) "args:" pp(mArgs~toString(,','))
+     say "#" .line tab "event:" mArgs[1]~toString
+     slotDir=mArgs~lastItem
+     say "#" .line tab "slotDir:" slotDir
+     do counter c idx over slotDir~allIndexes~sort
+        val=slotDir[idx]
+        if val~isA(.BSF) then val=val "~toString:" pp(val~toString)
+        say tab "  " c":" pp(idx) "value:" val
+     end
+     say
+  end
+
+
+/* ========================================================================= */
+-- resources allow us to freely write multi line text and fetch it using .resources
+::RESOURCE html_text
+   <h1>Exploring Beziercurves with:</h1>
+
+   <h1><a href='http://oorexx.org/'>ooRexx</a>
+   <img src='https://www.oorexx.org/images/oorexx_tm.gif' width="75">
+   </h1>
+
+   <p>
+   <a href='https://sourceforge.net/projects/oorexx/'>ooRexx</a> is a project of the Rexx Language Association
+   (<a href="https://www.RexxLA.org">RexxLA</a>).
+
+   This solution uses the ooRexx-Java bridge
+   <a href="https://sourceforge.net/projects/bsf4oorexx/">BSF4ooRexx</a>
+   <img src='https://a.fsdn.com/allura/p/bsf4oorexx/icon?1646236498' width="25" />
+   which is a project of the Rexx Language Association
+   (<a href="https://www.RexxLA.org">RexxLA</a>) as well.
+   </p>
+
+   <p>The code is based on the information provided on
+   <a href='https://pomax.github.io/bezierinfo/'>this website</a><br>(https://pomac.github.io/bezierinfo/).</br></p>
+
+   <p>You can use this code in the following way:
+
+   <ul>
+      <li>Execution starts with a predefined set of startpoint, endpoint and 3 controlpoints.</li>
+      <li>With the left mousebutton all points can be dragged.</li>
+      <li>Clicking the left mousebutton on one of the points will add an additional controlpoint
+          between the one clicked and the next point.</li>
+      <li>Clicking the right mousebutton on one of the points will remove that controlpoint.</li>
+      <li>Double clicking the left mousebutton allows you the change the number of flattening steps.</li>
+   </ul>
+   </p>
+
+   <p>This ooRexx solution is based on Ruurd Idenburg's NetRexx solution, kudos to Ruurd who
+      wrote: <quote><em>Go ahead, have some fun, I hope! Ruurd Idenburg </em></quote></p>
+::END
