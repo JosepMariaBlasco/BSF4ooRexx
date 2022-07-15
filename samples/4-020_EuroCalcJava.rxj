@@ -38,13 +38,14 @@
                              event in order to get access to the latest value in the text field
             2013-07-09, rgf, added Latvian Lats
             2014-07-24, rgf, added Lithuania Litas
+            2022-07-15, rgf, added Croatian Kuna (HRK)
 
    last change: $Revision: 684 $ $Author: rony $ $Date: 2010-05-16 23:04:56 +0200 (Sun, 16 May 2010) $
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2001-2014 Rony G. Flatscher
+       Copyright (C) 2001-2022 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -127,10 +128,11 @@ userDir~closeEH~waitForExit   -- get closing Rexx event handler object, block ma
 
     euro.ltl =    3.45280  ;  euro.LTL.eCountry = "LTL: Lithuania (Litas)"    ; euro.LTL.eSince=2015
 
+    euro.hrk =     7.534500;  euro.HRK.eCountry = "HRK: Croatia (Kuna)"       ; euro.HRK.eSince=2023
 
         /* determine processing order of currencies, will also be used as index
            into "euro."-stem, hence UPPERCASE (!) spelling     */
-    euro.eOrder = "EUR ATS BEF CYP DEM EEK ESP FIM FRF GRD IEP ITL LTL LUF LVL MTL NLG PTE SIT SKK"
+    euro.eOrder = "EUR ATS BEF CYP DEM EEK ESP FIM FRF GRD HRK IEP ITL LTL LUF LVL MTL NLG PTE SIT SKK"
 
     euro.eCount=words(euro.eOrder)     /* save number of currencies */
     RETURN
