@@ -5,6 +5,23 @@ import java.lang.ref.PhantomReference ;
 import java.lang.ref.ReferenceQueue ;
 import java.util.IdentityHashMap ;
 import java.util.Calendar;
+/*
+
+    rexxtry.rex
+    call bsf.cls
+
+    clzRef=bsf.loadclass("org.rexxla.bsf.engines.rexx.RexxCleanupRef")
+    say clzRef~getStatistics
+
+    ro=BsfCreateRexxProxy("oha",,"rexxobject")  -- do not use string as code, embed it for Java
+    say "ro:" ro "ro~sendMessage0(...):" ro~sendMessage0("string")
+    say clzRef~getStatistics
+    drop ro; call gc            -- drop & let Rexx garbage collect
+    say clzRef~getStatistics
+    .java.lang.System~gc        -- let Java garbage collect
+    say clzRef~getStatistics
+
+*/
 
 
 /** With Java 9 Object.finalize() gets deprecated, therefore we use <code>PhantomReferences</code>
@@ -29,7 +46,7 @@ import java.util.Calendar;
  * by BSF4ooRexx directly in the <code>RexxAndJava</code> class.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2021 Rony G. Flatscher
+ *    Copyright (C) 2021-2022 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -45,7 +62,7 @@ import java.util.Calendar;
  * ----------------------------------------------------------------------------- </pre>
  *
  * @author   Rony G. Flatscher
- * @version  100.20210805
+ * @version  100.20220715
 */
 
 /*
@@ -73,6 +90,23 @@ import java.util.Calendar;
     - 20210808, rgf: - clone in synchronized block
                      - change format patterns to static
 
+    - 20220304, rgf: - cater for the eventual removal of System.runFinalization():
+                       catch Throwable and report it
+
+    - 20220714, rgf: - added new kind REXX_SCRIPT_ENGINE
+
+    - 20220715, rgf: - changed logic to also cater for RexxScriptEngine (if freed,
+                       RexxEngine.terminate() needs to be invoked which will cause
+                       termination of the RII via jni), hence not invoking
+                       jniRexxTerminateInterpreterInstance(RII) anymore
+
+                     - before terminating "call bsf.redirectTo ooRexx" gets invoked to
+                       make sure that potentially redirected standard files & redirected
+                       ooRexx traceoutput and debuginput get redirected to the standard
+                       ooRexx streams
+
+                     - need to change element from <String> to Object
+
 */
 
 public class RexxCleanupRef extends PhantomReference
@@ -80,11 +114,46 @@ public class RexxCleanupRef extends PhantomReference
     /** If set to false the compiler should eradicate all dependent code. */
     private static final boolean bDebug=false; // true;
 
+// TODO: 2022-04-21, reset to false after debugging BSF4ooRexx with Tomcat!
+    private static boolean bDebugRII=false; // true; // false; // show terminating RII (Rexx interpreter instance)
+    /** Getter for <code>bDebugRII</code> (Rexx interpreter instance related).
+     * @return returns current setting (if <code>true</code> then showing debug message when terminating Rexx interpreter instance)
+     */
+    public static boolean getDebugRII()
+    {
+        return bDebugRII;
+    }
+
+    /** Setter for <code>bDebugRII</code> (Rexx interpreter instance related).
+     * @param newDebugState if <code>true</code> then showing a debug message when terminating a Rexx interpreter instance
+     */
+    public static void setDebugRII(boolean newDebugState)
+    {
+        bDebugRII=newDebugState;
+    }
+
+    private static boolean bDebugRexxProxy=false; // true; // false;  // show dereferencing RexxObject and remaining references
+    /** Getter for <code>bDebugRexxProxy</code>.
+     * @return returns current setting (if <code>true</code> then showing debug message when dereferencing a RexxProxy)
+     */
+    public static boolean getDebugRexxProxy()
+    {
+        return bDebugRexxProxy;
+    }
+
+    /** Setter for <code>bDebugRexxProxy</code>.
+     * @param newDebugState if <code>true</code> then showing a debug message when dereferencing a RexxProxy
+     */
+    public static void setDebugRexxProxy(boolean newDebugState)
+    {
+        bDebugRexxProxy=newDebugState;
+    }
+
 
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "100.20210808";
+    static final public String version = "100.20220715";
 
     /** Counts number of times the clean() thread got started so far. */
     private static int cleanInvocationCounter=0;
@@ -114,7 +183,7 @@ public class RexxCleanupRef extends PhantomReference
 
 
     /** Defines the valid kinds of Rexx related resources to finalize. */
-    static public enum RefKind { TEST, REXX_ENGINE, REXX_PROXY } ;
+    static public enum RefKind { TEST, REXX_ENGINE, REXX_PROXY, REXX_SCRIPT_ENGINE } ;
 
     /** Stores the enum objects in an arary in ordinal order. */
     static private RefKind refkinds[] = RefKind.class.getEnumConstants();
@@ -192,8 +261,10 @@ public class RexxCleanupRef extends PhantomReference
     /** The kind of PhantomReference. */
     final private RefKind refKind;
 
-    /** The string representing the Rexx interpreter instance or Rexx object in the native layer. */
-    final private String  str_id;
+    /** The string representing the Rexx interpreter instance or Rexx object in the native layer
+     *  or the RexxEngine instance peer for the RexxScriptEngine instance.
+     */
+    final private Object obj_id;
 
     // we must not refer to referent, otherwise it never can be reclaimed and this will not work
     /** Constructor. Whenever an instance gets created the static method @link{#clean} gets invoked
@@ -201,13 +272,14 @@ public class RexxCleanupRef extends PhantomReference
      *
      * @param referent the RexxEngine or RexxProxy object to watch
      * @param refKind RexxCleanupRef.
-     * @param str_id the string id maintained in native code
+     * @param obj_id the string id maintained in native code or RexxEngine of finalized RexxScriptEngine
+     *               or the RexxEngine instance peer of the RexxScriptEngine instance
      */
-    RexxCleanupRef (final Object referent, final RefKind refKind, final String str_id)
+    public RexxCleanupRef (final Object referent, final RefKind refKind, final Object obj_id)
     {
         super(referent, refQueue);
         this.refKind=refKind;
-        this.str_id =str_id;
+        this.obj_id =obj_id;
 
         synchronized (pinnedReferences)
         {
@@ -276,7 +348,7 @@ public class RexxCleanupRef extends PhantomReference
      */
     private void finalizeRexxObject ()
     {
-        if (bDebug==true) System.err.println("*** RexxCleanupRef.finalizeRexxObject(): refKind=["+this.refKind+"], str_id=["+this.str_id+"]");
+        if (bDebug==true) System.err.println("*** RexxCleanupRef.finalizeRexxObject(): refKind=["+this.refKind+"], obj_id=["+this.obj_id+"]");
 
         if (refKind==RefKind.REXX_ENGINE)
         {
@@ -284,45 +356,66 @@ public class RexxCleanupRef extends PhantomReference
             {
                  public void run()
                  {
-                     long startTime;
-                     if (bDebug==true)
+                     if (bDebugRII || bDebug==true)
                      {
-                         startTime=System.currentTimeMillis();
-                         System.err.println("*** RexxCleanupRef.finalizeRexxObject(): refKind=["+refKind+"], str_id=["+str_id+"] ... now invoke _jniRexxTerminateInterpreterInstance(...), (thread="+Thread.currentThread().getName()+")");
+                         System.err.println("RexxCleanupRef.REXX_ENGINE: -> jniRexxTerminateInterpreterInstance(RII="+obj_id+")");
                      }
 
-                     // -> carry out termination on another thread as Terminate() waits until all threads of the Rexx interpreter instance ended
-                     int res=0;  // result
+                     // int res=0;  // result
                      try
                      {
+
                          // Not needed: halting all threads with jniRexxHaltInterpreterInstance() before terminating Rexx interpreter instance
+
                          // it may be the case that the interpreter instance got already terminated by RexxEngine
                          // so ignoring return value which would indicate that instead of returning 0
-                         res=jniRexxTerminateInterpreterInstance (str_id);
-                     }
-                     catch (Throwable t)    // the interpreter instance could be already terminated by RexxEngine !
-                     {
-                         if (bDebug==true)
-                         {
-                             System.err.println("*** RexxCleanupRef.finalizeRexxObject(): refKind=["+refKind+"], str_id=["+str_id+"] -> threw throwable: "+t);
-                         }
-                     }
+//                         res=jniRexxTerminateInterpreterInstance ((String) obj_id);
 
-                     if (bDebug==true)
-                     {
-                        System.err.println("*** RexxCleanupRef.finalizeRexxObject(): refKind=["+refKind+"], res=["+res+"]=jniRexxTerminateInterpreterInstance(...) lasted: ["
-                             + ((float)(System.currentTimeMillis()-startTime)/1000 ) +"] seconds, (thread="+Thread.currentThread().getName()+")");
+/*
+                         if (bDebugRII || bDebug==true)
+                         {
+                             System.err.println("RexxCleanupRef.REXX_ENGINE: <- jniRexxTerminateInterpreterInstance(RII="+obj_id+"), res=["+res+"]");
+                         }
+*/
                      }
+                     catch (Throwable t)    // the interpreter instance could be already terminated by its RexxEngine !
+                     {}
+
                  }
              };
-            new Thread (r, refKind+"_Terminate_"+str_id).start();
+             // -> carry out termination on another thread as Terminate() waits until all threads of the Rexx interpreter instance ended
+            // new Thread (r, refKind+"_Terminate_"+obj_id).start();
             // <--------------
         }
         else if (refKind==RefKind.REXX_PROXY)
         {
-            int res=jniUnregisterRexxObject(str_id);    // returns number of references left on the Rexx object
+            int res=jniUnregisterRexxObject((String) obj_id);    // returns number of references left on the Rexx object
 
-            if (bDebug==true) System.err.println("*** RexxCleanupRef.finalizeRexxObject(): refKind=["+this.refKind+"], str_id=["+this.str_id+"], res=["+res+"]=jniUnregisterRexxObject(...), (thread="+Thread.currentThread().getName()+")");
+            if (bDebugRexxProxy || bDebug==true)
+            {
+                System.err.println("RexxCleanupRef.REXX_PROXY, RexxProxy: jniUnregisterRexxObject("+obj_id+") remaining references="+res
+                                   + (res<=0 ? " <-- removing" : "")
+                                  );
+            }
+
+            if (bDebug==true) System.err.println("*** RexxCleanupRef.REXX_PROXY: refKind=["+this.refKind+"], obj_id=["+this.obj_id+"], res=["+res+"]=jniUnregisterRexxObject(...), (thread="+Thread.currentThread().getName()+")");
+        }
+        else if (refKind==RefKind.REXX_SCRIPT_ENGINE)
+        {
+            RexxEngine re = (RexxEngine) obj_id;
+            if (bDebugRII || bDebug==true)
+            {
+                System.err.println("RexxCleanupRef.REXX_SCRIPT_ENGINE: obj_id="+obj_id+") ==> rii_ID=["+re.get_rii_ID()+"]");
+            }
+            try
+            {
+                re.apply("RexxCleanupRef.java",0,0,"call bsf.redirectTo ooRexx;::requires BSF.CLS",null,null);
+            }
+            catch (Throwable t) {}
+            finally
+            {
+                re.terminate();     // this will terminate the RII via jni
+            }
         }
     }
 
@@ -372,8 +465,13 @@ public class RexxCleanupRef extends PhantomReference
         System.gc();
         System.err.println(getStatistics("after gc()"));
 
-        System.runFinalization();
-        System.err.println(getStatistics("after runFinalization()"));
+        try {
+            System.runFinalization();
+            System.err.println(getStatistics("after runFinalization()"));
+        }
+        catch (Throwable t) {
+            System.err.println("exception while trying to run 'System.runFinalization()': "+t);
+        }
 
         System.gc();
         System.err.println(getStatistics("after gc()"));
@@ -407,10 +505,13 @@ public class RexxCleanupRef extends PhantomReference
 
     static final private String strFormatHeader_1  = "RexxCleanupRef [%1$tY-%1$tm-%1$td %1$tT.%1$tN]%n";
     static final private String strFormatHeader_2  = "RexxCleanupRef [%1$tY-%1$tm-%1$td %1$tT.%1$tN] [%2$s]%n";
-    static final private String strFormatHeader_3  = String.format("%14s  %17s  %17s %18s%n", "RefKind:", "Instances:", "Finalized:", "Not Yet Finalized:");
-    static final private String strFormatLineHeader= "%-13s";
+    // static final private String strFormatHeader_3  = String.format("%14s  %17s  %17s %18s%n", "RefKind:", "Instances:", "Finalized:", "Not Yet Finalized:");
+    static final private String strFormatHeader_3  = String.format("%21s  %17s  %17s %18s%n", "RefKind:", "Instances:", "Finalized:", "Not Yet Finalized:");
+    // static final private String strFormatLineHeader= "%-13s";
+    static final private String strFormatLineHeader= "%-20s";
     static final private String strFormatNumbers   = ": [%,16d] [%,16d] [%,16d]%n";
-    static final private String strDivider         = String.format("%-71s%n","").replace(' ','-');
+    // static final private String strDivider         = String.format("%-71s%n","").replace(' ','-');
+    static final private String strDivider         = String.format("%-78s%n","").replace(' ','-');
 
     /** Creates a string with formatted instances, finalizes and not yet finalized objects grouped by
      *  @link {RexxCleanupRef.RefKind}.

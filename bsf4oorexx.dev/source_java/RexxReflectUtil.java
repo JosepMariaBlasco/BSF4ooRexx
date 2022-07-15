@@ -24,7 +24,7 @@ import        java.lang.reflect.Modifier;
  * different classes.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2018-2019 Rony G. Flatscher
+ *    Copyright (C) 2018-2022 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ import        java.lang.reflect.Modifier;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
- * @version 1.03, 2018-01-08-2018-02-18, 2018-03-10; 2018-10-31, 2019-02-01, 2019-11-14
+ * @version 1.04, 2022-07-14
  * @since BSF4ooRexx 600 (implementation started: 2018-01-05)
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
  */
@@ -55,7 +55,8 @@ import        java.lang.reflect.Modifier;
 
         2019-11-14, rgf: - new method truncObject() to make sure that any Object's String value gets
                            truncated for better legibility in error messages
-
+        2022-07-14, rgf  - changed RexxReflectUtil.loadClass() to not register the
+                            loaded class with the BSF registry, must be done by caller
 */
 
 
@@ -381,6 +382,7 @@ if ( bean != null && bean instanceof String && rexxArgs[1] != null && bean.equal
      * @param rajo the {@link RexxAndJava} object invoking this method
      * @param strBsfSubFunctionName the subfunction name which invokes this method
      * @param className the fully qualified Java class name
+     * @param bRegister if true register class object in registry
      *
      * @return the loaded Java class object
      *
@@ -423,10 +425,6 @@ if ( bean != null && bean instanceof String && rexxArgs[1] != null && bean.equal
             throw new BSFException (BSFException.REASON_OTHER_ERROR,
                       "BSF4ooRexx subfunction \""+strBsfSubFunctionName+"\": while attempting to load class '"+className+"', threw: ["+t+"]", t);
         }
-
-            // register Java class object in BSF registry
-        String beanName=rajo.makeBeanName(rajo, tmpClass);
-        rajo.registerBean(rajo, beanName, tmpClass);   // will use <O> indicator
         return tmpClass;
     }
 

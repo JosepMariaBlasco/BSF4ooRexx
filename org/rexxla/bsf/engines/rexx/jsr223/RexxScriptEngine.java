@@ -24,9 +24,11 @@ import org.rexxla.bsf.engines.rexx.RexxEngine;
 import org.rexxla.bsf.engines.rexx.RexxProxy;
 import org.rexxla.bsf.engines.rexx.RexxException;
 
+import org.rexxla.bsf.engines.rexx.RexxCleanupRef;
+
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015-2021 Rony G. Flatscher
+   Copyright 2015-2022 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -42,6 +44,10 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 -----------------------------------------------------------------------------
 
    Changes:
+
+        2022-07-14, ---rgf, - removed field bsfMgr and public routine getBsfManager(): not
+                              needed in the context of this class
+
         2021-09-14, ---rgf, - bug fix in "public void setAddLatestPackageDynamically (boolean newValue)" (reported by Michael Hall)
 
         2021-07-05, ---rgf, - in order to make J2EE's JavaScriptTaglibs library Rexx agnostic:
@@ -338,19 +344,6 @@ public class RexxScriptEngine extends AbstractScriptEngine implements Compilable
         }
         return nil;
     }
-
-
-    /** Stores the BSF Rexx manager that is used for loading the BSF Rexx engine. */
-    BSFManager bsfMgr;
-
-    /** Getter method that returns the BSF manager used for managing this BSF scripting engine.
-     *  @return the BSF manager used for managing this RexxScriptEngine
-     */
-    public BSFManager getBsfManager()
-    {
-        return bsfMgr;
-    }
-
 
     // 2015-08-04, rgf: in upcoming ooRexx 4.0.0 no CR- or LF- chars are allowed!
     /** Rexx code to create and return a Rexx routine object from Rexx code. */
@@ -925,10 +918,12 @@ if (bDebug==true){ System.err.println("arrived: getCreateRoutineAndPackage(), re
 if (bDebug==true)
 { System.out.println("--> RexxScriptEngine() -->: "+this+" (CONSTRUCTOR!)"); }
 
-        bsfMgr = new BSFManager ();                // get an instance of BSFManager
+        BSFManager bsfMgr = new BSFManager ();                // get an instance of BSFManager
         try
         {
            bsfRexxEngine = (RexxEngine) bsfMgr.loadScriptingEngine("rexx");  // load the Rexx engine
+
+           new RexxCleanupRef(this, RexxCleanupRef.RefKind.REXX_SCRIPT_ENGINE, bsfRexxEngine);
 
             // get the default ScriptContext, fill-in engine related information using the official names
            ScriptContext sc=getContext(); // get default ScriptContext
@@ -1297,6 +1292,28 @@ if (bDebug) {System.err.println("--> RexxScriptEngine().compile(String=[---scrip
 
             // now create the routine object, fetch it and its package object
             rexxObjects= (Object[]) getCreateRoutineAndPackage().sendMessage2("CALL", filename,tmpScriptSource);
+// rgf, 2022-04-20 --->
+if (bDebug==true) {
+    java.io.File file = new java.io.File(filename);
+    java.io.FileOutputStream fos = new java.io.FileOutputStream(file);
+    java.io.BufferedOutputStream bos = new java.io.BufferedOutputStream(fos);
+    try {
+        //convert string to byte array
+        byte[] bytes = tmpScriptSource.getBytes();
+        //write byte array to file
+        bos.write(bytes);
+        System.out.println("\n*** Data written to file ["+filename+"] successfully. ***");
+    } catch (java.io.IOException e) {
+        System.err.println("\n*** Error writing to file ["+filename+"] ***.");
+        e.printStackTrace();
+    }
+    finally {
+        bos.close();
+        fos.close();
+    }
+}
+// rgf, 2022-04-20 <---
+
         }
         catch (Exception exc)
         {
@@ -1309,6 +1326,19 @@ if (bDebug==true) {exc.printStackTrace();}
         {
             try
             {
+if (bDebug==true)   // rgf, 2022-04-20
+{
+    int length=tmpScriptSource.length();
+    if (length>100)
+    {
+        length=100;
+    }
+    if (length>0)
+    {
+       System.out.println("*** RSE.compile(script,filename): ADDPACKAGE(...) for \n\t'file': "+filename+"\n\t'tmpScriptSource': ["+tmpScriptSource.substring(0,length)+"] ... ***");
+    }
+    System.out.println("*** RSE.compile(script,filename): ADDPACKAGE("+latestRexxPackage+") *** bsfRexxEngine="+bsfRexxEngine+" *** rii_ID="+bsfRexxEngine.get_rii_ID()+" ***");
+}
                 RexxProxy rexxPackage=(RexxProxy) rexxObjects[1];
                 rexxPackage.sendMessage1("ADDPACKAGE", latestRexxPackage);   // add the current latest RexxPackage to it
                 latestRexxPackage = rexxPackage;    // this is from now on the latestRexxPackage to be used for the next script
@@ -1653,13 +1683,19 @@ if (bDebug==true) {exc.printStackTrace();}
     synchronized void updateRexxEngine(ScriptContext sc) throws ScriptException, BSFException
     {
         // boolean bDebug=false; // true;
-if (bDebug) {System.err.println(this+": --> RexxScriptEngine().updateRexxEngine(), sc=["+sc+"] ...");}
-
-
+if (bDebug)
+{
+    System.err.println(this+": --> RexxScriptEngine().updateRexxEngine(), sc=["+sc+"] ...");
+    System.out.println("*** RSE.updateRexxEngine(): rse/this="+this+" / "+"bsfRexxEngine="+bsfRexxEngine+" *** "+bsfRexxEngine.get_rii_ID()+" ***");
+}
             // make sure we have the native code set to support the camouflaging support from the beginning
         if (bInitialBSFRequiresDone==false) // make sure that JNI subsystem uses BSF.CLS for passing (Java object) arguments to Rexx scripts
         {
-if (bDebug) {System.err.println(this+": --> RexxScriptEngine().updateRexxEngine(), bInitialBSFRequiresDone==false !");}
+if (bDebug)
+{
+    System.out.println("*** RSE.updateRexxEngine(): bInitialBSFRequiresDone gets carried out ...");
+    System.err.println(this+": --> RexxScriptEngine().updateRexxEngine(), bInitialBSFRequiresDone==false !");
+}
             // the following statement makes sure, that the BSF infrastructure gets set up and is available
             // the package object will be returned by the Rexx code and can be used for adding it to
             // the next Rexx script that gets compiled
@@ -1982,9 +2018,12 @@ if (bDebug) System.err.println("RexxAnnotation(): 1) contentLastChar="+this.cont
                     this.contentLastCharPos=this.contentFirstCharPos;
                 }
 
-if (bDebug) System.err.println("RexxAnnotation(): 2) contentLastChar="+this.contentLastChar+", contentLastCharPos="+this.contentLastCharPos);
-if (bDebug) System.err.println("RexxAnnotation(): contentFirstChar="+this.contentFirstChar+", contentLastChar="+this.contentLastChar);
-if (bDebug) System.err.println("RexxAnnotation(): contentFirstCharPos="+this.contentFirstCharPos+", contentLastCharPos="+this.contentLastCharPos+", scriptLength="+scriptLength);
+if (bDebug)
+{
+    System.err.println("RexxAnnotation(): 2) contentLastChar="+this.contentLastChar+", contentLastCharPos="+this.contentLastCharPos);
+    System.err.println("RexxAnnotation(): contentFirstChar="+this.contentFirstChar+", contentLastChar="+this.contentLastChar);
+    System.err.println("RexxAnnotation(): contentFirstCharPos="+this.contentFirstCharPos+", contentLastCharPos="+this.contentLastCharPos+", scriptLength="+scriptLength);
+}
 
                     // determine whether content is quored and if so, is it a proper Rexx string?
                 if ( (contentFirstChar=='"' && contentLastChar=='"') || (contentFirstChar=='\'' && contentLastChar=='\'') )
@@ -2042,8 +2081,11 @@ if (bDebug) System.err.println("RexxAnnotation(): contentAsRexxString=["+content
                                                           ch!='*' && script.charAt(i+1)!='/';
             }
 
-if (bDebug) System.err.println("RexxAnnotation().toString():\n["+this.toString()+"]\n");
-if (bDebug) System.err.println("RexxAnnotation() - end of constructor! :)\n<---");
+if (bDebug)
+{
+    System.err.println("RexxAnnotation().toString():\n["+this.toString()+"]\n");
+    System.err.println("RexxAnnotation() - end of constructor! :)\n<---");
+}
 
         }
 

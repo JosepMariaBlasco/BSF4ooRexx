@@ -17,7 +17,7 @@ import java.lang.reflect.Method;
   * This class manages the calls from Java via JNI to Open Object Rexx (ooRexx).
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2019 Rony G. Flatscher
+ *    Copyright (C) 2001-2022 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -40,6 +40,10 @@ import java.lang.reflect.Method;
 
 /*
     last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+
+    2022-07-13, ---rgf, when terminating a RII it may be the case that it does not exist
+                        anymore due to the new RexxCleanupRef logic, therefore ignore the
+                        exception
 
     2019-12-11, ---rgf, added field hasDeclaredBeans to allow optimization in RexxAndJava.lookupBean()
 
@@ -184,7 +188,7 @@ public class RexxEngine extends BSFEngineImpl {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20191211";
+    static final public String version = "600.20220715";
 
     /** If terminate() was invoked, then this instance must not be used anymore.
      */
@@ -1366,6 +1370,8 @@ if (bDebug) System.err.println("RexxEngine.undeclareBean(): name=["+bean.name+"]
      *  Use {@link #isTerminated()} to test whether the Rexx interpreter instance of
      *  this {@link RexxEngine} got terminated.
      *
+     *  <p>Note: termination of the RII (Rexx interpreter instance) must be solely done here!
+     *
      * To halt all Rexx threads of this engine's Rexx interpreter instance peer use
      * {@link #halt()}.
      *
@@ -1381,15 +1387,34 @@ final boolean bDebug= // true;
 
         bTerminated=true;   // do not allow any invocations via this instance anymore
 
+
         if (rii_ID!=null)   // if RII got created
         {
+            boolean bTmp=false;
+            if (rexxInterface!=null)
+            {
+                bTmp=rexxInterface.bTerminated; // save current value
+                rexxInterface.bTerminated=true;
+            }
             // this waits until all threads of the instance have finished
 if (bDebug) System.err.println(this+".terminate(): before jniRexxTerminateInterpreterInstance("+rii_ID+")...");
 
-            int res=rexxInterface.jniRexxTerminateInterpreterInstance(rii_ID);  // wait for termination of all Rexx threads of this interpreter instance
+            int res=0;
+
+                // it may be the case that due to the new cleanup code the rii_ID got
+                // terminated already, hence ignore exception caused because of rii_ID not found
+            try
+            {
+                res=rexxInterface.jniRexxTerminateInterpreterInstance(rii_ID);  // wait for termination of all Rexx threads of this interpreter instance
+            }
+            catch (Throwable t) {}
 
             if (res==-2)         // primodal RII will never get terminated, to allow JNI to use it from the Rexx side to maintain Rexx collections for its purposes
             {
+                if (rexxInterface!=null)
+                {
+                    rexxInterface.bTerminated=bTmp; // reset
+                }
                 // System.err.println(this+": terminated primodal Rexx interpreter instance=["+rii_ID+"] (cannot be used from Java anymore)");
                 return;
             }
@@ -1397,7 +1422,6 @@ if (bDebug) System.err.println(this+".terminate(): before jniRexxTerminateInterp
 if (bDebug) System.err.println(this+".terminate(): AFTER jniRexxTerminateInterpreterInstance("+rii_ID+")");
 
         }
-
         bJNITerminated=true;    // indicate that JNI successfully carried out Terminate() on the RII
 
         // super.terminate();          // now let the superclass do its work

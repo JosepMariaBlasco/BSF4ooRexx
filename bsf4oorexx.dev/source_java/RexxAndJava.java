@@ -25,7 +25,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
   *
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2021 Rony G. Flatscher
+ *    Copyright (C) 2001-2022 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -53,6 +53,11 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
 
  /*
+     2022-07-14, rgf  - changed RexxReflectUtil.loadClass() to not automatically register the
+                        loaded class with the BSF registry, therefore LOAD_CLASS must do it instead
+
+     2022-04-21, rgf  - add RAJBean.getName()
+
      2021-08-05, rgf  - removing finalize() which got deprecated for Java
 
                       - use PhantomReference as a replacement, ie., the RexxCleanupRef class
@@ -587,7 +592,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20210805";
+    static final public String version = "600.20220714";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -733,7 +738,7 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
 
     /** This serves as a central registry (string-index -> Java object) for all Rexx interpreter instances.
      */
-    static private ConcurrentHashMap<String,RAJBean> rajRegistry=new ConcurrentHashMap<String,RAJBean>();;
+    static private ConcurrentHashMap<String,RAJBean> rajRegistry=new ConcurrentHashMap<String,RAJBean>();
 
     /** Lock used when adding, removing Java objects or changing their reference counters. */
     final static private Object lockRajRegistry=new Object();
@@ -916,9 +921,9 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
 
 
     /** Returns an unmodifiable version of the {@link #rajRegistry} Map (for debugging purposes).
+     * @return unmodifiable version of the registry
     */
-// TODO: rgf, 20161219, remove after debugging
-    protected static Map getRajRegistry()
+    protected static Map<String,RAJBean> getRajRegistry()
     {
         return Collections.unmodifiableMap(rajRegistry);
     }
@@ -3861,7 +3866,7 @@ if (bDebug)
 
                        if (tmp!=null)
                        {
-                          return makeString4Rexx(this, tmp);
+                           return makeString4Rexx(this, tmp);
                        }
                    }
               break;
@@ -4046,6 +4051,10 @@ if (bDebug)
                       }
 
                       // rgf, 2018-02-17, new reflection code
+
+// if (args[2]!=null && args[2].equals("org.apache.bsf.BSFManager")) System.err.print("("+java.util.Arrays.deepToString(args)+")");
+if (args[2]!=null && args[2].equals("java.lang.Class")) System.err.print("("+java.util.Arrays.deepToString(args)+")");
+
                       RexxReflectUtil rru=new RexxReflectUtil(this, choice, args);
 
                       if (bDebug) System.err.println(this+": ---rgf-debug: "+rru+": "+rru.debugString());
@@ -5552,7 +5561,7 @@ if (bDebugRefCounter)
         System.err.println("//--// RAJ.unregisterBean(), REMOVING FROM REGISTRY! beanName=["+beanName+"], bean.refCount=["+bean.refCount+"] "+str+"\\\\--\\\\");
         rajRegistryToWatch.remove(beanName);
     }
-    else    // TODO: 20161220, rgf: temporaryly show all removals!
+    else    // TODO: 20161220, rgf: temporarily show all removals!
     {
         System.err.println("//--// RAJ.unregisterBean(), REMOVING FROM REGISTRY! beanName=["+beanName+"], bean.refCount=["+bean.refCount+"] \\\\--\\\\");
     }
@@ -5786,7 +5795,7 @@ if (bDebug)  System.err.println("RexxAndJava.makeBeanName(rajo,o): o=\""+o+"\" -
                                false;
 
 if (bDebug) System.err.println("*** TERMINATE *** bTerminated=["+bTerminated+"] *** rii_ID=["+rii_ID+"] *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE ***");
-        if (bTerminated==false) // if we did not run yet (eg. invoked by finalize() )
+//        if (bTerminated==false) // if we did not run yet (eg. invoked by finalize() )
         {
             bTerminated=true;       // from now on do not use BSFManager and RexxEngine related methods
             rexxEngine =null;       // nullify, release reference
@@ -6136,6 +6145,10 @@ if (bDebug) {System.err.println(this+".createRexxInterpreterInstance(...), retur
             this.name=name;
         }
 
+        public Object getName()
+        {
+            return name;
+        }
         public Object getJavaObject()
         {
             return javaObject;
