@@ -90,7 +90,7 @@ import org.apache.bsf.* ;
 
 abstract public class BaseImpl implements BodyTag
 {
-    static final protected String version = "100.20210314"; // version of this taglib
+    static final protected String version = "101.20220718"; // version of this taglib
 
     static final protected String TAGLIBINFORMATION ="scriptTagLibInfos";
 
@@ -127,6 +127,7 @@ abstract public class BaseImpl implements BodyTag
 
     static private ThreadLocal <BSFManager> tlMgr = new ThreadLocal() ;
 
+/* finalize() will be removed in future Java version, now (2022-07-18) uses CleanupRef to clean
     public void finalize() throws Exception // make sure the BSF engines get a chance to clean up, if need be
     {
         if (tlMgr!=null && tlMgr.get()!=null)
@@ -142,6 +143,7 @@ abstract public class BaseImpl implements BodyTag
             }
         }
     }
+*/
 
     protected Tag          parent ;
     protected BodyContent  bodyOut ;
@@ -219,6 +221,23 @@ abstract public class BaseImpl implements BodyTag
                 {
                     mgr = new BSFManager();
                     pageContext.setAttribute(pageScopeManagerName, mgr, pageContext.PAGE_SCOPE);
+
+                    // the pageContext may be pooled and reused, hence creating an attribute at PAGE_SCOPE
+                    // level to kick off CelanupRef.clean() every time that attribute gets out of scope
+                    String k="org.rgf4cleanup";
+                    Object o=pageContext.getAttribute(k, pageContext.PAGE_SCOPE);
+                    if (o!=null && bDebug)
+                    {
+                       System.err.println("BaseImpl: pageContext=["+pageContext+"], ! entry with key=["+k+"] exists:    ["+o+"] !");
+                    }
+                    else    // create entry in PAGE_SCOPE to get the garbate collector kicked off
+                    {
+                       o=new Object();
+                       pageContext.setAttribute(k, o, pageContext.PAGE_SCOPE);
+                       new CleanupRef(o, mgr);   // will make sure that BSF engines of this mgr get terminated
+                       if (bDebug) System.err.println("BaseImpl: pageContext=["+pageContext+"],   entry with key=["+k+"] created, o: ["+o+"] ");
+                    }
+
                 }
                 tlMgr.set(mgr);
 

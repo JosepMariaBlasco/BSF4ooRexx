@@ -1,5 +1,5 @@
 @echo off
-rem 2020-09-08, rgf, Windows experiment, 2021-03-10
+rem 2020-09-08, rgf, Windows experiment, 2021-03-10; 2022-07-18: *MUST* use Java 8 (later jar may not work)
 rem conf ... contains tld definition
 rem src  ... contains source files
 rem META-INF ... will get tld file
