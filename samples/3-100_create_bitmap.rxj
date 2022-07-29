@@ -1,0 +1,257 @@
+#!/usr/bin/env rexx
+/*
+   Name:    "3-100_create_bitmap.rxj"
+
+   Invoke:  "rexx 3-100_create_bitmap.rxj"
+                or
+            "rexxj 3-100_create_bitmap.rxj" (Windows)
+                or
+            "rexxj.sh 3-100_create_bitmap.rxj" (Unix)
+
+   Purpose: Demonstrate how to create a bitmap (an image) with Java's Graphics2D and
+            draw images (bsf4oorexx_256.png, oorexx4ooo_256.png, oorexx_256.png) in
+            original and 50% size, how to draw lines, strings (text), polygons and
+            some more... The resulting bitmap gets saved in the user's home directory
+            under the name "3-100_create_bitmap.png" and shown using the appropraite
+            operating system's command.
+
+
+
+   Date:    2012-07-30
+
+   Author:  Rony G. Flatscher, Wien University
+
+   Changes: --
+
+   last change: $Revision: 684 $ $Author: rony $ $Date: 2010-05-16 23:04:56 +0200 (Sun, 16 May 2010) $
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2022 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+
+*/
+
+/* Demo to show how to draw a bitmap.
+   ---rgf, 2022-07-28
+
+   Helpful links (as of 2022-07-28):
+
+      Oracle tutorial (a must): <https://docs.oracle.com/javase/tutorial/2d/TOC.html>
+
+      HTML color names, cf. <https://www.w3schools.com/colors/colors_names.asp>
+      Color picker, cf. <https://www.w3schools.com/colors/colors_picker.asp>
+
+      Java transform [translate(newX0,newY0) & scale(1,-1)]:
+      - <https://docstore.mik.ua/orelly/java-ent/jfc/ch04_03.htm>
+
+      Also Java about transform:
+      - https://www.ehowtonow.com/java-graphics-translate-method-with-example/
+
+      Graphics:   <https://docs.oracle.com/javase/8/docs/api/java/awt/Graphics.html>
+      Graphics2D: <https://docs.oracle.com/javase/8/docs/api/java/awt/Graphics2D.html>
+
+      Math class: <https://docs.oracle.com/javase/8/docs/api/java/lang/Math.html>
+
+      --- also Swing and 2D: <https://docs.oracle.com/javase/8/javase-clienttechnologies.htm>
+      --- also (JavaFX with 2D): <https://docs.oracle.com/javafx/2/canvas/jfxpub-canvas.htm>
+
+   Important note: co-ordinates must be integers, use format(value,,0) or trunc(value) if necessary
+*/
+
+signal on syntax
+   -- import Java classes into ooRexx
+clzBufferedImage = bsf.import("java.awt.image.BufferedImage")
+clzImageIO       = bsf.import("javax.imageio.ImageIO")
+clzFont          = bsf.import("java.awt.Font")
+clzColor         = bsf.import("java.awt.Color")
+
+width =800
+height=800
+   -- image is RGB plus alpha (translucency)
+tmpImage  = clzBufferedImage~new(width, height, clzBufferedImage~TYPE_INT_ARGB)
+oriGC     = tmpImage~createGraphics -- get graphic context
+gc        = oriGC~create            -- create a copy, such that changes do not effect original gc
+defFont   = gc~getFont              -- get default font in default size
+defTransform = gc~getTransform      -- get current AffineTransform
+defStroke = gc~getStroke            -- default stroke
+
+stroke3   = .bsf~new("java.awt.BasicStroke", 2)    -- 3 pixel thick
+stroke5   = .bsf~new("java.awt.BasicStroke", 5)    -- 5 pixel thick
+stroke15  = .bsf~new("java.awt.BasicStroke", 15)   -- 15 pixel thick
+
+   -- define thickness and the dashed line
+   -- change color RGB-alpha (transparency)
+arrDash=bsf.createJavaArrayOf("float.class", 1,5,10,5)
+dashedStroke=.bsf~new("java.awt.BasicStroke", 2, 0, 0, 1, arrDash, 0)
+
+borderWidth = 5   -- will be drawn with stroke5
+
+cyan      = clzColor~cyan
+green     = clzColor~green
+magenta   = clzColor~magenta
+white     = clzColor~white
+yellow    = clzColor~yellow
+
+   /* cf. e.g. <https://www.w3schools.com/colors/colors_names.asp> as of 2022-07-29 */
+cornSilk  = clzColor~new(255, 248, 220, 127) -- R,G,B,alpha=127 (50 % transparency)
+teal      = clzColor~new(0, 128, 128)        -- R,G,B no alpha, hence not transparent
+
+pi        = 3.14159265              -- pi/4 equals 45°, used for determining rotation below
+
+-- now set up a few things
+gc~color = cornSilk                 -- set color
+gc~fillRect(0,0,width,height)       -- fill background of entire image with the color
+
+gc~color  = cornsilk                -- note: transparency (alpha) gets added and will make border visible
+gc~stroke = stroke5                 -- use a 5 pixel width
+gc~drawRect(0,0,width-1,height-1)   -- draw a rectangle using the current color
+gc~stroke = defStroke               -- reset to default
+
+   -- 256x256 bitmaps
+images=.array~of("oorexx_256.png", "bsf4oorexx_256.png", "oorexx4ooo_256.png")
+
+   -- left upper corner, center, right lower corner
+   -- define array of x,y arrays to position the logos
+positions=.array~of( (0+borderWidth,0+borderWidth), ((width-256)/2, (height-256)/2), (height-256-borderWidth, width-256-borderWidth) )
+gc~color = white                    -- define color (for drawString)
+do counter c i over positions
+   tmpX=i[1]
+   tmpY=i[2]
+   fileName      = images[c]
+   fileImage     = .bsf~new("java.io.File", fileName)
+   imageFromFile = clzImageIO~read(fileImage)   -- read bitmap
+   gc~drawImage(imageFromFile, .nil, tmpX, tmpY)
+   gc~drawString(fileName, tmpX, tmpY+10)
+      -- drawing at 50% of size either on the right or left of the original sized picture
+   if c=3 then tmpX -= 256
+          else tmpX += 256+128
+      -- place the name of the logo file to the top left of the image
+   gc~drawImage(imageFromFile, tmpX, tmpY, tmpX+128, tmpY+128, 0, 0, 256, 256, .nil)
+end
+
+   -- draw a string (text) using the current (default) font
+gc~color = green
+text="Hello, world, it is:" .dateTime~new
+gc~drawString(text, 0+borderWidth, height/2-20)
+   -- draw a thick line underneath
+gc~stroke = stroke5
+gc~drawLine(0+borderWidth, height/2-10, 260, height/2-10)
+
+   -- demonstrate using logical fonts
+defFont=gc~font
+-- cf. e.g. <https://docs.oracle.com/javase/8/docs/api/constant-values.html#java.awt.Font.DIALOG>
+xPos   = 10
+yStart = 675
+size   = 18
+gc~color=white
+do counter c fontName over "Dialog", "DialogInput", "Serif", "SansSerif", "Monospaced"
+    if c//2 then  -- switch styles
+    do
+       style=clzFont~bold+clzFont~italic  -- adding up int (enum) values equals logical or'ing
+       hint="(bold+italic)"
+    end
+    else
+    do
+       style=clzFont~bold
+       hint="(bold)"
+    end
+
+    font=clzFont~new(fontName, style, size)
+    gc~font=font
+    text=c"." fontName hint"," size "points"
+    gc~drawString(text, xPos, yStart+(size*c)+5)
+end
+gc~font=defFont      -- reset font
+
+   -- draw a line from upper right hand corner down: coordinates must be integers!
+gc~color  = teal
+gc~stroke = dashedStroke
+gc~drawLine(width-borderWidth, 0+borderWidth, width-format(width/17,,0),  200)
+
+   -- move 0,0 co-ordinate relative to current position (i.e. to center)
+gc~translate(width/2,height/2)
+
+   -- draw a circle of yellow strings by rotating in 15° steps
+gc~color=clzColor~yellow
+grad15=(pi/4)/3      -- pi/4 -> 45° / 3 -> 15°
+do counter c i=grad15 to 360/15     -- 24 steps!
+   gc~rotate(grad15)                -- rotate 22,5°
+   text="--> Hello, world, it is:" .dateTime~new "<--"
+   gc~drawString(text, 0, 0)
+end
+
+   -- change color, change thickness of line
+gc~setStroke(stroke15)
+gc~color=clzColor~cyan
+
+   -- move 0,0 co-ordinate relative to current position (from center to the left and up)
+gc~translate(-400, -100)
+
+   -- draw an ellipse (if rectangle is a square, then a circle gets drawn)
+gc~color=clzColor~magenta
+gc~setStroke(dashedStroke)
+gc~drawOval(0, 50, 275, 75)
+
+   -- reset all transformation changes (will also reset 0,0 back to top left)
+gc~setTransform(defTransform)       -- reset
+gc~stroke=stroke3
+gc~color = cyan
+r = 200     -- radius
+s = r*2
+x = borderWidth+width/2-r
+y = borderWidth+height/2-r
+gc~drawOval(x, y, s, s)
+
+   -- change to arbitrary RGB color with alpha (transparency)
+gc~color=clzColor~new(255,153,0,200)   -- R,G,B,alpha=200 (transparency)
+
+   -- demo drawPolygon (one could use it for drawing e.g. a triangle)
+gc~setStroke(stroke15)              -- set stroke
+gc~color = clzColor~new(0,0,255,100)-- R,G,B,alpha=100 (transparency)
+gc~translate(width/2+40,110)        -- move 0,0 over the middle and up (from the current 0,0 position)
+
+   -- define polygon points, coordinates must be arrays of primitive Java int (integer values)
+arrX = bsf.createJavaArrayOf("int.class", 150, 250, 325, 100)
+arrY = bsf.createJavaArrayOf("int.class", 150, 100, 125, 300)
+polygon = .bsf~new("java.awt.Polygon", arrX, arrY, arrX~items)
+gc~drawPolygon(polygon)
+
+   -- save file in user's home directory
+fileName = .java.lang.System~getProperty("user.home") || .file~separator || "3-100_create_bitmap.png"
+file = .bsf~new("java.io.File", fileName)
+clzImageIO~write(tmpImage,'png',file)
+
+   -- create the operating system dependent command to load and show the just created bitmap
+parse source opsys +1   -- get operating system
+     if opsys="W" then cmd = quote(fileName)             -- windows
+else if opsys="D" then cmd = "open"     quote(fileName)  -- MacOS (Darwin)
+else                   cmd = "xdg-open" quote(fileName)  -- default to Linux
+
+say "cmd:" cmd          -- show command
+address system cmd      -- issue command to operating system
+exit                    -- exit program
+
+syntax:                 -- show Java error (exception) chain
+   co=condition('o')
+   say ppJavaExceptionChain(co,.true)
+   say "---"
+   raise propagate      -- now let ooRexx handle this condition (will show source line)
+
+::requires "BSF.CLS"    -- get ooRexx-Java bridge
+
+::routine quote         -- enquote path in double-quotes (to cater for paths that may have blanks)
+  return '"' || arg(1) || '"'
