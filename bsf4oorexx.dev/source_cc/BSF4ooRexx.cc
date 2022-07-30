@@ -31,30 +31,19 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
-    History:
-
-                             - TODO: remove dead (commented) code
-                             - TODO (at the end): remove #define USE_OREXX_REGISTRY_PACKAGE and code
-
-    6.0.0   2021-08-04, rgf: - added new include file org_rexxla_bsf_engines_rexx_RexxCleanupRef.h
-                             - refactor three JNI functions to allow them to be used from RexxAndJava and
-                               the new RexxCleanupRef Java class:
-
-                               - inline impl_jniRexxHaltInterpreterInstance(...) invoked by
-                                 - Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxHaltInterpreterInstance
-                                 - Java_org_rexxla_bsf_engines_rexx_RexxCleanupRef_jniRexxHaltInterpreterInstance
-
-                               - inline impl_jniRexxTerminateInterpreterInstance(...) invoked by
-                                 - Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTerminateInterpreterInstance
-                                 - Java_org_rexxla_bsf_engines_rexx_RexxCleanupRef_jniRexxTerminateInterpreterInstance
-
-                               - inline impl_jniUnregisterRexxObject(...) invoked by
-                                 - Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniUnregisterRexxObject
-                                 - Java_org_rexxla_bsf_engines_rexx_RexxCleanupRef_jniUnregisterRexxObject
-
-
+    History:    - TODO: remove dead (commented) code eventually ;)
+                - TODO (at the end): remove #define USE_OREXX_REGISTRY_PACKAGE and code
 
 inline jint impl_jniRexxHaltInterpreterInstance (JNIEnv *env, jobject jobj, jstring j_rii_ID)
+
+    6.0.0   2022-07-24, rgf: - impl_jniRexxTerminateInterpreterInstance(), now returns -99
+                               in case the instance got removed from the RII list right before
+                               using it for termination;
+                               adding new critical section to protect termination while
+                               concurrently an instance lookup may teake place
+
+                             - RgfRemoveProxyObject(): now uses the root/primodal instance (no
+                               need for an instance lookup in this case)
 
     6.0.0   2021-08-03, rgf: - remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
                              - clean up a little bit left-over (debug) statements
@@ -82,6 +71,23 @@ inline jint impl_jniRexxHaltInterpreterInstance (JNIEnv *env, jobject jobj, jstr
                    libBSF4ooRexx.so/libBSF4ooRexx.dylib
 
     6.0.0   2022-06-07, rgf: - correct synopsis (comment) for BsfContextVariables() (drop was wrong)
+
+    6.0.0   2021-08-04, rgf: - added new include file org_rexxla_bsf_engines_rexx_RexxCleanupRef.h
+                             - refactor three JNI functions to allow them to be used from RexxAndJava and
+                               the new RexxCleanupRef Java class:
+
+                               - inline impl_jniRexxHaltInterpreterInstance(...) invoked by
+                                 - Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxHaltInterpreterInstance
+                                 - Java_org_rexxla_bsf_engines_rexx_RexxCleanupRef_jniRexxHaltInterpreterInstance
+
+                               - inline impl_jniRexxTerminateInterpreterInstance(...) invoked by
+                                 - Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTerminateInterpreterInstance
+                                 - Java_org_rexxla_bsf_engines_rexx_RexxCleanupRef_jniRexxTerminateInterpreterInstance
+
+                               - inline impl_jniUnregisterRexxObject(...) invoked by
+                                 - Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniUnregisterRexxObject
+                                 - Java_org_rexxla_bsf_engines_rexx_RexxCleanupRef_jniUnregisterRexxObject
+
 
     6.0.0   2021-03-20, rgf: - removed a warning by explicitly using strcmp():
                                MacOS: BSF4ooRexx.cc:8349:31: warning: result of comparison against a string literal is unspecified (use an explicit string comparison function
@@ -1017,11 +1023,11 @@ thread_id_t  RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20210804 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20220724 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20210804 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20220724 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20210804 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20220724 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
     // 2005-06-02, when BSF4ooRexx loads Java, the following Java class is used to initialize all necessary Java objects
@@ -1864,11 +1870,12 @@ inline int32_t RgfRemoveProxyObject(char * c_obj_id)
     int32_t refs=0;
 
     // RgfAcquireLock2(RII_lock);      // lock access to list of RexxInstance instances
-    RexxInstance *ri=RgfGetRexxInterpreterInstanceFromList(NULL);    // get any Rexx Interpreter instance
+    // RexxInstance *ri=RgfGetRexxInterpreterInstanceFromList(NULL);    // get any Rexx Interpreter instance
     // RgfReleaseLock2(RII_lock);      // lock access to list of RexxInstance instances
 
-
-    if (ri==NULL)           // no RexxInterpreter instance available?
+    // 2022-07-24: we can use any RII, use the root/primodal instance
+    RexxInstance *ri;       // use root/primodal instance
+    if ( (pRoot_RII==NULL) || ((ri=pRoot_RII->instance)==NULL) )   // no RexxInterpreter instance available?
     {
         return -100;        // indicate no running RexxInterpreter instance available
     }
@@ -5761,7 +5768,7 @@ RexxRoutine0(RexxStringObject, BsfGetRTC)
 //        arg2=optional, userData (any Rexx object)
 //
 //            // if given, then create and return a JavaProxy object
-//        arg3=optional, Java class (string, clz, jobj), ...
+//        arg3=optional, Java class (string, clz, jobj), ... if "REXXOBJECT" then wrap arg1 for Java
 //        argn=          - " -
 //
 //   returns BSF Registry index name, either for RexxProxy or JavaProxy object
@@ -7292,7 +7299,7 @@ RexxRoutine1(size_t, BsfUninit4JavaBean, RexxObjectPtr, bean)
 
 // fprintf(stderr, " success, returning true!\n"); fflush(stderr);
 
-    return refCount;        // returns false, if unsuccessful, true else
+    return refCount;        // returns remaining refCount
 }
 
 
@@ -9456,6 +9463,11 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxCleanupRef_jniRexxHa
 
 
 // ======== 2021-08-04, rgf: refactor to allow RexxAndJava and RexxCleanupRef to use this JNI function ===>
+//          2022-07-24, rgf: cater for concurrent terminations of the same RII
+/*
+    returns: -2  ... indicate primodal RII in hand, this RII will never be terminated!
+             -99 ... indicate that RII could not get deleted from list, could have been concurrently terminated() in between!
+*/
 inline jint impl_jniRexxTerminateInterpreterInstance (JNIEnv *env, jobject jobj, jstring j_rii_ID)
 {
 
@@ -9560,6 +9572,9 @@ inline jint impl_jniRexxTerminateInterpreterInstance (JNIEnv *env, jobject jobj,
     fflush(stderr);
 #endif
 
+        // 2022-07-24: critical section, begin
+        RgfAcquireLock2(RII_lock);      // lock access to list of RexxInstance instances
+
         // remove instance from list
         // 2012-02-07: get RII node, DeleteGlobalRef() for rajo and rexxconf, before structure gets freed
         PSTRUCT_RII struRii=RgfGetRexxInterpreterInstanceStructFromList(tmpInstance);
@@ -9571,7 +9586,12 @@ inline jint impl_jniRexxTerminateInterpreterInstance (JNIEnv *env, jobject jobj,
         }
 
             // remove RII from list, will free RII structure, if found
-        RgfRemoveRexxInterpreterInstanceFromList(tmpInstance);
+        if (RgfRemoveRexxInterpreterInstanceFromList(tmpInstance) == NULL)
+        {
+            // 2022-07-24: critical section, end
+            RgfReleaseLock2(RII_lock);      // lock access to list of RexxInstance instances
+            return -99;         // 2022-07-24: indicate that instance got terminated in between concurrently
+        }
 
             // o.k. now delete global references to rajo and rexxconf stored with RII structure
         if (riiRajo!=NULL) {
@@ -9594,6 +9614,9 @@ inline jint impl_jniRexxTerminateInterpreterInstance (JNIEnv *env, jobject jobj,
 #endif
 
         tmpInstance->Terminate();    // wait until all interpreter threads terminated
+
+        // 2022-07-24: critical section, end
+        RgfReleaseLock2(RII_lock);      // lock access to list of RexxInstance instances
 
 #if defined (DEBUG_TERMINATE_INTERPRETER)
     fprintf(stderr, "(4b) .._jniRexxTerminateInterpreterInstance(...): AFTER Terminate(), thisTid=[%lu], tmpInstance=[%p]\n", (unsigned long) thisTid, tmpInstance);
