@@ -190,8 +190,8 @@ gc~translate(width/2,height/2)
 gc~color=clzColor~yellow
 grad15=(pi/4)/3      -- pi/4 -> 45° / 3 -> 15°
 do counter c i=grad15 to 360/15     -- 24 steps!
-   gc~rotate(grad15)                -- rotate 22,5°
-   text="--> Hello, world, it is:" .dateTime~new "<--"
+   gc~rotate(grad15)                -- rotate by 15°
+   text="--> Hello, world, it is:" .dateTime~new "<-- #" c "("c*15"°)"
    gc~drawString(text, 0, 0)
 end
 
