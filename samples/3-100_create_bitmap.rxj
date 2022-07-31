@@ -17,13 +17,13 @@
 
 
 
-   Date:    2012-07-30
+   Date:    2012-07-31
 
    Author:  Rony G. Flatscher, Wien University
 
    Changes: --
 
-   last change: $Revision: 684 $ $Author: rony $ $Date: 2010-05-16 23:04:56 +0200 (Sun, 16 May 2010) $
+   last change: Revision: $Revision% $Author$ $Date$
 
    license:
 
@@ -107,17 +107,17 @@ white     = clzColor~white
 yellow    = clzColor~yellow
 
    /* cf. e.g. <https://www.w3schools.com/colors/colors_names.asp> as of 2022-07-29 */
-chocolate = clzColor~new(210, 105, 30, 127)  -- R,G,B,alpha=127 (50 % transparency)
+saddlebrown=clzColor~new(139, 69, 19, 127)   -- R,G,B,alpha=127 (50 % transparency)
 teal      = clzColor~new(0, 128, 128)        -- R,G,B no alpha, hence not transparent
 
 pi        = 3.14159265              -- pi/4 equals 45°, used for determining rotation below
 
    -- now set up a few things
-gc~color = chocolate                -- set color
+gc~color = saddleBrown              -- set color
 gc~fillRect(0,0,width,height)       -- fill background of entire image with the color
    -- note: the border uses the same color, alpha (transparency) adds up causing
    --       the border color to be non-transparent anymore
-gc~color = chocolate                -- set color
+gc~color = saddleBrown              -- set color
 gc~stroke = stroke5                 -- use a 5 pixel width
 gc~drawRect(0,0,width-1,height-1)   -- draw a rectangle using the current color
 gc~stroke = defStroke               -- reset to default
