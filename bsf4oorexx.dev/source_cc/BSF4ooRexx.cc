@@ -36,11 +36,14 @@ remarks:
 
 inline jint impl_jniRexxHaltInterpreterInstance (JNIEnv *env, jobject jobj, jstring j_rii_ID)
 
+    6.0.0   2022-08-02, rgf: - add "_DEBUG" to version information, if a debug compile (will
+                               be used for the Windows version, cf. Makefile-64-windows)
+
     6.0.0   2022-07-24, rgf: - impl_jniRexxTerminateInterpreterInstance(), now returns -99
                                in case the instance got removed from the RII list right before
                                using it for termination;
                                adding new critical section to protect termination while
-                               concurrently an instance lookup may teake place
+                               concurrently an instance lookup may take place
 
                              - RgfRemoveProxyObject(): now uses the root/primodal instance (no
                                need for an instance lookup in this case)
@@ -1023,11 +1026,23 @@ thread_id_t  RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20220730 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #if defined (BSF4REXX_DEBUG_VERSION)
+        #define BSF_VERSION     "600.20220802 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #else
+        #define BSF_VERSION     "600.20220802 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #endif
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20220730 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #if defined (BSF4REXX_DEBUG_VERSION)
+        #define BSF_VERSION     "600.20220802 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #else
+        #define BSF_VERSION     "600.20220802 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #endif
 #else
-    #define BSF_VERSION     "600.20220730 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #if defined (BSF4REXX_DEBUG_VERSION)
+        #define BSF_VERSION     "600.20220802 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #else
+        #define BSF_VERSION     "600.20220802 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #endif
 #endif
 
     // 2005-06-02, when BSF4ooRexx loads Java, the following Java class is used to initialize all necessary Java objects
