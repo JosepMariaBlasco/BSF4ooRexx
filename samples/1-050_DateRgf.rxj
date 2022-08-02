@@ -6,7 +6,7 @@
    in the "bsf-rexx-engine.jar" archive; the documentation of the bsf4rexx
    Date/Time classes can be found in the archive "docs_bsf4rexx.zip"
 
-   last change: $Revision: 491 $ $Author: rony $ $Date: 2009-10-17 19:50:02 +0200 (Sat, 17 Oct 2009) $
+   last change: $Revision$ $Author$ $Date$
 
    changes:
          2008-06-23 rgf, changed code to reflect with the new return string format in

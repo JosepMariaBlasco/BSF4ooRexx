@@ -1,5 +1,5 @@
-BSF4ooRexx - Installation Directions for MacOS           31 January 2022 (GA)
-==============================================           ====================
+BSF4ooRexx - Installation Directions for MacOS           August 2022 (GA refresh)
+==============================================           ========================
 Home: <http://sourceforge.net/projects/bsf4oorexx/>
 
 BSF4ooRexx adds support to the ooRexx scripting language to camouflage

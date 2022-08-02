@@ -41,7 +41,7 @@ import java.lang.reflect.Method;
                           RexxScriptEngineFactory "LANGUAGE_VERSION" field
 
     2022-08-01, ---rgf, - added static protected field "interpreterVersionString" and static public
-                          getter "getInterpreterVersionString()" containiing the ooRexx version string
+                          getter "getInterpreterVersionString()" containing the ooRexx version string
 
                         - initialize(...): queries ooRexx for its version string, checks whether
                           ooRexx major version and date is the first one that possesses the fix

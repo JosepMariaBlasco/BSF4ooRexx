@@ -1,5 +1,5 @@
-Some information on the OpenOffice/LibreOffice support   31 January 2022 (GA)
-======================================================   ====================
+Some information on the OpenOffice/LibreOffice support   August 2022 (GA refresh)
+======================================================   ========================
 
 The ooRexx Apache OpenOffice.org (OOo/AOO)/LibreOffice (LO, a fork of AOO) support
 is based on BSF4ooRexx as it uses the Java interfaces to and from OOo.

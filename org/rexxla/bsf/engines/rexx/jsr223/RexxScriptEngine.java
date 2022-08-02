@@ -45,6 +45,10 @@ import org.rexxla.bsf.engines.rexx.RexxCleanupRef;
 
    Changes:
 
+        2022-08-01, ---rgf, - instead of using public getters, directly access Rexx engine
+                              related static info, now that these fiels are made protected
+                              in RexxScriptEngineFactory
+
         2022-07-14, ---rgf, - removed field bsfMgr and public routine getBsfManager(): not
                               needed in the context of this class
 
@@ -184,7 +188,7 @@ import org.rexxla.bsf.engines.rexx.RexxCleanupRef;
  * the tow (and caching compiled scripts for invoking the aforementioned method in a sensible way.
  *
  * @author Rony G. Flatscher
- * @version 102.20210705
+ * @version 103.20220801
  * @since  2015-05-11
  *
  */
@@ -928,11 +932,14 @@ if (bDebug==true)
             // get the default ScriptContext, fill-in engine related information using the official names
            ScriptContext sc=getContext(); // get default ScriptContext
            RexxScriptEngineFactory ref=RexxScriptEngineFactory.DEFAULT_REXX_SCRIPT_ENGINE_FACTORY;
-           sc.setAttribute(ENGINE          , ref.getEngineName(),      ScriptContext.ENGINE_SCOPE);
-           sc.setAttribute(ENGINE_VERSION  , ref.getEngineVersion(),   ScriptContext.ENGINE_SCOPE);
-           sc.setAttribute(LANGUAGE        , ref.getLanguageName(),    ScriptContext.ENGINE_SCOPE);
-           sc.setAttribute(LANGUAGE_VERSION, ref.getLanguageVersion(), ScriptContext.ENGINE_SCOPE);
-           sc.setAttribute(NAME            , ref.getName(),            ScriptContext.ENGINE_SCOPE);
+           sc.setAttribute(ENGINE          , ref.ENGINE_NAME        , ScriptContext.ENGINE_SCOPE);
+           sc.setAttribute(ENGINE_VERSION  , ref.ENGINE_VERSION     , ScriptContext.ENGINE_SCOPE);
+           sc.setAttribute(LANGUAGE        , ref.LANGUAGE_NAME      , ScriptContext.ENGINE_SCOPE);
+           sc.setAttribute(LANGUAGE_VERSION,
+                           ref.LANGUAGE_VERSION==null ? ref.getLanguageVersion()
+                                                      : ref.LANGUAGE_VERSION
+                                                                    , ScriptContext.ENGINE_SCOPE);
+           sc.setAttribute(NAME            , ref.SHORT_NAME         , ScriptContext.ENGINE_SCOPE);
         }
         catch (Exception exc)
         {
@@ -1292,6 +1299,7 @@ if (bDebug) {System.err.println("--> RexxScriptEngine().compile(String=[---scrip
 
             // now create the routine object, fetch it and its package object
             rexxObjects= (Object[]) getCreateRoutineAndPackage().sendMessage2("CALL", filename,tmpScriptSource);
+
 // rgf, 2022-04-20 --->
 if (bDebug==true) {
     java.io.File file = new java.io.File(filename);

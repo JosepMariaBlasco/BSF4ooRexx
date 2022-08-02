@@ -1,3 +1,41 @@
+
+-------------------------------------- 2022-06-18 ----------------------------------
+
+- samples\OOo
+
+        - scalc_chart.rxo (new sample)
+
+                Using UNO.CLS create a new scalc worksheet, create random data and a chart
+                based on it.  Demonstrates how to incorporate UNO_CONSTANTS and UNO_ENUM
+                values into a Rexx directory-like collection for easier use.  Hint: This
+                is the portable version of the same OLE (Windows-only) program in ooRexx
+                5.0 for Windows (samples\ole\apps\AOO_scalc_chart.rex).
+
+        - simpress_present.rxo (new sample)
+
+                Using UNO.CLS create a new simpress presentation about REXX and ooRexx and
+                then display it as a presentation.  Demonstrates how to use enumeration to
+                enumerate paragraphs of a text and query their 'NumberingLevel' property.
+                Hint: This is the portable version of the same OLE (Windows-only) program
+                in ooRexx 5.0 for Windows (samples\ole\apps\AOO_simpress_present.rex).
+
+        - swriter_paragraphs.rxo (new sample)
+
+                Using UNO.CLS create a new swriter document, add paragraphs that get
+                aligned in four different ways.  Demonstrates how to incorporate
+                UNO_CONSTANTS and UNO_ENUM values into a Rexx directory-like collection
+                for easier use.  Hint: This is the portable version of the same OLE
+                (Windows-only) program in ooRexx 5.0 for Windows
+                ( samples\ole\apps\AOO_swriter_paragraphs.rex).
+
+        - swriter_table.rxo (new sample)
+
+                Using UNO.CLS create a new swriter document, a TextTable, a TextFrame,
+                paragraphs and apply various formattings.  Hint: This is the portable
+                version of the same OLE (Windows-only) program in ooRexx 5.0 for Windows
+                (samples\ole\apps\AOO_swriter_table.rex).
+
+
 -------------------------------------- 2019-02-04 ----------------------------------
 
 - utilities\OOo\UNO_API_info\frontend_UNO_API_info.rxo

@@ -41,7 +41,7 @@
             2016-07-26, Eva Gerger, Julian Reindorf - added syssleep .25 for better timing between Java and Rexx,
                                                     - window2 is now packed after the text is set
 
-   last change: $Revision: 684 $ $Author: rony $ $Date: 2010-05-16 23:04:56 +0200 (Sun, 16 May 2010) $
+   last change: $Revision$ $Author$ $Date$
 
    license:
 

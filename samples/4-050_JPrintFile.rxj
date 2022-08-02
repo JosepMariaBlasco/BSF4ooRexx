@@ -12,7 +12,7 @@
    Changes:
          2008-07-19, rgf, added hash-bang line at the top
 
-    last change: $Revision: 790 $ $Author: Administrator $ $Date: 2010-07-22 18:28:09 +0200 (Thu, 22 Jul 2010) $
+    last change: $Revision$ $Author$ $Date$
                2008-08-23, ---rgf, if using BSF.CLS, then do not use BSF() directly (or
                                    remove the first three chars from its result string)
                2009-07-05 Walter Pachl  add a little help

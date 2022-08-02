@@ -6,7 +6,6 @@ import java.lang.ref.ReferenceQueue ;
 import java.util.IdentityHashMap ;
 import java.util.Calendar;
 /*
-
     rexxtry.rex
     call bsf.cls
 
@@ -35,14 +34,13 @@ import java.util.Calendar;
  * <li>RexxProxy.java: whenever a RexxProxy object gets out of scope its reference
  *     count needs to be decreased such that eventually ooRexx can claim the peer
  *     Rexx object.
- *
  * </ol>
  *
  * <p>To not block termination of Rexx the cleanup thread does not use the blocking <code>remove()</code>
  * method on the reference queue, but rather <code>remove(timeout)</code> and terminates when the
  * queue is empty. To make sure that the cleanup gets carried out eventually, each time a new
- * instance of this class gets created the @link{RexxCleanupRef#clean()} method gets invoked, if
- * it is not running. From time to time the static method @link{RexxCleanupRef#clean()} gets invoked
+ * instance of this class gets created the @link{RexxCleanupRef#startCleanerThread()} method gets invoked, if
+ * it is not running. From time to time the static method @link{RexxCleanupRef#startCleanerThread()} gets invoked
  * by BSF4ooRexx directly in the <code>RexxAndJava</code> class.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
@@ -62,7 +60,7 @@ import java.util.Calendar;
  * ----------------------------------------------------------------------------- </pre>
  *
  * @author   Rony G. Flatscher
- * @version  100.20220715
+ * @version  100.20220802
 */
 
 /*
@@ -105,8 +103,16 @@ import java.util.Calendar;
                        ooRexx traceoutput and debuginput get redirected to the standard
                        ooRexx streams
 
-                     - need to change element from <String> to Object
+                     - needed to change element from <String> to Object
 
+    - 20220716, rgf: - if there are more than 100 unfinalized RexxEngine, then
+                       System.gc() gets run on a separate thread to help clean
+                       up all BSF4ooRexx related objects (especially RexxProxy
+                       objects that may pin ooRexx objects)
+
+    - 20220731, rgf: - tidying up, now that termination is done via RexxEngine.terminate() only
+
+    - 20220802, rgf: - tidying up, refactoring names to make them self documentary
 */
 
 public class RexxCleanupRef extends PhantomReference
@@ -114,9 +120,13 @@ public class RexxCleanupRef extends PhantomReference
     /** If set to false the compiler should eradicate all dependent code. */
     private static final boolean bDebug=false; // true;
 
-// TODO: 2022-04-21, reset to false after debugging BSF4ooRexx with Tomcat!
+    /** Controls whether debug output gets generated in the context of terminating
+     *  a Rexx interpreter instance (RII).
+     */
     private static boolean bDebugRII=false; // true; // false; // show terminating RII (Rexx interpreter instance)
-    /** Getter for <code>bDebugRII</code> (Rexx interpreter instance related).
+
+    /** Returns the current setting of {@link debugRII} which controls debug output
+     *  in the context of terminating a Rexx interpreter instance (RII).
      * @return returns current setting (if <code>true</code> then showing debug message when terminating Rexx interpreter instance)
      */
     public static boolean getDebugRII()
@@ -124,7 +134,7 @@ public class RexxCleanupRef extends PhantomReference
         return bDebugRII;
     }
 
-    /** Setter for <code>bDebugRII</code> (Rexx interpreter instance related).
+    /** Allows changing Setter for <code>bDebugRII</code> (Rexx interpreter instance related).
      * @param newDebugState if <code>true</code> then showing a debug message when terminating a Rexx interpreter instance
      */
     public static void setDebugRII(boolean newDebugState)
@@ -153,9 +163,9 @@ public class RexxCleanupRef extends PhantomReference
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "100.20220715";
+    static final public String version = "100.20220802";
 
-    /** Counts number of times the clean() thread got started so far. */
+    /** Counts number of times the startCleanerThread() thread got started so far. */
     private static int cleanInvocationCounter=0;
 
     /** Getter method.
@@ -190,16 +200,12 @@ public class RexxCleanupRef extends PhantomReference
 
     /** Getter that returns a clone (copy) of the enum constants of the @link{RefKind} enum class.
      *
-     * @return copy of the array of enum constants
+     * @return array of enum constants
      */
     static public RefKind[] getRefkinds()
     {
-        synchronized (refkinds)
-        {
-            return refkinds.clone();
-        }
+        return refkinds;
     }
-
 
     /** Counter array indexed by ordinal value of RefKind, and by created instances and finalizations ran. */
     static private long counters[][] = new long[refkinds.length][2];
@@ -217,16 +223,85 @@ public class RexxCleanupRef extends PhantomReference
         }
     }
 
+    /** Minimum threshold of unfinalized RexxEngines, causing a System.gc() to be called. */
+    private static int     gcThresholdMin=1;        // minimum unfinalized RexxEngines (every new RexxEngine will cause a gc())
+    /** Return gcThresholdMin attribute.
+     *  @return gcThresholdMin value */
+    public static  int     getGcThresholdMin()
+    {
+        return gcThresholdMin;
+    }
+    /** Set gcThresholdMin attribute: <code>newValue&gt;=1 && newValue&lt;=gcThresholdMax</code>.
+     *  @param newValue */
+    public static void setGcThresholdMin(int newValue)
+    {
+        if (newValue>=1 && newValue<=gcThresholdMax)
+        {
+            gcThresholdMin=newValue;
+        }
+    }
+
+    /** Maximum threshold of unfinalized RexxEngines, causing a System.gc() to be called. */
+    // private static int     gcThresholdMax=500;      // maximum unfinalized RexxEngines, before running System.gc()
+    private static int     gcThresholdMax=100;      // maximum unfinalized RexxEngines, before running System.gc()
+    // private static int     gcThresholdMax=50;      // maximum unfinalized RexxEngines, before running System.gc()
+    /** Return gcThresholdMax attribute.
+     *  @return gcThresholdMax value */
+    public static  int     getGcThresholdMax()
+    {
+        return gcThresholdMax;
+    }
+    /** Set gcThresholdMin attribute: <code>newValue&gt;=gcThresholdMin</code>.
+     *  @param newValue */
+    public static void  setGcThresholdMax(int newValue)
+    {
+        if (newValue >= gcThresholdMin)
+        {
+            gcThresholdMax=newValue;
+        }
+    }
+
+    private static boolean gcTriggered=false;       // indicates whether gcThreshold+1 encountered
+    private static int     gcThresholdIgnoreFor=0;  // in case gcTriggered, ignore for gcThresholdIgnoreFor
+
+    /** Threshold of unfinalized RexxEngines, causing a System.gc() to be called. */
+    private static int     gcThreshold=100;         // if >= gcThreshold (unfinalized RexxEngines) then run System.gc()
+
+    /** Threshold of unfinalized RexxEngines which will cause a System.gc() to be called.
+     *
+     * @return current threshold value that triggers System.gc()
+     */
+    public static int getGcThreshold()
+    {
+        return gcThreshold;
+    }
+
+    /** Set threshold of unfinalized RexxEngines which will cause a System.gc() to
+     *  be called.
+     *
+     * @param newValue number of unfinalized RexxEngines that will cause an out of bound
+     *        System.gc() to be triggered (to reclaim unused BSF4ooRexx resources)
+     * @return current threshold value that triggers System.gc()
+     */
+    public static void setGcThreshold(int newValue)
+    {
+        if (newValue>=gcThresholdMin && newValue<= gcThresholdMax)
+        {
+            gcThreshold=newValue;
+            gcThresholdIgnoreFor=gcThreshold;
+        }
+    }
+
 
     /** Lock controlling whether a clean runnable needs to be dispatched on a new thread. */
-    private static boolean cleanLock=false;
+    private static boolean cleanerThreadRunning=false;
 
     /** The Runnable that uses remove(timeout) to fetch references from the reference queue.
      *  This Runnable will exit the thread once no references can be fetched from the queue.
      *  <br>Note: using poll() will behave the same, but will start more threads, remove()
      *  without timeout would block and hinder the Rexx interpreter to end.
     */
-    static Runnable rRemove=new Runnable()
+    static Runnable runnableCleaner=new Runnable()
         {
             // times out, if nothing on the queue; returns immediately, if no references on queue after timeout
             // will save creation of Threads compared to rPolled, but seems to behave comparably otherwise
@@ -251,10 +326,10 @@ public class RexxCleanupRef extends PhantomReference
                 }
                 catch (Throwable t)
                 {
-                    System.err.println("RexxCleanupRef.clean(): Runnable (thread="+Thread.currentThread().getName()+") threw throwable: "+t);
+                    System.err.println("RexxCleanupRef.runnableCleaner(thread="+Thread.currentThread().getName()+") threw throwable: "+t);
                 }
-                if (bDebug==true) System.err.println("RexxCleanupRef.clean().rRemove: about to finish (thread="+Thread.currentThread().getName()+"), resetting 'cleanLock' to false.");
-                cleanLock=false;    // reset lock to allow to start a new thread next time a new instance gets created
+                if (bDebug==true) System.err.println("RexxCleanupRef.runnableCleaner: about to finish (thread="+Thread.currentThread().getName()+"), resetting 'cleanerThreadRunning' to false.");
+                cleanerThreadRunning=false;    // reset lock to allow to start a new thread next time a new instance gets created
             }
         } ;
 
@@ -281,36 +356,60 @@ public class RexxCleanupRef extends PhantomReference
         this.refKind=refKind;
         this.obj_id =obj_id;
 
+        boolean bRunGC=false;       // if true runs java.lang.System.gc() to reclaim BSF4ooRexx objects
+
         synchronized (pinnedReferences)
         {
             pinnedReferences.put(this,null);
         }
 
+        int ordinal=refKind.ordinal();
         synchronized (counters)
         {
-            counters[refKind.ordinal()][0]++;
+            counters[ordinal][0]++;
         }
 
-        if (cleanLock==false)   // cleaner thread not running, start it
+        if (refKind==RefKind.REXX_ENGINE)   // determine whether we want to run System.gc()
         {
-            clean();    // simple strategy, whenever a new RexxCleanupRef gets created run the clean method
+            // if gcThreshold or more RexxEngines, run the Java garbage collector
+            // in order to not peg the system with gc() calls when encountering unfinalized
+            // RexxEngines >= gcThreshold after a gc() call we skip the next gcThreshold/3
+            // creations of RexxEngines before checking for a gc() again
+            int unfinalizedRE = (int) (counters[ordinal][0] - counters[ordinal][1]);
+            bRunGC=(unfinalizedRE >= gcThreshold);
+
+            if (bRunGC)
+            {
+                if (gcThresholdIgnoreFor>0 || gcTriggered)  // skip System.gc() this time
+                {
+                    gcTriggered=false;                      // reset
+                    if (--gcThresholdIgnoreFor<=0)
+                    {
+                        gcThresholdIgnoreFor=gcThreshold/3; // reset
+                        if (bDebug==true) System.err.println("\n... *** RexxCleanupRef(): so far createdRE=["+counters[ordinal][0]+"] | unfinalizedRE: ["+unfinalizedRE+"] >= gcThreshold ["+gcThreshold+"] | gcTriggered=[true] -> gcThresholdIgnoreFor: ["+gcThresholdIgnoreFor+"] ...");
+                    }
+                }
+                else
+                {
+                    gcTriggered=true;                       // indicate we just ran System.gc()
+                    gcThresholdIgnoreFor=0;                 // reset
+                    if (bDebug==true) System.err.println("\n... *** RexxCleanupRef(): so far createdRE=["+counters[ordinal][0]+"] | unfinalizedRE: ["+unfinalizedRE+"] >= gcThreshold ["+gcThreshold+"] -> running System.gc() ...");
+                    System.gc();        // have the Java garbage collector run
+                }
+            }
+        }
+
+        if (cleanerThreadRunning==false)   // cleaner thread not running, start it
+        {
+            startCleanerThread();    // simple strategy, whenever a new RexxCleanupRef gets created run the clean method
         }
     }
 
-    /** Uses the ooRexx 4.0 API <code>Halt()</code> to raise the <code>HALT</code> condition in all Rexx threads
-     *  belonging to the given Rexx interpreter instance.
-     *
-     * @param rii_ID a String representing the Rexx interpreter instance as returned by {@link #jniRexxCreateInterpreterInstance ()}
-     * @throws a {@link RexxException}, if the argument does not denote an existing Rexx interpreter instance
-     * @return <code>0</code>
-     *
-     * @since May 2009
-     */
-    // RexxAndJava entry points used by RexxEngine
-    protected native int    jniRexxHaltInterpreterInstance (String rii_ID); // use Halt()
-
-
-    /** Uses the ooRexx 4.0 API <code>Terminate()</code> to wait on all Rexx threads
+// deprecated: as of July 2022 termination occurs via RexxEngine.terminate() (RexxAndJava
+//             also using RexxEngine.terminate()) only!
+//             Leaving just in case so not to have the c++ include file and BSF4ooRexx.cc
+//             regenerated if a need arises in the future
+    /* * Uses the ooRexx 4.0 API <code>Terminate()</code> to wait on all Rexx threads
      *  belonging to the given Rexx interpreter instance to terminate.
      *
      * @param rii_ID a String representing the Rexx interpreter instance as returned by {@link #jniRexxCreateInterpreterInstance ()}
@@ -334,88 +433,55 @@ public class RexxCleanupRef extends PhantomReference
     protected native int jniUnregisterRexxObject(String obj_ID);
 
 
-
     /** Depending on the kind of argument (Rexx interpreter or Rexx proxy) carry out the
      *  finalization action via JNI:
      * <ul>
-     * <li>Rexx interpreter instance: terminate the Rexx interpreter instance on a separate
-     *                                thread (the Rexx interpreter instance may block until all
-     *                                its threads ended.
-     *  <li> Rexx proxy: unregister the Rexx proxy, if reference counter drops to 0 the
-     *                                cached Rexx object will be removed from the collection
-     *                                such that the ooRexx garbage collector can destroy it
+     *  <li>REXX_PROXY:         proxy: unregister the Rexx proxy, if reference counter drops to 0 the
+     *                          cached Rexx object will be removed from the ooRexx registry
+     *  <li>REXX_ENGINE:        NOP, just there for debugging
+     *  <li>REXX_SCRIPT_ENGINE: use supplied RexxEngine object to invoke terminate()
      * </ul>
      */
     private void finalizeRexxObject ()
     {
         if (bDebug==true) System.err.println("*** RexxCleanupRef.finalizeRexxObject(): refKind=["+this.refKind+"], obj_id=["+this.obj_id+"]");
 
-        if (refKind==RefKind.REXX_ENGINE)
+        if (refKind==RefKind.REXX_ENGINE)   // nothing to do (cf. REXX_SCRIPT_ENGINE)
         {
-            Runnable r=new Runnable ()
+            if (bDebugRII || bDebug==true)
             {
-                 public void run()
-                 {
-                     if (bDebugRII || bDebug==true)
-                     {
-                         System.err.println("RexxCleanupRef.REXX_ENGINE: -> jniRexxTerminateInterpreterInstance(RII="+obj_id+")");
-                     }
-
-                     // int res=0;  // result
-                     try
-                     {
-
-                         // Not needed: halting all threads with jniRexxHaltInterpreterInstance() before terminating Rexx interpreter instance
-
-                         // it may be the case that the interpreter instance got already terminated by RexxEngine
-                         // so ignoring return value which would indicate that instead of returning 0
-//                         res=jniRexxTerminateInterpreterInstance ((String) obj_id);
-
-/*
-                         if (bDebugRII || bDebug==true)
-                         {
-                             System.err.println("RexxCleanupRef.REXX_ENGINE: <- jniRexxTerminateInterpreterInstance(RII="+obj_id+"), res=["+res+"]");
-                         }
-*/
-                     }
-                     catch (Throwable t)    // the interpreter instance could be already terminated by its RexxEngine !
-                     {}
-
-                 }
-             };
-             // -> carry out termination on another thread as Terminate() waits until all threads of the Rexx interpreter instance ended
-            // new Thread (r, refKind+"_Terminate_"+obj_id).start();
-            // <--------------
+                System.err.println("RexxCleanupRef.REXX_ENGINE: -> RII=["+obj_id+"]");
+            }
         }
+
         else if (refKind==RefKind.REXX_PROXY)
         {
+            if (bDebugRexxProxy || bDebug==true)
+            {
+                System.err.println("RexxCleanupRef.REXX_PROXY, RexxProxy: --> before jniUnregisterRexxObject("+obj_id+")");
+            }
             int res=jniUnregisterRexxObject((String) obj_id);    // returns number of references left on the Rexx object
 
             if (bDebugRexxProxy || bDebug==true)
             {
-                System.err.println("RexxCleanupRef.REXX_PROXY, RexxProxy: jniUnregisterRexxObject("+obj_id+") remaining references="+res
+                System.err.println("RexxCleanupRef.REXX_PROXY, RexxProxy: --> AFTER  jniUnregisterRexxObject("+obj_id+") remaining references="+res
                                    + (res<=0 ? " <-- removing" : "")
                                   );
             }
 
             if (bDebug==true) System.err.println("*** RexxCleanupRef.REXX_PROXY: refKind=["+this.refKind+"], obj_id=["+this.obj_id+"], res=["+res+"]=jniUnregisterRexxObject(...), (thread="+Thread.currentThread().getName()+")");
         }
-        else if (refKind==RefKind.REXX_SCRIPT_ENGINE)
+
+        else if (refKind==RefKind.REXX_SCRIPT_ENGINE)   // on the clean thread
         {
             RexxEngine re = (RexxEngine) obj_id;
             if (bDebugRII || bDebug==true)
             {
-                System.err.println("RexxCleanupRef.REXX_SCRIPT_ENGINE: obj_id="+obj_id+") ==> rii_ID=["+re.get_rii_ID()+"]");
+                System.err.println("RexxCleanupRef.REXX_SCRIPT_ENGINE: re=["+obj_id+"] ==> re.get_rii_ID=["+re.get_rii_ID()+"] [RE_"+re.id+"]");
             }
-            try
-            {
-                re.apply("RexxCleanupRef.java",0,0,"call bsf.redirectTo ooRexx;::requires BSF.CLS",null,null);
-            }
-            catch (Throwable t) {}
-            finally
-            {
-                re.terminate();     // this will terminate the RII via jni
-            }
+if (bDebug) System.err.println("RexxCleanupRef: REXX_SCRIPT_ENGINE --> before re.terminate() for [RE_"+re.id+"]");
+            re.terminate();     // this will terminate the RII via jni
+if (bDebug) System.err.println("RexxCleanupRef: REXX_SCRIPT_ENGINE <-- after  re.terminate() for [RE_"+re.id+"]");
         }
     }
 
@@ -423,16 +489,16 @@ public class RexxCleanupRef extends PhantomReference
      *  a new clean thread that processes the @link{PhantomReference}s on the reference
      *  queue, if any.
      */
-    synchronized static private void clean()
+    synchronized static private void startCleanerThread()
     {
-        if (cleanLock==false)   // only create cleaner thread, if not yet present
+        if (cleanerThreadRunning==false)   // only create cleaner thread, if not yet present
         {
-            cleanLock=true;
-            String threadName="RexxCleanupRef.clean_"+(++cleanInvocationCounter);
+            cleanerThreadRunning=true;
+            String threadName="RexxCleanupRef.runnableCleaner_"+(++cleanInvocationCounter);
 
-            if (bDebug==true) System.err.println("RexxCleanupRef.clean(): about to run on a thread named: "+threadName);
+            if (bDebug==true) System.err.println("RexxCleanupRef.startCleanerThread(): about to run on a thread named: "+threadName);
 
-            new Thread (rRemove, threadName).start();  // create and start the thread
+            new Thread (runnableCleaner, threadName).start();  // create and start the thread
         }
     }
 
@@ -482,13 +548,6 @@ public class RexxCleanupRef extends PhantomReference
         System.err.println(getStatistics("after sleeping "+sleepTime+" ms"));
 
         System.err.println("\nJava version used for this run: ["+System.getProperty("java.version")+"]");
-
-/*
-        System.err.println("\ntesting \"getStatistics()\" and \"getStatistics(null)\", ie., with no title:\n");
-        System.err.println(getStatistics());
-        System.err.println(getStatistics(null));
-*/
-
         System.exit(0);     // force exit (there is a cleaner thread running)
     }
 
@@ -505,12 +564,9 @@ public class RexxCleanupRef extends PhantomReference
 
     static final private String strFormatHeader_1  = "RexxCleanupRef [%1$tY-%1$tm-%1$td %1$tT.%1$tN]%n";
     static final private String strFormatHeader_2  = "RexxCleanupRef [%1$tY-%1$tm-%1$td %1$tT.%1$tN] [%2$s]%n";
-    // static final private String strFormatHeader_3  = String.format("%14s  %17s  %17s %18s%n", "RefKind:", "Instances:", "Finalized:", "Not Yet Finalized:");
     static final private String strFormatHeader_3  = String.format("%21s  %17s  %17s %18s%n", "RefKind:", "Instances:", "Finalized:", "Not Yet Finalized:");
-    // static final private String strFormatLineHeader= "%-13s";
     static final private String strFormatLineHeader= "%-20s";
     static final private String strFormatNumbers   = ": [%,16d] [%,16d] [%,16d]%n";
-    // static final private String strDivider         = String.format("%-71s%n","").replace(' ','-');
     static final private String strDivider         = String.format("%-78s%n","").replace(' ','-');
 
     /** Creates a string with formatted instances, finalizes and not yet finalized objects grouped by
@@ -553,7 +609,6 @@ public class RexxCleanupRef extends PhantomReference
                 totalInstances+=counters[ordinal][0];
                 totalFinalizes+=counters[ordinal][1];
             }
-
 
             strLineHeader =String.format(strFormatLineHeader,"Totals").replace(' ','.');
             strNumbers=String.format(strFormatNumbers, totalInstances, totalFinalizes,

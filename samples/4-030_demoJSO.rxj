@@ -24,7 +24,7 @@
                   export BSF4Rexx_JavaStartupOptions=-Dfile.encoding=UTF-8
                   rexx demoJSO.rxj
 
-   last change: $Revision: 491 $ $Author: rony $ $Date: 2009-10-17 19:50:02 +0200 (Sat, 17 Oct 2009) $
+   last change: $Revision$ $Author$ $Date$
    changes: ---
 
    license:

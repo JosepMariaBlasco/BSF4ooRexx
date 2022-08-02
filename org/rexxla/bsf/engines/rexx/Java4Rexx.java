@@ -52,11 +52,16 @@ import java.io.*;       // exception handling
                        RexxEngine and its companion RexxAndJava instance
     - 2022-01-29, rgf: in anticipation that eventually access to private members from JNI will get
                        prohibited; package private is safe enough anyway
+    - 2022-08-01, rgf: logic in RexxEngine.initializer(...) got changed such that the ooRexx version
+                       strings gets fetched and Termination() related defaults set accordingly using
+                       apply which will cause the primodal Rexx interpreter to be created; as a
+                       result rii_ID for the peer RAJ and RE get set such that Java4Rexx must not
+                       set them again (which would cause an exception in RAJ)
 */
 
 class Java4Rexx {
     /** Version string indicating version of this class. */
-    static public String version = "641.20220129";
+    static public String version = "641.20220801";
 
     final static boolean bDebug= // true;
                                  false;
@@ -73,16 +78,15 @@ class Java4Rexx {
    *  the BSF4ooRexx infrastructure from the Java side, and
    *  thereafter use all of the infrastructure from Rexx.
    *
-   * <p> Hint: JNI is able to get to private/protected members of a class! This way this method
-   * can <em>only</em> be invoked by JNI.
+   * <p> Hint: JNI usually is able to get to private/protected members of a class, therefore
+   *           this non-public method can be invoked by JNI.
    *
-    */
+   */
   static void createInterface4Rexx() throws IOException {
 
     try {
         bsfMgr  = new BSFManager ();   // create and initialize a BSFManager
         // this will load BSF4ooRexx.dll from the Java side and initialize
-        // rxEngine = bsfMgr.loadScriptingEngine("rexx");   // now the Rexx Engine and its supporting class is available
         rxEngine =  (RexxEngine) bsfMgr.loadScriptingEngine("rexx");   // now the Rexx Engine and its supporting class is available
     }
     catch (BSFException e)
@@ -99,13 +103,6 @@ class Java4Rexx {
         // now call into the DLL ("BSF4ooRexx.dll") in order to initialize; will set JVM in BSF4ooRexx.cc
     RexxAndJava raj=rxEngine.getRexxInterface();    // get the RexxAndJava (i.e. interface) instance
     raj.jniInitialize4Rexx();           // initialize BSF4ooRexx (will cache interface instance)
-
-
-/*
-    String root_rii_ID=raj.jniGetRexxInterpreterInstanceRoot(); // get reference to Rexx interpreter instance
-    raj.set_rii_ID(root_rii_ID);        // now tell engine instance which Rexx interpreter instance to use
-    rxEngine.set_rii_ID(root_rii_ID);   // now tell engine instance which Rexx interpreter instance to use
-*/
 
 if (bDebug) System.err.println("///\\\\\\ Java4Rexx.createInterface4Rexx() ///\\\\\\  raj=["+raj+"], rxEngine=["+rxEngine+"], bsfMgr=["+bsfMgr+"] ///\\\\\\ ");
 
@@ -125,8 +122,37 @@ if (bDebug) System.err.println("///\\\\\\ Java4Rexx.createInterface4Rexx() ///\\
       try {
           raj=rxEngine.getRexxInterface();    // get the RexxAndJava (i.e. interface) instance
           root_rii_ID=raj.jniGetRexxInterpreterInstanceRoot(); // get reference to Rexx interpreter instance
-          raj.set_rii_ID(root_rii_ID);        // now tell engine instance which Rexx interpreter instance to use
-          rxEngine.set_rii_ID(root_rii_ID);   // now tell engine instance which Rexx interpreter instance to use
+        /* 2022-08-01: RexxEngine.initialize(...) now will use the primodal instance for
+                       retrieving the ooRexx version string information and determining
+                       the default values for Termination() depending on the ooRexx version;
+                       it uses apply() which will create and set the rii_ID for the root
+                       instance in which case set_rii_ID() must not be called
+        */
+          String raj_rii_ID=raj.get_rii_ID();
+          if (raj_rii_ID==null)
+          {
+              raj.set_rii_ID(root_rii_ID);        // tell this RAJ instance to use root instance
+          }
+          else if (! raj_rii_ID.equals(root_rii_ID))    // rii_ID already set, but not the primodal one?
+          {
+              throw new BSFException(BSFException.REASON_EXECUTION_ERROR,
+                                     "Java4Rexx: SEVERE ERROR! Root instance (root_rii_ID="+root_rii_ID+
+                                     ") is not equal to already set raj_rii_ID ("+raj_rii_ID+"), "+
+                                     "rxEngine.get_rii_ID()=["+rxEngine.get_rii_ID()+"]!");
+          }
+
+          String re_rii_ID=rxEngine.get_rii_ID();
+
+          if (re_rii_ID==null)                    // tell this RE instance to use root instance
+          {
+              rxEngine.set_rii_ID(root_rii_ID);   // tell RE instance to use root instance
+          }
+          else if (! re_rii_ID.equals(root_rii_ID))     // rii_ID already set, but not the primodal one?
+          {
+              throw new BSFException(BSFException.REASON_EXECUTION_ERROR,
+                                     "Java4Rexx: SEVERE ERROR! rxEngine.rii_ID ("+re_rii_ID+
+                                     ") is not set to root rii_ID ("+root_rii_ID+")!");
+          }
       }
       catch (BSFException e)
       {

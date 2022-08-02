@@ -1,5 +1,5 @@
-BSF4ooRexx, 6.41                                         31 January 2022 (GA)
-================                                         ====================
+BSF4ooRexx, 6.41                                         August 2022 (GA refresh)
+================                                         ========================
 
 This is a package that creates a bridge between ooRexx and Java. For that
 reason Java must be installed on your machine as well, which is easy and

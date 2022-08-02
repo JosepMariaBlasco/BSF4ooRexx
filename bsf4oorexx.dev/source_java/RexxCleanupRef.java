@@ -39,8 +39,8 @@ import java.util.Calendar;
  * <p>To not block termination of Rexx the cleanup thread does not use the blocking <code>remove()</code>
  * method on the reference queue, but rather <code>remove(timeout)</code> and terminates when the
  * queue is empty. To make sure that the cleanup gets carried out eventually, each time a new
- * instance of this class gets created the @link{RexxCleanupRef#startCleanThread()} method gets invoked, if
- * it is not running. From time to time the static method @link{RexxCleanupRef#startCleanThread()} gets invoked
+ * instance of this class gets created the @link{RexxCleanupRef#startCleanerThread()} method gets invoked, if
+ * it is not running. From time to time the static method @link{RexxCleanupRef#startCleanerThread()} gets invoked
  * by BSF4ooRexx directly in the <code>RexxAndJava</code> class.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
@@ -165,7 +165,7 @@ public class RexxCleanupRef extends PhantomReference
      */
     static final public String version = "100.20220802";
 
-    /** Counts number of times the startCleanThread() thread got started so far. */
+    /** Counts number of times the startCleanerThread() thread got started so far. */
     private static int cleanInvocationCounter=0;
 
     /** Getter method.
@@ -242,8 +242,9 @@ public class RexxCleanupRef extends PhantomReference
     }
 
     /** Maximum threshold of unfinalized RexxEngines, causing a System.gc() to be called. */
-    // private static int     gcThresholdMax=500;      // maximum unfinalized RexxEngines
-    private static int     gcThresholdMax=50;      // maximum unfinalized RexxEngines
+    // private static int     gcThresholdMax=500;      // maximum unfinalized RexxEngines, before running System.gc()
+    private static int     gcThresholdMax=100;      // maximum unfinalized RexxEngines, before running System.gc()
+    // private static int     gcThresholdMax=50;      // maximum unfinalized RexxEngines, before running System.gc()
     /** Return gcThresholdMax attribute.
      *  @return gcThresholdMax value */
     public static  int     getGcThresholdMax()
@@ -264,7 +265,7 @@ public class RexxCleanupRef extends PhantomReference
     private static int     gcThresholdIgnoreFor=0;  // in case gcTriggered, ignore for gcThresholdIgnoreFor
 
     /** Threshold of unfinalized RexxEngines, causing a System.gc() to be called. */
-    private static int     gcThreshold=50;         // if >= gcThreshold (unfinalized RexxEngines) then run System.gc()
+    private static int     gcThreshold=100;         // if >= gcThreshold (unfinalized RexxEngines) then run System.gc()
 
     /** Threshold of unfinalized RexxEngines which will cause a System.gc() to be called.
      *
@@ -293,7 +294,7 @@ public class RexxCleanupRef extends PhantomReference
 
 
     /** Lock controlling whether a clean runnable needs to be dispatched on a new thread. */
-    private static boolean cleanThreadRunning=false;
+    private static boolean cleanerThreadRunning=false;
 
     /** The Runnable that uses remove(timeout) to fetch references from the reference queue.
      *  This Runnable will exit the thread once no references can be fetched from the queue.
@@ -327,8 +328,8 @@ public class RexxCleanupRef extends PhantomReference
                 {
                     System.err.println("RexxCleanupRef.runnableCleaner(thread="+Thread.currentThread().getName()+") threw throwable: "+t);
                 }
-                if (bDebug==true) System.err.println("RexxCleanupRef.runnableCleaner: about to finish (thread="+Thread.currentThread().getName()+"), resetting 'cleanThreadRunning' to false.");
-                cleanThreadRunning=false;    // reset lock to allow to start a new thread next time a new instance gets created
+                if (bDebug==true) System.err.println("RexxCleanupRef.runnableCleaner: about to finish (thread="+Thread.currentThread().getName()+"), resetting 'cleanerThreadRunning' to false.");
+                cleanerThreadRunning=false;    // reset lock to allow to start a new thread next time a new instance gets created
             }
         } ;
 
@@ -368,12 +369,11 @@ public class RexxCleanupRef extends PhantomReference
             counters[ordinal][0]++;
         }
 
-// TODO: have a flag to determine whether doing System.gc() ourselves, when we see a need for it?
         if (refKind==RefKind.REXX_ENGINE)   // determine whether we want to run System.gc()
         {
             // if gcThreshold or more RexxEngines, run the Java garbage collector
             // in order to not peg the system with gc() calls when encountering unfinalized
-            // RexxEngines >= gcThreshold after a gc() call we skip the next gcThreshold
+            // RexxEngines >= gcThreshold after a gc() call we skip the next gcThreshold/3
             // creations of RexxEngines before checking for a gc() again
             int unfinalizedRE = (int) (counters[ordinal][0] - counters[ordinal][1]);
             bRunGC=(unfinalizedRE >= gcThreshold);
@@ -399,9 +399,9 @@ public class RexxCleanupRef extends PhantomReference
             }
         }
 
-        if (cleanThreadRunning==false)   // cleaner thread not running, start it
+        if (cleanerThreadRunning==false)   // cleaner thread not running, start it
         {
-            startCleanThread();    // simple strategy, whenever a new RexxCleanupRef gets created run the clean method
+            startCleanerThread();    // simple strategy, whenever a new RexxCleanupRef gets created run the clean method
         }
     }
 
@@ -489,14 +489,14 @@ if (bDebug) System.err.println("RexxCleanupRef: REXX_SCRIPT_ENGINE <-- after  re
      *  a new clean thread that processes the @link{PhantomReference}s on the reference
      *  queue, if any.
      */
-    synchronized static private void startCleanThread()
+    synchronized static private void startCleanerThread()
     {
-        if (cleanThreadRunning==false)   // only create cleaner thread, if not yet present
+        if (cleanerThreadRunning==false)   // only create cleaner thread, if not yet present
         {
-            cleanThreadRunning=true;
+            cleanerThreadRunning=true;
             String threadName="RexxCleanupRef.runnableCleaner_"+(++cleanInvocationCounter);
 
-            if (bDebug==true) System.err.println("RexxCleanupRef.startCleanThread(): about to run on a thread named: "+threadName);
+            if (bDebug==true) System.err.println("RexxCleanupRef.startCleanerThread(): about to run on a thread named: "+threadName);
 
             new Thread (runnableCleaner, threadName).start();  // create and start the thread
         }

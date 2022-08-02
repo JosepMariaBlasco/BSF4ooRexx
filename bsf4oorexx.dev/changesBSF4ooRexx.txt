@@ -1,17 +1,234 @@
 
---> new samples, new classes, changes: since 2022-01-31
---> Update 641 GA-version; create branch for GA version;
---> then start with 850 (supply new APIs, redirectable command)
+-------------------------------------- 2022-08-02 ----------------------------------
+
+- BSF4ooRexx.cc, Makefile-64-windows
+
+        - add "_DEBUG" to version information, if a debug compile (will
+          be used for the Windows version, cf. Makefile-64-windows)
+
+- RexxAnalyzeRegistry.java (new file)
+
+        - This class allows to analyze the registry maintained by RexxAndJava.java, it
+          needs at least Java/OpenJDK version 8.
+
+- RexxCleanupRef.java
+
+        - tidying up, refactoring names to make them self documentary
+
+- RexxEngine.java
+
+        - changed the name from "interpreterVersionString" to "languageVersionString"
+          and its getter accordingly; this way the name is consistent to the
+          RexxScriptEngineFactory "LANGUAGE_VERSION" field
+
+- RexxScriptEngineFactory.java
+
+        - use a RexxEngine to fetch the LANGUAGE_VERSION value
+
+-------------------------------------- 2022-08-01 ----------------------------------
+
+- Java4Rexx.java
+
+        - logic in RexxEngine.initializer(...) got changed such that the ooRexx version
+          strings gets fetched and Termination() related defaults set accordingly using
+          apply which will cause the primodal Rexx interpreter to be created; as a
+          result rii_ID for the peer RAJ and RE get set such that Java4Rexx must not
+          set them again (which would cause an exception in RAJ)
+
+- RexxEngine.java
+
+        - added static protected field "interpreterVersionString" and static public
+          getter "getInterpreterVersionString()" containing the ooRexx version string
+
+        - initialize(...): queries ooRexx for its version string, checks whether
+          ooRexx major version and date is the first one that possesses the fix
+          for Terminate() on a separate thread; if so adjusts the static defaults
+          for resetLocalBeforeTerminateDefault=false and
+          terminateOnSeparateThread=true
+
+          Note: this has a side effect on Java4Rexx (which gets used by Rexx to
+                demand load Java and initialize the primodal/root instance): the
+                rii_ID values of RexxAndJava and RexxEngine get set implicitly
+                by RexxEngine.initialize(...) utilizing apply()
+
+- RexxScriptEngine.java
+
+        - instead of using public getters, directly access Rexx engine
+          related static info, now that these fiels are made protected
+          in RexxScriptEngineFactory
+
+- RexxScriptEngineFactory.java
+
+        - make the following final fields protected to allow RexxScriptEngine
+          direct access: ENGINE_NAME, ENGINE_VERSION, EXTENSIONS, LANGUAGE_NAME,
+          SHORT_NAME, MIME_TYPES, SCRIPT_ENGINE_SHORT_NAMES, THREADING
 
 
--------------------------------------- 2022-0?-00 ----------------------------------
+-------------------------------------- 2022-07-31 ----------------------------------
+
+- RexxCleanupRef.java
+
+        - tidying up, now that termination is done via RexxEngine.terminate() only
 
 
+- samples/3-100_create_bitmap.rxj (new sample)
+
+        - Demonstrates how to create a bitmap (an image) with Java's Graphics2D and
+          draw images (bsf4oorexx_256.png, oorexx4ooo_256.png, oorexx_256.png) in
+          original and 50% size, how to draw lines, strings (text), polygons and
+          some more...  The resulting bitmap gets saved in the user's home directory
+          under the name 3-100_create_bitmap.png and shown using the appropraite
+          operating system's command.
 
 
-------------------------------------------------------------------------------------
+-------------------------------------- 2022-07-25 ----------------------------------
 
+- RexxEngine.java
+
+        - added static resetLocalBeforeTerminateDefault=true with getters and setter:
+          controls whether .local gets reset before invoking terminate(), set to
+          true to mitigate memory leaks prior to the ooRexx 5 Terminate()-RFE
+          <https://sourceforge.net/p/oorexx/feature-requests/806/>
+
+        - added private static counter id_counter and private instance field id
+          which get used to assign a unique, consecutive number to each RexxEngine
+          instance to ease debugging in various contexts; added public getId()
+          getter method
+
+
+-------------------------------------- 2022-07-24 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - impl_jniRexxTerminateInterpreterInstance(), now returns -99
+          in case the instance got removed from the RII list right before
+          using it for termination;
+          adding new critical section to protect termination while
+          concurrently an instance lookup may take place
+
+        - RgfRemoveProxyObject(): now uses the root/primodal instance (no
+          need for an instance lookup in this case)
+
+
+-------------------------------------- 2022-07-22 ----------------------------------
+
+- RexxEngine.java
+
+        - added option to run terminate() on a separate thread; by default
+          termination occurs on the current thread; this gets controlled by
+          the static field terminateOnSeparateThread=false for which a getter and
+          setter got defined (ooRexx 4.x and ooRexx 5 as of July 31st 2022 cannot
+          handle Terminate() on a separate thread correctly & safely); otherwise
+          it should be set to true, as blocking while terminating an instance
+          does not affect the clients
+
+-------------------------------------- 2022-07-20 ----------------------------------
+
+- RexxAndJava.java
+
+        - since using ConcurrentHashMap() there is no need to synchronize anymore
+
+
+-------------------------------------- 2022-07-19 ----------------------------------
+
+- RexxEngine.java
+
+        - it seems that ooRexx 5 r12473 does not run the .local monitor destination
+          object's uninit methods; hence reseting .input, .output, .error,
+          .traceOutput, .debugInput with new monitor objects monitoring .stdin,
+          .stdout, .stderr, and the new .stderr, .stdin monitors respectively
+
+
+-------------------------------------- 2022-07-16 ----------------------------------
+
+- RexxCleanupRef.java
+
+        - if there are more than 100 unfinalized RexxEngine, then
+          System.gc() gets run on a separate thread to help clean
+          up all BSF4ooRexx related objects (especially RexxProxy
+          objects that may pin ooRexx objects)
+
+
+-------------------------------------- 2022-07-15 ----------------------------------
+
+- samples/4-020_EuroCalcJava.rxj
+
+        - added Croatian Kuna rate of exchange (Croatia introduces the Euro on
+          January 1st, 2023)
+
+- RexxCleanupRef.java
+
+        - changed logic to also cater for RexxScriptEngine (if freed,
+          RexxEngine.terminate() needs to be invoked which will cause
+          termination of the RII via jni), hence not invoking
+          jniRexxTerminateInterpreterInstance(RII) anymore
+
+        - before terminating "call bsf.redirectTo ooRexx" gets invoked to
+          make sure that potentially redirected standard files & redirected
+          ooRexx traceoutput and debuginput get redirected to the standard
+          ooRexx streams
+
+        - needed to change element from <String> to Object
+
+
+-------------------------------------- 2022-07-14 ----------------------------------
+
+- RexxAndJava.java
+
+        - changed RexxReflectUtil.loadClass() to not automatically register the
+          loaded class with the BSF registry, therefore LOAD_CLASS must do it instead
+
+- RexxCleanupRef.java
+
+        - added new kind REXX_SCRIPT_ENGINE
+
+- RexxScriptEngine.java
+
+        - removed field bsfMgr and public routine getBsfManager(): not
+          needed in the context of this class
+
+-------------------------------------- 2022-07-13 ----------------------------------
+
+- RexxEngine.java
+
+        - when terminating a RII it may be the case that it does not exist
+          anymore due to the new RexxCleanupRef logic, therefore ignore the
+          exception (RII = Rexx interpreter instance)
+
+-------------------------------------- 2022-07-02 ----------------------------------
+
+- samples/4-070_BezierCurves.rxj (new sample)
+
+        - ooRexx solution of Ruurd Idenburg's NetRexx BezierCurves demo program.
+
+
+-------------------------------------- 2022-06-27 ----------------------------------
+
+- BSF.CLS
+
+        - class .uno_proxy is usually not visible to BSF.CLS, adjust
+          *createArrayOf routines/methods accordingly (use class id
+          to determine whether instance of uno_proxy)
+
+-------------------------------------- 2022-04-21 ----------------------------------
+
+- RexxAndJava.java
+
+        - add RAJBean.getName()
+
+-------------------------------------- 2022-03-04 ----------------------------------
+
+- RexxCleanupRef.java
+
+        - cater for the eventual removal of System.runFinalization():
+          catch Throwable and report it
+
+
+-------------------------------------- 2022-01-31 ----------------------------------
+
+================================================================
 GA-version: 2022-01-31
+================================================================
 
 -------------------------------------- 2022-01-31 ----------------------------------
 

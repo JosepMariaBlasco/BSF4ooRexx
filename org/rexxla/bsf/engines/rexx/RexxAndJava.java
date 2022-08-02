@@ -53,6 +53,9 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
 
  /*
+
+     2022-07-20, rgf  - since using ConcurrentHashMap() there is no need to synchronize anymore
+
      2022-07-14, rgf  - changed RexxReflectUtil.loadClass() to not automatically register the
                         loaded class with the BSF registry, therefore LOAD_CLASS must do it instead
 
@@ -578,7 +581,8 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 class RexxAndJava {
 
 // TODO: rgf, 2016-12-03, remove after debugging
-final static boolean bDebugRefCounter=false; // true; // false;
+final static boolean bDebugRefCounter=false; // true; // false; // true; // false;
+static int bDebugRefCounterThreshold = 1; //  3;   // 2 ;  // > threshold show specific debug infos
 final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new ConcurrentHashMap<String,RAJBean>();
 
 
@@ -592,7 +596,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20220714";
+    static final public String version = "600.20220720";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -739,9 +743,11 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
     /** This serves as a central registry (string-index -> Java object) for all Rexx interpreter instances.
      */
     static private ConcurrentHashMap<String,RAJBean> rajRegistry=new ConcurrentHashMap<String,RAJBean>();
+    // static private ConcurrentHashMap<String,RAJBean> rajRegistry=new ConcurrentHashMap<String,RAJBean>(5000);
 
-    /** Lock used when adding, removing Java objects or changing their reference counters. */
-    final static private Object lockRajRegistry=new Object();
+// ---rgf 2022-07-20: since using ConcurrentHashMap() there is no need to synchronize anymore
+//    /** Lock used when adding, removing Java objects or changing their reference counters. */
+//    final static private Object lockRajRegistry=new Object();
 
 
     /** Field used, if System.identityHashCode() returns duplicate values in method
@@ -4557,7 +4563,7 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): b) unregister=
 
                    String str="";
 
-                   synchronized (lockRajRegistry)
+                   //rgf20220720 synchronized (lockRajRegistry)
                    {
                        RAJBean bean=rajRegistry.get(beanName);   // get bean
                        {
@@ -4572,7 +4578,7 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): b) unregister=
 
 if (bDebugRefCounter)
 {
-     if (bean.refCount>3 || rajRegistryToWatch.get(beanName)!=null)
+     if (bean.refCount>bDebugRefCounterThreshold || rajRegistryToWatch.get(beanName)!=null)
      {
 System.err.println("//++// increaseRefCounter/(registerBean), RAJBean: "+bean+" \\\\++\\\\");
 
@@ -5232,7 +5238,7 @@ if (bDebug) System.err.println(rajo+".lookupBean():     beanName=\""+beanName+"\
 
         RAJBean bean=null;
         String  trueBeanName=beanName;
-        synchronized (lockRajRegistry)
+        //rgf20220720 synchronized (lockRajRegistry)
         {
             bean=rajRegistry.get(beanName);
 
@@ -5354,7 +5360,7 @@ if (bDebug)
     System.err.print(rajo+".registerBean(beanName=["+beanName+"], object=["+object+"]: ");
 }
 
-        synchronized (lockRajRegistry)
+        //rgf20220720 synchronized (lockRajRegistry)
         {
             RAJBean bean = rajRegistry.get( beanName );  // already registered?
             if (bean==null)                  // we need to create the bean
@@ -5381,7 +5387,7 @@ if (bDebugRefCounter)
         int len=str.length();
         System.err.println("/-->/-->/storing a STRING /-->/["+str.substring(0, (len<51 ? len-1 : 50) ) +"] \\<--\\<--\\");
     }
-    if (bean.refCount>3 || rajRegistryToWatch.get(beanName)!=null)
+    if (bean.refCount>bDebugRefCounterThreshold || rajRegistryToWatch.get(beanName)!=null)
     {
         System.err.println("//++// registerBean, RAJBean: "+bean+" \\\\++\\\\ (AFTER increasing refCount=["+bean.refCount+"])");
         if (rajRegistryToWatch.get(beanName)==null)
@@ -5415,7 +5421,7 @@ if (bDebug)
     System.err.println("RAJ.-RAW-rawRegisterBean(beanName=["+beanName+"], object=["+object+"]: ");
 }
         RAJBean bean = null;
-        synchronized (lockRajRegistry)
+        //rgf20220720 synchronized (lockRajRegistry)
         {
             bean=rajRegistry.get( beanName );  // already registered?
             if (bean==null)                  // we need to create the bean
@@ -5457,7 +5463,7 @@ if (bDebug==true) System.err.println("RAJ:   ===> RexxAndJava.getBeanRefCount("+
 
         RAJBean bean = null;
 
-        synchronized (lockRajRegistry)
+        //rgf20220720 synchronized (lockRajRegistry)
         {
             bean = rajRegistry.get( beanName );
             if (bean==null)     // not in registry
@@ -5484,7 +5490,7 @@ if (bDebug==true) System.err.println("RAJ:   ===> RexxAndJava.getBeanRefCount("+
         final boolean bDebug= // true;
                               false;
 
-if (bDebug==true)
+if (bDebug==true || bDebugRefCounter==true)
 System.err.println("RAJ:   ===> RexxAndJava.unregisterBean("+beanName+"): bTerminated=["+bTerminated+"] ...");
 
 
@@ -5509,7 +5515,7 @@ if (bDebug) // testing; TODO: remove
 }
             RAJBean bean = null;
 
-            synchronized (lockRajRegistry)
+            //rgf20220720 synchronized (lockRajRegistry)
             {
                 bean = rajRegistry.get( beanName );
 // if (bDebugRefCounter && (bean.refCount>3 || rajRegistryToWatch.get(beanName)!=null))
@@ -5593,12 +5599,12 @@ System.err.println("RAJ:   ===> RexxAndJava.unregisterBean("+beanName+"), now RE
         final boolean bDebug= // true;
                               false;
 
-if (bDebug==true)
+if (bDebug==true || bDebugRefCounter==true)
 System.err.println("RAJ:   ===> RexxAndJava.unregisterBean4JNI("+beanName+") ...");
 
         RAJBean bean = null;
 
-        synchronized (lockRajRegistry)
+        //rgf20220720 synchronized (lockRajRegistry)
         {
             bean = rajRegistry.get( beanName );
 // if (bDebugRefCounter && (bean.refCount>3 || rajRegistryToWatch.get(beanName)!=null))
@@ -5765,7 +5771,7 @@ if (bDebug) System.err.println("makeString4Rexx(): TSK # 1");
 
         if (olb!=null && o!=olb)   // oops, we got a duplicate identityHashCode for the same class!
         {   // make it into an identifier (unique) string
-            synchronized (lockRajRegistry)  // shelter increasing and use of spilloverCounter
+            //rgf20220720 synchronized (lockRajRegistry)  // shelter increasing and use of spilloverCounter
             {
                 beanName=beanName+"_spilloverCounter_"+Integer.toHexString(++spilloverCounter);
             }
@@ -5794,13 +5800,19 @@ if (bDebug)  System.err.println("RexxAndJava.makeBeanName(rajo,o): o=\""+o+"\" -
         final boolean bDebug = // true;
                                false;
 
-if (bDebug) System.err.println("*** TERMINATE *** bTerminated=["+bTerminated+"] *** rii_ID=["+rii_ID+"] *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE ***");
-//        if (bTerminated==false) // if we did not run yet (eg. invoked by finalize() )
+        if (bDebug)
         {
-            bTerminated=true;       // from now on do not use BSFManager and RexxEngine related methods
-            rexxEngine =null;       // nullify, release reference
-            mgr        =null;       // nullify, release reference
+            String strRe_id="";
+            if (rexxEngine!=null)
+            {
+                strRe_id=" [RE_"+((RexxEngine) rexxEngine).id+"]";
+            }
+            System.err.println("*** TERMINATE *** bTerminated=["+bTerminated+"] *** rii_ID=["+rii_ID+"]"+strRe_id+" rexxEngine=["+rexxEngine+"] *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE ***");
         }
+
+        bTerminated=true;       // from now on do not use BSFManager and RexxEngine related methods
+        rexxEngine =null;       // nullify, release reference
+        mgr        =null;       // nullify, release reference
     }
 
     /** Getter method for field <code>bTerminated</code>.

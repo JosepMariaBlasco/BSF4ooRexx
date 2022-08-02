@@ -2,7 +2,7 @@
 /*
    name:      2-040_GetJavaSystemProperties1.rxj
 
-   last change: $Revision: 564 $ $Author: rony $ $Date: 2010-02-10 18:03:08 +0100 (Wed, 10 Feb 2010) $
+   last change: $Revision$ $Author$ $Date$
    05 July 2009 Walter Pachl add help and display line.separator in hex
 
    license:

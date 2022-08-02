@@ -8,12 +8,13 @@ import java.util.Date;
 import java.text.SimpleDateFormat;
 import java.util.TimeZone;
 
-
 import org.apache.bsf.*;   // BSF support
+
+import org.rexxla.bsf.engines.rexx.RexxEngine;
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015-2020 Rony G. Flatscher
+   Copyright 2015-2022 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -61,13 +62,18 @@ import org.apache.bsf.*;   // BSF support
                                 getOutputStatement(someString) uses "SAY" (true) or
                                 ".output~charout" (false)
 
+        - 2022-08-01, ---rgf: - make the following final fields protected to allow RexxScriptEngine
+                                direct access: ENGINE_NAME, ENGINE_VERSION, EXTENSIONS, LANGUAGE_NAME,
+                                SHORT_NAME, MIME_TYPES, SCRIPT_ENGINE_SHORT_NAMES, THREADING
+
+        - 2022-08-02, ---rgf: - use a RexxEngine to fetch the LANGUAGE_VERSION value
 */
 
 
 /** Class that implements the <code>javax.script.ScriptEngineFactory</code> interface for the ooRexx support.
  *
  * @author Rony G. Flatscher
- * @version 100.20201217
+ * @version 100.20220802
  * @since   2015-05-11
  *
  */
@@ -78,18 +84,17 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
     /** If a RexxScriptEngine gets created directly, allow it to fetch an instance of the RexxScriptEngineFactory. */
     final public static RexxScriptEngineFactory DEFAULT_REXX_SCRIPT_ENGINE_FACTORY=new RexxScriptEngineFactory();
 
-    final private static String       ENGINE_NAME      ="Open Object Rexx (ooRexx)";
-    final private static String       ENGINE_VERSION   ="100.20210705";
-    final private static List<String> EXTENSIONS       = Arrays.asList("rex", "rexx", "orx", "cls",
+    final protected static String       ENGINE_NAME      ="Open Object Rexx (ooRexx)";
+    final protected static String       ENGINE_VERSION   ="101.20220802";
+    final protected static List<String> EXTENSIONS       = Arrays.asList("rex", "rexx", "orx", "cls",
                                                                 "rxj", "rexxj", "jrexx",
                                                                 "rxo" );
-    final private static String       LANGUAGE_NAME    ="ooRexx";
-    // final private static String       LANGUAGE_VERSION ="4.1.0";
-    static String                     LANGUAGE_VERSION=null;    // let it be accessed by RexxScriptEngine's constructor
+    final protected static String       LANGUAGE_NAME    ="ooRexx";
+    protected static String             LANGUAGE_VERSION =null; // let it be accessed by RexxScriptEngine
 
-    final private static String       SHORT_NAME       ="rexx";
+    final protected static String       SHORT_NAME       ="rexx";
 
-    final private static List<String> MIME_TYPES       = Arrays.asList(
+    final protected static List<String> MIME_TYPES       = Arrays.asList(
                                                                        "text/rexx",
                                                                        "text/oorexx",
                                                                        "application/rexx",
@@ -98,10 +103,10 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
                                                                        "text/x-rexx-java",
                                                                        "text/x-rexx-java-ooo"
                                                                        );
-    final private static List<String> SCRIPT_ENGINE_SHORT_NAMES = Arrays.asList("rexx", "Rexx", "REXX",
+    final protected static List<String> SCRIPT_ENGINE_SHORT_NAMES = Arrays.asList("rexx", "Rexx", "REXX",
                                                                        "oorexx", "ooRexx", "OOREXX",
                                                                        "orexx", "oRexx", "OREXX");
-    final private static String       THREADING        = "MULTITHREADED"; // "THREAD-ISOLATED";
+    final protected static String       THREADING        = "MULTITHREADED"; // "THREAD-ISOLATED";
 
     /** Field controls whether {@link #getOutputStatement(String toDisplay)} uses the
      *  Rexx <code>SAY</code> (always appends a line-feed character) keyword statement
@@ -143,17 +148,14 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
     /** Returns the version of the scripting language supported by this ScriptEngine. */
     public String getLanguageVersion()
     {
-        // ask the currently available Rexx interpreter about its version
+        // ask a Rexx interpreter instance about its version
         if (LANGUAGE_VERSION==null)
         {
             try
             {
                 BSFManager bsfMgr = new BSFManager ();                // get an instance of BSFManager
-                BSFEngine  bsfRexxEngine = bsfMgr.loadScriptingEngine("rexx");  // load the Rexx engine
-
-                String rexxCode="parse version v \n return v \n ::requires BSF.CLS";    // get Rexx version
-                LANGUAGE_VERSION=(String) bsfRexxEngine.apply("RexxScriptEngineFactory.java",
-                                                              0, 0, rexxCode, null, null);
+                RexxEngine  bsfRexxEngine = (RexxEngine) bsfMgr.loadScriptingEngine("rexx");  // load the Rexx engine
+                LANGUAGE_VERSION=bsfRexxEngine.getLanguageVersionString();
 		bsfRexxEngine.terminate();   // do not use this Rexx interpreter instance anymore
             }
             catch (Exception exc)

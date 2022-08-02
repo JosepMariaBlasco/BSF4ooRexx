@@ -6,7 +6,7 @@
    needs:      ooRexx 5.0 or later
    date:       18 February 2022
    changed:    2022-01-20, rename program to indicate what it demonstrates
-   last change: $Revision: 564 $ $Author: rony $ $Date: 2010-02-10 18:03:08 +0100 (Wed, 10 Feb 2010) $
+   last change: $Revision$ $Author$ $Date$
    license:
     ------------------------ Apache Version 2.0 license -------------------------
        Copyright (C) 2022 Rony G. Flatscher
