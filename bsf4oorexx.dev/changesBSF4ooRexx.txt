@@ -1,3 +1,18 @@
+
+--> new samples, new classes, changes: since 2022-01-31
+--> Update 641 GA-version; create branch for GA version;
+--> then start with 850 (supply new APIs, redirectable command)
+
+
+-------------------------------------- 2022-0?-00 ----------------------------------
+
+
+
+
+------------------------------------------------------------------------------------
+
+GA-version: 2022-01-31
+
 -------------------------------------- 2022-01-31 ----------------------------------
 
 - samples/1-110_messageDigest.rxj: new (last minute) sample

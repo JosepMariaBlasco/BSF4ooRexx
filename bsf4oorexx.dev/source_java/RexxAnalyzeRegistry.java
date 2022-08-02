@@ -7,29 +7,23 @@ package org.rexxla.bsf.engines.rexx;
     clz=bsf.loadclass("org.rexxla.bsf.engines.rexx.RexxAnalyzeRegistry")
     say clz~getAnalyzedDataAsString
 
-    clz~reset
     a="1234567890" -- ten characters
     s=.bsf~new("java.lang.String",a);say "a:" pp(a) "length:" pp(a~length); say s
     say
     say clz~getAnalyzedDataAsString
 
-    clz~reset
     arr1=bsf.createJavaArrayOf("java.lang.String", a, a, a)
     say "arr1:" pp(arr1) "arr1~items:" pp(arr1~items)
     say
     say clz~getAnalyzedDataAsString
 
-    clz~reset
     arr2=bsf.createJavaArray("java.lang.String", 10, 5) -- two dimensions
     arr2[1,1]=a;arr2[10,5]=a;say "arr2:" pp(arr2) "arr2~items:" pp(arr2~items)
     say
     say clz~getAnalyzedDataAsString
 
-    clz~reset; say clz~getAnalyzedData~toString
-
     ---
 
-    clz~reset
     a=clz~getAnalyzedData
     say "a:" pp(a)
     say "BsfRexxProxy(a):" pp(BsfRexxProxy(a))
@@ -40,9 +34,7 @@ package org.rexxla.bsf.engines.rexx;
 
     a=xrange("00"x,"ff"x)~copies(1000)
     do i=1 to 1000;t1=BsfRawBytes(a);t2=bsfRawBytes(t1,a~length);end
-    clz~reset; say clz~getAnalyzedData~toString
-
-
+    say clz~getAnalyzedData~toString
 */
 
 import java.lang.reflect.Array;
@@ -58,7 +50,8 @@ import java.util.IntSummaryStatistics;  // needs Java 8
 import java.util.LongSummaryStatistics; // needs Java 8
 
 /**
- *  This class allows to analyze the registry maintained by RexxAndJava.java.
+ *  This class allows to analyze the registry maintained by RexxAndJava.java, it
+ *  needs at least Java/OpenJDK version 8.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
  *    Copyright (C) 2022 Rony G. Flatscher
@@ -76,7 +69,7 @@ import java.util.LongSummaryStatistics; // needs Java 8
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 1.0.0, 2022-07-07
+  * @version 1.0.0, 2022-08-02
   * @author Rony G. Flatscher
   */
 
@@ -90,48 +83,33 @@ public class RexxAnalyzeRegistry
     static final String constBeanName="!{beanname}!";  // starting with exclamation mark to sort this category to top
 
     /** Version information on this class. */
-    static final public String version="100.20220707";
+    static final public String version="100.20220802";
 
     /* Private constructor to not allow instances to be created. */
     private RexxAnalyzeRegistry() {}
 
-    // private static String strNrRegistryEntries=null;
-    private static Map<String,RexxAndJava.RAJBean> currentRajRegistry=null;
 
     private static AnalyzedCategory analyzedData = null;
 
-    /** Invoke to force analyzing a new copy of the registry.
-     */
-    public static void reset()
-    {
-        analyzedData = null;
-    }
-
-    /** Returns the analyzed data, if needed runs {@link updateAnalyzeData}
-     *  to analyze the BSF registry.
+    /** Returns the analyzed data, runs {@link updateAnalyzeData}
+     *  to analyze the latest version of the BSF registry.
      *
      * @return the AnalyzedCategory object
     */
     public static AnalyzedCategory getAnalyzedData()
     {
-        if (analyzedData==null)
-        {
-            updateAnalyzeData();
-        }
+        updateAnalyzeData();
         return analyzedData;
     }
 
-    /** Returns the analyzed data as a string, if needed runs {@link updateAnalyzeData}
-     *  to analyze the BSF registry.
+    /** Returns the analyzed data as a string, runs {@link updateAnalyzeData}
+     *  to analyze the latest version of the BSF registry.
      *
      * @return the analyzed data as a string
     */
     public static String getAnalyzedDataAsString()
     {
-        if (analyzedData==null)
-        {
-            updateAnalyzeData();
-        }
+        updateAnalyzeData();
         return analyzedData.toString();
     }
 
@@ -140,75 +118,70 @@ public class RexxAnalyzeRegistry
      */
     public static void updateAnalyzeData()
     {
-        currentRajRegistry=RexxAndJava.getRajRegistry();    // get copy
-        Map <String,ArrayList<RexxAndJava.RAJBean>> categorizedData=categorizeData();
-        analyzedData=new AnalyzedCategory(categorizedData);
+        // currentRajRegistry=RexxAndJava.getRajRegistry();    // get copy
+        Map<String,RexxAndJava.RAJBean> currentRajRegistry=RexxAndJava.getRajRegistry();    // get copy
+        Map <String,ArrayList<RexxAndJava.RAJBean>> categorizedData=categorizeData(currentRajRegistry);
+        analyzedData=new AnalyzedCategory(categorizedData, currentRajRegistry.size());
     }
 
 
-    /* Categorizes the entries in the registry. */
-    static Map <String,ArrayList<RexxAndJava.RAJBean>> categorizeData()
+    /** Categorizes BSF registry data.
+     *
+     * @return a Map of categories with their ArrayList
+    */
+    static Map <String,ArrayList<RexxAndJava.RAJBean>> categorizeData(Map<String,RexxAndJava.RAJBean>  currentRajRegistry)
     {
         // create a Map: string/type ->
         HashMap <String,ArrayList<RexxAndJava.RAJBean>> myMap = new HashMap ();
 
+        // Set <String> setKeys=currentRajRegistry.keySet();
         Set <String> setKeys=currentRajRegistry.keySet();
 
-try
-{
-    String arrKeys[] = setKeys.toArray(new String[setKeys.size()]);   // or: ...toArray(new String[0]);
-
-//    Arrays.sort(arrKeys);   // not really needed
-//    System.out.println("\na) sorted - arrKeys="+Arrays.toString(arrKeys));
-
-    // step 1: categorizing by "<beanname>", java-class-name -> RAJBeans to ArrayList
-    // step 2: process sorted Map:
-    //         -> if primitive or String (array) then calculate and store memory size (memSize)
-    // step 3: supply count, min, max, average refCount per Category
-    // step 4: supply count, min, max, average memSize per Category
-
-    for (String key : arrKeys)
-    {
-        String tmpKey=key;
-        RexxAndJava.RAJBean tmpValue=currentRajRegistry.get(key);
-
-        int    pos=key.indexOf("@");
-        if (pos>0)
+        try
         {
-            tmpKey=key.substring(0,pos);    // extract class name
-        }
-        else
+            String arrKeys[] = setKeys.toArray(new String[setKeys.size()]);   // or: ...toArray(new String[0]);
+
+            // step 1: categorizing by "<beanname>", java-class-name -> RAJBeans to ArrayLists
+            for (String key : arrKeys)
+            {
+                String tmpKey=key;
+                if (key==null)
+                {
+                    continue;
+                }
+                RexxAndJava.RAJBean tmpValue=currentRajRegistry.get(key);
+
+                int    pos=key.indexOf("@");        // a Java object?
+                if (pos>0)
+                {
+                    tmpKey=key.substring(0,pos);    // extract class name
+                }
+                else
+                {
+                    tmpKey=constBeanName;           //  key (beanname) got explicitly set by BSF4ooRexx or programmer
+                }
+
+                ArrayList al = null;
+                if (myMap.containsKey(tmpKey))      // already an entry for this category?
+                {
+                    al=myMap.get(tmpKey);           // get appropriate ArrayList
+                }
+                else                                // create a new category entry with an ArrayList
+                {
+                    al=new ArrayList<String>();
+                    myMap.put(tmpKey,al);
+                }
+
+                al.add(tmpValue);                   // add current value to ArrayList
+            }
+
+        } catch (Throwable t)
         {
-            tmpKey=constBeanName;           //  key (beanname) got explicitly set by BSF4ooRexx or programmer
+            t.printStackTrace();
+            System.exit(-1);
         }
-
-        ArrayList al = null;
-        if (myMap.containsKey(tmpKey))
-        {
-            al=myMap.get(tmpKey);
-        }
-        else
-        {
-            al=new ArrayList<String>();
-            myMap.put(tmpKey,al);
-        }
-
-        al.add(tmpValue);
-    }
-
-} catch (Throwable t)
-{
-    // System.err.println(t);
-    t.printStackTrace();
-    System.exit(-1);
-}
-
-
         return myMap;
     }
-
-
-
 
 
 
@@ -223,12 +196,11 @@ try
     {
         static final String strFormatTimeHeader     = "RexxAnalyzeRegistry [%1$tY-%1$tm-%1$td %1$tT.%1$tN]%n";
         static final String strFormatCategoryHeader = "RexxAnalyzeRegistry category=[%s]%n";
-        static final String strFormatRefCount       = "                    - RefCount: entries=[%,5d] | references: min=[%,3d] max=[%,7d] avg=[%,7.1f] sum=[%,9d]%n";
-        static final String strFormatMemSize        = "                    - MemSize:  entries=[%,5d] | references: min=[%,3d] max=[%,7d] avg=[%,7.1f] sum=[%,9d]%n";
+        static final String strFormatRefCount       = "                    - RefCount: entries=[%,7d] | references: min=[%,9d] max=[%,9d] avg=[%,9.1f] sum=[%,9d]%n";
+        static final String strFormatMemSize        = "                    - MemSize:  entries=[%,7d] | references: min=[%,9d] max=[%,9d] avg=[%,9.1f] sum=[%,9d]%n";
         // BSF4ooRexx' pre-registerd beanNames are 17 characters long
         static final String strFormatBeanName       = "%-17s: refCount=[%,3d] memSize=[%,5d] getClass()=[%15s] toString()=[%s]";
         static final String strFormatClassObjectName= "%-45s: refCount=[%,5d] getName()=[%s]";
-
 
         static final int hintLength=40; // maximum length of hint string value
 
@@ -240,7 +212,6 @@ try
         String strBeanNameWithInfos;    // ordered String rendering of rawBeanNames
 
         String [] strClassObjectsWithInfos=null; // for debugging java.lang.Class objects
-
 
         public String    getStrTimeHeader()        { return strTimeHeader; }
         public String [] getRawBeanNames ()        { return rawBeanNames; }
@@ -260,14 +231,15 @@ try
         public String [] getStrRefCountSummary() { return strRefCountSummary; }
         public String [] getStrMemSizeSummary()  { return strMemSizeSummary; }
 
-
         private AnalyzedCategory()  // inhibit use of default constructor
         {}
 
-        AnalyzedCategory(Map <String,ArrayList<RexxAndJava.RAJBean>> categorizedData)
+        // AnalyzedCategory(Map <String,ArrayList<RexxAndJava.RAJBean>> categorizedData)
+        AnalyzedCategory(Map <String,ArrayList<RexxAndJava.RAJBean>> categorizedData, int currentRajRegistrySize)
         {
             strTimeHeader=String.format(strFormatTimeHeader, Calendar.getInstance());
-            strNrRegistryEntries=String.format("RexxAnalyzeRegistry: number of entries in registry: %d\n", currentRajRegistry.size() );
+            // strNrRegistryEntries=String.format("RexxAnalyzeRegistry: number of entries in registry: %d\n", currentRajRegistry.size() );
+            strNrRegistryEntries=String.format("RexxAnalyzeRegistry: number of entries in registry: %d\n", currentRajRegistrySize );
 
                 // determine size of arrays
             int size=categorizedData.size();
@@ -351,14 +323,13 @@ try
                 }
 
                 // do the analysis, save results
+                // get summary statistics as int
                 IntSummaryStatistics iss = Arrays.stream(rawRefCount).summaryStatistics();
-                // "RexxAnalyzeRegistry - RefCount: count=[%,4d] min=[%,3d] max=[%,7d] avg=[%,7.1f] sum=[%,6d]%n":
                 String strRefCount=String.format(strFormatRefCount, iss.getCount(), iss.getMin(),
                                                                     iss.getMax(), iss.getAverage(), iss.getSum() );
                 strRefCountSummary[mIdx] = strRefCount;
-
+                    // get summary statistics as long
                 LongSummaryStatistics lss = Arrays.stream(rawMemSize).summaryStatistics();
-                // "RexxAnalyzeRegistry - MemSize:  count=[%,4d] min=[%,3d] max=[%,7d] avg=[%,7.1f] sum=[%,9d]%n"
                 if (lss.getSum()==0L)
                 {
                     strMemSizeSummary[mIdx]  = "";
@@ -386,6 +357,10 @@ try
             }
         }
 
+        /** Creates a string rendering of the analyzed BSF registry data.
+         *
+         * @return string rendering of the anlyzed BSF registry data
+         */
         public String toString()
         {
             StringBuilder sb = new StringBuilder();
@@ -429,10 +404,21 @@ try
                 }
                 sb.append(nl);
             }
+
+            // get and add the information of all currently running threads
+            sb.append(getAllCurrentThreadsAsStrings());
+            sb.append(nl);
+
             return sb.toString();
         }
     }
 
+    /** Calculates and returns the size of the supplied category data. Sizes can only
+     *  be calculated for primitive types and strings.
+     *
+     * @param  category data
+     * @return size of the supplied category data
+    */
     static long calcSize(Object jo)
     {
         long ms=0;
@@ -543,7 +529,7 @@ try
                         }
                     }
                 }
-                else if (componentType==String.class)   // calc bytes
+                else if (componentType==String.class)       // calc bytes needed
                 {
                     ms=((String)jo).getBytes().length;
                 }
@@ -552,4 +538,23 @@ try
         return ms;
     }
 
+
+    /** Creates and returns a string of currently running threads.
+     *
+     * @return string listing all currently running threads
+     */
+    static String getAllCurrentThreadsAsStrings()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Currently running Java threads:\n\n");
+
+        // cf. <https://www.baeldung.com/java-get-all-threads> (2022-07-21)
+        Set<Thread> threads = Thread.getAllStackTraces().keySet();
+        sb.append(String.format("%-15s \t %-15s \t %-15s \t %s\n", "Name", "State", "Priority", "isDaemon"));
+        for (Thread t : threads)
+        {
+            sb.append(String.format("%-15s \t %-15s \t %-15d \t %s\n", t.getName(), t.getState(), t.getPriority(), t.isDaemon()));
+        }
+        return sb.toString();
+    }
 }

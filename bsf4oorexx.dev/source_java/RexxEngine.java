@@ -8,11 +8,6 @@ import org.rexxla.bsf.engines.rexx.RexxAndJava;
 
 import java.lang.reflect.Method;
 
-// TODO: rgf, 20191126  - process declaredBeans
-//                      - RexxEngine local declaredBeans (as HashMap?)
-//                      - change raj.lookupBean() accordingly
-
-
 /**
   * This class manages the calls from Java via JNI to Open Object Rexx (ooRexx).
   *
@@ -32,7 +27,7 @@ import java.lang.reflect.Method;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
   *
-  * @version 6.0.0, 20191211
+  * @version 6.1, 20220802
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   *
   */
@@ -40,6 +35,47 @@ import java.lang.reflect.Method;
 
 /*
     last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+
+    2022-08-02, ---rgf, - changed the name from "interpreterVersionString" to "languageVersionString"
+                          and its getter accordingly; this way the name is consistent to the
+                          RexxScriptEngineFactory "LANGUAGE_VERSION" field
+
+    2022-08-01, ---rgf, - added static protected field "interpreterVersionString" and static public
+                          getter "getInterpreterVersionString()" containiing the ooRexx version string
+
+                        - initialize(...): queries ooRexx for its version string, checks whether
+                          ooRexx major version and date is the first one that possesses the fix
+                          for Terminate() on a separate thread; if so adjusts the static defaults
+                          for resetLocalBeforeTerminateDefault=false and
+                          terminateOnSeparateThread=true
+
+                          Note: this has a side effect on Java4Rexx (which gets used by Rexx to
+                                demand load Java and initialize the primodal/root instance): the
+                                rii_ID values of RexxAndJava and RexxEngine get set implicitly
+                                by RexxEngine.initialize(...) utilizing apply()
+
+    2022-07-25, ---rgf, - added static resetLocalBeforeTerminateDefault=true with getters and setter:
+                          controls whether .local gets reset before invoking terminate(), set to
+                          true to mitigate memory leaks prior to the ooRexx 5 Terminate()-RFE
+                          <https://sourceforge.net/p/oorexx/feature-requests/806/>
+
+                        - added private static counter id_counter and private instance field id
+                          which get used to assign a unique, consecutive number to each RexxEngine
+                          instance to ease debugging in various contexts; added public getId()
+                          getter method
+
+    2022-07-22, ---rgf, added option to run terminate() on a separate thread; by default
+                        termination occurs on the current thread; this gets controlled by
+                        the static field terminateOnSeparateThread=false for which a getter and
+                        setter got defined (ooRexx 4.x and ooRexx 5 as of July 31st 2022 cannot
+                        handle Terminate() on a separate thread correctly & safely); otherwise
+                        it should be set to true, as blocking while terminating an instance
+                        does not affect the clients
+
+    2022-07-19, ---rgf, it seems that ooRexx 5 r12473 does not run the .local monitor destination
+                        object's uninit methods; hence reseting .input, .output, .error,
+                        .traceOutput, .debugInput with new monitor objects monitoring .stdin,
+                        .stdout, .stderr, and the new .stderr, .stdin monitors respectively
 
     2022-07-13, ---rgf, when terminating a RII it may be the case that it does not exist
                         anymore due to the new RexxCleanupRef logic, therefore ignore the
@@ -92,7 +128,7 @@ import java.lang.reflect.Method;
                             - getPublicEnvironment()  ... returns .environment
                             - getNil()                ... returns .nil
                             - getInterpreterVersion() ... returns long, where the least significant three bytes contain the version encoded
-                            - getLanguageVersion()    ... returns long, where the least significant two bytes contain the version encoded
+                            - getLanguageLevel()    ... returns long, where the least significant two bytes contain the version encoded
 
     2014-07-03, ---rgf, - make sure that RexxProxy objects are always passed as Java objects in arguments;
                           adapt apply() as well to pass through RexxProxy objects in arguments
@@ -188,7 +224,10 @@ public class RexxEngine extends BSFEngineImpl {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20220715";
+    static final public String version = "601.20220802";
+
+    static int terminationCounter = 0;  // for termination thread name counts
+
 
     /** If terminate() was invoked, then this instance must not be used anymore.
      */
@@ -209,6 +248,153 @@ public class RexxEngine extends BSFEngineImpl {
      */
     protected boolean bJNITerminated=false;
 
+    // rgf, since 2022-07-22
+// TODO: once ooRexx 5 can reliably use Terminate() from different threads change default at
+//       runtime to true (2022-07-31)
+    // String: ooRexx major version + " " + ooRexx date that fixes the Terminate() problem
+    static private String terminateFixed="9 99991231"; // impossible value
+
+    /** Returns the string indicating which major ooRexx version and compilation date fixed
+     *  the Terminate() problem.
+     *
+     * @return current string
+     */
+    static public String getTerminateFixed()
+    {
+        return terminateFixed;
+    }
+
+    /** Allows to set the string indicating which major ooRexx version and compilation date fixed
+     *  the Terminate() problem.
+     *
+     * @param a string consisting of the major ooRexx version, a white space and a compilation date
+     */
+    static public void setTerminateFixed(String newValue)
+    {
+        terminateFixed=newValue;
+    }
+
+
+    /** Defines the default behaviour for terminate(): false, i.e. on current thread, i.e. backwardly compatible. */
+    static private boolean terminateOnSeparateThreadDefault = false; // Default
+    /** Determines whether RexxEngine.terminate() executes on the current thread (default)
+     *  or on a separate thread. ooRexx 5 with <a href="https://sourceforge.net/p/oorexx/feature-requests/806/">RFE 806</a>.
+     *  fixed a memory leak for the price of abmysal performance (appr. a slow down of 50x).
+     *
+     *  @param new value
+     */
+    static public void setTerminateOnSeparateThreadDefault(boolean newValue)
+    {
+        terminateOnSeparateThreadDefault=newValue;
+    }
+    /** Returns the current value of <code>TerminateOnSeparateThreadDefault</code>
+     *  @return current setting
+     */
+    static public boolean isTerminateOnSeparateThreadDefault()
+    {
+        return terminateOnSeparateThreadDefault;
+    }
+    /** Returns the current value of <code>TerminateOnSeparateThreadDefault</code>
+     *  @return current setting
+     */
+    static public boolean getTerminateOnSeparateThreadDefault()
+    {
+        return terminateOnSeparateThreadDefault;
+    }
+
+    /** Defines the default behaviour for terminate(): false, i.e. on current thread, i.e. backwardly compatible. */
+    private boolean terminateOnSeparateThread = terminateOnSeparateThreadDefault;
+    /** Determines whether RexxEngine.terminate() executes on the current thread
+     *  or on a separate thread. ooRexx 5 with <a href="https://sourceforge.net/p/oorexx/feature-requests/806/">RFE 806</a>.
+     *  fixed a memory leak for the price of abmysal performance (appr. a slow down of 50x).
+     *
+     *  @param new value
+     */
+    public void setTerminateOnSeparateThread(boolean newValue)
+    {
+        terminateOnSeparateThread=newValue;
+    }
+    /** Returns the current value of <code>TerminateOnSeparateThread</code>
+     *  @return current setting
+     */
+    public boolean isTerminateOnSeparateThread()
+    {
+        return terminateOnSeparateThread;
+    }
+    /** Returns the current value of <code>TerminateOnSeparateThread</code>
+     *  @return current setting
+     */
+    public boolean getTerminateOnSeparateThread()
+    {
+        return terminateOnSeparateThread;
+    }
+
+    // rgf, since 2022-07-23
+    /** Defines the default behaviour for terminate(): false, i.e. on current thread, i.e. backwardly compatible. */
+// TODO: change this default to false in the upcoming BSF4ooRexx 850 which mandets ooRexx 5 as minimum level
+    static private boolean resetLocalBeforeTerminateDefault = true;  // Default
+    /** Determines whether RexxEngine.terminate() executes on the current thread (default)
+     *  or on a separate thread. ooRexx 5 with <a href="https://sourceforge.net/p/oorexx/feature-requests/806/">RFE 806</a>.
+     *  fixed a memory leak for the price of abmysal performance (appr. a slow down of 50x).
+     *
+     *  @param new value
+     */
+    static public void setResetLocalBeforeTerminateDefault(boolean newValue)
+    {
+        resetLocalBeforeTerminateDefault=newValue;
+    }
+    /** Returns the current value of <code>resetLocalBeforeTerminateDefault</code>
+     *  @return current setting
+     */
+    static public boolean isResetLocalBeforeTerminateDefault()
+    {
+        return resetLocalBeforeTerminateDefault;
+    }
+    /** Returns the current value of <code>resetLocalBeforeTerminateDefault</code>
+     *  @return current setting
+     */
+    static public boolean getResetLocalBeforeTerminateDefault()
+    {
+        return resetLocalBeforeTerminateDefault;
+    }
+
+    /** Defines the default behaviour for terminate(): false, i.e. on current thread, i.e. backwardly compatible. */
+    private boolean resetLocalBeforeTerminate = resetLocalBeforeTerminateDefault;
+    /** Determines whether RexxEngine.terminate() executes on the current thread
+     *  or on a separate thread. ooRexx 5 with <a href="https://sourceforge.net/p/oorexx/feature-requests/806/">RFE 806</a>.
+     *  fixed a memory leak for the price of abmysal performance (appr. a slow down of 50x).
+     *
+     *  @param new value
+     */
+    public void setResetLocalBeforeTerminate(boolean newValue)
+    {
+        resetLocalBeforeTerminate=newValue;
+    }
+    /** Returns the current value of <code>resetLocalBeforeTerminate</code>
+     *  @return current setting
+     */
+    public boolean isResetLocalBeforeTerminate()
+    {
+        return resetLocalBeforeTerminate;
+    }
+    /** Returns the current value of <code>resetLocalBeforeTerminate</code>
+     *  @return current setting
+     */
+    public boolean getResetLocalBeforeTerminate()
+    {
+        return resetLocalBeforeTerminate;
+    }
+
+
+    static protected String languageVersionString=null;  // set in initialize()
+
+    static public String getLanguageVersionString()
+    {
+        return languageVersionString;
+    }
+
+
+
     /** Contains the RexxInterpreter instance ID this engine is associated with.
      */
     private String rii_ID=null;
@@ -226,7 +412,11 @@ public class RexxEngine extends BSFEngineImpl {
      */
     protected void set_rii_ID(String rii_ID)
     {
+boolean bDebug=true;
         this.rii_ID=rii_ID;
+
+        if (bDebug || bDebugTermination)
+           System.err.println("\n<RE_"+id+"> (Java4Rexx CREATED this primodal instance) set_rii_ID=["+rii_ID+"]");
     }
 
     /** Rexx configuration object, that determines the options with which a
@@ -243,7 +433,25 @@ public class RexxEngine extends BSFEngineImpl {
     }
 
 
-    private final boolean bDebug= false ; // 20040404, ---rgf
+    // for debugging purposes only, comment out if not needed anymore
+    static final private boolean bDebugTermination = false; // true;
+    // Rexx engine counter used for creating the ID value (a number).
+    static private long id_counter=0;
+    // Rexx engine instance id.
+    protected long id=0;
+
+    /** Returns the identifier of this RexxEngine.
+     * The RexxEngine ID is a positive long number generated when this RexxEngine
+     * was created. The RexxEngine ID is unique and remains unchanged during its
+     * lifetime.
+     *  @return this RexxEngine's ID.
+     */
+    public long getId ()
+    {
+        return id;
+    }
+
+    final private boolean bDebug= false ; // 20040404, ---rgf
                                   // true;
 
     /** Allows using the Rexx interpreter from Java. */
@@ -292,7 +500,43 @@ public class RexxEngine extends BSFEngineImpl {
                             Vector declaredBeans) throws BSFException
     {
         super.initialize (mgr, lang, declaredBeans);
-        rexxInterface = new RexxAndJava(mgr, this);
+        id=++id_counter;    // increase RexxEngine instance counter
+        rexxInterface = new RexxAndJava(mgr, this);         // create interface to native
+
+        // now we can use the instance?
+        if (languageVersionString==null) // get the interpreter string from ooRexx once
+        {
+            String rexxCode =   // returns a string with fields delimited by '!'
+                  "parse arg minMajor minDate                                                    ; \n" +
+                  "parse version v 1 '_' major '.' release  '.' modification '(MT)' . level date ; \n" +
+                  "return v || '!' || ( (major>=minMajor) & (minDate <= date('S',date)) ) || '!' || minMajor || '!' || minDate ; \n";
+            Vector vArgs=new Vector();
+            // vArgs.add("5 20220901");    // minimum major number, minimum date of a Terminate() fix
+            vArgs.add(terminateFixed);  // minimum major number, minimum date of a Terminate() fix
+
+            String res = (String) this.apply("", 0, 0, rexxCode,null,vArgs);
+            String parts[]=res.split("!");
+
+            languageVersionString=parts[0];         // set static field to the ooRexx version string
+            boolean bFixed = parts[1].equals("1");  // determine whether ooRexx is able to handle Terminate() from a different thread
+if (bDebug) System.err.println("RexxEngine: bFixed="+bFixed+", terminateFixed="+terminateFixed+" | languageVersionString="+languageVersionString);
+            if (bFixed) // save some time
+            {
+                terminateOnSeparateThreadDefault=true;  // set default to separate thread Termination()
+                resetLocalBeforeTerminateDefault=false; // set default to not reset .local
+            }
+        }
+
+        terminateOnSeparateThread = terminateOnSeparateThreadDefault;   // use default for this instance
+        resetLocalBeforeTerminate = resetLocalBeforeTerminateDefault;   // use default for this instance
+
+        // for debugging purposes only, comment out if not needed anymore
+        if (bDebug || bDebugTermination)
+        {
+            long currTid=Thread.currentThread().getId();
+//            System.err.println("\n<I_RE_"+id+"_on_"+currTid+"I> (initialize)");
+        }
+
 
 if (bDebug)
 {
@@ -311,32 +555,7 @@ if (bDebug)
         {
             this.declareBean(it.next());
         }
-
-
-        // rexxInterface.jniRegisterBSF();
-
-/*
-if (bDebug) System.err.println("===> RexxEngine().initialize(): before ===> rexxInterface.jniRegisterBSF()");
-    //    rexxInterface.jniRegisterBSF();
-try
-{
-        rexxInterface.jniRegisterBSF();
-}
-catch (Exception e)
-{
-    System.err.println("...> RexxEngine().initialize(): exception occured=["+e+"]");
-    e.printStackTrace();
-}
-*/
-
-/* rgf, 2012-02-04
-if (bDebug) System.err.println("===> RexxEngine().initialize(): before ===> rii_ID=["+rii_ID+"]");
-
-        this.rii_ID=rexxInterface.jniRexxCreateInterpreterInstance();  // create interpreter instance
-if (bDebug) System.err.println("===> RexxEngine().initialize(): after  ===> rii_ID=["+rii_ID+"]");
-*/
     }
-
 
 
     /** Get the ooRexx <code>.local</code> directory.
@@ -407,6 +626,7 @@ if (bDebug==true) System.err.println(this+".getLocalEnvrionment(), before doing 
     }
 
 
+
    /** (Copied from the ooRexx <code>rexxpg.pdf</code> documentation) &quot;Returns the language level of
     *  the interpreter. The returned language level is encoded in the 2 least
     *  significant bytes of the returned value, using 1 byte each for the
@@ -464,8 +684,10 @@ if (bDebug) System.err.println(this+" ===> ===> ===> RexxEngine.eval() - begin..
         // rgf, 2012-02-04
         if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
         {
-if (bDebug) System.err.println("===> RexxEngine(), creating RII: before ===> rii_ID=["+rii_ID+"]");
+if (bDebug || bDebugTermination) System.err.println("===> RexxEngine().eval(), creating RII: before ===> rii_ID=["+rii_ID+"] for <RE_"+id+">");
             this.rii_ID=rexxInterface.createRexxInterpreterInstance(rexxConfig);
+if (bDebug || bDebugTermination) System.err.println("===> RexxEngine().eval(), <I_RE_"+id+"> (CREATED) rii_ID=["+rii_ID+"] for <RE_"+id+">\n");
+
 if (bDebug) System.err.println("===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]");
         }
 
@@ -550,9 +772,10 @@ if (bDebug) System.err.println(this+" ===> ===> ===> RexxEngine.call(Object obje
         // rgf, 2012-02-04
         if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
         {
-if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: before ===> rii_ID=["+rii_ID+"]");
+if (bDebug || bDebugTermination) System.err.println(this+" ===> RexxEngine().call#1(), creating RII: before ===> rii_ID=["+rii_ID+"] for <RE_"+id+">");
             this.rii_ID=rexxInterface.createRexxInterpreterInstance(rexxConfig);
-if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]");
+if (bDebug || bDebugTermination) System.err.println("===> RexxEngine() <I_RE_"+id+"> (CREATED) rii_ID=["+rii_ID+"] for <RE_"+id+">");
+if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]\n");
         }
 
         // String editedArgs[] = new String [ (args!= null ? args.length : 0) ];
@@ -696,9 +919,10 @@ if (bDebug) System.err.println(this+" ===> ===> ===> RexxEngine.call(RexxProxy p
         // rgf, 2012-02-04
         if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
         {
-if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: before ===> rii_ID=["+rii_ID+"]");
+if (bDebug || bDebugTermination) System.err.println(this+" ===> RexxEngine().call#2(), creating RII: before ===> rii_ID=["+rii_ID+"] for <RE_"+id+">");
             this.rii_ID=rexxInterface.createRexxInterpreterInstance(rexxConfig);
-if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]");
+if (bDebug || bDebugTermination) System.err.println("===> RexxEngine().call#2() <I_RE_"+id+"> (CREATED) rii_ID=["+rii_ID+"] for <RE_"+id+">");
+if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]\n");
         }
 
         String name=methodObject.getName();         // get method name (will be used as message)
@@ -890,9 +1114,10 @@ if (bDebug) System.err.println(this+" ===> ===> ===> RexxEngine.call(RexxProxy p
         // rgf, 2012-02-04
         if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
         {
-if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: before ===> rii_ID=["+rii_ID+"]");
+if (bDebug || bDebugTermination) System.err.println(this+" ===> RexxEngine().call#3(), creating RII: before ===> rii_ID=["+rii_ID+"] for <RE_"+id+">");
             this.rii_ID=rexxInterface.createRexxInterpreterInstance(rexxConfig);
-if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]");
+if (bDebug || bDebugTermination) System.err.println("===> RexxEngine().call#3() <I_RE_"+id+"> (CREATED) rii_ID=["+rii_ID+"] for <RE_"+id+">");
+if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]\n");
         }
 
 
@@ -1107,9 +1332,10 @@ if (bDebug) System.err.println(this+" ===> ===> ===> RexxEngine.apply() - just e
         // rgf, 2012-02-04
         if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
         {
-if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: before ===> rii_ID=["+rii_ID+"]");
+if (bDebug || bDebugTermination) System.err.println(this+" ===> RexxEngine().apply(), creating RII: before ===> rii_ID=["+rii_ID+"] for <RE_"+id+">");
             this.rii_ID=rexxInterface.createRexxInterpreterInstance(rexxConfig);
-if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]");
+if (bDebug || bDebugTermination) System.err.println("===> RexxEngine().apply() <I_RE_"+id+"> (CREATED) rii_ID=["+rii_ID+"] for <RE_"+id+">");
+if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]\n");
         }
 
     // ---rgf, 2006-02-24
@@ -1205,7 +1431,7 @@ if (bDebug) System.err.println(this+" ===> RexxEngine.apply() - before: rexxInte
 
         obj=rexxInterface.jniRexxRunProgram(
                 rii_ID,                 // RexxInstance instance ID
-                2,                      // invocationType,         // determines whether "CallProgram", "LoadPackage" or "LoadPackageFromData" is to be used
+                2,                      // invocationType,         // 1=CallProgram, 2=CallProgramFromData, 3=LoadPackage, 4=LoadPackageFromData
                 lastSourceLocation,     // String  fileName,               // filename which contains the program to run
                 lastScriptCode,         // String  programData,            // Rexx code to execute; if given "fileName" denotes a (symbolic) name for this code
                 objArg               // Object[]args                    // arguments
@@ -1370,16 +1596,15 @@ if (bDebug) System.err.println("RexxEngine.undeclareBean(): name=["+bean.name+"]
      *  Use {@link #isTerminated()} to test whether the Rexx interpreter instance of
      *  this {@link RexxEngine} got terminated.
      *
-     *  <p>Note: termination of the RII (Rexx interpreter instance) must be solely done here!
+     *  <p>Note: native termination of the RII (Rexx interpreter instance)
+     *           MUST be solely done from here!
      *
      * To halt all Rexx threads of this engine's Rexx interpreter instance peer use
      * {@link #halt()}.
      *
     */
-    synchronized public void terminate() {
-final boolean bDebug= // true;
-                      false;
-
+    synchronized public void terminate()
+    {
         if (bJNITerminated==true)  // already terminated, return
         {
             return;
@@ -1390,44 +1615,144 @@ final boolean bDebug= // true;
 
         if (rii_ID!=null)   // if RII got created
         {
+
             boolean bTmp=false;
+
             if (rexxInterface!=null)
             {
+
+if (bDebugTermination) System.err.println(this+".terminate(): invoked for RE_"+id+" ("+rii_ID+")");
+                // leave for pre ooRexx 5 Terminate()-RFE "fix" (has no influence on new Terminate())
+                if (resetLocalBeforeTerminate)
+                {
+                    // in ooRexx prior to the ooRexx 5 Terminate()-RFE <https://sourceforge.net/p/oorexx/feature-requests/806/>
+                    // ooRexx does not terminate the instance correctly and does not process free .local and as
+                    // a result does not run the uninit methods of the BSF-destination in .local monitors,
+                    // which is needed to decreasing the Java peer reference
+                    String rexxCode =   // reset .input, .output, .error, .traceOutput, .debugInput to free BSF objects if any
+                        "  lDir = .local  -- get .local                      ;\n" +
+                        "  lDir['INPUT'      ]= .monitor~new(ldir['STDIN' ]) ;\n" +
+                        "  lDir['OUTPUT'     ]= .monitor~new(ldir['STDOUT']) ;\n" +
+                        "  lDir['ERROR'      ]= .monitor~new(ldir['STDERR']) ;\n" +
+                        "  lDir['TRACEOUTPUT']= .monitor~new(ldir['ERROR' ]) ;\n" +
+                        "  lDir['DEBUGINPUT' ]= .monitor~new(ldir['INPUT' ]) ;\n" ;
+
+                    Object obj=null;
+                    try {
+                            obj=rexxInterface.jniRexxRunProgram(
+                                    rii_ID,         // RexxInstance instance ID
+                                    2,              // invocationType,         // determines whether "CallProgram", "LoadPackage" or "LoadPackageFromData" is to be used
+                                    "RexxEngine_terminate_cleanup_local_monitors" ,     // filename
+                                    rexxCode,       // Rexx code to execute
+                                    null            // arguments
+                                    );
+                    }
+                    catch (Throwable t) {}
+                }
+
                 bTmp=rexxInterface.bTerminated; // save current value
                 rexxInterface.bTerminated=true;
-            }
-            // this waits until all threads of the instance have finished
-if (bDebug) System.err.println(this+".terminate(): before jniRexxTerminateInterpreterInstance("+rii_ID+")...");
 
-            int res=0;
-
-                // it may be the case that due to the new cleanup code the rii_ID got
-                // terminated already, hence ignore exception caused because of rii_ID not found
-            try
-            {
-                res=rexxInterface.jniRexxTerminateInterpreterInstance(rii_ID);  // wait for termination of all Rexx threads of this interpreter instance
-            }
-            catch (Throwable t) {}
-
-            if (res==-2)         // primodal RII will never get terminated, to allow JNI to use it from the Rexx side to maintain Rexx collections for its purposes
-            {
-                if (rexxInterface!=null)
+                if (terminateOnSeparateThread) // run terminate() on separate thread
                 {
-                    rexxInterface.bTerminated=bTmp; // reset
+                    // this waits until all threads of the instance have finished
+                    final boolean tmpBTerminated=bTmp;
+                    final String re_rii_ID=rii_ID;
+                    final long currTid=Thread.currentThread().getId();
+
+                    // invoke Terminate() on its own thread as it may be the case that termination waits on all threads to terminate
+                    Runnable runnableTerminate=new Runnable()
+                    {
+                        @Override public void run()
+                        {
+                            int res=0;
+                            try
+                            {
+                               long tid=Thread.currentThread().getId(); // for debugging
+if (bDebugTermination) System.err.println("RE.terminate(): before jniRexxTerminateInterpreterInstance("+re_rii_ID+"): ["+
+                               Thread.currentThread().getName()+"] (on separate thread) [RE_"+id+"] ... ");
+if (bDebugTermination) System.out.println("\n|>>Terminating_BEFORE_RE_"+id+"_("+re_rii_ID+")"+"_from_"+currTid+"_on_"+tid+"_BEFORE->>|");
+                                res=rexxInterface.jniRexxTerminateInterpreterInstance(re_rii_ID);  // wait for termination of all Rexx threads of this interpreter instance
+if (bDebugTermination) System.out.println("\n|<<Terminating_AFTER__RE_"+id+"_from_"+currTid+"_on_"+tid+"_tb,res=["+res+"]_AFTER-<<|");
+                            }
+                            catch (Throwable t)
+                            {
+                                // TODO: 2022-07-19: due to changes in the logic, this method MUST be invoked
+                                //                   by the cleaners, hence for debugging show a hint, if we get a Throwable here!
+System.err.println("*** RexxEngine.java # 1597: rii_ID=["+re_rii_ID+"] already terminated! res: ["+res+"] ! (on separate thread) [RE_"+id+"]");
+                            }
+
+                            if (res==-2)         // primodal RII will never get terminated, to allow JNI to use it from the Rexx side to maintain Rexx collections for its purposes
+                            {
+                                if (rexxInterface!=null)
+                                {
+                                    rexxInterface.bTerminated=tmpBTerminated; // reset
+                                }
+                                // System.err.println(this+": terminated primodal Rexx interpreter instance=["+rii_ID+"] (cannot be used from Java anymore)");
+                                return;
+                            }
+
+if (bDebugTermination) System.out.println("\n|<<Terminated_[RE_"+id+"]_rii_ID=["+rii_ID+"]_res=["+res+"]_DONE.<<|");
+
+                            bJNITerminated=true;    // indicate that JNI successfully carried out Terminate() on the RII
+
+                            // super.terminate();          // now let the superclass do its work
+                            rexxInterface.terminate();  // let RexxAndJava peer terminate as well
+                            rexxInterface=null;         // remove reference to RexxAndJava peer
+                            RexxEngine.super.terminate();    // now let the superclass do its work
+                        }
+                    } ;
+
+                    String threadName="RexxEngine.terminate_T"+(++terminationCounter)+
+                                      "_for_[RE_"+id+"]" +
+                                      "_rii_ID_"+rii_ID;
+
+if (bDebugTermination) System.err.println(this+".terminate(): about to create & start a thread named: ["+threadName+"] [RE_"+id+"]");
+
+// System.err.print("t<"+threadName+">t");
+                    new Thread (runnableTerminate, threadName).start();  // create and start the thread
                 }
-                // System.err.println(this+": terminated primodal Rexx interpreter instance=["+rii_ID+"] (cannot be used from Java anymore)");
-                return;
+                else        // terminate in the current thread
+                {
+// System.out.print("j<0>j");
+                    int res=0;
+                        // it may be the case that due to the new cleanup code the rii_ID got
+                        // terminated already, hence ignore exception caused because of rii_ID not found
+                    try
+                    {
+if (bDebugTermination) System.err.println(this+".terminate(): before   jniRexxTerminateInterpreterInstance("+rii_ID+") for [RE_"+id+"]...");
+                        res=rexxInterface.jniRexxTerminateInterpreterInstance(rii_ID);  // wait for termination of all Rexx threads of this interpreter instance
+if (bDebugTermination) System.err.println(this+".terminate(): AFTER # 1 jniRexxTerminateInterpreterInstance("+rii_ID+"), res=["+res+"] for [RE_"+id+"]");
+                    }
+                    catch (Throwable t)
+                    {
+                        // TODO: 2022-07-19: due to changes in the logic, this method MUST be invoked
+                        //                   by the cleaners, hence for debugging show a hint, if we get a Throwable here!
+System.err.println("*** RexxEngine.java # 1637: rii_ID=["+rii_ID+"] already terminated! res: ["+res+"] !");
+                    }
+
+                    if (res==-2)         // primodal RII will never get terminated, to allow JNI to use it from the Rexx side to maintain Rexx collections for its purposes
+                    {
+                        if (rexxInterface!=null)
+                        {
+                            rexxInterface.bTerminated=bTmp; // reset
+                        }
+                        // System.err.println(this+": terminated primodal Rexx interpreter instance=["+rii_ID+"] (cannot be used from Java anymore)");
+                        return;
+                    }
+
+                    bJNITerminated=true;    // indicate that JNI successfully carried out Terminate() on the RII
+
+                    // super.terminate();          // now let the superclass do its work
+
+                    rexxInterface.terminate();  // let RexxAndJava peer terminate as well
+                    rexxInterface=null;         // remove reference to RexxAndJava peer
+                    super.terminate();          // now let the superclass do its work
+
+if (bDebugTermination) System.err.println(this+".terminate(): AFTER # 2 jniRexxTerminateInterpreterInstance("+rii_ID+"), res=["+res+"] for [RE_"+id+"]");
+                }
             }
-
-if (bDebug) System.err.println(this+".terminate(): AFTER jniRexxTerminateInterpreterInstance("+rii_ID+")");
-
         }
-        bJNITerminated=true;    // indicate that JNI successfully carried out Terminate() on the RII
-
-        // super.terminate();          // now let the superclass do its work
-        rexxInterface.terminate();  // let RexxAndJava peer terminate as well
-        rexxInterface=null;         // remove reference to RexxAndJava peer
-        super.terminate();          // now let the superclass do its work
     }
 
 
@@ -1541,8 +1866,6 @@ if (bDebug) System.err.println("RexxEngine().halt(): AFTER jniRexxHaltInterprete
 */
         return (rexxInterface.unregisterBean(beanName)>=0); // rgf, 2018-02-23: now returns remaining refCount or -1, if not found
     }
-
-
 
 
 

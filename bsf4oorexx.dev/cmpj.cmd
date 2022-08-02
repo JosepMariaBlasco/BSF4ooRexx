@@ -153,5 +153,8 @@ javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxStrictArgument.java        
 @rem 2018-11-01, 2018-11-22
 javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxCleanupRef.java            && copy %javaSrc%\RexxCleanupRef*             %path2engine%
 
+@rem 2022-04-21: needs Java 1.8 due to using Arrays.stream()
+javac %javacDefines% %java8%           %javaSrc%\RexxAnalyzeRegistry.java       && copy %javaSrc%\RexxAnalyzeRegistry*        %path2engine%
+
 endlocal
 

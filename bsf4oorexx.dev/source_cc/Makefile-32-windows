@@ -61,7 +61,7 @@ REXX_HOME = F:\work\svn\bsf4oorexx\trunk\bsf4oorexx.dev\source_cc\rexxapi.win\wi
 
 # Define RELEASE on the command line, or here, to build a non-debug version.  By
 # default debug versions are built.  I.e. nMake RELEASE=1
-RELEASE = 1
+# RELEASE = 1
 
 # rgf --->
 # need access to "org_rexxla_bsf_engines_rexx_RexxAndJava.h", created from "RexxAndJava" with "javah"

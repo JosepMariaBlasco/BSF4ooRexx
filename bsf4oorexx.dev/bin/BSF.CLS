@@ -912,7 +912,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="641.20220627" -- set version (date distribution got created)
+      .bsf4rexx~version="641.20220802" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -1142,7 +1142,10 @@ syntax:
       "Void.class",       'Void.class'         )    -- a Java Object class
 
    do i=1 to arr~items by 2    -- pre-registered classes (see above)
-     bsf.dir~setentry(arr[i], .bsf_reference~new(arr[i+1], .true))
+      -- increase refCounter as it is possible that multiple instances
+      -- of BSF.CLS get created (via call) such that the BSF_REFERENCE objects
+      -- get destroyed, decreasing the refCounter in the UNINIT method
+      bsf.dir~setentry(arr[i], .bsf_reference~new(arr[i+1], .true))
    end
 
    -- 20190201, rgf: abstract Java Object classes cannot be bsf.import(ed) anymore (they cannot be instantiated)
