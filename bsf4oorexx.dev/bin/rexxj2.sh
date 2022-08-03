@@ -1,10 +1,9 @@
 #!/bin/sh
-#    Purpose: load and run Rexx script via Java, allow for supplying arguments to the Rexx script
+#    Purpose: load and run Rexx script via Java, allow for supplying arguments to the Rexx script,
+#             tries to use $JAVA_HOME, if defined, else depending on environment 
 #    Author:  Rony G. Flatscher
-#    Date:    2006-01-02
-#    Changed: 2007-02-03, ---rgf, renamed file, changed year-range
-#             2010-06-10, ---rgf, honor environment variable 'BSF4Rexx.JavaStartupOptions', if set
-#             2014-01-22, ---rgf, add missing hashbang line at the top
+#    Date:    2022-08-03
+#    Changed: --
 #    Remark:  Rexx script can retrieve all arguments as passed to Java via the BSFRegistry, including
 #             the name of the Rexx script to be invoked/dispatched
 #
@@ -29,11 +28,21 @@
 #       limitations under the License.
 #    -----------------------------------------------------------------------------
 
-if [ "$BSF4Rexx_JavaStartupOptions" == "" ]
-then
-   java org.rexxla.bsf.RexxDispatcher $*
-else
-   echo "... using environment variable 'BSF4Rexx_JavaStartupOptions' to configure Java: [$BSF4Rexx_JavaStartupOptions]"
-   java $BSF4Rexx_JavaStartupOptions org.rexxla.bsf.RexxDispatcher $*
+
+# if JAVA_HOME defined, use its java binary
+if [ -e "${JAVA_HOME}/bin/java" ] ; then JAVA_BINARY=${JAVA_HOME}/bin/java ;
+elif [ -e "${JAVA_HOME}/jre/bin/java"  ] ; then JAVA_BINARY=${JAVA_HOME}/jre/bin/java ;
+elif [ -e "/usr/bin/java" ] ; then JAVA_BINARY=/usr/bin/java ;
+else JAVA_BINARY=java
 fi
+
+if  [ "$BSF4Rexx_JavaStartupOptions" != "" ]
+then
+   echo "... using environment variable 'BSF4Rexx_JavaStartupOptions' to configure JVM: [$BSF4Rexx_JavaStartupOptions]"
+fi
+
+# export LD_DEBUG=libs reloc statistics
+
+"$JAVA_BINARY" $BSF4Rexx_JavaStartupOptions org.rexxla.bsf.RexxDispatcher $*
+
 
