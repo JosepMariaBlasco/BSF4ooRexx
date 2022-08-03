@@ -1,10 +1,20 @@
 ---
 
+2022-08-03
+
+        - remove rexxj-32.sh and rexxj-64.sh, JVMs 64-bit almost everywhere
+    	DONE.
+
+
+---
+
 2021-07-28
 
         - Java: remove "finalize" (will be removed eventually from Java itself), use PhantomReference, e.g.
                 <https://github.com/pfirmstone/JGDMS/blob/trunk/JGDMS/jgdms-collections/src/main/java/org/apache/river/concurrent/ReferenceProcessor.java>
                 <https://www.baeldung.com/java-phantom-reference>
+
+        DONE (using PhantomReferences).
 
 ---
 
@@ -219,6 +229,8 @@ COMMENT (2019-01-04): on Android no dynamic creation and usage of Java classes s
 
 - remove Janino eventually and use asm exclusively; it's faster and has support for
   creating Android dex renderings on-the-fly of the Java byte code;
+  2022-08-03: dex not maintained; need to research Android, should be possible
+somehow :)
 
   - Janino would be nice as generating Java source code is easier than bytecode,
     however it seems stalled at Java 1.4 and there seems to be no further initiative

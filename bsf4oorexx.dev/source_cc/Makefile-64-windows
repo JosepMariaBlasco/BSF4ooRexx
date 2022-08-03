@@ -66,11 +66,10 @@ REXX_HOME = F:\work\svn\bsf4oorexx\trunk\bsf4oorexx.dev\source_cc\rexxapi.win\wi
 # rgf --->
 # need access to "org_rexxla_bsf_engines_rexx_RexxAndJava.h", created from "RexxAndJava" with "javah"
 # also use JDK include path for "win32"
-JAVA_HOME=E:\jdk\jdk1.8.0_162.bkp_64
-JAVA_HOME=C:\Program Files\BellSoft\LibericaJDK-17-Full
-INC_PATH	=  .;$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32
-INCLUDE = $(INCLUDE);$(INC_PATH)
-OP_SYS          = -DWINDOWS
+JAVA_HOME = E:\jdk\jdk-08u333-full-64
+INC_PATH  = .;$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32
+INCLUDE   = $(INCLUDE);$(INC_PATH)
+OP_SYS    = -DWINDOWS
 
 # --------------------------------------------------------
 # delete command to use

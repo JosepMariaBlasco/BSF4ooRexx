@@ -68,9 +68,8 @@ REXX_HOME = F:\work\svn\bsf4oorexx\trunk\bsf4oorexx.dev\source_cc\rexxapi.win\wi
 # also use JDK include path for "win32"
 
 # if no JAVA_HOME defined in environment, define it manually
-JAVA_HOME       = c:\Program Files (x86)\Java\jdk1.8.0_77
-# rgf, 20210718
-JAVA_HOME = E:\jdk\jdk-11.0.5+10-32
+# rgf, 20220803
+JAVA_HOME = E:\jdk\jdk-08u333-full-32
 
 INC_PATH	=  .;$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;java_include\win_include_8\include;java_include\win_include_8\include\win32;
 INCLUDE = $(INCLUDE);$(INC_PATH)
@@ -126,7 +125,6 @@ DLL_LFLAGS = /nologo /SUBSYSTEM:Windows $(REXX_LIBS) $(DEF_FILE) /DLL
 OOREXX_CFLAGS =  /nologo /EHsc /Zi /Od /Gr /MTd $(WARNINGFLAGS) -DWINDOWS -DBSF4REXX_32_BIT -DBSF4REXX_DEBUG_VERSION /c
 EXE_LFLAGS = /nologo /DEBUG -debugtype:cv /SUBSYSTEM:Console $(REXX_LIBS) user32.lib comdlg32.lib gdi32.lib kernel32.lib
 DLL_LFLAGS = /nologo /DEBUG -debugtype:cv /SUBSYSTEM:Windows $(REXX_LIBS) $(DEF_FILE) /DLL
-#rgf-with-map DLL_LFLAGS = /nologo /DEBUG -debugtype:cv /SUBSYSTEM:Windows $(REXX_LIBS) $(DEF_FILE) /DLL  /mapinfo:exports
 !ENDIF
 
 
