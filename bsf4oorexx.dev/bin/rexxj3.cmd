@@ -1,10 +1,9 @@
 @echo off
 rem   Purpose: load and run Rexx script via Java, allow for supplying arguments to the Rexx script
+rem            if JAVA_HOME is defined try to use its java.exe, fallback: java.exe (without path)
 rem   Author:  Rony G. Flatscher
-rem   Date:    2006-01-02
-rem   Changed: 2007-02-03, ---rgf, renamed file, changed year-range
-rem            2010-06-10, ---rgf, honor environment variable 'BSF4Rexx.JavaStartupOptions', if set
-rem            2022-08-03, ---rgf, simplify invocation
+rem   Date:    2022-08-03
+rem   Changed: --
 rem   Remark:  Rexx script can retrieve all arguments as passed to Java via the BSFRegistry, including
 rem            the name of the Rexx script to be invoked/dispatched
 rem
@@ -14,7 +13,7 @@ rem            ooRexx: args=.bsf~bsf.lookupBean("allCommandLineArguments")
 
 rem   license:
 rem   ------------------------ Apache Version 2.0 license -------------------------
-rem      Copyright 2006-2022 Rony G. Flatscher
+rem      Copyright 2022 Rony G. Flatscher
 
 rem      Licensed under the Apache License, Version 2.0 (the "License");
 rem      you may not use this file except in compliance with the License.
@@ -32,12 +31,29 @@ rem   --------------------------------------------------------------------------
 if not defined BSF4Rexx_JavaStartupOptions goto invokenormal
 
    rem environment variable defining Java startup parameters exists, show it to the user
-   echo ... using environment variable 'BSF4Rexx_JavaStartupOptions' to configure Java: [%BSF4Rexx_JavaStartupOptions%]
+   echo ... using environment variable 'BSF4Rexx_JavaStartupOptions' to configure JVM: [%BSF4Rexx_JavaStartupOptions%]
 
 :invokenormal
-   rem  just use the default Java runtime settings
-   java %BSF4Rexx_JavaStartupOptions% org.rexxla.bsf.RexxDispatcher %*
-goto end
+
+setlocal enableDelayedExpansion
+
+REM  if JAVA_HOME defined, use its Java binary
+set JAVA_BINARY=
+@rem enables referring via exclamation mark within blocks; from now on must not use endlocal
+if not "%JAVA_HOME%" == "" (
+   set jexe=!JAVA_HOME!\bin\java.exe
+   if exist "!jexe!"  (
+     set java_binary=!jexe!
+   ) else (
+      set jexe=!JAVA_HOME!\jre\bin\java.exe
+      if exist "!jexe!" (
+        set java_binary=!jexe!
+      )
+   )
+)
+@rem if original java.exe is not present anymore use just java as a last resort
+if not exist "%JAVA_BINARY%" set JAVA_BINARY=java
+
+"%JAVA_BINARY%"  %BSF4Rexx_JavaStartupOptions% org.rexxla.bsf.RexxDispatcher %*
 
 :end
-

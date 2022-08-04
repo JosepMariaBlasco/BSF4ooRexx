@@ -54,7 +54,7 @@ sheet =xSheets~getByIndex(0)~XSpreadSheet    -- get first spreadsheet
 
 
 /* note values can be assigned to cells with "string", "formula" or "value" (for numbers) */
-/* create the titles, pretend the last two yers */
+/* create the titles, pretend the last two years */
 year   = date()~right(4)-2
 titles = "Quarter", year, year+1 /* title array */
 do col = 1 to titles~items
