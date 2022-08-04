@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
   SVN Revision: $Rev: 3642 $
   Change Date:  $Date: 2008-10-31 05:21:21 -0700 (Fri, 31 Oct 2008) $
@@ -247,4 +247,3 @@ return rCode
 
 return rCode
 -- End doMake()
-

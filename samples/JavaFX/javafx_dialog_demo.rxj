@@ -456,4 +456,3 @@ syntax:
      return .bsf~new("javafx.util.Pair", rexxDir~username~getText, rexxDir~password~getText)
 
   return .nil
-

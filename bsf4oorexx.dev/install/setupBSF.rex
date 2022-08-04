@@ -2457,4 +2457,3 @@ looking for Unix:    libjvm.so | libjvm.dylib | libjvm.sl
   if sysFileExists(homeDir) then return homeDir -- done
 
   return "$HOME"     -- not found, fall back to environment variable
-

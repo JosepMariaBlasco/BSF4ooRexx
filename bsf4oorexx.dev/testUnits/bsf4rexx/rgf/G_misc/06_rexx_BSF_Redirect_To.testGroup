@@ -258,4 +258,3 @@ return testResult
        self~assertNotSame(.debugInput ~current, someObj)
        self~assertSame(   .traceOutput~current, someObj)
     end
-

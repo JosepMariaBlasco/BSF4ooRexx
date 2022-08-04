@@ -68,4 +68,3 @@ getScopeTitle: procedure
    if      scopeNumber=100 then return "[ENGINE_SCOPE]"
    else if scopeNumber=200 then return "[GLOBAL_SCOPE]"
    return ""
-

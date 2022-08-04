@@ -620,4 +620,3 @@ Support for UNO (Universal Network Objects) if AOO or LO are present
        @REXXJ@ testuno.rex
 
 ::END
-

@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 2007-2008 Rexx Language Association. All rights reserved.    */

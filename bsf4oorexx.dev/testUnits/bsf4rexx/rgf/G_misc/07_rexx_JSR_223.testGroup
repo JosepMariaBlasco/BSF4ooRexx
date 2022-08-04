@@ -532,4 +532,3 @@ end
   jargs=bsf.createJavaArrayOf("java.lang.Object", BsfCreateRexxProxy(self), 6, 10, 999, "g", 150, "e", 100, 50) -- sequence: engine, global (last prevails)
   eb~put(re~argv,jargs)    -- add to engine scope's bindings
   re~eval(rexxCode)
-

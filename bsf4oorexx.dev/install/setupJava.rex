@@ -219,4 +219,3 @@ syntax:
 
 ::routine qc                        -- quote for Unix
   return "'"  || arg(1) || "'"    /* Unix     */
-

@@ -100,4 +100,3 @@ syntax:
   co=condition('object')
   .context~package~addPackage(.package~new("rgf_util2.rex"))
   say ">>> ---> >>> nr="pp(nr) "counter="pp(counter) "javaThreadName="pp(javaThreadName) ppCondition2(co)
-

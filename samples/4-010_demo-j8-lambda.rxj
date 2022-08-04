@@ -81,4 +81,3 @@ clzArrays~stream(arrWords) ~foreach(rexxWorker)
 ::method accept   -- will show each string
   use arg s       -- fetch the argument (from Java)
   say ">>"s"<<"   -- enclose value in angle brackets
-

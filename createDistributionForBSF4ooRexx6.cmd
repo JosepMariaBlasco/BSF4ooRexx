@@ -224,6 +224,7 @@ md bsf4oorexx\install\images\linux\nuvola
 md bsf4oorexx\install\images\linux\oxygen
 md bsf4oorexx\install\images\linux\Tango
 
+md bsf4oorexx\install\portable
 
 md bsf4oorexx\information
 md bsf4oorexx\Templates
@@ -263,7 +264,7 @@ copy %path2dev%\images\linux\Tango                 bsf4oorexx\install\images\lin
 
 copy %path2dev%\Templates\*                        bsf4oorexx\Templates
 
-xcopy %path2dev%\information\*                      bsf4oorexx\information\ /s
+xcopy %path2dev%\information\*                     bsf4oorexx\information\ /s
 
 copy %path2dev%\install\*                          bsf4oorexx\install\
 copy %path2dev%\install\linux\*                    bsf4oorexx\install\linux\
@@ -271,6 +272,8 @@ copy %path2dev%\install\linux\resources\*          bsf4oorexx\install\linux\reso
 copy %path2dev%\install\linux\resources\menu\*     bsf4oorexx\install\linux\resources\menu\
 xcopy /s %path2dev%\install\linux\resources\xdg-utils\* bsf4oorexx\install\linux\resources\xdg-utils\
 copy %path2dev%\install\windows\*                  bsf4oorexx\install\windows\
+
+copy %path2dev%\install\portable\*                 bsf4oorexx\install\portable
 
 del bsf4oorexx\install\*.html
 

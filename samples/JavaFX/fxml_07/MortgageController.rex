@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* called by FXMLLoader on the "FX Application Thread" */
 /* invoked via JavaFX using the Java scripting framework, hence RexxScriptEngine executes the prolog code */
 

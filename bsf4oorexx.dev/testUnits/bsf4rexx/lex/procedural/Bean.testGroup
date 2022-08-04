@@ -177,4 +177,3 @@ return testResult
    self~assertEquals(-1, bsf("getBeanRefCount", beanName))
    self~assertEquals(-1, bsf("unregisterBean",  beanName))
    self~assertEquals(-1, bsf("getBeanRefCount", beanName))
-

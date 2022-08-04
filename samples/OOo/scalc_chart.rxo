@@ -101,4 +101,3 @@ tableCharts = sheet~XTableChartsSupplier~getCharts    -- get chart collection & 
 tableCharts~addNewByName("FirstChart", structRect, arrOfAddr, .true, .true)
 
 ::requires UNO.CLS      -- get UNO support, will require BSF.CLS (ooRexx-Java bridge)
-

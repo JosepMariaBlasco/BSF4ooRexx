@@ -407,4 +407,3 @@ syntax:
                -- create the TableCell handler, supply a RexxTableCell object to carry out "updateItem"
   rexxCellHandler=self~class~clzOoRexxTableCell~new(.rexxTableCell~new)
   return rexxCellHandler
-

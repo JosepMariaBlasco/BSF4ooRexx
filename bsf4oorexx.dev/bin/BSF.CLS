@@ -6295,4 +6295,3 @@ syntax:
   end
   mb~append("\"~copies(39), " ... end of Java exception chain." , .endOfLine)
   return mb~string
-
