@@ -36,6 +36,11 @@ remarks:
 
 inline jint impl_jniRexxHaltInterpreterInstance (JNIEnv *env, jobject jobj, jstring j_rii_ID)
 
+    6.0.0   2022-08-05, rgf: - add Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetParseVersionString(...)
+                               such that the ooRexx version string can be fetched from RexxEngine
+                               via RexxAndJava using a proprer Rexx instance to not cause
+                               side-effects on RexxEngine initialization
+
     6.0.0   2022-08-02, rgf: - add "_DEBUG" to version information, if a debug compile (will
                                be used for the Windows version, cf. Makefile-64-windows)
 
@@ -1027,21 +1032,21 @@ thread_id_t  RgfGetTID();
 
 #if defined (BSF4REXX_32_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "600.20220802 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "600.20220805 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "600.20220802 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "600.20220805 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #elif defined (BSF4REXX_64_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "600.20220802 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "600.20220805 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "600.20220802 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "600.20220805 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #else
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "600.20220802 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "600.20220805 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "600.20220802 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "600.20220805 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #endif
 
@@ -12806,6 +12811,40 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniTestPing
     return;
 }
 
+
+
+// ----------------------------------------------------------------------------------------------
+/* --rgf, 2022-08-05: allow for fetching ooRexx' 'PARSE VERSION v' using a separate instance
+ *
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniGetParseVersionString
+ * Signature: ()Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetParseVersionString
+  (JNIEnv *env, jobject raj)
+{
+    jstring jres = NULL;
+    {
+        RexxInstance      *instance;
+        RexxThreadContext *threadContext;
+        int bSuccess=RexxCreateInterpreter(&instance, &threadContext, NULL);
+        if (bSuccess)
+        {
+            RexxObjectPtr result_obj = NULL;
+            char code[]              = "PARSE VERSION v; return v;";
+            RexxRoutineObject rro    = threadContext->NewRoutine("BSF4ooRexx.cc _jniGetParseVersionString", code, strlen(code));
+            if (rro != NULL)    // object got created, let us run it
+            {
+                result_obj=threadContext->CallRoutine(rro, NULL);   // call the program ?? NULL correct ??
+            }
+            CSTRING versionString = threadContext->CString(result_obj);
+// fprintf(stderr, "BSF4ooRexx _jniGetParseVersionString=[%s]\n", versionString); fflush(stderr);
+            jres = env->NewStringUTF( versionString ) ;
+            instance->Terminate();
+        }
+    }
+    return jres;
+}
 
 
 

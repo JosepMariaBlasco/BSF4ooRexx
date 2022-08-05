@@ -1337,6 +1337,13 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
      * */
     protected native int jniInitialize4Rexx() ;
 
+    /** rgf, 2022-08-05, used to allow fetching the ooRexx 'parse version' string. Note:
+     *                   each invocation of this native function will cause a Rexx instance
+     *                   to be created, used to run 'parse version v;return v;' and terminate it
+     *                   before returning.
+    */
+    protected native String jniGetParseVersionString();
+
 
 
     /** Entry point for Rexx calls into Java. This method carries out

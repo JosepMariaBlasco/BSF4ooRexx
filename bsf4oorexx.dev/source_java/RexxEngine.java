@@ -224,7 +224,7 @@ public class RexxEngine extends BSFEngineImpl {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "601.20220802";
+    static final public String version = "601.20220805";
 
     static int terminationCounter = 0;  // for termination thread name counts
 
@@ -495,17 +495,37 @@ boolean bDebug=true;
       * Rexx interpreter. Therefore Rexx programs invoked from Java
       * have these two functions available to them and are therefore
       * able to communicate with Java.
+     *
+     * <p>
+     * <em>Note:</em> at this point in time the Rexx interpreter instance has
+     *       not been created yet. If using apply(), eval() and the like an
+     *       instance with the default configuration gets created such
+     *       that no instance creation options that a Java client may be
+     *       defining can get honored. Therefore never use apply(), eval()
+     *       in here.
       */
     public void initialize (BSFManager mgr, String lang,
                             Vector declaredBeans) throws BSFException
     {
         super.initialize (mgr, lang, declaredBeans);
         id=++id_counter;    // increase RexxEngine instance counter
+
+boolean bDebug=true;
+
+if (bDebug) System.err.println("RexxEngine: # id=["+id+"], languageVersionString="+languageVersionString);
+
         rexxInterface = new RexxAndJava(mgr, this);         // create interface to native
 
         // now we can use the instance?
         if (languageVersionString==null) // get the interpreter string from ooRexx once
         {
+                // this native invocation will create a separate Rexx instance to query
+                // the 'PARSE VERSION v' string to use
+            languageVersionString=rexxInterface.jniGetParseVersionString();
+
+            // TODO: check for terminate on separate thread temporarily in Java
+            //
+/* --
             String rexxCode =   // returns a string with fields delimited by '!'
                   "parse arg minMajor minDate                                                    ; \n" +
                   "parse version v 1 '_' major '.' release  '.' modification '(MT)' . level date ; \n" +
@@ -519,6 +539,11 @@ boolean bDebug=true;
 
             languageVersionString=parts[0];         // set static field to the ooRexx version string
             boolean bFixed = parts[1].equals("1");  // determine whether ooRexx is able to handle Terminate() from a different thread
+-- */
+
+            // TODO: need to come up with Java only bFixed test
+            boolean bFixed = false; //
+
 if (bDebug) System.err.println("RexxEngine: bFixed="+bFixed+", terminateFixed="+terminateFixed+" | languageVersionString="+languageVersionString);
             if (bFixed) // save some time
             {
