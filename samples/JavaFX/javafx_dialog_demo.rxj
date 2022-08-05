@@ -22,7 +22,7 @@
 
             2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()                     
 
-   last change: $Revision: 564 $ $Author: rony $ $Date: 2010-02-10 18:03:08 +0100 (Wed, 10 Feb 2010) $
+   last change: $Revision$ $Author$ $Date$
 
    changed:
                ---

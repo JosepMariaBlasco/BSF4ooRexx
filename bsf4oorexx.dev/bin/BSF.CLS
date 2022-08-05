@@ -7,7 +7,7 @@
    Object Rexx programmers should appreciate this little class ...
    ;)
 
-   last change: $Revision: 927 $ $Author: Administrator $ $Date: 2010-12-26 18:34:19 +0100 (Sun, 26 Dec 2010) $
+   last change: $Revision$ $Author$ $Date$
 
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
@@ -850,9 +850,9 @@
 
 /*
    -- last change:  - Revision: 194  - Author: rony  - Date: 2007-02-01 00:22:00 +0100 (Thu, 01 Feb 2007)
-   .local~revision.rev   ="$Rev: 927 $"
-   .local~revision.date  ="$Date: 2010-12-26 18:34:19 +0100 (Sun, 26 Dec 2010) $"
-   .local~revision.author="$Author: Administrator $"
+   .local~revision.rev   ="$Rev$"
+   .local~revision.date  ="$Date$"
+   .local~revision.author="$Author$"
    .local~revision.url   ="$URL: file:///cygdrive/e/svnrgf/bsf4rexx/trunk/BSF4ooRexx.dev/bin/BSF.CLS $"
    .local~revision.id    ="$Id: BSF.CLS 927 2010-12-26 17:34:19Z Administrator $"
 */

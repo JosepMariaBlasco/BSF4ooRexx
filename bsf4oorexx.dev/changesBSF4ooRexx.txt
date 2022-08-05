@@ -1,10 +1,22 @@
 
+-------------------------------------- 2022-08-04 ----------------------------------
+
+- install/portable added to installation package
+
+        - allows a user to create a portable version of BSF4ooRexx
+
 -------------------------------------- 2022-08-02 ----------------------------------
 
 - BSF4ooRexx.cc, Makefile-64-windows
 
         - add "_DEBUG" to version information, if a debug compile (will
           be used for the Windows version, cf. Makefile-64-windows)
+
+- rexxj3.cmd (new file), rexxj3.sh (new file)
+
+        - honor the JAVA_HOME environment variable if present
+
+        - allow to invoke Rexx scripts via Java
 
 - RexxAnalyzeRegistry.java (new file)
 

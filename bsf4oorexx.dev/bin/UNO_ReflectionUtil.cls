@@ -47,7 +47,7 @@
                                      "UNO.CLS" such that this utility can be used without any
                                      other prerequisites
 
-    last svn check-in: $Revision: 723 $ $Author: rony $ $Date: 2010-06-10 17:23:02 +0200 (Thu, 10 Jun 2010) $
+    last svn check-in: $Revision$ $Author$ $Date$
 
     needs:     ooRexx 4.0.1 or greater, UNO.CLS
     license:   choice of LGPL 3.0 or ASF 2.0
