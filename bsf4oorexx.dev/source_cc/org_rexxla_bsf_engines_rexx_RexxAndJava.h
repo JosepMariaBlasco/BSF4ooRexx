@@ -339,11 +339,11 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniInitializ
 
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniGetParseVersionString
- * Signature: ()Ljava/lang/String;
+ * Method:    jniExecuteSimpleProcedureOnOwnRII
+ * Signature: (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
  */
-JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetParseVersionString
-  (JNIEnv *, jobject);
+JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniExecuteSimpleProcedureOnOwnRII
+  (JNIEnv *, jclass, jstring, jstring);
 
 #ifdef __cplusplus
 }

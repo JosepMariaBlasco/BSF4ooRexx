@@ -8,7 +8,7 @@
    needs:      ooRexx, BSF4Rexx
    changes:    ---
    usage:      1-062_DateRgfCatholicEaster.rxj [startYear [years]]
-               ... years number of years to calculate Catholic Easter related holidays, default: 10
+               ... years number of years to calculate Catholic Easter related holidays, default: 5
                ... startYear startYear for calculating Catholic Easter related holidays, default: current year
 
    last change: $Revision$ $Author$ $Date$
@@ -36,7 +36,7 @@
 .bsf~bsf.import("org.oorexx.datergf.DateRGF", "dateRgf")
 
 parse arg startYear years           -- parse command line arguments, if any
-if years=""     then years=10       -- default to 10 years
+if years=""     then years=5        -- default to 5 years
 if startYear="" then startYear=date('s')~left(4)   -- default to current year
 
 do i=startYear for years            -- iterate over years

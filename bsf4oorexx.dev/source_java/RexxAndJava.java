@@ -40,7 +40,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 6.0.0, 2021-08-04
+  * @version 6.0.0, 2021-08-06
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -53,6 +53,9 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
 
  /*
+
+     2022-08-06, rgf  - new case SIMPLE_EXECUTE_ARGUMENT, usage:
+                        call BSF 'simpleExecute', [rexxCode], [rexxArgument]
 
      2022-07-20, rgf  - since using ConcurrentHashMap() there is no need to synchronize anymore
 
@@ -596,7 +599,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20220720";
+    static final public String version = "600.20220806";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -798,7 +801,6 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
      */
     static {
 
-// TODO: rgf, 2016-12-19: one may remove the beanName from RAJBean after debugging
             // preregister important classes with a predefined bean name in the new central registry
         rajRegistry.put("Class.class",    new RAJBean("Class.class",    Class.class    ));
         rajRegistry.put("Object.class",   new RAJBean("Object.class",   Object.class   ));
@@ -1341,8 +1343,21 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
      *                   each invocation of this native function will cause a Rexx instance
      *                   to be created, used to run 'parse version v;return v;' and terminate it
      *                   before returning.
+     *
+     *
     */
-    protected native String jniGetParseVersionString();
+
+    /** Causes the native side to create a new Rexx interpreter instance, run the supplied
+     *  rexxCode and the optional single argument string, return value is always a string.
+     *  This is meant as a simple tool for Java programmers.
+     *
+     * @param rexxCode optional, the Rexx code to execute; if null the RII gets created and terminated nevertheless
+     * @param rexxArgument optional, single string argument
+     * @return the string value of the result or null; or if a Rexx condition was raised while
+     *         creating the Rexx routine object or while running the routine, a string with the Rexx
+     *         like error message gets returned, led in by the string "BSF4ooRexx/jniExecuteSimpleProcedureOnOwnRII()"
+     */
+    static protected native String jniExecuteSimpleProcedureOnOwnRII(String rexxCode, String rexxArgument);
 
 
 
@@ -4765,6 +4780,47 @@ System.err.println("//++// increaseRefCounter/(registerBean), RAJBean: "+bean+" 
                        rp.sendMessage0(messageName);
                    }
                    return makeString4Rexx(this, null);  // we return null (in this case: nothing)
+               }
+
+           // ==================================================================
+
+           case SIMPLE_EXECUTE_ARGUMENT:    // 2022-08-06:
+               {
+               /* ********************************************************
+                * call BSF 'simpleExecute', [rexxCode], [rexxArgument]
+                *
+                * creates a new RII, runs the code (if supplied) with the
+                * string argument (if supplied) and terminates the RII again
+                *
+                * - rexxCode: optional, the code to run
+                *
+                * - rexxArgument: optional, the single string argument
+                *
+                * - returns a string value of whatever the rexx code returns
+                *
+                *********************************************************/
+                   if (args.length>3)
+                   {
+                       throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                                "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": invalid # of args; usage: call BSF " +
+                           "'"+args[0]+"', [rexxCode], [rexxArgument]; received Rexx arguments=\""+Arrays.deepToString(args)+"\"");
+                   }
+
+                   String rexxCode=null, rexxArgument=null;
+                   if (args.length>1)
+                   {
+                       rexxCode=args[1];
+                   }
+                   if (args.length>2)
+                   {
+                       rexxArgument=args[2];
+                   }
+                   String res=jniExecuteSimpleProcedureOnOwnRII(rexxCode, rexxArgument);
+
+                   // return (bsfPrefixReturnValue ? STRING_INDICATOR_PREFIX : "")+strRes;
+
+                   return makeString4Rexx( this, res );           // wrap the object and return it to Rexx
+
                }
 
 

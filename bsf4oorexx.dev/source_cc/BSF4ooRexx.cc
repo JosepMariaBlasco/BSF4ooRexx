@@ -36,10 +36,11 @@ remarks:
 
 inline jint impl_jniRexxHaltInterpreterInstance (JNIEnv *env, jobject jobj, jstring j_rii_ID)
 
-    6.0.0   2022-08-05, rgf: - add Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetParseVersionString(...)
-                               such that the ooRexx version string can be fetched from RexxEngine
-                               via RexxAndJava using a proprer Rexx instance to not cause
-                               side-effects on RexxEngine initialization
+
+    6.0.0   2022-08-06, rgf: - add Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniExecuteSimpleProcedureOnOwnRII(...)
+                               such that e.g. the ooRexx version string can be fetched by the RexxEngine
+                               via RexxAndJava using a proper Rexx instance to not cause any
+                               side-effects on the current RexxEngine, e.g. while initializing
 
     6.0.0   2022-08-02, rgf: - add "_DEBUG" to version information, if a debug compile (will
                                be used for the Windows version, cf. Makefile-64-windows)
@@ -1032,21 +1033,21 @@ thread_id_t  RgfGetTID();
 
 #if defined (BSF4REXX_32_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "600.20220805 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "600.20220806 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "600.20220805 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "600.20220806 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #elif defined (BSF4REXX_64_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "600.20220805 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "600.20220806 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "600.20220805 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "600.20220806 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #else
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "600.20220805 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "600.20220806 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "600.20220805 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "600.20220806 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #endif
 
@@ -12814,39 +12815,86 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniTestPing
 
 
 // ----------------------------------------------------------------------------------------------
-/* --rgf, 2022-08-05: allow for fetching ooRexx' 'PARSE VERSION v' using a separate instance
+/* --rgf, 2022-08-06: allow for running simple Rexx scripts from Java using a separate RII,
+ *                    optionally with a single string argument; will return the result as
+ *                    a string only; if a Rexx Condition got raised the Rexx like error
+ *                    string gets returned, led-in by "BSF4ooRexx/jniExecuteSimpleProcedureOnOwnRII()"
+ *
+ *
  *
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniGetParseVersionString
- * Signature: ()Ljava/lang/String;
+ * Method:    jniExecuteSimpleProcedureOnOwnRII
+ * Signature: (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
  */
-JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetParseVersionString
-  (JNIEnv *env, jobject raj)
+JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniExecuteSimpleProcedureOnOwnRII
+  (JNIEnv *env, jclass clzRAJ, jstring jrexxCode, jstring jrexxArgument)
 {
     jstring jres = NULL;
     {
         RexxInstance      *instance;
-        RexxThreadContext *threadContext;
-        int bSuccess=RexxCreateInterpreter(&instance, &threadContext, NULL);
+        RexxThreadContext *rtc;
+        int bSuccess=RexxCreateInterpreter(&instance, &rtc, NULL);
         if (bSuccess)
         {
-            RexxObjectPtr result_obj = NULL;
-            char code[]              = "PARSE VERSION v; return v;";
-            RexxRoutineObject rro    = threadContext->NewRoutine("BSF4ooRexx.cc _jniGetParseVersionString", code, strlen(code));
-            if (rro != NULL)    // object got created, let us run it
+            if (jrexxCode!=NULL)
             {
-                result_obj=threadContext->CallRoutine(rro, NULL);   // call the program ?? NULL correct ??
+                char *rexxCode=(char *) JNU_GetStringNativeChars(env, jrexxCode);  // convert to native string
+// fprintf(stderr, "BSF4ooRexx.cc: Line # %d %s, \n\trexxCode=[%s]\n", __LINE__, __FUNCTION__, rexxCode);fflush(stderr);
+                RexxRoutineObject rro    = rtc->NewRoutine("BSF4ooRexx.jniExecuteSimpleProcedureOnOwnRII", rexxCode, strlen(rexxCode));
+
+                if (rtc->CheckCondition())      // a Rexx condition raised?
+                {
+                    RexxDirectoryObject condObj=rtc->GetConditionInfo();
+                    char * msg=RgfCreateRexxlikeErrorInfo (rtc, condObj, "/jniExecuteSimpleProcedureOnOwnRII().NewRoutine(), error 1");
+                    jres = env->NewStringUTF( msg ) ;
+                    rtc->ClearCondition();
+// fprintf(stderr, "BSF4ooRexx.cc: Line # %d %s, \n\tterminating instance\n", __LINE__, __FUNCTION__ );fflush(stderr);
+                    instance->Terminate();
+                    free(msg);
+                    free(rexxCode);
+                    return jres;
+                }
+                free(rexxCode);
+
+                // invoke routine
+                // rexxArgument
+                RexxArrayObject arrArg=rtc->NewArray(0);
+                if (jrexxArgument!=NULL)
+                {
+                    char *rexxArgument=(char *) JNU_GetStringNativeChars(env, jrexxArgument);  // convert to native string
+// fprintf(stderr, "BSF4ooRexx.cc: Line # %d %s, \n\trexxArgument=[%s]\n", __LINE__, __FUNCTION__, rexxArgument);fflush(stderr);
+
+                    rtc->ArrayAppend(arrArg, rtc->CString(rexxArgument));
+                    free(rexxArgument);
+                }
+
+                RexxObjectPtr result_obj=rtc->CallRoutine(rro, arrArg);   // call the routine
+// fprintf(stderr, "BSF4ooRexx.cc: Line # %d %s, \n\tresult_obj: [%p]\n", __LINE__, __FUNCTION__, result_obj);fflush(stderr);
+
+                if (rtc->CheckCondition())      // a Rexx condition raised?
+                {
+                    RexxDirectoryObject condObj=rtc->GetConditionInfo();
+                    char * msg=RgfCreateRexxlikeErrorInfo (rtc, condObj, "/jniExecuteSimpleProcedureOnOwnRII().CallRoutine(), error 2");
+                    jres = env->NewStringUTF( msg ) ;
+                    rtc->ClearCondition();
+// fprintf(stderr, "BSF4ooRexx.cc: Line # %d %s, \n\tterminating instance\n", __LINE__, __FUNCTION__ );fflush(stderr);
+                    instance->Terminate();
+                    free(msg);
+                    return jres;
+                }
+
+                if (result_obj != NULL)
+                {
+                    jres = env->NewStringUTF( rtc->CString(result_obj) ) ;
+// fprintf(stderr, "BSF4ooRexx.cc: Line # %d %s, \n\tresult to return: [%s]\n", __LINE__, __FUNCTION__, rtc->CString(result_obj) );fflush(stderr);
+                }
             }
-            CSTRING versionString = threadContext->CString(result_obj);
-// fprintf(stderr, "BSF4ooRexx _jniGetParseVersionString=[%s]\n", versionString); fflush(stderr);
-            jres = env->NewStringUTF( versionString ) ;
+// fprintf(stderr, "BSF4ooRexx.cc: Line # %d %s, \n\tterminating instance\n", __LINE__, __FUNCTION__ );fflush(stderr);
             instance->Terminate();
         }
     }
     return jres;
 }
-
-
 
 
 #ifdef __cplusplus

@@ -15,7 +15,7 @@
    limitations under the License.
 -----------------------------------------------------------------------------
 
-   date:    2022-01-29
+   date:    2022-02-06
    purpose: defines BSF4ooRexx as the module named "rexxla.oorexx" which provides
             the javax.script.ScriptEngineFactory service; once this gets part
             of the distribution it needs to be placed in the module's root directory
@@ -25,6 +25,8 @@
             - rgf, 2022-01-29, test module with OpenJDK 11, run examples to find out
                                which modules are required and which ones need to be
                                exported
+            - rgf, 2022-08-06, moved classes from org.rexxla.bsf.engines.rexx.jsr223
+                               to org.rexxla.bsf.engines.rexx, adjust for it
 
    TODO/wished:
         - ASF's BSF: at ASF create and define module-info.java; then "use" it in here
@@ -44,12 +46,11 @@ module rexxla.oorexx {
 
         // service this module provides
     provides javax.script.ScriptEngineFactory with
-             org.rexxla.bsf.engines.rexx.jsr223.RexxScriptEngineFactory;
+             org.rexxla.bsf.engines.rexx.RexxScriptEngineFactory;
 
         // exported packages must contain at least a class (= "not empty")
     exports org.rexxla.bsf;         // allow access to ooRexx scripting support
     exports org.rexxla.bsf.engines.rexx;        // allow access to others
-    exports org.rexxla.bsf.engines.rexx.jsr223; // allow access to others
 
 /* TODO: maybe third parties need access these as well ?
     exports org.oorexx.uno;         // UNO reflection for AOO/LO support

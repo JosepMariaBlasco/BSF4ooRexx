@@ -1,0 +1,2341 @@
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">-->
+
+    <title>ooRexxDoc - UNO (AOO/LO) ooRexx Documentation - UNO.CLS</title>
+
+    <style type="text/css">
+        body { padding-top: 70px; }
+
+        #toTop{
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            cursor: pointer;
+            display: none;
+        }
+
+        pre {
+            overflow-x: auto;
+        }
+        pre code {
+            overflow-wrap: normal;
+            white-space: pre;
+        }
+
+        .keyword {
+            color: #ff5f00;
+        }
+
+        #search {
+            margin-left: 10px;
+        }
+
+        :target {
+            display: block;
+            position: relative;
+            top: -50px;
+            visibility: hidden;
+        }
+
+        .class-info {
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+    </style>
+</head>
+
+<body>
+<nav class="navbar navbar-default navbar-fixed-top">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">ooRexxDoc</a>
+        </div>
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav">
+                <li><a href="../oorexxdoc.html">Home</a></li>
+                <li class="active"><a href="UNO.CLS.html">UNO.CLS</a></li>
+            </ul>
+            <form class="navbar-form">
+                <div class="form-group">
+                    <input type="text" id="search" class="form-control" placeholder="Search" id="test" data-provide="typeahead" autocomplete=off>
+                </div>
+                <span class="navbar-right">
+                        <span class="label label-info">Run-Date: Aug 4, 2022, 4:17:56 PM</span>
+                </span>
+            </form>
+        </div>
+    </div>
+</nav>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="panel panel-default">
+                <div class="panel-heading">Packages</div>
+                <div class="panel-body" style="max-height: 420px;overflow-y: scroll;">
+                        <a href="UNO.CLS.html">UNO.CLS</a>
+                        <hr width="99%"/>
+                        <a href="UNO_API_info.rxo.html">UNO_API_info.rxo</a>
+                        <hr width="99%"/>
+                        <a href="UNO_CREATE_INTERFACE_LIST.RXO.html">UNO_CREATE_INTERFACE_LIST.RXO</a>
+                        <hr width="99%"/>
+                        <a href="UNO_ReflectionUtil.cls.html">UNO_ReflectionUtil.cls</a>
+                        <hr width="99%"/>
+                        <a href="UNO_XINTERFACES.RXO.html">UNO_XINTERFACES.RXO</a>
+                        <hr width="99%"/>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="panel panel-default">
+                <div class="panel-heading">UNO.CLS Overview</div>
+                <div class="panel-body">
+                    <ul>
+                            <li>Routines
+                                    <a href="UNO.CLS.html#ConvertFromUrl">ConvertFromUrl</a>
+                                    <a href="UNO.CLS.html#ConvertToUrl">ConvertToUrl</a>
+                                    <a href="UNO.CLS.html#decodeUrl">decodeUrl</a>
+                                    <a href="UNO.CLS.html#encodeURL">encodeURL</a>
+                                    <a href="UNO.CLS.html#getInterfaceClass">getInterfaceClass</a>
+                                    <a href="UNO.CLS.html#initialize.uno.dir">initialize.uno.dir</a>
+                                    <a href="UNO.CLS.html#ppd">ppd</a>
+                                    <a href="UNO.CLS.html#uno.addPath">uno.addPath</a>
+                                    <a href="UNO.CLS.html#uno.areSame">uno.areSame</a>
+                                    <a href="UNO.CLS.html#UNO.connect">UNO.connect</a>
+                                    <a href="UNO.CLS.html#uno.ConvertFromUrl">uno.ConvertFromUrl</a>
+                                    <a href="UNO.CLS.html#uno.ConvertToUrl">uno.ConvertToUrl</a>
+                                    <a href="UNO.CLS.html#uno.createArray">uno.createArray</a>
+                                    <a href="UNO.CLS.html#UNO.createDesktop">UNO.createDesktop</a>
+                                    <a href="UNO.CLS.html#uno.createProperty">uno.createProperty</a>
+                                    <a href="UNO.CLS.html#uno.determineScriptLocation">uno.determineScriptLocation</a>
+                                    <a href="UNO.CLS.html#uno.findInterfaceWithMember-1">uno.findInterfaceWithMember</a>
+                                    <a href="UNO.CLS.html#uno.getCachedInterfaceName">uno.getCachedInterfaceName</a>
+                                    <a href="UNO.CLS.html#UNO.getCell">UNO.getCell</a>
+                                    <a href="UNO.CLS.html#uno.getDefinition-1">uno.getDefinition</a>
+                                    <a href="UNO.CLS.html#uno.getInterfaceName-1">uno.getInterfaceName</a>
+                                    <a href="UNO.CLS.html#uno.getInterfaceNamesViaReflection">uno.getInterfaceNamesViaReflection</a>
+                                    <a href="UNO.CLS.html#uno.getProperties-1">uno.getProperties</a>
+                                    <a href="UNO.CLS.html#uno.getScriptContext">uno.getScriptContext</a>
+                                    <a href="UNO.CLS.html#uno.getScriptFileName">uno.getScriptFileName</a>
+                                    <a href="UNO.CLS.html#uno.getScriptMetaData">uno.getScriptMetaData</a>
+                                    <a href="UNO.CLS.html#uno.getScriptPath">uno.getScriptPath</a>
+                                    <a href="UNO.CLS.html#uno.getScriptProviderVersion">uno.getScriptProviderVersion</a>
+                                    <a href="UNO.CLS.html#uno.getScriptSourceModel">uno.getScriptSourceModel</a>
+                                    <a href="UNO.CLS.html#uno.getServiceNamesViaReflection">uno.getServiceNamesViaReflection</a>
+                                    <a href="UNO.CLS.html#uno.getTypeName-1">uno.getTypeName</a>
+                                    <a href="UNO.CLS.html#uno.getXTypeProviderTypeNames-1">uno.getXTypeProviderTypeNames</a>
+                                    <a href="UNO.CLS.html#UNO.loadClass">UNO.loadClass</a>
+                                    <a href="UNO.CLS.html#uno.queryInterfaceName-1">uno.queryInterfaceName</a>
+                                    <a href="UNO.CLS.html#uno.queryInterfaceObjectByName-1">uno.queryInterfaceObjectByName</a>
+                                    <a href="UNO.CLS.html#uno.queryServiceName-1">uno.queryServiceName</a>
+                                    <a href="UNO.CLS.html#uno.removePath">uno.removePath</a>
+                                    <a href="UNO.CLS.html#UNO.resetRgfReflectUNO">UNO.resetRgfReflectUNO</a>
+                                    <a href="UNO.CLS.html#UNO.setCell">UNO.setCell</a>
+                                    <a href="UNO.CLS.html#uno.supportsInterface-1">uno.supportsInterface</a>
+                                    <a href="UNO.CLS.html#uno.supportsService-1">uno.supportsService</a>
+                                    <a href="UNO.CLS.html#UNO.WRAP">UNO.WRAP</a>
+                                    <a href="UNO.CLS.html#UNO.WRAPARRAY">UNO.WRAPARRAY</a>
+                                    <a href="UNO.CLS.html#work.loadUnoClass">work.loadUnoClass</a>
+                            </li>
+                            <li>Floating Methods
+                                    <a href="UNO.CLS.html#uno.findInterfaceWithMember">uno.findInterfaceWithMember</a>
+                                    <a href="UNO.CLS.html#uno.getDefinition">uno.getDefinition</a>
+                                    <a href="UNO.CLS.html#uno.getInterfaceName">uno.getInterfaceName</a>
+                                    <a href="UNO.CLS.html#uno.getInterfaceNames">uno.getInterfaceNames</a>
+                                    <a href="UNO.CLS.html#uno.getProperties">uno.getProperties</a>
+                                    <a href="UNO.CLS.html#uno.getServiceNames">uno.getServiceNames</a>
+                                    <a href="UNO.CLS.html#uno.getTypeName">uno.getTypeName</a>
+                                    <a href="UNO.CLS.html#uno.getXTypeProviderTypeNames">uno.getXTypeProviderTypeNames</a>
+                                    <a href="UNO.CLS.html#uno.isSame">uno.isSame</a>
+                                    <a href="UNO.CLS.html#uno.queryInterfaceName">uno.queryInterfaceName</a>
+                                    <a href="UNO.CLS.html#uno.queryInterfaceObjectByName">uno.queryInterfaceObjectByName</a>
+                                    <a href="UNO.CLS.html#uno.queryServiceName">uno.queryServiceName</a>
+                                    <a href="UNO.CLS.html#uno.supportsInterface">uno.supportsInterface</a>
+                                    <a href="UNO.CLS.html#uno.supportsService">uno.supportsService</a>
+                            </li>
+                            <li>Classes
+                                <ul>
+                                        <li><a href="UNO.CLS.html#Parcel">Parcel</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="UNO.CLS.html#language">language</a>
+                                                            <a href="UNO.CLS.html#ParcelScriptDefinitions">ParcelScriptDefinitions</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO.CLS.html#createScriptDefinition">createScriptDefinition</a>
+                                                            <a href="UNO.CLS.html#fromXMLFile">fromXMLFile</a>
+                                                            <a href="UNO.CLS.html#init-28">init</a>
+                                                            <a href="UNO.CLS.html#addScriptDefinition">addScriptDefinition</a>
+                                                            <a href="UNO.CLS.html#getScriptDefinition">getScriptDefinition</a>
+                                                            <a href="UNO.CLS.html#items">items</a>
+                                                            <a href="UNO.CLS.html#removeScriptDefinition">removeScriptDefinition</a>
+                                                            <a href="UNO.CLS.html#toString-10">toString</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO.CLS.html#ParcelScriptDefinition">ParcelScriptDefinition</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="UNO.CLS.html#description">description</a>
+                                                            <a href="UNO.CLS.html#displayName">displayName</a>
+                                                            <a href="UNO.CLS.html#functionName">functionName</a>
+                                                            <a href="UNO.CLS.html#lang">lang</a>
+                                                            <a href="UNO.CLS.html#logicalName">logicalName</a>
+                                                            <a href="UNO.CLS.html#scriptLanguage">scriptLanguage</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO.CLS.html#fromXML">fromXML</a>
+                                                            <a href="UNO.CLS.html#init-29">init</a>
+                                                            <a href="UNO.CLS.html#toString-11">toString</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO.CLS.html#UNO">UNO</a>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO.CLS.html#uno.wrap">uno.wrap</a>
+                                                            <a href="UNO.CLS.html#init-12">init</a>
+                                                            <a href="UNO.CLS.html#unknown">unknown</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO.CLS.html#UNO_ARRAY_PROXY">UNO_ARRAY_PROXY</a>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO.CLS.html#%5B%5D">[]</a>
+                                                            <a href="UNO.CLS.html#at">at</a>
+                                                            <a href="UNO.CLS.html#makearray">makearray</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO.CLS.html#UNO_CONSTANTS-1">UNO_CONSTANTS</a>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO.CLS.html#decode">decode</a>
+                                                            <a href="UNO.CLS.html#encode">encode</a>
+                                                            <a href="UNO.CLS.html#makestring-1">makestring</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO.CLS.html#UNO_DIRLIKE">UNO_DIRLIKE</a>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO.CLS.html#%5B%5D-1">[]</a>
+                                                            <a href="UNO.CLS.html#AT">AT</a>
+                                                            <a href="UNO.CLS.html#directory">directory</a>
+                                                            <a href="UNO.CLS.html#entry">entry</a>
+                                                            <a href="UNO.CLS.html#hasentry">hasentry</a>
+                                                            <a href="UNO.CLS.html#makearray-1">makearray</a>
+                                                            <a href="UNO.CLS.html#nameQueue">nameQueue</a>
+                                                            <a href="UNO.CLS.html#supplier">supplier</a>
+                                                            <a href="UNO.CLS.html#unknown-2">unknown</a>
+                                                            <a href="UNO.CLS.html#unoidl_definition">unoidl_definition</a>
+                                                            <a href="UNO.CLS.html#unoidl_name">unoidl_name</a>
+                                                            <a href="UNO.CLS.html#unoidl_typeName">unoidl_typeName</a>
+                                                            <a href="UNO.CLS.html#init-26">init</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO.CLS.html#UNO_ENUM-1">UNO_ENUM</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="UNO.CLS.html#dirMethods">dirMethods</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO.CLS.html#init-27">init</a>
+                                                            <a href="UNO.CLS.html#makestring">makestring</a>
+                                                            <a href="UNO.CLS.html#util.setMethods">util.setMethods</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO.CLS.html#UNO_PROPERTIES">UNO_PROPERTIES</a>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO.CLS.html#setup">setup</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO.CLS.html#UNO_PROXY">UNO_PROXY</a>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO.CLS.html#uno.bsfObject">uno.bsfObject</a>
+                                                            <a href="UNO.CLS.html#init-18">init</a>
+                                                            <a href="UNO.CLS.html#unknown-1">unknown</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                </ul>
+                            </li>
+                            <li>Requires
+                                    BSF.CLS
+                                    <a href="../packages/UNO_XINTERFACES.RXO.html">UNO_XINTERFACES.RXO</a>
+                                    rgf_util2.rex
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-xs-9">
+            <div class="container-fluid" id="content-main">
+
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container-fluid">
+    <div class="row">
+        <div class="container-fluid">
+            <h1>UNO.CLS</h1>
+
+
+
+
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="ConvertFromUrl"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: ConvertFromUrl</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> str
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="ConvertToUrl"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: ConvertToUrl</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> str
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="decodeUrl"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: decodeUrl</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> str
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="encodeURL"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: encodeURL</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> str
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="getInterfaceClass"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: getInterfaceClass</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> xName, idx
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="initialize.uno.dir"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: initialize.uno.dir</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="ppd"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: ppd</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> debugString, delimiter, replacement
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.addPath"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.addPath</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> addPath=.nil, environmentVar=&quot;PATH&quot;
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.areSame"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.areSame</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> o1, o2
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO.connect"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: UNO.connect</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> , xContext
+
+                                <br /><span class="keyword">PARSE ARG</span> unoURL
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.ConvertFromUrl"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.ConvertFromUrl</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> str
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.ConvertToUrl"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.ConvertToUrl</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> str
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.createArray"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.createArray</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO.createDesktop"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: UNO.createDesktop</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> xContext=.nil
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.createProperty"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.createProperty</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> name, value=.nil
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.determineScriptLocation"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.determineScriptLocation</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> xContext, scriptLocation=&quot;user&quot;, scriptLanguageDir=&quot;oorexx&quot;, scriptLanguageName=&quot;ooRexx&quot;, tgtLibraryName=.nil, srcDir=.nil
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.findInterfaceWithMember-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.findInterfaceWithMember</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> o, name, bREturnString, howMany
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.getCachedInterfaceName"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.getCachedInterfaceName</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> name, needle
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO.getCell"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: UNO.getCell</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> xSheet, x, y
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.getDefinition-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.getDefinition</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> o
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.getInterfaceName-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.getInterfaceName</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> o, unqualified=&quot;&quot;
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.getInterfaceNamesViaReflection"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.getInterfaceNamesViaReflection</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> o
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.getProperties-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.getProperties</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> o
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.getScriptContext"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.getScriptContext</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> hashTable=.nil
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.getScriptFileName"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.getScriptFileName</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> hashTable=.nil
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.getScriptMetaData"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.getScriptMetaData</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> hashTable=.nil
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.getScriptPath"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.getScriptPath</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> uri=.nil, hashTable=.nil
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.getScriptProviderVersion"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.getScriptProviderVersion</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> hashTable=.nil
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.getScriptSourceModel"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.getScriptSourceModel</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> hashTable=.nil
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.getServiceNamesViaReflection"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.getServiceNamesViaReflection</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> o
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.getTypeName-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.getTypeName</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> o
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.getXTypeProviderTypeNames-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.getXTypeProviderTypeNames</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> o
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO.loadClass"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: UNO.loadClass</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> className, idx
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.queryInterfaceName-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.queryInterfaceName</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> o, name
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.queryInterfaceObjectByName-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.queryInterfaceObjectByName</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> o, name
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.queryServiceName-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.queryServiceName</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> o, name
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.removePath"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.removePath</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> removePath=.nil, environmentVar=&quot;PATH&quot;
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO.resetRgfReflectUNO"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: UNO.resetRgfReflectUNO</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> xContext=.nil
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO.setCell"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: UNO.setCell</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> xSheet, x, y, content
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.supportsInterface-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.supportsInterface</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> o, name
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.supportsService-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: uno.supportsService</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> o, name
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO.WRAP"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: UNO.WRAP</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> tmpObj
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO.WRAPARRAY"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: UNO.WRAPARRAY</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> uno.bsfObject
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="work.loadUnoClass"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: work.loadUnoClass</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> className
+
+
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.findInterfaceWithMember"></a>
+                        <div class="panel-heading">
+                            <h4>Floating Method: uno.findInterfaceWithMember</h4>
+                        </div>
+                        <div class="panel-body">
+                            <ul>
+                                <li style="list-style-type: none;">
+
+
+
+
+                                        <br /><span class="keyword">USE ARG</span> name, bReturnString, howMany
+
+
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.getDefinition"></a>
+                        <div class="panel-heading">
+                            <h4>Floating Method: uno.getDefinition</h4>
+                        </div>
+                        <div class="panel-body">
+                            <ul>
+                                <li style="list-style-type: none;">
+
+
+
+
+
+
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.getInterfaceName"></a>
+                        <div class="panel-heading">
+                            <h4>Floating Method: uno.getInterfaceName</h4>
+                        </div>
+                        <div class="panel-body">
+                            <ul>
+                                <li style="list-style-type: none;">
+
+
+
+
+
+                                        <br /><span class="keyword">PARSE ARG</span> unqualified
+
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.getInterfaceNames"></a>
+                        <div class="panel-heading">
+                            <h4>Floating Method: uno.getInterfaceNames</h4>
+                        </div>
+                        <div class="panel-body">
+                            <ul>
+                                <li style="list-style-type: none;">
+
+
+
+
+
+
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.getProperties"></a>
+                        <div class="panel-heading">
+                            <h4>Floating Method: uno.getProperties</h4>
+                        </div>
+                        <div class="panel-body">
+                            <ul>
+                                <li style="list-style-type: none;">
+
+
+
+
+
+
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.getServiceNames"></a>
+                        <div class="panel-heading">
+                            <h4>Floating Method: uno.getServiceNames</h4>
+                        </div>
+                        <div class="panel-body">
+                            <ul>
+                                <li style="list-style-type: none;">
+
+
+
+
+
+
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.getTypeName"></a>
+                        <div class="panel-heading">
+                            <h4>Floating Method: uno.getTypeName</h4>
+                        </div>
+                        <div class="panel-body">
+                            <ul>
+                                <li style="list-style-type: none;">
+
+
+
+
+
+
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.getXTypeProviderTypeNames"></a>
+                        <div class="panel-heading">
+                            <h4>Floating Method: uno.getXTypeProviderTypeNames</h4>
+                        </div>
+                        <div class="panel-body">
+                            <ul>
+                                <li style="list-style-type: none;">
+
+
+
+
+
+
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.isSame"></a>
+                        <div class="panel-heading">
+                            <h4>Floating Method: uno.isSame</h4>
+                        </div>
+                        <div class="panel-body">
+                            <ul>
+                                <li style="list-style-type: none;">
+
+
+
+
+                                        <br /><span class="keyword">USE ARG</span> o
+
+
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.queryInterfaceName"></a>
+                        <div class="panel-heading">
+                            <h4>Floating Method: uno.queryInterfaceName</h4>
+                        </div>
+                        <div class="panel-body">
+                            <ul>
+                                <li style="list-style-type: none;">
+
+
+
+
+                                        <br /><span class="keyword">USE ARG</span> name
+
+
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.queryInterfaceObjectByName"></a>
+                        <div class="panel-heading">
+                            <h4>Floating Method: uno.queryInterfaceObjectByName</h4>
+                        </div>
+                        <div class="panel-body">
+                            <ul>
+                                <li style="list-style-type: none;">
+
+
+
+
+                                        <br /><span class="keyword">USE ARG</span> name
+
+
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.queryServiceName"></a>
+                        <div class="panel-heading">
+                            <h4>Floating Method: uno.queryServiceName</h4>
+                        </div>
+                        <div class="panel-body">
+                            <ul>
+                                <li style="list-style-type: none;">
+
+
+
+
+                                        <br /><span class="keyword">USE ARG</span> name
+
+
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.supportsInterface"></a>
+                        <div class="panel-heading">
+                            <h4>Floating Method: uno.supportsInterface</h4>
+                        </div>
+                        <div class="panel-body">
+                            <ul>
+                                <li style="list-style-type: none;">
+
+
+
+
+                                        <br /><span class="keyword">USE ARG</span> name
+
+
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="uno.supportsService"></a>
+                        <div class="panel-heading">
+                            <h4>Floating Method: uno.supportsService</h4>
+                        </div>
+                        <div class="panel-body">
+                            <ul>
+                                <li style="list-style-type: none;">
+
+
+
+
+                                        <br /><span class="keyword">USE ARG</span> name
+
+
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="Parcel"></a>
+                        <div class="panel-heading">
+                            <h4>Class: Parcel</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="language"></a>
+                                    <ul>
+                                        <li><b>language</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="ParcelScriptDefinitions"></a>
+                                    <ul>
+                                        <li><b>ParcelScriptDefinitions</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="createScriptDefinition"></a>
+                                    <ul>
+                                        <li><b>createScriptDefinition</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="fromXMLFile"></a>
+                                    <ul>
+                                        <li><b>fromXMLFile</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> path2parcelDescriptor, scriptLanguageName=&quot;ooRexx&quot;
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="init-28"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> language=&quot;ooRexx&quot;
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="addScriptDefinition"></a>
+                                    <ul>
+                                        <li><b>addScriptDefinition</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> scriptDefinitionObject
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="getScriptDefinition"></a>
+                                    <ul>
+                                        <li><b>getScriptDefinition</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="items"></a>
+                                    <ul>
+                                        <li><b>items</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="removeScriptDefinition"></a>
+                                    <ul>
+                                        <li><b>removeScriptDefinition</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="toString-10"></a>
+                                    <ul>
+                                        <li><b>toString</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="ParcelScriptDefinition"></a>
+                        <div class="panel-heading">
+                            <h4>Class: ParcelScriptDefinition</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="description"></a>
+                                    <ul>
+                                        <li><b>description</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="displayName"></a>
+                                    <ul>
+                                        <li><b>displayName</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="functionName"></a>
+                                    <ul>
+                                        <li><b>functionName</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="lang"></a>
+                                    <ul>
+                                        <li><b>lang</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="logicalName"></a>
+                                    <ul>
+                                        <li><b>logicalName</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="scriptLanguage"></a>
+                                    <ul>
+                                        <li><b>scriptLanguage</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="fromXML"></a>
+                                    <ul>
+                                        <li><b>fromXML</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> xmlString
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="init-29"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> functionName=&quot;n/a.rxo&quot;, scriptLanguage=&quot;ooRexx&quot;
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="toString-11"></a>
+                                    <ul>
+                                        <li><b>toString</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO"></a>
+                        <div class="panel-heading">
+                            <h4>Class: UNO</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <i>No Attributes</i>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="uno.wrap"></a>
+                                    <ul>
+                                        <li><b>uno.wrap</b>
+                                                <span class="label label-info">UNGUARDED</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> obj
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="init-12"></a>
+                                    <ul>
+                                        <li><b>init</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="unknown"></a>
+                                    <ul>
+                                        <li><b>unknown</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> name, args
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO_ARRAY_PROXY"></a>
+                        <div class="panel-heading">
+                            <h4>Class: UNO_ARRAY_PROXY</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: <a href="../packages/UNO.CLS.html#UNO_PROXY">UNO_PROXY</a></span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <i>No Attributes</i>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="%5B%5D"></a>
+                                    <ul>
+                                        <li><b>[]</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="at"></a>
+                                    <ul>
+                                        <li><b>at</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="makearray"></a>
+                                    <ul>
+                                        <li><b>makearray</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO_CONSTANTS-1"></a>
+                        <div class="panel-heading">
+                            <h4>Class: UNO_CONSTANTS</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: <a href="../packages/UNO.CLS.html#UNO_DIRLIKE">UNO_DIRLIKE</a></span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <i>No Attributes</i>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="decode"></a>
+                                    <ul>
+                                        <li><b>decode</b>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> number
+
+                                        </li>
+                                    </ul>
+                                    <a id="encode"></a>
+                                    <ul>
+                                        <li><b>encode</b>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> list
+
+                                        </li>
+                                    </ul>
+                                    <a id="makestring-1"></a>
+                                    <ul>
+                                        <li><b>makestring</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO_DIRLIKE"></a>
+                        <div class="panel-heading">
+                            <h4>Class: UNO_DIRLIKE</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <i>No Attributes</i>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="%5B%5D-1"></a>
+                                    <ul>
+                                        <li><b>[]</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="AT"></a>
+                                    <ul>
+                                        <li><b>AT</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="directory"></a>
+                                    <ul>
+                                        <li><b>directory</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="entry"></a>
+                                    <ul>
+                                        <li><b>entry</b>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> index
+
+                                        </li>
+                                    </ul>
+                                    <a id="hasentry"></a>
+                                    <ul>
+                                        <li><b>hasentry</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="makearray-1"></a>
+                                    <ul>
+                                        <li><b>makearray</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="nameQueue"></a>
+                                    <ul>
+                                        <li><b>nameQueue</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="supplier"></a>
+                                    <ul>
+                                        <li><b>supplier</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="unknown-2"></a>
+                                    <ul>
+                                        <li><b>unknown</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="unoidl_definition"></a>
+                                    <ul>
+                                        <li><b>unoidl_definition</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="unoidl_name"></a>
+                                    <ul>
+                                        <li><b>unoidl_name</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="unoidl_typeName"></a>
+                                    <ul>
+                                        <li><b>unoidl_typeName</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="init-26"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> unoidl_name
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO_ENUM-1"></a>
+                        <div class="panel-heading">
+                            <h4>Class: UNO_ENUM</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: <a href="../packages/UNO.CLS.html#UNO_DIRLIKE">UNO_DIRLIKE</a></span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="dirMethods"></a>
+                                    <ul>
+                                        <li><b>dirMethods</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-27"></a>
+                                    <ul>
+                                        <li><b>init</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="makestring"></a>
+                                    <ul>
+                                        <li><b>makestring</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="util.setMethods"></a>
+                                    <ul>
+                                        <li><b>util.setMethods</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> obj, nam, val
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO_PROPERTIES"></a>
+                        <div class="panel-heading">
+                            <h4>Class: UNO_PROPERTIES</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: <a href="../packages/UNO.CLS.html#UNO_DIRLIKE">UNO_DIRLIKE</a></span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <i>No Attributes</i>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="setup"></a>
+                                    <ul>
+                                        <li><b>setup</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO_PROXY"></a>
+                        <div class="panel-heading">
+                            <h4>Class: UNO_PROXY</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <i>No Attributes</i>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="uno.bsfObject"></a>
+                                    <ul>
+                                        <li><b>uno.bsfObject</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="init-18"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> uno.bsfObject
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="unknown-1"></a>
+                                    <ul>
+                                        <li><b>unknown</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> propName, props, newValue=.nil
+
+                                                <br /><span class="keyword">PARSE ARG</span> xName 1 idx
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h2>Requires</h2>
+                        </div>
+                        <div class="panel-body">
+                                BSF.CLS <br />
+                                <a href="../packages/UNO_XINTERFACES.RXO.html">UNO_XINTERFACES.RXO</a> <br />
+                                rgf_util2.rex <br />
+                        </div>
+                    </div>
+                </div>
+
+
+
+
+        </div>
+    </div>
+    <br />
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/typeahead-bootstrap.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+    <script src="../js/search-data.js"></script>
+    <script>
+        $(document).ready(function(){
+            $('body').append('<div id="toTop" class="btn btn-info"><span class="glyphicon glyphicon-chevron-up"></span> Back to Top</div>');
+            $(window).scroll(function () {
+                if ($(this).scrollTop() != 0) {
+                    $('#toTop').fadeIn();
+                } else {
+                    $('#toTop').fadeOut();
+                }
+            });
+            $('#toTop').click(function(){
+                $("html, body").animate({ scrollTop: 0 }, 200);
+                return false;
+            });
+        });
+
+    </script>
+    <script>
+        $(document).ready(function() {
+            $('#search').typeahead({
+                source: searchData,
+                displayText: function(item) {
+                    if(item.info !== null) {
+                        return item.type + ":" + item.name + " (" + item.info + ")";
+                    }
+
+                    return item.type + ":" + item.name;
+                },
+                matcher: function(item) {
+                    return item.name.toLowerCase().indexOf(this.query.toLowerCase()) != -1
+                },
+                afterSelect: function(item) {
+                    window.location.href = item.href;
+                    $("#search").val(item.name)
+                },
+                items: 20
+            });
+        })
+    </script>
+</body>
+</html>

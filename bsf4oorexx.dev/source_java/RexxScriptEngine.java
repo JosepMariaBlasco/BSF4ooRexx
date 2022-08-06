@@ -1,4 +1,4 @@
-package org.rexxla.bsf.engines.rexx.jsr223;
+package org.rexxla.bsf.engines.rexx;
 import javax.script.*;
 
 import java.util.Vector;
@@ -44,6 +44,8 @@ import org.rexxla.bsf.engines.rexx.RexxCleanupRef;
 -----------------------------------------------------------------------------
 
    Changes:
+
+        2022-08-06, ---rgf, - changed package name to 'org.rexxla.bsf.engines.rexx'
 
         2022-08-01, ---rgf, - instead of using public getters, directly access Rexx engine
                               related static info, now that these fiels are made protected
@@ -188,7 +190,7 @@ import org.rexxla.bsf.engines.rexx.RexxCleanupRef;
  * the tow (and caching compiled scripts for invoking the aforementioned method in a sensible way.
  *
  * @author Rony G. Flatscher
- * @version 103.20220801
+ * @version 103.20220806
  * @since  2015-05-11
  *
  */

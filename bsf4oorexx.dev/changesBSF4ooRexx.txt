@@ -1,4 +1,43 @@
 
+-------------------------------------- 2022-08-06 ----------------------------------
+
+- BSF4ooRexx.cc, org_rexxla_bsf_engines_rexx_RexxAndJava.h
+
+        - new native function 'Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniExecuteSimpleProcedureOnOwnRII'
+          that runs a simple rexx script on a newly created Rexx interpreter
+          instance supplying a single optional string as argument and returning the
+          string value of the result (or null for no result)
+
+- InvocationType.java
+
+        - new enum type SIMPLE_EXECUTE_ARGUMENT named "simpleExecute"
+
+- RexxAndJava.java
+
+        - new static native function "String jniExecuteSimpleProcedureOnOwnRII(rexxCode,rexxArgument)"
+
+        - new BSF subfunction SIMPLE_EXECUTE_ARGUMENT ('simpleExecute'[, [rexxCode], [rexxArgument]])
+
+- RexxCompiledScript.java
+
+        - changed package name to: 'org.rexxla.bsf.engines.rexx'
+
+- RexxEngine.java
+
+        - added static getter for languageVersionString
+
+        - added static protected boolean isTerminationFixed() to determine
+          the defaults for termination
+
+- RexxScriptEngine.java
+
+        - changed package name to: 'org.rexxla.bsf.engines.rexx'
+
+- RexxScriptEngineFactory.java
+
+        - changed package name to: 'org.rexxla.bsf.engines.rexx'
+
+
 -------------------------------------- 2022-08-04 ----------------------------------
 
 - install/portable added to installation package

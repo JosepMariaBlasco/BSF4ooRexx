@@ -1,0 +1,2867 @@
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">-->
+
+    <title>ooRexxDoc - UNO (AOO/LO) ooRexx Documentation - UNO_ReflectionUtil.cls</title>
+
+    <style type="text/css">
+        body { padding-top: 70px; }
+
+        #toTop{
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            cursor: pointer;
+            display: none;
+        }
+
+        pre {
+            overflow-x: auto;
+        }
+        pre code {
+            overflow-wrap: normal;
+            white-space: pre;
+        }
+
+        .keyword {
+            color: #ff5f00;
+        }
+
+        #search {
+            margin-left: 10px;
+        }
+
+        :target {
+            display: block;
+            position: relative;
+            top: -50px;
+            visibility: hidden;
+        }
+
+        .class-info {
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+    </style>
+</head>
+
+<body>
+<nav class="navbar navbar-default navbar-fixed-top">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">ooRexxDoc</a>
+        </div>
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav">
+                <li><a href="../oorexxdoc.html">Home</a></li>
+                <li class="active"><a href="UNO_ReflectionUtil.cls.html">UNO_ReflectionUtil.cls</a></li>
+            </ul>
+            <form class="navbar-form">
+                <div class="form-group">
+                    <input type="text" id="search" class="form-control" placeholder="Search" id="test" data-provide="typeahead" autocomplete=off>
+                </div>
+                <span class="navbar-right">
+                        <span class="label label-info">Run-Date: Aug 4, 2022, 4:17:56 PM</span>
+                </span>
+            </form>
+        </div>
+    </div>
+</nav>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="panel panel-default">
+                <div class="panel-heading">Packages</div>
+                <div class="panel-body" style="max-height: 420px;overflow-y: scroll;">
+                        <a href="UNO.CLS.html">UNO.CLS</a>
+                        <hr width="99%"/>
+                        <a href="UNO_API_info.rxo.html">UNO_API_info.rxo</a>
+                        <hr width="99%"/>
+                        <a href="UNO_CREATE_INTERFACE_LIST.RXO.html">UNO_CREATE_INTERFACE_LIST.RXO</a>
+                        <hr width="99%"/>
+                        <a href="UNO_ReflectionUtil.cls.html">UNO_ReflectionUtil.cls</a>
+                        <hr width="99%"/>
+                        <a href="UNO_XINTERFACES.RXO.html">UNO_XINTERFACES.RXO</a>
+                        <hr width="99%"/>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="panel panel-default">
+                <div class="panel-heading">UNO_ReflectionUtil.cls Overview</div>
+                <div class="panel-body">
+                    <ul>
+                            <li>Routines
+                                    <a href="UNO_ReflectionUtil.cls.html#createReflectionObject">createReflectionObject</a>
+                            </li>
+                            <li>Classes
+                                <ul>
+                                        <li><a href="UNO_ReflectionUtil.cls.html#argument">argument</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="UNO_ReflectionUtil.cls.html#attributeList-4">attributeList</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#datatype-2">datatype</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#name-5">name</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#pos">pos</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#string-5">string</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO_ReflectionUtil.cls.html#init-14">init</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#compareTo-4">compareTo</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO_ReflectionUtil.cls.html#constantValue">constantValue</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="UNO_ReflectionUtil.cls.html#attributeList-1">attributeList</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#containedIn">containedIn</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#fullyQualifiedName-1">fullyQualifiedName</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#name-2">name</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#parent">parent</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#string-1">string</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#unoTypeName-1">unoTypeName</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#value">value</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO_ReflectionUtil.cls.html#init-5">init</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#compareTo-1">compareTo</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO_ReflectionUtil.cls.html#enumValue">enumValue</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="UNO_ReflectionUtil.cls.html#attributeList-2">attributeList</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#fullyQualifiedName-2">fullyQualifiedName</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#name-3">name</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#parent-1">parent</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#string-2">string</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#unoTypeName-2">unoTypeName</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#value-1">value</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO_ReflectionUtil.cls.html#init-7">init</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#compareTo-2">compareTo</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO_ReflectionUtil.cls.html#exceptionMember">exceptionMember</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="UNO_ReflectionUtil.cls.html#fullyQualifiedName-3">fullyQualifiedName</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#parent-2">parent</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO_ReflectionUtil.cls.html#init-9">init</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO_ReflectionUtil.cls.html#exceptionMemberOld">exceptionMemberOld</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="UNO_ReflectionUtil.cls.html#attributeList-3">attributeList</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#datatype-1">datatype</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#name-4">name</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#parent-3">parent</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#referencedType">referencedType</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#referencedUnoTypename">referencedUnoTypename</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#string-3">string</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#unoTypeName-3">unoTypeName</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO_ReflectionUtil.cls.html#init-10">init</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#compareTo-3">compareTo</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO_ReflectionUtil.cls.html#fullDataType">fullDataType</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="UNO_ReflectionUtil.cls.html#attributeList-7">attributeList</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#datatype-3">datatype</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#name-8">name</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#referencedType-2">referencedType</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#referencedUnoTypename-1">referencedUnoTypename</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#string-8">string</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#unoTypeName-6">unoTypeName</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO_ReflectionUtil.cls.html#init-25">init</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#compareTo-7">compareTo</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO_ReflectionUtil.cls.html#moduleMember">moduleMember</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="UNO_ReflectionUtil.cls.html#attributeList-5">attributeList</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#fullyQualifiedName-4">fullyQualifiedName</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#name-6">name</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#parent-4">parent</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#string-6">string</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#unoTypeName-4">unoTypeName</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO_ReflectionUtil.cls.html#init-16">init</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#compareTo-5">compareTo</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO_ReflectionUtil.cls.html#serviceMember">serviceMember</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="UNO_ReflectionUtil.cls.html#attributeList-6">attributeList</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#fullyQualifiedName-5">fullyQualifiedName</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#name-7">name</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#optionality">optionality</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#parent-5">parent</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#string-7">string</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#unoTypeName-5">unoTypeName</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO_ReflectionUtil.cls.html#init-20">init</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#compareTo-6">compareTo</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO_ReflectionUtil.cls.html#structMember">structMember</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="UNO_ReflectionUtil.cls.html#fullyQualifiedName-6">fullyQualifiedName</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#parent-6">parent</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO_ReflectionUtil.cls.html#init-23">init</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO_ReflectionUtil.cls.html#UNO_ATTRIBUTE">UNO_ATTRIBUTE</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="UNO_ReflectionUtil.cls.html#datatype">datatype</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#definedBy">definedBy</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#readOnly">readOnly</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#string">string</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO_ReflectionUtil.cls.html#init-3">init</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#toString-2">toString</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO_ReflectionUtil.cls.html#UNO_CONSTANTS">UNO_CONSTANTS</a>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO_ReflectionUtil.cls.html#init-4">init</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO_ReflectionUtil.cls.html#UNO_Definition">UNO_Definition</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="UNO_ReflectionUtil.cls.html#attributeList">attributeList</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#classDir">classDir</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#definition">definition</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#fullyQualifiedName">fullyQualifiedName</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#name">name</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#name-1">name</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#unoTypeName">unoTypeName</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO_ReflectionUtil.cls.html#init">init</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#compareTo">compareTo</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#toString">toString</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#init-1">init</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO_ReflectionUtil.cls.html#UNO_DefinitionWithMembers">UNO_DefinitionWithMembers</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="UNO_ReflectionUtil.cls.html#definitions">definitions</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#definitionsRaw">definitionsRaw</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO_ReflectionUtil.cls.html#init-2">init</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#toString-1">toString</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO_ReflectionUtil.cls.html#UNO_ENUM">UNO_ENUM</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="UNO_ReflectionUtil.cls.html#defaultValue">defaultValue</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO_ReflectionUtil.cls.html#init-6">init</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#toString-3">toString</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO_ReflectionUtil.cls.html#UNO_EXCEPTION">UNO_EXCEPTION</a>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO_ReflectionUtil.cls.html#init-8">init</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO_ReflectionUtil.cls.html#UNO_INTERFACE">UNO_INTERFACE</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="UNO_ReflectionUtil.cls.html#attributes">attributes</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#methods">methods</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO_ReflectionUtil.cls.html#init-11">init</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#toString-4">toString</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO_ReflectionUtil.cls.html#UNO_METHOD">UNO_METHOD</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="UNO_ReflectionUtil.cls.html#argumentList">argumentList</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#definedBy-1">definedBy</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#exceptionList">exceptionList</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#oneWay">oneWay</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#returnValue">returnValue</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#string-4">string</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO_ReflectionUtil.cls.html#init-13">init</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#toJavaSyntax">toJavaSyntax</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#toString-5">toString</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO_ReflectionUtil.cls.html#UNO_MODULE">UNO_MODULE</a>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO_ReflectionUtil.cls.html#init-15">init</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO_ReflectionUtil.cls.html#UNO_PROPERTY">UNO_PROPERTY</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="UNO_ReflectionUtil.cls.html#dataType">dataType</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#definedBy-2">definedBy</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#modifiers">modifiers</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO_ReflectionUtil.cls.html#init-17">init</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#toString-6">toString</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO_ReflectionUtil.cls.html#UNO_SERVICE">UNO_SERVICE</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="UNO_ReflectionUtil.cls.html#definedBy-3">definedBy</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#implementationName">implementationName</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#interfaces">interfaces</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#properties">properties</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#services">services</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO_ReflectionUtil.cls.html#init-19">init</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#toString-7">toString</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO_ReflectionUtil.cls.html#UNO_SINGLETON">UNO_SINGLETON</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="UNO_ReflectionUtil.cls.html#oldStyleServiceName">oldStyleServiceName</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO_ReflectionUtil.cls.html#init-21">init</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#toString-8">toString</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO_ReflectionUtil.cls.html#UNO_STRUCT">UNO_STRUCT</a>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO_ReflectionUtil.cls.html#init-22">init</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="UNO_ReflectionUtil.cls.html#UNO_TYPEDEF">UNO_TYPEDEF</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="UNO_ReflectionUtil.cls.html#referencedType-1">referencedType</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#referencedUnoTypeName">referencedUnoTypeName</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="UNO_ReflectionUtil.cls.html#init-24">init</a>
+                                                            <a href="UNO_ReflectionUtil.cls.html#toString-9">toString</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                </ul>
+                            </li>
+                            <li>Requires
+                                    <a href="../packages/UNO.CLS.html">UNO.CLS</a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-xs-9">
+            <div class="container-fluid" id="content-main">
+
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container-fluid">
+    <div class="row">
+        <div class="container-fluid">
+            <h1>UNO_ReflectionUtil.cls</h1>
+
+
+
+
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="createReflectionObject"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: createReflectionObject</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> unoTypeName "|" 1 unoDefinition
+
+                        </div>
+                    </div>
+                </div>
+
+
+
+
+
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="argument"></a>
+                        <div class="panel-heading">
+                            <h4>Class: argument</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Inherit-Classes: comparable</span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="attributeList-4"></a>
+                                    <ul>
+                                        <li><b>attributeList</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="datatype-2"></a>
+                                    <ul>
+                                        <li><b>datatype</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="name-5"></a>
+                                    <ul>
+                                        <li><b>name</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="pos"></a>
+                                    <ul>
+                                        <li><b>pos</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="string-5"></a>
+                                    <ul>
+                                        <li><b>string</b>
+                                                <span class="label label-info">GETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-14"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> pos, name, datatype
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="compareTo-4"></a>
+                                    <ul>
+                                        <li><b>compareTo</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> left, right
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="constantValue"></a>
+                        <div class="panel-heading">
+                            <h4>Class: constantValue</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Inherit-Classes: comparable</span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="attributeList-1"></a>
+                                    <ul>
+                                        <li><b>attributeList</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="containedIn"></a>
+                                    <ul>
+                                        <li><b>containedIn</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="fullyQualifiedName-1"></a>
+                                    <ul>
+                                        <li><b>fullyQualifiedName</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="name-2"></a>
+                                    <ul>
+                                        <li><b>name</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="parent"></a>
+                                    <ul>
+                                        <li><b>parent</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="string-1"></a>
+                                    <ul>
+                                        <li><b>string</b>
+                                                <span class="label label-info">GETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="unoTypeName-1"></a>
+                                    <ul>
+                                        <li><b>unoTypeName</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="value"></a>
+                                    <ul>
+                                        <li><b>value</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-5"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> parent, name, value, unoTypeName
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="compareTo-1"></a>
+                                    <ul>
+                                        <li><b>compareTo</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> other
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="enumValue"></a>
+                        <div class="panel-heading">
+                            <h4>Class: enumValue</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Inherit-Classes: comparable</span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="attributeList-2"></a>
+                                    <ul>
+                                        <li><b>attributeList</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="fullyQualifiedName-2"></a>
+                                    <ul>
+                                        <li><b>fullyQualifiedName</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="name-3"></a>
+                                    <ul>
+                                        <li><b>name</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="parent-1"></a>
+                                    <ul>
+                                        <li><b>parent</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="string-2"></a>
+                                    <ul>
+                                        <li><b>string</b>
+                                                <span class="label label-info">GETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="unoTypeName-2"></a>
+                                    <ul>
+                                        <li><b>unoTypeName</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="value-1"></a>
+                                    <ul>
+                                        <li><b>value</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-7"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> parent, name, value, unoTypeName
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="compareTo-2"></a>
+                                    <ul>
+                                        <li><b>compareTo</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> other
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="exceptionMember"></a>
+                        <div class="panel-heading">
+                            <h4>Class: exceptionMember</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Mixin-Classes: <a href="../packages/UNO_ReflectionUtil.cls.html#fullDataType">fullDataType</a></span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="fullyQualifiedName-3"></a>
+                                    <ul>
+                                        <li><b>fullyQualifiedName</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="parent-2"></a>
+                                    <ul>
+                                        <li><b>parent</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-9"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> parent, ...
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="exceptionMemberOld"></a>
+                        <div class="panel-heading">
+                            <h4>Class: exceptionMemberOld</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Inherit-Classes: comparable</span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="attributeList-3"></a>
+                                    <ul>
+                                        <li><b>attributeList</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="datatype-1"></a>
+                                    <ul>
+                                        <li><b>datatype</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="name-4"></a>
+                                    <ul>
+                                        <li><b>name</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="parent-3"></a>
+                                    <ul>
+                                        <li><b>parent</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="referencedType"></a>
+                                    <ul>
+                                        <li><b>referencedType</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="referencedUnoTypename"></a>
+                                    <ul>
+                                        <li><b>referencedUnoTypename</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="string-3"></a>
+                                    <ul>
+                                        <li><b>string</b>
+                                                <span class="label label-info">GETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="unoTypeName-3"></a>
+                                    <ul>
+                                        <li><b>unoTypeName</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-10"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> name, datatype, unoTypeName, referencedType, referencedUnoTypename
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="compareTo-3"></a>
+                                    <ul>
+                                        <li><b>compareTo</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> other
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="fullDataType"></a>
+                        <div class="panel-heading">
+                            <h4>Class: fullDataType</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Mixin-Classes: object</span>
+                                    <span class="label label-info class-info">Inherit-Classes: comparable</span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="attributeList-7"></a>
+                                    <ul>
+                                        <li><b>attributeList</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="datatype-3"></a>
+                                    <ul>
+                                        <li><b>datatype</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="name-8"></a>
+                                    <ul>
+                                        <li><b>name</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="referencedType-2"></a>
+                                    <ul>
+                                        <li><b>referencedType</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="referencedUnoTypename-1"></a>
+                                    <ul>
+                                        <li><b>referencedUnoTypename</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="string-8"></a>
+                                    <ul>
+                                        <li><b>string</b>
+                                                <span class="label label-info">GETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="unoTypeName-6"></a>
+                                    <ul>
+                                        <li><b>unoTypeName</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-25"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> name, datatype, unoTypeName, referencedType, referencedUnoTypename
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="compareTo-7"></a>
+                                    <ul>
+                                        <li><b>compareTo</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> other
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="moduleMember"></a>
+                        <div class="panel-heading">
+                            <h4>Class: moduleMember</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Inherit-Classes: comparable</span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="attributeList-5"></a>
+                                    <ul>
+                                        <li><b>attributeList</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="fullyQualifiedName-4"></a>
+                                    <ul>
+                                        <li><b>fullyQualifiedName</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="name-6"></a>
+                                    <ul>
+                                        <li><b>name</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="parent-4"></a>
+                                    <ul>
+                                        <li><b>parent</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="string-6"></a>
+                                    <ul>
+                                        <li><b>string</b>
+                                                <span class="label label-info">GETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="unoTypeName-4"></a>
+                                    <ul>
+                                        <li><b>unoTypeName</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-16"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> parent
+
+                                                <br /><span class="keyword">PARSE ARG</span> ., name "|" unoTypeName, fqn
+
+                                        </li>
+                                    </ul>
+                                    <a id="compareTo-5"></a>
+                                    <ul>
+                                        <li><b>compareTo</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> other
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="serviceMember"></a>
+                        <div class="panel-heading">
+                            <h4>Class: serviceMember</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Inherit-Classes: comparable</span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="attributeList-6"></a>
+                                    <ul>
+                                        <li><b>attributeList</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="fullyQualifiedName-5"></a>
+                                    <ul>
+                                        <li><b>fullyQualifiedName</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="name-7"></a>
+                                    <ul>
+                                        <li><b>name</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="optionality"></a>
+                                    <ul>
+                                        <li><b>optionality</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="parent-5"></a>
+                                    <ul>
+                                        <li><b>parent</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="string-7"></a>
+                                    <ul>
+                                        <li><b>string</b>
+                                                <span class="label label-info">GETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="unoTypeName-5"></a>
+                                    <ul>
+                                        <li><b>unoTypeName</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-20"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> parent, fullyQualifiedName, unoTypeName, optionality
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="compareTo-6"></a>
+                                    <ul>
+                                        <li><b>compareTo</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> other
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="structMember"></a>
+                        <div class="panel-heading">
+                            <h4>Class: structMember</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Mixin-Classes: <a href="../packages/UNO_ReflectionUtil.cls.html#fullDataType">fullDataType</a></span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="fullyQualifiedName-6"></a>
+                                    <ul>
+                                        <li><b>fullyQualifiedName</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="parent-6"></a>
+                                    <ul>
+                                        <li><b>parent</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-23"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> parent, ...
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO_ATTRIBUTE"></a>
+                        <div class="panel-heading">
+                            <h4>Class: UNO_ATTRIBUTE</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: <a href="../packages/UNO_ReflectionUtil.cls.html#UNO_Definition">UNO_Definition</a></span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="datatype"></a>
+                                    <ul>
+                                        <li><b>datatype</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="definedBy"></a>
+                                    <ul>
+                                        <li><b>definedBy</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="readOnly"></a>
+                                    <ul>
+                                        <li><b>readOnly</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="string"></a>
+                                    <ul>
+                                        <li><b>string</b>
+                                                <span class="label label-info">GETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-3"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> self~definition, definedBy
+
+                                        </li>
+                                    </ul>
+                                    <a id="toString-2"></a>
+                                    <ul>
+                                        <li><b>toString</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO_CONSTANTS"></a>
+                        <div class="panel-heading">
+                            <h4>Class: UNO_CONSTANTS</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: <a href="../packages/UNO_ReflectionUtil.cls.html#UNO_DefinitionWithMembers">UNO_DefinitionWithMembers</a></span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <i>No Attributes</i>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-4"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> self~definition
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO_Definition"></a>
+                        <div class="panel-heading">
+                            <h4>Class: UNO_Definition</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Inherit-Classes: Comparable</span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="attributeList"></a>
+                                    <ul>
+                                        <li><b>attributeList</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="classDir"></a>
+                                    <ul>
+                                        <li><b>classDir</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="definition"></a>
+                                    <ul>
+                                        <li><b>definition</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="fullyQualifiedName"></a>
+                                    <ul>
+                                        <li><b>fullyQualifiedName</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="name"></a>
+                                    <ul>
+                                        <li><b>name</b>
+                                                <span class="label label-info">GETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="name-1"></a>
+                                    <ul>
+                                        <li><b>name</b>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> name
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="unoTypeName"></a>
+                                    <ul>
+                                        <li><b>unoTypeName</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="compareTo"></a>
+                                    <ul>
+                                        <li><b>compareTo</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> other
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="toString"></a>
+                                    <ul>
+                                        <li><b>toString</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="init-1"></a>
+                                    <ul>
+                                        <li><b>init</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO_DefinitionWithMembers"></a>
+                        <div class="panel-heading">
+                            <h4>Class: UNO_DefinitionWithMembers</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: <a href="../packages/UNO_ReflectionUtil.cls.html#UNO_Definition">UNO_Definition</a></span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="definitions"></a>
+                                    <ul>
+                                        <li><b>definitions</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="definitionsRaw"></a>
+                                    <ul>
+                                        <li><b>definitionsRaw</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-2"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="toString-1"></a>
+                                    <ul>
+                                        <li><b>toString</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO_ENUM"></a>
+                        <div class="panel-heading">
+                            <h4>Class: UNO_ENUM</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: <a href="../packages/UNO_ReflectionUtil.cls.html#UNO_DefinitionWithMembers">UNO_DefinitionWithMembers</a></span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="defaultValue"></a>
+                                    <ul>
+                                        <li><b>defaultValue</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-6"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> self~definition
+
+                                        </li>
+                                    </ul>
+                                    <a id="toString-3"></a>
+                                    <ul>
+                                        <li><b>toString</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO_EXCEPTION"></a>
+                        <div class="panel-heading">
+                            <h4>Class: UNO_EXCEPTION</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: <a href="../packages/UNO_ReflectionUtil.cls.html#UNO_DefinitionWithMembers">UNO_DefinitionWithMembers</a></span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <i>No Attributes</i>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-8"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> self~definition
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO_INTERFACE"></a>
+                        <div class="panel-heading">
+                            <h4>Class: UNO_INTERFACE</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: <a href="../packages/UNO_ReflectionUtil.cls.html#UNO_DefinitionWithMembers">UNO_DefinitionWithMembers</a></span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="attributes"></a>
+                                    <ul>
+                                        <li><b>attributes</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="methods"></a>
+                                    <ul>
+                                        <li><b>methods</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-11"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> self~definition
+
+                                        </li>
+                                    </ul>
+                                    <a id="toString-4"></a>
+                                    <ul>
+                                        <li><b>toString</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO_METHOD"></a>
+                        <div class="panel-heading">
+                            <h4>Class: UNO_METHOD</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: <a href="../packages/UNO_ReflectionUtil.cls.html#UNO_Definition">UNO_Definition</a></span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="argumentList"></a>
+                                    <ul>
+                                        <li><b>argumentList</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="definedBy-1"></a>
+                                    <ul>
+                                        <li><b>definedBy</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="exceptionList"></a>
+                                    <ul>
+                                        <li><b>exceptionList</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="oneWay"></a>
+                                    <ul>
+                                        <li><b>oneWay</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="returnValue"></a>
+                                    <ul>
+                                        <li><b>returnValue</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="string-4"></a>
+                                    <ul>
+                                        <li><b>string</b>
+                                                <span class="label label-info">GETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-13"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> self~definition, definedBy
+
+                                        </li>
+                                    </ul>
+                                    <a id="toJavaSyntax"></a>
+                                    <ul>
+                                        <li><b>toJavaSyntax</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="toString-5"></a>
+                                    <ul>
+                                        <li><b>toString</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO_MODULE"></a>
+                        <div class="panel-heading">
+                            <h4>Class: UNO_MODULE</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: <a href="../packages/UNO_ReflectionUtil.cls.html#UNO_DefinitionWithMembers">UNO_DefinitionWithMembers</a></span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <i>No Attributes</i>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-15"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> self~definition
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO_PROPERTY"></a>
+                        <div class="panel-heading">
+                            <h4>Class: UNO_PROPERTY</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: <a href="../packages/UNO_ReflectionUtil.cls.html#UNO_Definition">UNO_Definition</a></span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="dataType"></a>
+                                    <ul>
+                                        <li><b>dataType</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="definedBy-2"></a>
+                                    <ul>
+                                        <li><b>definedBy</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="modifiers"></a>
+                                    <ul>
+                                        <li><b>modifiers</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-17"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> self~definition
+
+                                        </li>
+                                    </ul>
+                                    <a id="toString-6"></a>
+                                    <ul>
+                                        <li><b>toString</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> modifiers
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO_SERVICE"></a>
+                        <div class="panel-heading">
+                            <h4>Class: UNO_SERVICE</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: <a href="../packages/UNO_ReflectionUtil.cls.html#UNO_DefinitionWithMembers">UNO_DefinitionWithMembers</a></span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="definedBy-3"></a>
+                                    <ul>
+                                        <li><b>definedBy</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="implementationName"></a>
+                                    <ul>
+                                        <li><b>implementationName</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="interfaces"></a>
+                                    <ul>
+                                        <li><b>interfaces</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="properties"></a>
+                                    <ul>
+                                        <li><b>properties</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="services"></a>
+                                    <ul>
+                                        <li><b>services</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-19"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> self~definition
+
+                                        </li>
+                                    </ul>
+                                    <a id="toString-7"></a>
+                                    <ul>
+                                        <li><b>toString</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO_SINGLETON"></a>
+                        <div class="panel-heading">
+                            <h4>Class: UNO_SINGLETON</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: <a href="../packages/UNO_ReflectionUtil.cls.html#UNO_Definition">UNO_Definition</a></span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="oldStyleServiceName"></a>
+                                    <ul>
+                                        <li><b>oldStyleServiceName</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-21"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> self~definition
+
+                                        </li>
+                                    </ul>
+                                    <a id="toString-8"></a>
+                                    <ul>
+                                        <li><b>toString</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO_STRUCT"></a>
+                        <div class="panel-heading">
+                            <h4>Class: UNO_STRUCT</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: <a href="../packages/UNO_ReflectionUtil.cls.html#UNO_DefinitionWithMembers">UNO_DefinitionWithMembers</a></span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <i>No Attributes</i>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-22"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> self~definition
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="UNO_TYPEDEF"></a>
+                        <div class="panel-heading">
+                            <h4>Class: UNO_TYPEDEF</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: <a href="../packages/UNO_ReflectionUtil.cls.html#UNO_Definition">UNO_Definition</a></span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="referencedType-1"></a>
+                                    <ul>
+                                        <li><b>referencedType</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="referencedUnoTypeName"></a>
+                                    <ul>
+                                        <li><b>referencedUnoTypeName</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-24"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> self~definition
+
+                                        </li>
+                                    </ul>
+                                    <a id="toString-9"></a>
+                                    <ul>
+                                        <li><b>toString</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h2>Requires</h2>
+                        </div>
+                        <div class="panel-body">
+                                <a href="../packages/UNO.CLS.html">UNO.CLS</a> <br />
+                        </div>
+                    </div>
+                </div>
+
+
+
+
+        </div>
+    </div>
+    <br />
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/typeahead-bootstrap.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+    <script src="../js/search-data.js"></script>
+    <script>
+        $(document).ready(function(){
+            $('body').append('<div id="toTop" class="btn btn-info"><span class="glyphicon glyphicon-chevron-up"></span> Back to Top</div>');
+            $(window).scroll(function () {
+                if ($(this).scrollTop() != 0) {
+                    $('#toTop').fadeIn();
+                } else {
+                    $('#toTop').fadeOut();
+                }
+            });
+            $('#toTop').click(function(){
+                $("html, body").animate({ scrollTop: 0 }, 200);
+                return false;
+            });
+        });
+
+    </script>
+    <script>
+        $(document).ready(function() {
+            $('#search').typeahead({
+                source: searchData,
+                displayText: function(item) {
+                    if(item.info !== null) {
+                        return item.type + ":" + item.name + " (" + item.info + ")";
+                    }
+
+                    return item.type + ":" + item.name;
+                },
+                matcher: function(item) {
+                    return item.name.toLowerCase().indexOf(this.query.toLowerCase()) != -1
+                },
+                afterSelect: function(item) {
+                    window.location.href = item.href;
+                    $("#search").val(item.name)
+                },
+                items: 20
+            });
+        })
+    </script>
+</body>
+</html>

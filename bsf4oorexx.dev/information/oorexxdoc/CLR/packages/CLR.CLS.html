@@ -1,0 +1,927 @@
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">-->
+
+    <title>ooRexxDoc - .CLR/.NET ooRexx Documentation - CLR.CLS</title>
+
+    <style type="text/css">
+        body { padding-top: 70px; }
+
+        #toTop{
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            cursor: pointer;
+            display: none;
+        }
+
+        pre {
+            overflow-x: auto;
+        }
+        pre code {
+            overflow-wrap: normal;
+            white-space: pre;
+        }
+
+        .keyword {
+            color: #ff5f00;
+        }
+
+        #search {
+            margin-left: 10px;
+        }
+
+        :target {
+            display: block;
+            position: relative;
+            top: -50px;
+            visibility: hidden;
+        }
+
+        .class-info {
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+    </style>
+</head>
+
+<body>
+<nav class="navbar navbar-default navbar-fixed-top">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">ooRexxDoc</a>
+        </div>
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav">
+                <li><a href="../oorexxdoc.html">Home</a></li>
+                <li class="active"><a href="CLR.CLS.html">CLR.CLS</a></li>
+            </ul>
+            <form class="navbar-form">
+                <div class="form-group">
+                    <input type="text" id="search" class="form-control" placeholder="Search" id="test" data-provide="typeahead" autocomplete=off>
+                </div>
+                <span class="navbar-right">
+                        <span class="label label-info">Run-Date: Aug 4, 2022, 4:16:30 PM</span>
+                </span>
+            </form>
+        </div>
+    </div>
+</nav>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="panel panel-default">
+                <div class="panel-heading">Packages</div>
+                <div class="panel-body" style="max-height: 420px;overflow-y: scroll;">
+                        <a href="CLR.CLS.html">CLR.CLS</a>
+                        <hr width="99%"/>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="panel panel-default">
+                <div class="panel-heading">CLR.CLS Overview</div>
+                <div class="panel-body">
+                    <ul>
+                            <li>Routines
+                                    <a href="CLR.CLS.html#clr.addAssembly">clr.addAssembly</a>
+                                    <a href="CLR.CLS.html#clr.box">clr.box</a>
+                                    <a href="CLR.CLS.html#clr.createArray">clr.createArray</a>
+                                    <a href="CLR.CLS.html#clr.createEventHandler">clr.createEventHandler</a>
+                                    <a href="CLR.CLS.html#clr.import-1">clr.import</a>
+                                    <a href="CLR.CLS.html#clr.unbox">clr.unbox</a>
+                                    <a href="CLR.CLS.html#clr.wrap">clr.wrap</a>
+                            </li>
+                            <li>Classes
+                                <ul>
+                                        <li><a href="CLR.CLS.html#CLR">CLR</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="CLR.CLS.html#clr.object">clr.object</a>
+                                                            <a href="CLR.CLS.html#clr.type">clr.type</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="CLR.CLS.html#init-2">init</a>
+                                                            <a href="CLR.CLS.html#clr.dispatch">clr.dispatch</a>
+                                                            <a href="CLR.CLS.html#clr.import">clr.import</a>
+                                                            <a href="CLR.CLS.html#string">string</a>
+                                                            <a href="CLR.CLS.html#unknown-1">unknown</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="CLR.CLS.html#CLR_Proxy">CLR_Proxy</a>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="CLR.CLS.html#init-1">init</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="CLR.CLS.html#CLRLogger">CLRLogger</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="CLR.CLS.html#doLogging">doLogging</a>
+                                                            <a href="CLR.CLS.html#logLevel">logLevel</a>
+                                                            <a href="CLR.CLS.html#logLevel-1">logLevel</a>
+                                                            <a href="CLR.CLS.html#logLevels">logLevels</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="CLR.CLS.html#init">init</a>
+                                                            <a href="CLR.CLS.html#unknown">unknown</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="CLR.CLS.html#CLRThread">CLRThread</a>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="CLR.CLS.html#run">run</a>
+                                                            <a href="CLR.CLS.html#start">start</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                </ul>
+                            </li>
+                            <li>Requires
+                                    BSF.CLS
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-xs-9">
+            <div class="container-fluid" id="content-main">
+
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container-fluid">
+    <div class="row">
+        <div class="container-fluid">
+            <h1>CLR.CLS</h1>
+
+                <br /><br />
+                <div class="panel panel-default">
+                    <div class="panel-body">
+                        ooRexx package which requires the BSF.CLS (ooRexx Java bridge) ooRexx package and the Java package   "jni4net" in order to make all .Net classes on Windows (the Common Language Runtime, CLR) available   to ooRexx programmers.   ooRexx programmers will use the public ooRexx class "CLR" to instantiate any (fully qualified)   CLR type and send the ooRexx proxy merely ooRexx messages (comparable to exploiting the public   "BSF" class to interact with Java).
+                            <br /><br />
+                            <b>author</b>: Manfred Raffel, original design and implementation, fall 2015 <br />
+                            <b>author</b>: Rony G. Flatscher, updates, summer 2016 <br />
+                            <b>since</b>: fall 2015 <br />
+                            <b>version</b>: 100.20160812 <br />
+                    </div>
+                </div>
+
+
+
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="clr.addAssembly"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: clr.addAssembly</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        Routine that queries all exported types defined in the supplied assembly and caches their full names   and assembly names in <code>.clr.dir~assemblyName</code>.
+                                            <br /><br />
+                                            <b>param</b>: assemblyName the assembly name to work on <br />
+                                    </div>
+                                </div>
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> assemblyName
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="clr.box"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: clr.box</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        Boxes (wraps) a Rexx string representing a primitive type into a CLR object using a CLR wrapper class.  Rexx strings are turned into CLR string objects (type: <code>System.String</code>).
+                                            <br /><br />
+                                            <b>param</b>: typeIndicator one of the following strings:                <ul>                     <li>"System.String",    "STring"    </li>                     <li>"System.Boolean",   "BOolean"   </li>                     <li>"System.Byte",      "BYte"      </li>                     <li>"System.SByte",     "SByte"     </li>                     <li>"System.Char",      "CHAR"      </li>                     <li>"System.Decimal",   "DEcimal"   </li>                     <li>"System.Double",    "DOuble"    </li>                     <li>"System.Int16",     "INT16"     </li>                     <li>"System.UInt16",    "UINT16"    </li>                     <li>"System.Int32",     "INT32"     </li>                     <li>"System.UInt32",    "UINT32"    </li>                     <li>"System.Int64",     "INT64"     </li>                     <li>"System.UInt64",    "UINT64"    </li>                     <li>"System.Single",    "SIngle"    </li>                </ul> <br />
+                                            <b>param</b>: strValue the Rexx string containing the primitive value or plain string to box/wrap/convert <br />
+                                            <b>return</b>: the boxed CLR value, the CLR string value or <code>.nil</code> if <code>.nil</code> was supplied <br />
+                                    </div>
+                                </div>
+
+
+
+                                <br /><span class="keyword">USE ARG</span> typeIndicator, strValue
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="clr.createArray"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: clr.createArray</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        Utility routine that allows creating a single dimensioned CLR array with the supplied type and capacity.
+                                            <br /><br />
+                                            <b>param</b>: typeName the fully qualified CLR type name <br />
+                                            <b>param</b>: capacity the capacity (a non-negative whole number) <br />
+                                            <b>return</b>: a System.Array instance (a CLR array object) of the specified type and capacity <br />
+                                    </div>
+                                </div>
+
+
+
+                                <br /><span class="keyword">USE ARG</span> typeName, capacity
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="clr.createEventHandler"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: clr.createEventHandler</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        Creates an instance of "system.EventHandler" with the Rexx event handler object to handle any   events.
+                                            <br /><br />
+                                            <b>param</b>: rexxEventHandler a Rexx object that handles the events <br />
+                                            <b>param</b>: rexxData an optional Rexx object that will be supplied with each event (last event argument,                   appended by BSF4ooRexx, which is a Rexx directory object; the "rexxData" object                   can be retrieved from it using as index the value "USERDATA"; cf. BSF4ooRexx) <br />
+                                            <b>return</b>: an instance of "System.EventHandler", where the rexxEventHandler object will process the events <br />
+                                    </div>
+                                </div>
+
+
+
+                                <br /><span class="keyword">USE ARG</span> rexxEventHandler, rexxData = .nil
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="clr.import-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: clr.import</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        Routine to import a CLR/.Net class, the imported class understands the NEW-message.
+                                            <br /><br />
+                                            <b>param</b>: typeName the fully qualified CLR/.net type name <br />
+                                            <b>param</b>: rexxName4local the name to store in .local, defaults to <code>.nil</code>,                       which inhibits the default entry of the CLR::CLR_IMPORT <br />
+                                            <b>return</b>: a Rexx class object, subclassing CLR_Class, proxying the CLR/.Net type object <br />
+                                    </div>
+                                </div>
+
+
+
+                                <br /><span class="keyword">USE ARG</span> typeName, rexxName4local=.nil
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="clr.unbox"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: clr.unbox</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        Routine to turn values of boxed/wrapped <code>CLR</code> primitive types or System.String  values to Rexx strings, otherwise returns argument unchanged.
+                                            <br /><br />
+                                            <b>param</b>: clrObject the CLR object to unbox or to turn into a Rexx string <br />
+                                            <b>return</b>: a Rexx string or the argument unchanged, if <code>clrObject</code> does not represent         a boxed CLR value or a CLR string <br />
+                                    </div>
+                                </div>
+
+
+
+                                <br /><span class="keyword">USE ARG</span> clrObject
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="clr.wrap"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: clr.wrap</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        Processes received parameter "value" depending on its type. Always returns a CLR. If a CLR object which is a <ocde>system.Enum</code>, but not an instance of the <code>CLR_Enum</code> class, then an instance of <code>CLR_Enum</code> will be created and returned using the CLR object's <code>clr.object</code> and <code>clr.type</code> attributes. <p>If a Rexx string is supplied which can be represented as a number, then a CLR object representing a wrapped system.Int32, system.Int64 or system.Decimal gets returned, depending on the value range. Otherwise a system.String object gets returned <p>If a BSF (Java proxy) object is supplied it will be wrapped either as a <code>CLR_Enum</code> or as a <code>CLR_Proxy</code> object.
+                                            <br /><br />
+                                            <b>param</b>: value  a CLR, a BSF or a Rexx string object <br />
+                                            <b>return</b>: a CLR object wrapping up the supplied <code>value</code> <br />
+                                    </div>
+                                </div>
+
+
+
+                                <br /><span class="keyword">USE ARG</span> value
+
+
+                        </div>
+                    </div>
+                </div>
+
+
+
+
+
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="CLR"></a>
+                        <div class="panel-heading">
+                            <h4>Class: CLR</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                            </div>
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        The class that represents CLR objects and which is responsible for interacting with the peer CLR object   on behalf of the ooRexx programmer. An instance of this class holds a reference to the peer CLR object   and a reference to that object's type to ease reflective interactions.
+                                    </div>
+                                </div>
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="clr.object"></a>
+                                    <ul>
+                                        <li><b>clr.object</b>
+                                                <span class="label label-info">GETTER</span>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Getter attribute method to get the peer <code>clr.object</code>.
+                                                            <br /><br />
+                                                            <b>return</b>: the CLR object (a BSF object) that is a peer of the CLR object it represents <br />
+                                                    </div>
+                                                </div>
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="clr.type"></a>
+                                    <ul>
+                                        <li><b>clr.type</b>
+                                                <span class="label label-info">GETTER</span>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Getter attribute method to get the <code>clr.type</code> of the <code>clr.object</code>.
+                                                            <br /><br />
+                                                            <b>return</b>: the CLR type object (a BSF object) that is the type of the <code>clr.object</code> <br />
+                                                    </div>
+                                                </div>
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-2"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Constructor method.
+                                                            <br /><br />
+                                                            <b>param</b>: typeName the fully qualified name of a CLR type to instantiate <br />
+                                                            <b>param</b>: param optionally one or more paramaters to pass on to the CLR constructor <br />
+                                                    </div>
+                                                </div>
+
+
+                                                <br /><span class="keyword">USE ARG</span> typeName, param = .nil, ...
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="clr.dispatch"></a>
+                                    <ul>
+                                        <li><b>clr.dispatch</b>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Directly forwards a message to the "unknown" method of this CLR. This is needed if a    method on .NET side is to be called which is named like a method on the ooRexx side.    Examples are the ooRexx methods "class", "start" or "init" (inherited from the ooRexx root class    <code>.Object</code>).
+                                                            <br /><br />
+                                                            <b>param</b>: messageName the name of the .NET message <br />
+                                                    </div>
+                                                </div>
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> messageName
+
+                                        </li>
+                                    </ul>
+                                    <a id="clr.import"></a>
+                                    <ul>
+                                        <li><b>clr.import</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Class method to import a CLR type into ooRexx and allow that type to be treated as an   ooRexx class that possesses the <code>new</code> class method to create instances of   the CLR type it represents.
+                                                            <br /><br />
+                                                            <b>param</b>: typeName the fully qualified type name which should be imported into ooRexx as an ooRexx class proxy <br />
+                                                            <b>param</b>: rexxName4Local optional string which gets used to store the imported class proxy in the        <code>.local</code> directory. Prepending a dot to that name (using it as an environment symbol)        will cause ooRexx to automatically search for this entry in <code>.nil</code>.        If this argument is given and set to <code>.nil</code>, then no entry will be created in the        ooRexx <code>.local</code> directory. <br />
+                                                            <b>return</b>: the ooRexx class object representing the CLR type, i.e. an instance of class         <code>&quot;CLR_Class&quot;</code> <br />
+                                                    </div>
+                                                </div>
+
+
+                                                <br /><span class="keyword">USE ARG</span> typeName, rexxName4Local=(typeName)
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="string"></a>
+                                    <ul>
+                                        <li><b>string</b>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        The method that renders the CLR proxy object in a format that indicates its type by including the CLR type name.
+                                                            <br /><br />
+                                                            <b>return</b>: a string representing the CLR proxy object <br />
+                                                    </div>
+                                                </div>
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="unknown-1"></a>
+                                    <ul>
+                                        <li><b>unknown</b>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        The unknown method tries to find methods, properties, fields or events (in that order) that match   the unknown message name. It will carry out the appropriate operation. The implementation allows   also to assign new values to CLR properties, if the ooRexx programmer employs them like an ooRexx   attribute. In addition it allows for adding an event handler to an event object by the name of the   message.
+                                                            <br /><br />
+                                                            <b>param</b>: msgName the name of the message that was not understood (no method by that name was found) <br />
+                                                            <b>param</b>: msgArgs an array containing the arguments supplied with the message, if any <br />
+                                                            <b>return</b>: returns the appropriate object or .nil, if appropriate <br />
+                                                    </div>
+                                                </div>
+
+
+                                                <br /><span class="keyword">USE ARG</span> msgName, msgArgs
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="CLR_Proxy"></a>
+                        <div class="panel-heading">
+                            <h4>Class: CLR_Proxy</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: <a href="../packages/CLR.CLS.html#CLR">CLR</a></span>
+                            </div>
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        This class serves as a proxy for CLR/.Net objects of any type, returned from CLR/.Net. The routine   <code>clr.wrap()</code> will use this class, if a pure BSF (Java) object is supplied,   assuming it is from CLR/.Net.
+                                            <br /><br />
+                                            <b>author</b>: Rony G. Flatscher <br />
+                                            <b>since</b>: 2016-06-18 <br />
+                                    </div>
+                                </div>
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <i>No Attributes</i>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-1"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Constructor.
+                                                            <br /><br />
+                                                            <b>param</b>: argObj mandatory object, can be a CLR or BSF object <br />
+                                                            <b>param</b>: argType optional object, if supplied, must be a BSF object <br />
+                                                    </div>
+                                                </div>
+
+
+                                                <br /><span class="keyword">USE ARG</span> argObj, argType=.nil
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="CLRLogger"></a>
+                        <div class="panel-heading">
+                            <h4>Class: CLRLogger</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                            </div>
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        Utility class to allow logging merely by sending the messages "FATAL", "ERROR", "WARN",   "INFO", "DEBUG" or "TRACE" with the log text as argument to the class object <code>.CLRLogger</code>.   All interaction is with the class object directly, there is no instance one is allowed to create.
+                                    </div>
+                                </div>
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="doLogging"></a>
+                                    <ul>
+                                        <li><b>doLogging</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Getter attribute method that indicates whether log messages get processed.
+                                                            <br /><br />
+                                                            <b>return</b>: <code>.true</code> if logging is active, <code>.false</code> if not <br />
+                                                    </div>
+                                                </div>
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="logLevel"></a>
+                                    <ul>
+                                        <li><b>logLevel</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Getter attribute method that returns the current <code>logLevel</code> setting.
+                                                            <br /><br />
+                                                            <b>return</b>: one of the strings: "OFF", "FATAL", "ERROR", "WARN", "INFO", "DEBUG", "TRACE" <br />
+                                                    </div>
+                                                </div>
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="logLevel-1"></a>
+                                    <ul>
+                                        <li><b>logLevel</b>
+                                                <span class="label label-info">SETTER</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Setter attribute method that returns a copy of the log levels directory. If set to "OFF", then   the attribute <code>doLogging</code> is set to <code>.false</code>, otherwise to <code>.true</code>.
+                                                            <br /><br />
+                                                            <b>param</b>: desiredLevel, one of "OFF", "FATAL", "ERROR", "WARN", "INFO", "DEBUG" and "TRACE". <br />
+                                                    </div>
+                                                </div>
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> desiredLevel
+
+                                        </li>
+                                    </ul>
+                                    <a id="logLevels"></a>
+                                    <ul>
+                                        <li><b>logLevels</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Getter attribute method that returns a copy of the log levels directory.
+                                                            <br /><br />
+                                                            <b>return</b>: copy of <code>logLevels</code> directory object <br />
+                                                    </div>
+                                                </div>
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init"></a>
+                                    <ul>
+                                        <li><b>init</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Constructor, defining the log levels "OFF", "FATAL", "ERROR", *   "WARN", "INFO", "DEBUG" and "TRACE",   setting the attribute <code>logLevel</code> to "OFF". Determines whether the ooRexx version in use   has the <code>.traceOutput</code> stream, if not the <code>.error</code> stream is used for log output   instead.
+                                                    </div>
+                                                </div>
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="unknown"></a>
+                                    <ul>
+                                        <li><b>unknown</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Unknown method that handles the messages "OFF", "FATAL", "ERROR", "WARN", "INFO", "DEBUG", "TRACE",   depending on the value of the attribute <code>logLevel</code>. The handling is determined by   the following relation: <code>"OFF" &lt; "FATAL" &lt; "ERROR" &lt; "WARN" &lt; "INFO" &lt; "DEBUG"   &lt; "TRACE"<code>. Hence, if the attribute <code>logLevel</code> is set to <code>&quot;OFF&quot;<code>   no log messages get displayed. By contrast, if <code>logLevel</code> is set to <code>&quot;TRACE&quot;<code>   all log messages get displayed.
+                                                            <br /><br />
+                                                            <b>param</b>: levelName the unknown message name <br />
+                                                            <b>param</b>: args an array object containing the arguments supplied with the unknown message <br />
+                                                    </div>
+                                                </div>
+
+
+                                                <br /><span class="keyword">USE ARG</span> levelName, args
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="CLRThread"></a>
+                        <div class="panel-heading">
+                            <h4>Class: CLRThread</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                            </div>
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        A class that uses "java.lang.Thread" to create a thread for executing Rexx code in the context   of CLR/.Net concurrently. To take advantage of this ooRexx class it is necessary to subclass it,   and to implement the abstract method "run".
+                                    </div>
+                                </div>
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <i>No Attributes</i>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="run"></a>
+                                    <ul>
+                                        <li><b>run</b>
+                                                <span class="label label-info">ABSTRACT</span>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Abstract method that needs to be implemented in the subclassed Rexx class.
+                                                    </div>
+                                                </div>
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="start"></a>
+                                    <ul>
+                                        <li><b>start</b>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        This method creates a new thread.
+                                                            <br /><br />
+                                                            <b>param</b>: rexxData optional, if supplied this Rexx object gets supplied, if a Java method invocation                 causes any Rexx method of the subclassed Rexx class to be executed. In that case                 BSF4ooRexx will append a "slotDir" Rexx directory argument to the Java arguments,                 that will have an entry "USERDATA" returning this Rexx object "rexxData" <br />
+                                                    </div>
+                                                </div>
+
+
+                                                <br /><span class="keyword">USE ARG</span> rexxData = .nil
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h2>Requires</h2>
+                        </div>
+                        <div class="panel-body">
+                                BSF.CLS <br />
+                        </div>
+                    </div>
+                </div>
+
+
+
+
+        </div>
+    </div>
+    <br />
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/typeahead-bootstrap.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+    <script src="../js/search-data.js"></script>
+    <script>
+        $(document).ready(function(){
+            $('body').append('<div id="toTop" class="btn btn-info"><span class="glyphicon glyphicon-chevron-up"></span> Back to Top</div>');
+            $(window).scroll(function () {
+                if ($(this).scrollTop() != 0) {
+                    $('#toTop').fadeIn();
+                } else {
+                    $('#toTop').fadeOut();
+                }
+            });
+            $('#toTop').click(function(){
+                $("html, body").animate({ scrollTop: 0 }, 200);
+                return false;
+            });
+        });
+
+    </script>
+    <script>
+        $(document).ready(function() {
+            $('#search').typeahead({
+                source: searchData,
+                displayText: function(item) {
+                    if(item.info !== null) {
+                        return item.type + ":" + item.name + " (" + item.info + ")";
+                    }
+
+                    return item.type + ":" + item.name;
+                },
+                matcher: function(item) {
+                    return item.name.toLowerCase().indexOf(this.query.toLowerCase()) != -1
+                },
+                afterSelect: function(item) {
+                    window.location.href = item.href;
+                    $("#search").val(item.name)
+                },
+                items: 20
+            });
+        })
+    </script>
+</body>
+</html>

@@ -5,9 +5,7 @@ import java.io.FileReader;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import org.rexxla.bsf.engines.rexx.RexxEngine;
-import org.rexxla.bsf.engines.rexx.RexxProxy;
-import org.rexxla.bsf.engines.rexx.jsr223.*;
+import org.rexxla.bsf.engines.rexx.*;
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
@@ -32,6 +30,8 @@ import org.rexxla.bsf.engines.rexx.jsr223.*;
                               ARGV explicitly
                 - 2020-01-26, rgf: spelling of "Rexx" to "rexx"
                 - 2022-01-29, rgf: expicitly do a System.exit(0)
+                - 2022-08-06, rgf: 'org.rexxla.bsf.engines.rexx.jsr223.' got changed to
+                                   'org.rexxla.bsf.engines.rexx': adjust import statement
 */
 
 /** Demonstrate evaluating a Rexx script, once without supplying arguements and once supplying

@@ -149,6 +149,7 @@ package org.oorexx.datergf; // "DateTime_RGF"-package
   */
 
 // rgf, 2016-11-07: this package could be overhauled by employing java.lang.Enum
+// rgf, 2022-08-05: corrected an error in the Gregorian easter formula copied from (https://www.tondering.dk/claus/cal/easter.php)
 
 
 public  class   DateRGF
@@ -160,7 +161,7 @@ public  class   DateRGF
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static public String version = "100.20161107";
+    static public String version = "100.20220805";
 
 
 
@@ -2193,7 +2194,8 @@ public  class   DateRGF
           int c4 = C/4;         // save one division later
           int H  = (C - c4 - (8*C+13)/25 + 19*G + 15) % 30;     // 23-epact (modulo 30)
           int h28= H/28;        // save one division later
-          I      = H - h28*(1 - h28*(29/(H+1))*((21-G)/11) );
+          // I      = H - h28*(1 - h28*(29/(H+1))*((21-G)/11) );
+          I      = H - h28*(1 - (29/(H+1))*((21-G)/11) );
           J      = (year + year/4 + I + 2 - C + c4) % 7;
         }
        else                     // Julian calendar (default)
