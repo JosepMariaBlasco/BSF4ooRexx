@@ -22,10 +22,10 @@
  */
 
 /*
-    Changed: 2013-06-17 rgf, demonstrate that one should use BSFManager's terminate() method,
+    Changed: 2013-06-17, rgf, demonstrate that one should use BSFManager's terminate() method,
                         if that particular Rexx interpreter instance is not needed anymore,
                         such that its reserved system resources can be reclaimed
-             2022-08-05 rgf, end Java with System.exit(0);
+             2022-08-06, rgf, explicitly do System.exit(0);
 */
 
 import org.apache.bsf.*;

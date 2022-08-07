@@ -1,5 +1,5 @@
 /* ------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2012 Rony G. Flatscher
+ *    Copyright (C) 2012-2022 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@
     Changed: 2013-06-17, rgf, demonstrate that one should use BSFManager's terminate() method,
                             if that particular Rexx interpreter instance is not needed anymore,
                             such that its reserved system resources can be reclaimed
+             2022-08-06, rgf, explicitly do System.exit(0);
 */
 
 import org.apache.bsf.*;
@@ -56,6 +57,7 @@ public class JavaRunRexxWith_RXVALUE_Exit implements RexxExitHandler
         System.err.println("<=== Java - after Rexx program has finished. <===");
 
         mgr.terminate();    // make sure that the Rexx interpreter instance gets terminated!
+        System.exit(0);     // exit Java
     }
 
 
