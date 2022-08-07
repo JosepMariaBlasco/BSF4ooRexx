@@ -4,8 +4,8 @@
    author:     Rony G. Flatscher
    date:       2022-08-05
    purpose:    demonstrate the usage of the DateRgf class (part of samples distribution) for
-               calculating the Catholic Easter Sunday and dependent holidays
-   needs:      ooRexx, BSF4Rexx
+               calculating the Catholic Easter Sunday and some dependent holidays
+   needs:      ooRexx, BSF4ooRexx
    changes:    ---
    usage:      1-062_DateRgfCatholicEaster.rxj [startYear [years]]
                ... years number of years to calculate Catholic Easter related holidays, default: 5
@@ -44,9 +44,9 @@ do i=startYear for years            -- iterate over years
    say left("Year/Jahr:" pp(i) "", 79, "-")
    say
    easter = .DateRgf~easter(tmpDate)       /* get Easter sunday for this year      */
-   karfreitag=.dateRgf~easter(tmpDate)~add(-2)
+   say "Palm Sunday/Palmsonntag           " pp(.dateRgf~easter(tmpDate)~add(-7)~toString) "(Easter Sunday -  7 days)"
    say "Good Friday/Karfreitag:           " pp(.dateRgf~easter(tmpDate)~add(-2)~toString) "(Easter Sunday -  2 days)"
-   say "Easter Day/Ostersonntag:          " pp(.dateRgf~easter(tmpDate)        ~toString)
+   say "Easter Sunday/Ostersonntag:       " pp(.dateRgf~easter(tmpDate)        ~toString)
    say "Ascension Day/Christi Himmelfahrt:" pp(.dateRgf~easter(tmpDate)~add(39)~toString) "(Easter Sunday + 39 days)"
    say "Pentecost/Pfingstsonntag:         " pp(.dateRgf~easter(tmpDate)~add(49)~toString) "(Easter Sunday + 49 days)"
    say "Whit Monday/Pfingstmontag:        " pp(.dateRgf~easter(tmpDate)~add(50)~toString) "(Easter Sunday + 50 days)"
