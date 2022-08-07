@@ -36,6 +36,9 @@ remarks:
 
 inline jint impl_jniRexxHaltInterpreterInstance (JNIEnv *env, jobject jobj, jstring j_rii_ID)
 
+    6.0.0   2022-08-07, rgf: - now using RexxAllocateMemory() instead of malloc()
+                               JNU_JavaString2pRxString(...) for RXSTRING structures
+                               as otherwise heap-guard errors occur on Windows
 
     6.0.0   2022-08-06, rgf: - add Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniExecuteSimpleProcedureOnOwnRII(...)
                                such that e.g. the ooRexx version string can be fetched by the RexxEngine
@@ -1033,21 +1036,21 @@ thread_id_t  RgfGetTID();
 
 #if defined (BSF4REXX_32_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "600.20220806 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "600.20220807 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "600.20220806 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "600.20220807 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #elif defined (BSF4REXX_64_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "600.20220806 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "600.20220807 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "600.20220806 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "600.20220807 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #else
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "600.20220806 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "600.20220807 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "600.20220806 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "600.20220807 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #endif
 
@@ -3846,25 +3849,20 @@ char *JNU_GetStringNativeChars(JNIEnv *env, jstring jstr)  // JNIEnv *env, jstri
 //                  result is assigned to a PRXSTRING
 void JNU_JavaString2pRxString(JNIEnv *env, jstring jstr, PRXSTRING rxstr)  // JNIEnv *env, jstring jstr)
 {
-    char *result = 0;
-
     jbyteArray jba = (jbyteArray) env->CallObjectMethod(jstr, defaultJVM->mid_String_getBytes);
 
     if ( env->ExceptionCheck()==JNI_FALSE )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
     {
         jint len = env->GetArrayLength(jba);
-        rxstr->strptr   =result;
-
-        result   = (char *)malloc(len + 1);
-        // TODO: check for memory problem (result==NULL) and raise an error ?
-
-        if (result != NULL)
+        if (len>255)    // do we need to allocate a bigger buffer?
         {
-            env->GetByteArrayRegion(jba, 0, len, (jbyte *)result);
-            result[len] = 0; /* NULL-terminate */
-            rxstr->strlength=len;    // save length in bytes with RXSTRING
-            rxstr->strptr   =result;
+            RexxFreeMemory(rxstr->strptr);                  // free the supplied (256 byte) buffer
+            rxstr->strptr=(char *)RexxAllocateMemory(len+1);
         }
+
+        env->GetByteArrayRegion(jba, 0, len, (jbyte *)rxstr->strptr);
+        rxstr->strptr[len] = 0; /* NULL-terminate */
+        rxstr->strlength=len;    // save length in bytes with RXSTRING
     }
     else
     {
