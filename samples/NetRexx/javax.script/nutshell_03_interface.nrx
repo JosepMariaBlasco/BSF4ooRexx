@@ -1,13 +1,11 @@
-import javax.script;
-import java.io.FileReader;
+import javax.script
+import java.io.FileReader
 
-import org.rexxla.bsf.engines.rexx.RexxEngine;
-import org.rexxla.bsf.engines.rexx.RexxProxy;
-import org.rexxla.bsf.engines.rexx.jsr223;
+import org.rexxla.bsf.engines.rexx
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015-2020 Rony G. Flatscher
+   Copyright 2015-2022 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -25,6 +23,8 @@ import org.rexxla.bsf.engines.rexx.jsr223;
       - 2016-12-18, rgf: output the string "(NetRexx)" instead of "(Java)"
 
     changed:    2020-01-26, rgf: spelling of "Rexx" to "rexx"
+                2022-08-08, rgf: - adjust for removing "jsr223" from package name
+                                 - explicitly end Java with System.exit(0);
 */
 
 
@@ -87,4 +87,4 @@ catch exc=Exception
    exc.printStackTrace()
    System.exit(-1)
 end
-
+System.exit(0)                         -- end Java

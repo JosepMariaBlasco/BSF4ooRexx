@@ -19,7 +19,7 @@ import javax.script.SimpleScriptContext
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015-2016 Rony G. Flatscher
+   Copyright 2015-2022 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -35,14 +35,15 @@ import javax.script.SimpleScriptContext
 -----------------------------------------------------------------------------
 
    changes:
-      2016-12-18, rgf: - adopt the changes of its Java sibling (cf. "samples/Java/javax.script/RunScript.java"), ie:
+      2016-12-18, rgf: - adopt the changes of its Java sibling (cf. "samples/Java/javax.script/RunScript.java")
 
-                         changed: 2016-12-06, rgf: if no argument is given, show the help after the list of
-                                                   currently available javax.script engines
+      2016-12-06, rgf: - if no argument is given, show the help after the list of
+                         currently available javax.script engines
 
-                         changed: 2016-12-07, rgf: reformat getProgram()-output such that line comments are replaced by
-                                                   block comments
+      2016-12-07, rgf: - reformat getProgram()-output such that line comments are replaced by
+                         block comments
 
+      2022-08-08, rgf: - insert System.exit(0) as otherwise Java might not exit
 */
 
 
@@ -101,6 +102,7 @@ method main(args=String[]) static
       end
       say
       showHelp
+      System.exit(0)    -- exit Java
       return
    end
    else
@@ -119,6 +121,7 @@ method main(args=String[]) static
                key=it.next()
                showEngineProperties(String key, ScriptEngineFactory n2sef.get(key))
             end
+            System.exit(0)    -- exit Java
             return
          end
 
@@ -128,12 +131,14 @@ method main(args=String[]) static
                key=it.next()
                testEngine(String key, ScriptEngineFactory n2sef.get(key),  ScriptEngine n2se.get(key))
             end
+            System.exit(0)    -- exit Java
             return
          end
 
          else if nrxFirstWord="-H" then   -- "h"elp: show how to invoke
          do
            showHelp
+           System.exit(0)    -- exit Java
            return
          end
 
@@ -157,7 +162,6 @@ method main(args=String[]) static
 
          else    -- unknown switch
              signal IllegalArgumentException("unknown switch '"firstWord"', must be followed by one of '-h', '-i', '-t', or '-e'");
-
       end
       else      -- assuming a filename in hand
       do
@@ -215,12 +219,12 @@ method main(args=String[]) static
           signal IllegalArgumentException(exc)
       end
    end
+   System.exit(0)    -- exit Java
 
 
 -- show information about the script engine
 method showEngineProperties(name=String, sef=ScriptEngineFactory) static
    say name
-
    System.out.print("\tgetEngineName()          : ")
    do
       say sef.getEngineName()
