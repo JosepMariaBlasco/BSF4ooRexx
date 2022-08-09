@@ -14,6 +14,7 @@
 
             2022-08-09, rgf: - force picking remove(int) version by using bsf.strictArg()
                              - corrected wrong "\selectedIndex~isNil" with "selectedIndex>-1"
+                             - at startup make sure that tableViewData is empty to match display
                              - correcting interface logic errors (in menu and popup menu):
                                - added missing listener to id_menu_remove
                                - make sure id_listview gets set to listViewData on first id_menu_add

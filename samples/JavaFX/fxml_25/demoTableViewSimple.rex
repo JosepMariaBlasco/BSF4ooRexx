@@ -461,7 +461,7 @@ syntax:
               id_label~setText("TableView has" tableViewData~size "cell(s)")
               id_button_add   ~setDisable(.true)
               id_button_delete~setDisable(.true)
-              id_menu_enable_editing~setSelect(.false)
+              id_menu_enable_editing~setSelected(.false)
               return
            end
 
