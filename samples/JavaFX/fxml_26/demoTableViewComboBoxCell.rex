@@ -11,7 +11,7 @@
                                before the children section to make its public members available
                                to all event code
 
-            2022-08-09, rgf: - force picking remove(int) version by using bsf.strictArg()
+            2022-08-09, rgf: - force picking remove(int) version by using box.strictArg()
                              - corrected wrong "\selectedIndex~isNil" with "selectedIndex>-1"
                              - at startup make sure that tableViewData is empty to match display
                              - correcting interface logic errors (in menu and popup menu):
@@ -462,7 +462,7 @@ syntax:
                      -- also one remove(Object) which might get picked instead of the
                      -- remove(int) version that we need here; to force remove(int) we
                      -- can either use the message tableViewData~bsf.invokeStrict('remove', 'int',idx)
-                     -- or create a RexxStrictArgument of type 'int' with bsf.strictArg('int',idx)
+                     -- or create a RexxStrictArgument of type 'int' with box.strictArg('int',idx)
                     tableViewData~remove(box.strictArg('int',idx))  -- make sure integer version of remove() gets used
                  end
               end
@@ -541,7 +541,7 @@ syntax:
                   -- also one remove(Object) which might get picked instead of the
                   -- remove(int) version that we need here; to force remove(int) we
                   -- can either use the message listViewData~bsf.invokeStrict('remove','int',idx)
-                  -- or create a RexxStrictArgument of type 'int' with bsf.strictArg('int',idx)
+                  -- or create a RexxStrictArgument of type 'int' with box.strictArg('int',idx)
                   tableViewData~remove(box.strictArg('int',selectedIndex))  -- force remove(int) version to be used!
                   id_tableView~refresh
                   id_label~setText("TableView has" tableViewData~size "row(s)")
