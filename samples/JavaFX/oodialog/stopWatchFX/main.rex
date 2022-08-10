@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /*
    A JavaFX implementation of "ooRexx\samples\oodialog\examples\stopWatch.rex"
    (Windows only) that runs on Windows, but also on Linux and MacOS.
@@ -40,4 +41,3 @@ syntax:                 -- if something goes wrong, let us report it
   say ppJavaExceptionChain(co,.true)   -- show all Java exceptions leading to this one
   say "---"
   raise propagate       -- now let ooRexx report the syntax condition
-

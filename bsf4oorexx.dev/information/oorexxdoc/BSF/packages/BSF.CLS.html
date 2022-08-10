@@ -1,0 +1,3959 @@
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">-->
+
+    <title>ooRexxDoc - BSF ooRexx Documentation - BSF.CLS</title>
+
+    <style type="text/css">
+        body { padding-top: 70px; }
+
+        #toTop{
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            cursor: pointer;
+            display: none;
+        }
+
+        pre {
+            overflow-x: auto;
+        }
+        pre code {
+            overflow-wrap: normal;
+            white-space: pre;
+        }
+
+        .keyword {
+            color: #ff5f00;
+        }
+
+        #search {
+            margin-left: 10px;
+        }
+
+        :target {
+            display: block;
+            position: relative;
+            top: -50px;
+            visibility: hidden;
+        }
+
+        .class-info {
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+    </style>
+</head>
+
+<body>
+<nav class="navbar navbar-default navbar-fixed-top">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">ooRexxDoc</a>
+        </div>
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav">
+                <li><a href="../oorexxdoc.html">Home</a></li>
+                <li class="active"><a href="BSF.CLS.html">BSF.CLS</a></li>
+            </ul>
+            <form class="navbar-form">
+                <div class="form-group">
+                    <input type="text" id="search" class="form-control" placeholder="Search" id="test" data-provide="typeahead" autocomplete=off>
+                </div>
+                <span class="navbar-right">
+                        <span class="label label-info">Run-Date: Aug 4, 2022, 4:11:16 PM</span>
+                </span>
+            </form>
+        </div>
+    </div>
+</nav>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="panel panel-default">
+                <div class="panel-heading">Packages</div>
+                <div class="panel-body" style="max-height: 420px;overflow-y: scroll;">
+                        <a href="BSF.CLS.html">BSF.CLS</a>
+                        <hr width="99%"/>
+                        <a href="BSF_OnTheFly.cls.html">BSF_OnTheFly.cls</a>
+                        <hr width="99%"/>
+                        <a href="rexxcUtil.rex.html">rexxcUtil.rex</a>
+                        <hr width="99%"/>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="panel panel-default">
+                <div class="panel-heading">BSF.CLS Overview</div>
+                <div class="panel-body">
+                    <ul>
+                            <li>Routines
+                                    <a href="BSF.CLS.html#box">box</a>
+                                    <a href="BSF.CLS.html#box.strictArg">box.strictArg</a>
+                                    <a href="BSF.CLS.html#bsf.compile">bsf.compile</a>
+                                    <a href="BSF.CLS.html#bsf.contextClassLoader">bsf.contextClassLoader</a>
+                                    <a href="BSF.CLS.html#bsf.createArray-1">bsf.createArray</a>
+                                    <a href="BSF.CLS.html#bsf.createArrayOf-1">bsf.createArrayOf</a>
+                                    <a href="BSF.CLS.html#bsf.createJavaArray-1">bsf.createJavaArray</a>
+                                    <a href="BSF.CLS.html#bsf.createJavaArrayOf-1">bsf.createJavaArrayOf</a>
+                                    <a href="BSF.CLS.html#bsf.createProxyClass">bsf.createProxyClass</a>
+                                    <a href="BSF.CLS.html#bsf.getConstant">bsf.getConstant</a>
+                                    <a href="BSF.CLS.html#bsf.getConstantJSO">bsf.getConstantJSO</a>
+                                    <a href="BSF.CLS.html#bsf.getSlotDir">bsf.getSlotDir</a>
+                                    <a href="BSF.CLS.html#bsf.getStaticValue-1">bsf.getStaticValue</a>
+                                    <a href="BSF.CLS.html#bsf.getStaticValueJSO-1">bsf.getStaticValueJSO</a>
+                                    <a href="BSF.CLS.html#bsf.getStaticValueStrict-1">bsf.getStaticValueStrict</a>
+                                    <a href="BSF.CLS.html#bsf.getStaticValueStrictJSO-1">bsf.getStaticValueStrictJSO</a>
+                                    <a href="BSF.CLS.html#bsf.haltThread-1">bsf.haltThread</a>
+                                    <a href="BSF.CLS.html#bsf.iconv">bsf.iconv</a>
+                                    <a href="BSF.CLS.html#bsf.import-1">bsf.import</a>
+                                    <a href="BSF.CLS.html#bsf.importClass-1">bsf.importClass</a>
+                                    <a href="BSF.CLS.html#bsf.isA-1">bsf.isA</a>
+                                    <a href="BSF.CLS.html#bsf.JSOasUtf8string">bsf.JSOasUtf8string</a>
+                                    <a href="BSF.CLS.html#bsf.loadClass-1">bsf.loadClass</a>
+                                    <a href="BSF.CLS.html#bsf.lookupBean-1">bsf.lookupBean</a>
+                                    <a href="BSF.CLS.html#bsf.pollEventText-1">bsf.pollEventText</a>
+                                    <a href="BSF.CLS.html#bsf.postEventText-1">bsf.postEventText</a>
+                                    <a href="BSF.CLS.html#bsf.redirectTo">bsf.redirectTo</a>
+                                    <a href="BSF.CLS.html#bsf.stringToUtf8">bsf.stringToUtf8</a>
+                                    <a href="BSF.CLS.html#BSF.terminateRexxEngine">BSF.terminateRexxEngine</a>
+                                    <a href="BSF.CLS.html#bsf.unregisterBean">bsf.unregisterBean</a>
+                                    <a href="BSF.CLS.html#bsf.utf8stringAsJSO">bsf.utf8stringAsJSO</a>
+                                    <a href="BSF.CLS.html#bsf.utf8ToString">bsf.utf8ToString</a>
+                                    <a href="BSF.CLS.html#bsf.version">bsf.version</a>
+                                    <a href="BSF.CLS.html#bsf.wrap-1">bsf.wrap</a>
+                                    <a href="BSF.CLS.html#bsf.wrapStaticFields">bsf.wrapStaticFields</a>
+                                    <a href="BSF.CLS.html#create_display.version_entry">create_display.version_entry</a>
+                                    <a href="BSF.CLS.html#escapeQuotes">escapeQuotes</a>
+                                    <a href="BSF.CLS.html#getAndSetPathToIcons">getAndSetPathToIcons</a>
+                                    <a href="BSF.CLS.html#iif">iif</a>
+                                    <a href="BSF.CLS.html#initialize.BSF.dir">initialize.BSF.dir</a>
+                                    <a href="BSF.CLS.html#makeBSF4ooRexxLookLikeMacOSX">makeBSF4ooRexxLookLikeMacOSX</a>
+                                    <a href="BSF.CLS.html#parseJavaOptions">parseJavaOptions</a>
+                                    <a href="BSF.CLS.html#pp-1">pp</a>
+                                    <a href="BSF.CLS.html#ppJavaExceptionChain">ppJavaExceptionChain</a>
+                                    <a href="BSF.CLS.html#unbox">unbox</a>
+                                    <a href="BSF.CLS.html#unbox_ori">unbox_ori</a>
+                                    <a href="BSF.CLS.html#xBSF">xBSF</a>
+                                    <a href="BSF.CLS.html#xBsfCreateRexxProxy">xBsfCreateRexxProxy</a>
+                                    <a href="BSF.CLS.html#xBsfLoadJava">xBsfLoadJava</a>
+                                    <a href="BSF.CLS.html#xBsfRexxProxy">xBsfRexxProxy</a>
+                                    <a href="BSF.CLS.html#xBsfUninit4JavaBean">xBsfUninit4JavaBean</a>
+                            </li>
+                            <li>Floating Methods
+                                    <a href="BSF.CLS.html#newStrict">newStrict</a>
+                            </li>
+                            <li>Classes
+                                <ul>
+                                        <li><a href="BSF.CLS.html#AwtGUIThread">AwtGUIThread</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="BSF.CLS.html#JavaGuiUtilityClz-1">JavaGuiUtilityClz</a>
+                                                            <a href="BSF.CLS.html#msgQueue-1">msgQueue</a>
+                                                            <a href="BSF.CLS.html#runnable-1">runnable</a>
+                                                            <a href="BSF.CLS.html#waitingToRun-1">waitingToRun</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="BSF.CLS.html#init-16">init</a>
+                                                            <a href="BSF.CLS.html#invokeOnGuiThread-1">invokeOnGuiThread</a>
+                                                            <a href="BSF.CLS.html#isGuiThread-1">isGuiThread</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="BSF.CLS.html#BSF">BSF</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="BSF.CLS.html#bsf.null_string">bsf.null_string</a>
+                                                            <a href="BSF.CLS.html#bsf.null_string-1">bsf.null_string</a>
+                                                            <a href="BSF.CLS.html#rBSF">rBSF</a>
+                                                            <a href="BSF.CLS.html#rBsfCreateRexxProxy">rBsfCreateRexxProxy</a>
+                                                            <a href="BSF.CLS.html#rBsfRexxProxy">rBsfRexxProxy</a>
+                                                            <a href="BSF.CLS.html#rBsfUninit4JavaBean">rBsfUninit4JavaBean</a>
+                                                            <a href="BSF.CLS.html#rii_id">rii_id</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="BSF.CLS.html#init-3">init</a>
+                                                            <a href="BSF.CLS.html#bsf.addEventListener">bsf.addEventListener</a>
+                                                            <a href="BSF.CLS.html#bsf.attachNewStrict">bsf.attachNewStrict</a>
+                                                            <a href="BSF.CLS.html#bsf.createArray">bsf.createArray</a>
+                                                            <a href="BSF.CLS.html#bsf.createArrayOf">bsf.createArrayOf</a>
+                                                            <a href="BSF.CLS.html#bsf.createJavaArray">bsf.createJavaArray</a>
+                                                            <a href="BSF.CLS.html#bsf.createJavaArrayOf">bsf.createJavaArrayOf</a>
+                                                            <a href="BSF.CLS.html#bsf.dispatch">bsf.dispatch</a>
+                                                            <a href="BSF.CLS.html#bsf.exit">bsf.exit</a>
+                                                            <a href="BSF.CLS.html#bsf.exit-1">bsf.exit</a>
+                                                            <a href="BSF.CLS.html#bsf.FullJavaClassName">bsf.FullJavaClassName</a>
+                                                            <a href="BSF.CLS.html#bsf.getFieldValue">bsf.getFieldValue</a>
+                                                            <a href="BSF.CLS.html#bsf.getFieldValueJSO">bsf.getFieldValueJSO</a>
+                                                            <a href="BSF.CLS.html#bsf.getFieldValueStrict">bsf.getFieldValueStrict</a>
+                                                            <a href="BSF.CLS.html#bsf.getFieldValueStrictJSO">bsf.getFieldValueStrictJSO</a>
+                                                            <a href="BSF.CLS.html#bsf.getPropertyValue">bsf.getPropertyValue</a>
+                                                            <a href="BSF.CLS.html#bsf.getPropertyValueJSO">bsf.getPropertyValueJSO</a>
+                                                            <a href="BSF.CLS.html#bsf.getStaticValue">bsf.getStaticValue</a>
+                                                            <a href="BSF.CLS.html#bsf.getStaticValueJSO">bsf.getStaticValueJSO</a>
+                                                            <a href="BSF.CLS.html#bsf.getStaticValueStrict">bsf.getStaticValueStrict</a>
+                                                            <a href="BSF.CLS.html#bsf.getStaticValueStrictJSO">bsf.getStaticValueStrictJSO</a>
+                                                            <a href="BSF.CLS.html#bsf.haltThread">bsf.haltThread</a>
+                                                            <a href="BSF.CLS.html#bsf.import">bsf.import</a>
+                                                            <a href="BSF.CLS.html#bsf.importClass">bsf.importClass</a>
+                                                            <a href="BSF.CLS.html#bsf.invoke">bsf.invoke</a>
+                                                            <a href="BSF.CLS.html#bsf.invokeJSO">bsf.invokeJSO</a>
+                                                            <a href="BSF.CLS.html#bsf.invokeStrict">bsf.invokeStrict</a>
+                                                            <a href="BSF.CLS.html#bsf.invokeStrictJSO">bsf.invokeStrictJSO</a>
+                                                            <a href="BSF.CLS.html#bsf.isA">bsf.isA</a>
+                                                            <a href="BSF.CLS.html#bsf.loadClass">bsf.loadClass</a>
+                                                            <a href="BSF.CLS.html#bsf.lookupBean">bsf.lookupBean</a>
+                                                            <a href="BSF.CLS.html#bsf.pollEventText">bsf.pollEventText</a>
+                                                            <a href="BSF.CLS.html#bsf.postEventText">bsf.postEventText</a>
+                                                            <a href="BSF.CLS.html#bsf.setBSF4RexxInfos">bsf.setBSF4RexxInfos</a>
+                                                            <a href="BSF.CLS.html#bsf.setFieldValue">bsf.setFieldValue</a>
+                                                            <a href="BSF.CLS.html#bsf.setFieldValueStrict">bsf.setFieldValueStrict</a>
+                                                            <a href="BSF.CLS.html#bsf.setPropertyValue">bsf.setPropertyValue</a>
+                                                            <a href="BSF.CLS.html#bsf.setPropertyValueStrict">bsf.setPropertyValueStrict</a>
+                                                            <a href="BSF.CLS.html#bsf.setRexxNullString">bsf.setRexxNullString</a>
+                                                            <a href="BSF.CLS.html#bsf.sleep">bsf.sleep</a>
+                                                            <a href="BSF.CLS.html#bsf.wrap">bsf.wrap</a>
+                                                            <a href="BSF.CLS.html#bsf.wrapArray">bsf.wrapArray</a>
+                                                            <a href="BSF.CLS.html#bsf.wrapEnumeration">bsf.wrapEnumeration</a>
+                                                            <a href="BSF.CLS.html#makearray">makearray</a>
+                                                            <a href="BSF.CLS.html#supplier">supplier</a>
+                                                            <a href="BSF.CLS.html#uninit">uninit</a>
+                                                            <a href="BSF.CLS.html#unknown-1">unknown</a>
+                                                            <a href="BSF.CLS.html#init-4">init</a>
+                                                            <a href="BSF.CLS.html#unknown-2">unknown</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="BSF.CLS.html#bsf.dialog">bsf.dialog</a>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="BSF.CLS.html#init-10">init</a>
+                                                            <a href="BSF.CLS.html#component">component</a>
+                                                            <a href="BSF.CLS.html#dialogBox">dialogBox</a>
+                                                            <a href="BSF.CLS.html#dlgConstants">dlgConstants</a>
+                                                            <a href="BSF.CLS.html#getMessageType">getMessageType</a>
+                                                            <a href="BSF.CLS.html#inputBox">inputBox</a>
+                                                            <a href="BSF.CLS.html#javaDialogClass">javaDialogClass</a>
+                                                            <a href="BSF.CLS.html#messageBox">messageBox</a>
+                                                            <a href="BSF.CLS.html#setDefaultComponent">setDefaultComponent</a>
+                                                            <a href="BSF.CLS.html#unknown-3">unknown</a>
+                                                            <a href="BSF.CLS.html#init-11">init</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="BSF.CLS.html#BSF.InputStream">BSF.InputStream</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="BSF.CLS.html#isReader">isReader</a>
+                                                            <a href="BSF.CLS.html#javaObject">javaObject</a>
+                                                            <a href="BSF.CLS.html#prefix">prefix</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="BSF.CLS.html#string">string</a>
+                                                            <a href="BSF.CLS.html#init-12">init</a>
+                                                            <a href="BSF.CLS.html#charIn">charIn</a>
+                                                            <a href="BSF.CLS.html#chars">chars</a>
+                                                            <a href="BSF.CLS.html#lineIn">lineIn</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="BSF.CLS.html#BSF.OutputStream">BSF.OutputStream</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="BSF.CLS.html#doFlush">doFlush</a>
+                                                            <a href="BSF.CLS.html#endOfLine">endOfLine</a>
+                                                            <a href="BSF.CLS.html#isWriter">isWriter</a>
+                                                            <a href="BSF.CLS.html#javaObject-1">javaObject</a>
+                                                            <a href="BSF.CLS.html#prefix-1">prefix</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="BSF.CLS.html#string-1">string</a>
+                                                            <a href="BSF.CLS.html#init-13">init</a>
+                                                            <a href="BSF.CLS.html#charOut">charOut</a>
+                                                            <a href="BSF.CLS.html#lineOut">lineOut</a>
+                                                            <a href="BSF.CLS.html#say">say</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="BSF.CLS.html#BSF4REXX">BSF4REXX</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="BSF.CLS.html#bsf.dir">bsf.dir</a>
+                                                            <a href="BSF.CLS.html#bsf.dir-1">bsf.dir</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="BSF.CLS.html#init-2">init</a>
+                                                            <a href="BSF.CLS.html#unknown">unknown</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="BSF.CLS.html#BSF_ARRAY_PROXY">BSF_ARRAY_PROXY</a>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="BSF.CLS.html#init-7">init</a>
+                                                            <a href="BSF.CLS.html#dimension-1">dimension</a>
+                                                            <a href="BSF.CLS.html#items-1">items</a>
+                                                            <a href="BSF.CLS.html#uninit-2">uninit</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="BSF.CLS.html#BSF_ARRAY_REFERENCE">BSF_ARRAY_REFERENCE</a>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="BSF.CLS.html#init-6">init</a>
+                                                            <a href="BSF.CLS.html#%5B%5D">[]</a>
+                                                            <a href="BSF.CLS.html#%5B%5D%3D">[]=</a>
+                                                            <a href="BSF.CLS.html#at">at</a>
+                                                            <a href="BSF.CLS.html#dimension">dimension</a>
+                                                            <a href="BSF.CLS.html#items">items</a>
+                                                            <a href="BSF.CLS.html#MAKEARRAY">MAKEARRAY</a>
+                                                            <a href="BSF.CLS.html#put">put</a>
+                                                            <a href="BSF.CLS.html#putStrict">putStrict</a>
+                                                            <a href="BSF.CLS.html#size">size</a>
+                                                            <a href="BSF.CLS.html#SUPPLIER">SUPPLIER</a>
+                                                            <a href="BSF.CLS.html#uninit-1">uninit</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="BSF.CLS.html#BSF_REFERENCE">BSF_REFERENCE</a>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="BSF.CLS.html#init-5">init</a>
+                                                            <a href="BSF.CLS.html#util.setmethod">util.setmethod</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="BSF.CLS.html#FxGUIThread">FxGUIThread</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="BSF.CLS.html#JavaGuiUtilityClz">JavaGuiUtilityClz</a>
+                                                            <a href="BSF.CLS.html#msgQueue">msgQueue</a>
+                                                            <a href="BSF.CLS.html#runnable">runnable</a>
+                                                            <a href="BSF.CLS.html#waitingToRun">waitingToRun</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="BSF.CLS.html#init-15">init</a>
+                                                            <a href="BSF.CLS.html#invokeOnGuiThread">invokeOnGuiThread</a>
+                                                            <a href="BSF.CLS.html#isGuiThread">isGuiThread</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="BSF.CLS.html#JavaStaticFields.Directory">JavaStaticFields.Directory</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="BSF.CLS.html#rBSF-1">rBSF</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="BSF.CLS.html#init-8">init</a>
+                                                            <a href="BSF.CLS.html#%5B%5D-1">[]</a>
+                                                            <a href="BSF.CLS.html#%5B%5D%3D-1">[]=</a>
+                                                            <a href="BSF.CLS.html#AT">AT</a>
+                                                            <a href="BSF.CLS.html#bUseCache">bUseCache</a>
+                                                            <a href="BSF.CLS.html#entry">entry</a>
+                                                            <a href="BSF.CLS.html#JavaClassName">JavaClassName</a>
+                                                            <a href="BSF.CLS.html#JavaClassObject">JavaClassObject</a>
+                                                            <a href="BSF.CLS.html#init-9">init</a>
+                                                            <a href="BSF.CLS.html#PUT">PUT</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="BSF.CLS.html#JSR223">JSR223</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="BSF.CLS.html#showDebugs">showDebugs</a>
+                                                            <a href="BSF.CLS.html#showWarnings">showWarnings</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="BSF.CLS.html#init-14">init</a>
+                                                            <a href="BSF.CLS.html#get">get</a>
+                                                            <a href="BSF.CLS.html#getAttribute">getAttribute</a>
+                                                            <a href="BSF.CLS.html#getAttributes">getAttributes</a>
+                                                            <a href="BSF.CLS.html#getBindings">getBindings</a>
+                                                            <a href="BSF.CLS.html#normalizeName">normalizeName</a>
+                                                            <a href="BSF.CLS.html#ScriptContext2RexxDir">ScriptContext2RexxDir</a>
+                                                            <a href="BSF.CLS.html#set">set</a>
+                                                            <a href="BSF.CLS.html#setAttribute">setAttribute</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="BSF.CLS.html#Slot.Argument">Slot.Argument</a>
+                                        </li>
+                                </ul>
+                            </li>
+                            <li>Requires
+                                    BSF4ooRexx library
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-xs-9">
+            <div class="container-fluid" id="content-main">
+
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container-fluid">
+    <div class="row">
+        <div class="container-fluid">
+            <h1>BSF.CLS</h1>
+
+
+
+
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="box"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: box</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> type +2, val
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="box.strictArg"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: box.strictArg</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> oType=.nil, oVal, bPrimitive=.true
+
+                                <br /><span class="keyword">PARSE ARG</span> type +2
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.compile"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.compile</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        Routine that compiles a Java source file and returns the class object.
+                                            <br /><br />
+                                            <b>param</b>: className  the fully qualified class name (package plus class name in source) <br />
+                                            <b>param</b>: code       a mandatory string or array of strings representing the Java or NetRexx source code of a class <br />
+                                            <b>param</b>: language   optional, defaults to &quot;Java&quot;, alternatively can be &quot;NetRexx&quot; <br />
+                                            <b>param</b>: import     logical, if set to .true (default) will box newClass using bsf.import()
+                     allowing ooRexx new to be sent), otherwise the Java class object gets returned as is <br />
+                                            <b>return</b>: the compiled Java class object <br />
+                                    </div>
+                                </div>
+
+
+
+                                <br /><span class="keyword">USE ARG</span> className, code, language=&quot;Java&quot;, bImport=.true
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.contextClassLoader"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.contextClassLoader</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        Routine that interfaces with the Thread's context class loader. If no arguments are given
+    the current Thread's context class loader gets returned. Otherwise the argument may be
+    a string denoting a directory or a file, a java.io.File object, a java.net.URL object or
+    an array of these kinds of values, for which a new java.net.URLClassLoader gets created
+    which will be used to set the Thread's context class loader using the old context class loader
+    as its parent.
+
+    If a context class loader does not exist yet, the method
+    java.lang.ClassLoader.getSystemClassLoader will be used on Java 1.6/6, 1.7/7 and 1.8/8, otherwise
+    (Java 9 or higher) java.lang.ClassLoader.getPlatformClassLoader which then gets used as the
+    parent of the new java.net.URLClassLoader.
+                                            <br /><br />
+                                            <b>param</b>: urlArg     optional, either a list of strings denoting a directory or a file or a URL,
+                     a java.net.URL object, alternatively a single array of these kinds of values <br />
+                                            <b>return</b>: the Thread's current class loader <br />
+                                    </div>
+                                </div>
+
+
+
+                                <br /><span class="keyword">USE ARG</span> urlArg=.nil
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.createArray-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.createArray</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.createArrayOf-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.createArrayOf</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.createJavaArray-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.createJavaArray</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.createJavaArrayOf-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.createJavaArrayOf</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.createProxyClass"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.createProxyClass</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        This routine will create a new Java class on the fly, which extends the supplied Java class   and implements the supplied methodNames. The returned Java class implements all constructors   of the base class and for each a version which accepts as its first parameter a   <code>RexxProxy</code> object which gets the Java method invocations forwarded as ooRexx   messages with all supplied Java arguments plus a trailing ooRexx <code>.Directory</code>   argument containing some useful invocation details.   <br/>   If the <code>RexxProxy</code> object needs to invoke a masked   method (a method the extended Java class implements and forwards to the <code>RexxProxy</code>)   then it merely forwards the invocation to <code>self</code>, appending to the method name the   string &quot;_forwardToSuper&quot; and supplying all parameters the method mandates.   <br/>The extended class possesses the static methods <code>getDefaultHandler()</code> and    <code>setDefaultHandler(RexxProxy)</code>. The <em>defaultHandler</em> is a <code>RexxProxy</code>    which receives ooRexx messages for every static Java method that gets invoked in the extended    class.   <br/>The extended class possesses the instance methods <code>getTargetRexxProxy()</code> and    <code>setTargetRexxProxy(RexxProxy)</code>. The <em>DefaultHandler</em> is a <code>RexxProxy</code>    which receives ooRexx messages for every static Java method that gets invoked in the extended    class. It is set with the extended constructors that expect a <code>RexxProxy</code> as the    first argument. If the class' <em>defaultHandler</em> is not set yet, then the extended constructor's    code will set it to the <em>targetRexxProxy</em> automatically.
+                                            <br /><br />
+                                            <b>param</b>: javaClzName the fully qualified Java class name to be extended, either a string or a Java class object.
+         If the argument is a string, then it can be optionally followed by blank-delimited Java interface names
+         that the new class would implement as well and get serviced by the <code>RexxProxy</code> handling
+         the Java method invocations. Alternatively this can be an array where each array element is either
+         a string fully qualifying the Java class or a Java class object directly representing the class. <br />
+                                            <b>param</b>: newName the optional name of the newly created Java class, if omitted, a synthetic name        will be created, containing the string &quot;<em>visitorName</em>_$RexxExtendClass$_<em>someHashcode</em>&quot; <br />
+                                            <b>param</b>: methName... optional, where this and all following arguments denote a list of single Java method names or        a single argument representing an empty string the asterisk (*) character or a Rexx array (or Java array of type        <code>java.lang.String</code>) where each element denotes the Java method name        the Rexx proxy needs to implement; optionally, each Java method name may be preceded by        the Java class name and a blank. Please note: all public/protected abstract methods and        constructors will always get proxied! <br/>
+          The following special cases apply for this argument:          <ul>          <li>if this argument is <code>.nil</code>, then only the public/protected abstract methods and              constructors get proxied.          </li>          <li>if this argument is a single empty string, then only the public/protected abstract methods              and constructors get proxied.          </li>          <li>if this argument has a single element with the value <code>&quote;*&quote;</code> (asterisk), then              all public/protected methods and constructors get proxied.          </li>          </ul>
+
+        Please note:
+         <ul>
+         <li>
+        if this argument is omitted or <code>.nil</code> then only the public or protected
+
+then all declared public and protected methods of the given class will be proxied; if single        empty string <code>&quot;&quot;</code> is given, then an empty (size of 0) Java String array        is created and supplied, causing only the public and protected constructors to be proxied
+        <br>Warning: if you proxy the methods <code>toString</code>, <code>equals</code> and <code>hashCode</code> be aware that a wrong        implementation on your side may break the program. For that reason these methods are never        automatically proxied (if you leave out this argument). <br />
+                                            <b>return</b>: Java class object that is able to delegate its method invocations to a <code>RexxProxy</code> object <br />
+                                            <b>since</b>: 2010-04-18, 2014-08-31, 2017-03-09 <br />
+                                    </div>
+                                </div>
+
+
+
+                                <br /><span class="keyword">USE ARG</span> javaClzToProxy, newName=.nil, methName=&quot;&quot;, ...
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.getConstant"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.getConstant</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> className, fieldName
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.getConstantJSO"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.getConstantJSO</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> className, fieldName
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.getSlotDir"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.getSlotDir</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> argArray
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.getStaticValue-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.getStaticValue</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> className, fieldName
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.getStaticValueJSO-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.getStaticValueJSO</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> className, fieldName
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.getStaticValueStrict-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.getStaticValueStrict</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> className, fieldName
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.getStaticValueStrictJSO-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.getStaticValueStrictJSO</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> className, fieldName
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.haltThread-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.haltThread</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> tid
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.iconv"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.iconv</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        Routine that recodes a Rexx string in the given <em>fromCp</em> codepage into a Rexx string in the
+    given <em>toCp</em> codepage. The names of the character sets used for encoding are documented e.g.
+    in <https://docs.oracle.com/javase/8/docs/api/java/nio/charset/Charset.html> or
+    <https://docs.oracle.com/javase/8/docs/technotes/guides/intl/encoding.doc.html>.
+    Examples for such
+    names are &quot;Cp850&quot;, &quot;Cp1251&quot;, &quot;UTF-16&quot;.
+                                            <br /><br />
+                                            <b>param</b>: str        Rexx string encoded in the <em>fromCp</em> codepage <br />
+                                            <b>param</b>: fromCp     the character set encoding used for <em>str</em> <br />
+                                            <b>param</b>: toCp       the character set encoding to be used the recoded Rexx string that gets returned <br />
+                                            <b>return</b>: the recoded Rexx string <br />
+                                    </div>
+                                </div>
+
+
+
+                                <br /><span class="keyword">USE ARG</span> str, fromCp, toCp
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.import-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.import</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> java_path, name4env=.nil, extendedJavaClz=.nil
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.importClass-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.importClass</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> java_path, name4env=.nil, extendedJavaClz=.nil
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.isA-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.isA</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> javaObject, javaClass
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.JSOasUtf8string"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.JSOasUtf8string</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        The received Java String object (JSO) is rendered as an UTF-8 Rexx string, independent   of the file.encoding codepage setting.
+                                            <br /><br />
+                                            <b>param</b>: obj the Java String object reference or a Java object which String value is retrieved and worked upon <br />
+                                            <b>return</b>: a Rexx UTF-8 encoded string constructed from the Java String object <br />
+                                            <b>since</b>: 2014-10-07 <br />
+                                    </div>
+                                </div>
+
+
+
+                                <br /><span class="keyword">USE ARG</span> obj
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.loadClass-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.loadClass</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        Loads and returns the supplied Java class.
+                                            <br /><br />
+                                            <b>param</b>: javaClassName fully qualified Java class name to load <br />
+                                            <b>param</b>: name4env if supplied, the Java class proxy will be stored under this name in the environment                 such that it can be easily referred to with an environment symbol (a Rexx symbol that                 starts with a dot followed by the value of name4env <br />
+                                            <b>return</b>: the Java class proxy (an ooRexx class object proxying the Java class object) <br />
+                                    </div>
+                                </div>
+
+
+
+                                <br /><span class="keyword">USE ARG</span> javaClassName, name4env=.nil
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.lookupBean-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.lookupBean</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> beanName
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.pollEventText-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.pollEventText</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> timeOut
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.postEventText-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.postEventText</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> eventText, priority
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.redirectTo"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.redirectTo</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        Routine to allow redirecting ooRexx standard monitors (.input, .output, .error,
+   since ooRexx 4.2 in addition: .debugInput, .traceOutput) to Java input and output
+   streams and resetting to default ooRexx streams, if either first argument is not "J"ava
+   (redirecting to the Java standard files) or if no arguments are given altogether.
+   Each BSF.InputStream and BSF.OutputStream object will get their "prefix" attribute
+   defined to prepend an informative string, such that the user is able to distinguish
+   the Rexx output or Rexx input from Java.
+
+   The prefix values for the redirected Java streams that are monitored by .input, .output,
+   .error, .debugInput and .traceOutput are "REXXin?>", "REXXout>", "REXXerr>",
+   "REXXdbgIn?>" and "REXXtrc>" respectively.
+   To inhibit the prefix to be output, just fetch the monitored stream objects and set the
+   prefix to .nil. To change the prefix values, just fetch the monitored stream objects and
+   set the prefix to any other string.
+                                            <br /><br />
+                                            <b>param</b>: bRedirectTo  optional, "J"ava (default): redirect ooRexx monitors to
+                          Java's standard (System) streams;
+                          otherwise reset to standard ooRexx streams <br />
+                                            <b>param</b>: input        optional, stream to redirect .input monitor to <br />
+                                            <b>param</b>: output       optional, stream to redirect .output monitor to <br />
+                                            <b>param</b>: error        optional, stream to redirect .error monitor to <br />
+                                            <b>param</b>: debugInput   optional, stream to redirect .debugInput monitor to (defaults to .input~current) <br />
+                                            <b>param</b>: traceOutput  optional, stream to redirect .traceOutput monitor to (defaults to .error~current) <br />
+                                    </div>
+                                </div>
+
+
+
+                                <br /><span class="keyword">USE ARG</span> redirectTo=&quot;J&quot;, input=.nil, output=.nil, error=.nil, debugInput=.nil, traceOutput=.nil
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.stringToUtf8"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.stringToUtf8</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        The received Rexx string is rendered to a Java String object using the 'file.encoding' codepage   and then translated to an UTF-8 encoded Rexx string.
+                                            <br /><br />
+                                            <b>param</b>: str the Rexx string encoded according to the 'file.encoding's codepage <br />
+                                            <b>return</b>: the equivalent UTF-8-encoded Rexx string <br />
+                                            <b>since</b>: 2012-02-11 <br />
+                                    </div>
+                                </div>
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> str
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="BSF.terminateRexxEngine"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: BSF.terminateRexxEngine</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.unregisterBean"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.unregisterBean</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> beanName
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.utf8stringAsJSO"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.utf8stringAsJSO</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        The received Rexx string consists of UTF-8 characters for which a Java string object gets  created and returned, independent of the file.encoding codepage setting.
+                                            <br /><br />
+                                            <b>param</b>: str the Rexx string consisting of UTF-8 characters <br />
+                                            <b>return</b>: a reference to the Java String object constructed from the Rexx string <br />
+                                            <b>since</b>: 2014-10-07 <br />
+                                    </div>
+                                </div>
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> str
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.utf8ToString"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.utf8ToString</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        The received Java object's string value is rendered to a Rexx string according to 'file.encoding's   codepage.
+                                            <br /><br />
+                                            <b>param</b>: obj the Java String object (JSO) or a Java object which string value is retrieved and worked upon,            or an UTF-8 encoded Rexx string <br />
+                                            <b>return</b>: a Rexx string encoded according to 'file.encoding's codepage <br />
+                                            <b>since</b>: 2012-02-11 <br />
+                                    </div>
+                                </div>
+
+
+
+                                <br /><span class="keyword">USE ARG</span> str
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.version"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.version</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> kind=&quot;&quot;
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.wrap-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.wrap</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> indicator +3 data, bIncr
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.wrapStaticFields"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: bsf.wrapStaticFields</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> JavaClassName, bNoCache
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="create_display.version_entry"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: create_display.version_entry</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        Encodes the currently employed versions of ooRexx, BSF.CLS and Java in a single string to ease debugging.
+                                            <br /><br />
+                                            <b>return</b>: a string containing the version information of ooRexx, BSF.CLS and Java in use <br />
+                                    </div>
+                                </div>
+
+
+
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="escapeQuotes"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: escapeQuotes</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="getAndSetPathToIcons"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: getAndSetPathToIcons</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="iif"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: iif</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="initialize.BSF.dir"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: initialize.BSF.dir</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="makeBSF4ooRexxLookLikeMacOSX"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: makeBSF4ooRexxLookLikeMacOSX</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="parseJavaOptions"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: parseJavaOptions</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> options
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="pp-1"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: pp</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="ppJavaExceptionChain"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: ppJavaExceptionChain</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        This routine takes a Rexx condition object, extracts the Java exception object and
+    creates the chain of the Java exceptions such that Rexx programmers can easily
+    learn about it. Each Java exception's object name gets shown together with the
+    its string exception. If the optional second argument is <code>.true</code> then
+    the stack trace of the source of the Java exception chain gets returned as well.
+                                            <br /><br />
+                                            <b>param</b>: co Rexx condition object (cf. <code>condition("object")</code> in the reference manual) <br />
+                                            <b>param</b>: bStackTrace optional, defaults to <code>.false</code>; if set to <code>.true</code>
+              then the stack trace of the source of the Java exception chain gets returned <br />
+                                            <b>return</b>: string containing the Java exception chain or an empty string, if there cannot
+                   be a a Java exception object found <br />
+                                            <b>since</b>: 2020-08-12 <br />
+                                            <b>author</b>: Rony G. Flatscher <br />
+                                    </div>
+                                </div>
+
+
+
+                                <br /><span class="keyword">USE ARG</span> co, bStackTrace=.false
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="unbox"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: unbox</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> o
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="unbox_ori"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: unbox_ori</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> o
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="xBSF"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: xBSF</h4>
+                        </div>
+                        <div class="panel-body">
+                                <span class="label label-info">EXTERNAL</span> "LIBRARY BSF4ooRexx BSF                 "
+
+
+
+
+
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="xBsfCreateRexxProxy"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: xBsfCreateRexxProxy</h4>
+                        </div>
+                        <div class="panel-body">
+                                <span class="label label-info">EXTERNAL</span> "LIBRARY BSF4ooRexx BsfCreateRexxProxy  "
+
+
+
+
+
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="xBsfLoadJava"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: xBsfLoadJava</h4>
+                        </div>
+                        <div class="panel-body">
+                                <span class="label label-info">EXTERNAL</span> "LIBRARY BSF4ooRexx BsfLoadJava         "
+
+
+
+
+
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="xBsfRexxProxy"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: xBsfRexxProxy</h4>
+                        </div>
+                        <div class="panel-body">
+                                <span class="label label-info">EXTERNAL</span> "LIBRARY BSF4ooRexx BsfRexxProxy        "
+
+
+
+
+
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="xBsfUninit4JavaBean"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: xBsfUninit4JavaBean</h4>
+                        </div>
+                        <div class="panel-body">
+                                <span class="label label-info">EXTERNAL</span> "LIBRARY BSF4ooRexx BsfUninit4JavaBean  "
+
+
+
+
+
+
+
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="newStrict"></a>
+                        <div class="panel-heading">
+                            <h4>Floating Method: newStrict</h4>
+                        </div>
+                        <div class="panel-body">
+                            <ul>
+                                <li style="list-style-type: none;">
+
+
+
+
+                                        <br /><span class="keyword">USE ARG</span> javaClass, args
+
+
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="AwtGUIThread"></a>
+                        <div class="panel-heading">
+                            <h4>Class: AwtGUIThread</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: AbstractGUIThread</span>
+                            </div>
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        This class is meant to help ooRexx programmers to simplify interactions with the awt/swing
+    GUI. If Rexx code is invoked by the GUI maintenance code, that Rexx code will already
+    execute on the GUI thread (called "event dispatch thread" a.k.a. "awt thread") and can successfully
+    interact with the GUI and the elements. However, if Rexx code on a non-GUI-thread wishes
+    to interact with the GUI, this would hang the GUI (single threaded implementations are
+    typical for GUIs). Rather, such an interaction must occur on the GUI thread.
+    <p>The class methods <code>awtRunLater</code> and <code>awtRunLaterLatest</code> allow
+    Rexx programmers to send Rexx messages later, when running in the GUI thread.
+                                            <br /><br />
+                                            <b>since</b>: 2018-07-14 <br />
+                                    </div>
+                                </div>
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="JavaGuiUtilityClz-1"></a>
+                                    <ul>
+                                        <li><b>JavaGuiUtilityClz</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="msgQueue-1"></a>
+                                    <ul>
+                                        <li><b>msgQueue</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="runnable-1"></a>
+                                    <ul>
+                                        <li><b>runnable</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="waitingToRun-1"></a>
+                                    <ul>
+                                        <li><b>waitingToRun</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-16"></a>
+                                    <ul>
+                                        <li><b>init</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Constructor class method.
+                                                    </div>
+                                                </div>
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="invokeOnGuiThread-1"></a>
+                                    <ul>
+                                        <li><b>invokeOnGuiThread</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Will cause the <code>runnable</code> (this Rexx class wrapped as a java.lang.Runnable object) to execute later on the GUI thread.
+                                                    </div>
+                                                </div>
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="isGuiThread-1"></a>
+                                    <ul>
+                                        <li><b>isGuiThread</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        
+                                                            <b>return</b>: returns <code>.true</code>, if running on the GUI thread ("event dispatch thread" a.k.a. "awt Thread"), <code>.false</code> else <br />
+                                                    </div>
+                                                </div>
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="BSF"></a>
+                        <div class="panel-heading">
+                            <h4>Class: BSF</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="bsf.null_string"></a>
+                                    <ul>
+                                        <li><b>bsf.null_string</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">UNGUARDED</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.null_string-1"></a>
+                                    <ul>
+                                        <li><b>bsf.null_string</b>
+                                                <span class="label label-info">SETTER</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="rBSF"></a>
+                                    <ul>
+                                        <li><b>rBSF</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="rBsfCreateRexxProxy"></a>
+                                    <ul>
+                                        <li><b>rBsfCreateRexxProxy</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="rBsfRexxProxy"></a>
+                                    <ul>
+                                        <li><b>rBsfRexxProxy</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="rBsfUninit4JavaBean"></a>
+                                    <ul>
+                                        <li><b>rBsfUninit4JavaBean</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="rii_id"></a>
+                                    <ul>
+                                        <li><b>rii_id</b>
+                                                <span class="label label-info">GETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-3"></a>
+                                    <ul>
+                                        <li><b>init</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.addEventListener"></a>
+                                    <ul>
+                                        <li><b>bsf.addEventListener</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> eventSetName, filter, text
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.attachNewStrict"></a>
+                                    <ul>
+                                        <li><b>bsf.attachNewStrict</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> java_path
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.createArray"></a>
+                                    <ul>
+                                        <li><b>bsf.createArray</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.createArrayOf"></a>
+                                    <ul>
+                                        <li><b>bsf.createArrayOf</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.createJavaArray"></a>
+                                    <ul>
+                                        <li><b>bsf.createJavaArray</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.createJavaArrayOf"></a>
+                                    <ul>
+                                        <li><b>bsf.createJavaArrayOf</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.dispatch"></a>
+                                    <ul>
+                                        <li><b>bsf.dispatch</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> methodName
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.exit"></a>
+                                    <ul>
+                                        <li><b>bsf.exit</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.exit-1"></a>
+                                    <ul>
+                                        <li><b>bsf.exit</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> exitValue, waitTime
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.FullJavaClassName"></a>
+                                    <ul>
+                                        <li><b>bsf.FullJavaClassName</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.getFieldValue"></a>
+                                    <ul>
+                                        <li><b>bsf.getFieldValue</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> fieldName
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.getFieldValueJSO"></a>
+                                    <ul>
+                                        <li><b>bsf.getFieldValueJSO</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> fieldName
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.getFieldValueStrict"></a>
+                                    <ul>
+                                        <li><b>bsf.getFieldValueStrict</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> fieldName
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.getFieldValueStrictJSO"></a>
+                                    <ul>
+                                        <li><b>bsf.getFieldValueStrictJSO</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> fieldName
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.getPropertyValue"></a>
+                                    <ul>
+                                        <li><b>bsf.getPropertyValue</b>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> propertyName, index
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.getPropertyValueJSO"></a>
+                                    <ul>
+                                        <li><b>bsf.getPropertyValueJSO</b>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> propertyName, index
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.getStaticValue"></a>
+                                    <ul>
+                                        <li><b>bsf.getStaticValue</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> className, fieldName
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.getStaticValueJSO"></a>
+                                    <ul>
+                                        <li><b>bsf.getStaticValueJSO</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> className, fieldName
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.getStaticValueStrict"></a>
+                                    <ul>
+                                        <li><b>bsf.getStaticValueStrict</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> className, fieldName
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.getStaticValueStrictJSO"></a>
+                                    <ul>
+                                        <li><b>bsf.getStaticValueStrictJSO</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> className, fieldName
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.haltThread"></a>
+                                    <ul>
+                                        <li><b>bsf.haltThread</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> tid
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.import"></a>
+                                    <ul>
+                                        <li><b>bsf.import</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> java_path, classname=.nil, extendedJavaClz=.nil
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.importClass"></a>
+                                    <ul>
+                                        <li><b>bsf.importClass</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.invoke"></a>
+                                    <ul>
+                                        <li><b>bsf.invoke</b>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> methodName
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.invokeJSO"></a>
+                                    <ul>
+                                        <li><b>bsf.invokeJSO</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> name
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.invokeStrict"></a>
+                                    <ul>
+                                        <li><b>bsf.invokeStrict</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> name
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.invokeStrictJSO"></a>
+                                    <ul>
+                                        <li><b>bsf.invokeStrictJSO</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> name
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.isA"></a>
+                                    <ul>
+                                        <li><b>bsf.isA</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> javaClass
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.loadClass"></a>
+                                    <ul>
+                                        <li><b>bsf.loadClass</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> javaClassName, name4env=.nil
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.lookupBean"></a>
+                                    <ul>
+                                        <li><b>bsf.lookupBean</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> beanName
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.pollEventText"></a>
+                                    <ul>
+                                        <li><b>bsf.pollEventText</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> timeOut
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.postEventText"></a>
+                                    <ul>
+                                        <li><b>bsf.postEventText</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> eventText, priority
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.setBSF4RexxInfos"></a>
+                                    <ul>
+                                        <li><b>bsf.setBSF4RexxInfos</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.setFieldValue"></a>
+                                    <ul>
+                                        <li><b>bsf.setFieldValue</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> fieldName, newValue
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.setFieldValueStrict"></a>
+                                    <ul>
+                                        <li><b>bsf.setFieldValueStrict</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> fieldName, x, ...
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.setPropertyValue"></a>
+                                    <ul>
+                                        <li><b>bsf.setPropertyValue</b>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> propertyName, index
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.setPropertyValueStrict"></a>
+                                    <ul>
+                                        <li><b>bsf.setPropertyValueStrict</b>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> propertyName, index
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.setRexxNullString"></a>
+                                    <ul>
+                                        <li><b>bsf.setRexxNullString</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> newValue
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.sleep"></a>
+                                    <ul>
+                                        <li><b>bsf.sleep</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> sleepTime
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.wrap"></a>
+                                    <ul>
+                                        <li><b>bsf.wrap</b>
+                                                <span class="label label-info">UNGUARDED</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> obj, bIncr=.false
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.wrapArray"></a>
+                                    <ul>
+                                        <li><b>bsf.wrapArray</b>
+                                                <span class="label label-info">UNGUARDED</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> beanName
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.wrapEnumeration"></a>
+                                    <ul>
+                                        <li><b>bsf.wrapEnumeration</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> beanName
+
+                                        </li>
+                                    </ul>
+                                    <a id="makearray"></a>
+                                    <ul>
+                                        <li><b>makearray</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="supplier"></a>
+                                    <ul>
+                                        <li><b>supplier</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="uninit"></a>
+                                    <ul>
+                                        <li><b>uninit</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="unknown-1"></a>
+                                    <ul>
+                                        <li><b>unknown</b>
+                                                <span class="label label-info">UNGUARDED</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="init-4"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> javaClass, args
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="unknown-2"></a>
+                                    <ul>
+                                        <li><b>unknown</b>
+                                                <span class="label label-info">UNGUARDED</span>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> name, args
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="bsf.dialog"></a>
+                        <div class="panel-heading">
+                            <h4>Class: bsf.dialog</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <i>No Attributes</i>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-10"></a>
+                                    <ul>
+                                        <li><b>init</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="component"></a>
+                                    <ul>
+                                        <li><b>component</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="dialogBox"></a>
+                                    <ul>
+                                        <li><b>dialogBox</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> message, title, messageType, optionType, icon, textOfButtons, defaultButton
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="dlgConstants"></a>
+                                    <ul>
+                                        <li><b>dlgConstants</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="getMessageType"></a>
+                                    <ul>
+                                        <li><b>getMessageType</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> messageType .
+
+                                        </li>
+                                    </ul>
+                                    <a id="inputBox"></a>
+                                    <ul>
+                                        <li><b>inputBox</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> message
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="javaDialogClass"></a>
+                                    <ul>
+                                        <li><b>javaDialogClass</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="messageBox"></a>
+                                    <ul>
+                                        <li><b>messageBox</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> message, title, messageType
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="setDefaultComponent"></a>
+                                    <ul>
+                                        <li><b>setDefaultComponent</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="unknown-3"></a>
+                                    <ul>
+                                        <li><b>unknown</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> methodName, arrArgs
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="init-11"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> component
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="BSF.InputStream"></a>
+                        <div class="panel-heading">
+                            <h4>Class: BSF.InputStream</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: inputStream</span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="isReader"></a>
+                                    <ul>
+                                        <li><b>isReader</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="javaObject"></a>
+                                    <ul>
+                                        <li><b>javaObject</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="prefix"></a>
+                                    <ul>
+                                        <li><b>prefix</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="string"></a>
+                                    <ul>
+                                        <li><b>string</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="init-12"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> javaObject, prefix=.nil
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="charIn"></a>
+                                    <ul>
+                                        <li><b>charIn</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> start=1, length=1
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="chars"></a>
+                                    <ul>
+                                        <li><b>chars</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="lineIn"></a>
+                                    <ul>
+                                        <li><b>lineIn</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="BSF.OutputStream"></a>
+                        <div class="panel-heading">
+                            <h4>Class: BSF.OutputStream</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: outputStream</span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="doFlush"></a>
+                                    <ul>
+                                        <li><b>doFlush</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="endOfLine"></a>
+                                    <ul>
+                                        <li><b>endOfLine</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="isWriter"></a>
+                                    <ul>
+                                        <li><b>isWriter</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="javaObject-1"></a>
+                                    <ul>
+                                        <li><b>javaObject</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="prefix-1"></a>
+                                    <ul>
+                                        <li><b>prefix</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="string-1"></a>
+                                    <ul>
+                                        <li><b>string</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="init-13"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Constructor.
+                                                            <br /><br />
+                                                            <b>param</b>: javaObject a Java <code>Stream</code> or <code>Writer</code> object to use for output <br />
+                                                            <b>param</b>: prefix the string to print at the beginning of an output line, defaults to <code>.nil</code> <br />
+                                                            <b>param</b>: endofLine the string to use as end-of-line sequence, defaults to <code>.endOfLine</code> <br />
+                                                    </div>
+                                                </div>
+
+
+                                                <br /><span class="keyword">USE ARG</span> javaObject, prefix=.nil, endOfLine=.endOfLine, doFlush=.true
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="charOut"></a>
+                                    <ul>
+                                        <li><b>charOut</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> chars, start=1, bSkipPrefix=.false
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="lineOut"></a>
+                                    <ul>
+                                        <li><b>lineOut</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> chars=&quot;&quot;
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="say"></a>
+                                    <ul>
+                                        <li><b>say</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="BSF4REXX"></a>
+                        <div class="panel-heading">
+                            <h4>Class: BSF4REXX</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                            </div>
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        Serves as a pseudo directory, will always be available as part of the package. Since: 20171223 (removing dependency on .local)   - the attribute 'bsf.dir' can be set only once
+                                    </div>
+                                </div>
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="bsf.dir"></a>
+                                    <ul>
+                                        <li><b>bsf.dir</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="bsf.dir-1"></a>
+                                    <ul>
+                                        <li><b>bsf.dir</b>
+                                                <span class="label label-info">SETTER</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> bsf.dir
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-2"></a>
+                                    <ul>
+                                        <li><b>init</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="unknown"></a>
+                                    <ul>
+                                        <li><b>unknown</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="BSF_ARRAY_PROXY"></a>
+                        <div class="panel-heading">
+                            <h4>Class: BSF_ARRAY_PROXY</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: <a href="../packages/BSF.CLS.html#BSF_ARRAY_REFERENCE">BSF_ARRAY_REFERENCE</a></span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <i>No Attributes</i>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-7"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> beanName, dimension, items
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="dimension-1"></a>
+                                    <ul>
+                                        <li><b>dimension</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="items-1"></a>
+                                    <ul>
+                                        <li><b>items</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="uninit-2"></a>
+                                    <ul>
+                                        <li><b>uninit</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="BSF_ARRAY_REFERENCE"></a>
+                        <div class="panel-heading">
+                            <h4>Class: BSF_ARRAY_REFERENCE</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: <a href="../packages/BSF.CLS.html#BSF">BSF</a></span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <i>No Attributes</i>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-6"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> beanName, dimension, bIncr=.false
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="%5B%5D"></a>
+                                    <ul>
+                                        <li><b>[]</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="%5B%5D%3D"></a>
+                                    <ul>
+                                        <li><b>[]=</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="at"></a>
+                                    <ul>
+                                        <li><b>at</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> tmpArr
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="dimension"></a>
+                                    <ul>
+                                        <li><b>dimension</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="items"></a>
+                                    <ul>
+                                        <li><b>items</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="MAKEARRAY"></a>
+                                    <ul>
+                                        <li><b>MAKEARRAY</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="put"></a>
+                                    <ul>
+                                        <li><b>put</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> value, tmpArr
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="putStrict"></a>
+                                    <ul>
+                                        <li><b>putStrict</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> type, value, tmpArr
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="size"></a>
+                                    <ul>
+                                        <li><b>size</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="SUPPLIER"></a>
+                                    <ul>
+                                        <li><b>SUPPLIER</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="uninit-1"></a>
+                                    <ul>
+                                        <li><b>uninit</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="BSF_REFERENCE"></a>
+                        <div class="panel-heading">
+                            <h4>Class: BSF_REFERENCE</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: <a href="../packages/BSF.CLS.html#BSF">BSF</a></span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <i>No Attributes</i>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-5"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> beanName, bIncr=.false
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="util.setmethod"></a>
+                                    <ul>
+                                        <li><b>util.setmethod</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="FxGUIThread"></a>
+                        <div class="panel-heading">
+                            <h4>Class: FxGUIThread</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: AbstractGUIThread</span>
+                            </div>
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        This class is meant to help ooRexx programmers to simplify interactions with the JavaFX
+    GUI. If Rexx code is invoked by the GUI maintenance code, that Rexx code will already
+    execute on the GUI thread (called "JavaFX Applicaton Thread" on JavaFX) and can successfully
+    interact with the GUI and the elements. However, if Rexx code on a non-GUI-thread wishes
+    to interact with the GUI, this would hang the GUI (single threaded implementations are
+    typical for GUIs). Rather, such an interaction must occur on the GUI thread.
+    <p>The class methods <code>fxRunLater</code> and <code>fxRunLaterLatest</code> allow
+    Rexx programmers to send Rexx messages later, when running in the GUI thread.
+                                            <br /><br />
+                                            <b>since</b>: 2017-08-05 <br />
+                                    </div>
+                                </div>
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="JavaGuiUtilityClz"></a>
+                                    <ul>
+                                        <li><b>JavaGuiUtilityClz</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="msgQueue"></a>
+                                    <ul>
+                                        <li><b>msgQueue</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="runnable"></a>
+                                    <ul>
+                                        <li><b>runnable</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="waitingToRun"></a>
+                                    <ul>
+                                        <li><b>waitingToRun</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-15"></a>
+                                    <ul>
+                                        <li><b>init</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Constructor class method.
+                                                    </div>
+                                                </div>
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="invokeOnGuiThread"></a>
+                                    <ul>
+                                        <li><b>invokeOnGuiThread</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Will cause the <code>runnable</code> (this Rexx class wrapped as a java.lang.Runnable object) to execute later on the GUI thread.
+                                                    </div>
+                                                </div>
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="isGuiThread"></a>
+                                    <ul>
+                                        <li><b>isGuiThread</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        
+                                                            <b>return</b>: returns <code>.true</code>, if running on the GUI thread ("JavaFX Application Thread"), <code>.false</code> else <br />
+                                                    </div>
+                                                </div>
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="JavaStaticFields.Directory"></a>
+                        <div class="panel-heading">
+                            <h4>Class: JavaStaticFields.Directory</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: directory</span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="rBSF-1"></a>
+                                    <ul>
+                                        <li><b>rBSF</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-8"></a>
+                                    <ul>
+                                        <li><b>init</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="%5B%5D-1"></a>
+                                    <ul>
+                                        <li><b>[]</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="%5B%5D%3D-1"></a>
+                                    <ul>
+                                        <li><b>[]=</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="AT"></a>
+                                    <ul>
+                                        <li><b>AT</b>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> fieldName
+
+                                        </li>
+                                    </ul>
+                                    <a id="bUseCache"></a>
+                                    <ul>
+                                        <li><b>bUseCache</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="entry"></a>
+                                    <ul>
+                                        <li><b>entry</b>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> index
+
+                                        </li>
+                                    </ul>
+                                    <a id="JavaClassName"></a>
+                                    <ul>
+                                        <li><b>JavaClassName</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="JavaClassObject"></a>
+                                    <ul>
+                                        <li><b>JavaClassObject</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="init-9"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> JavaClassName, bNoCache
+
+                                        </li>
+                                    </ul>
+                                    <a id="PUT"></a>
+                                    <ul>
+                                        <li><b>PUT</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> newVal, fieldName
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="JSR223"></a>
+                        <div class="panel-heading">
+                            <h4>Class: JSR223</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                            </div>
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        A utility class to ease JSR-223 (javax.script) related functionality.
+                                    </div>
+                                </div>
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="showDebugs"></a>
+                                    <ul>
+                                        <li><b>showDebugs</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="showWarnings"></a>
+                                    <ul>
+                                        <li><b>showWarnings</b>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-14"></a>
+                                    <ul>
+                                        <li><b>init</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="get"></a>
+                                    <ul>
+                                        <li><b>get</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        This method will be used by the Rexx injection code in Rexx scripts if the Rexx script annotation   <code>@GET</code> or <code>@GET(quoted list of blank delimited attribute names)</code> is contained   in Rexx block comments.
+                                                            <br /><br />
+                                                            <b>param</b>: scriptContext a Java <code>scriptContext</code> or a RexxContext <code>.context</code>                 object from which the last argument will be fetched (expecting a slotDir argument                 appended by BSF4ooRexx) which is expected to have the Java <code>scriptContext</code>                 stored with the index named <code>SCRIPTCONTEXT</code>. <br />
+                                                            <b>param</b>: attributeNames optional.                 <ul>                 <li> If omitted or blank string will cause all attributes from all Bindings in                      the <code>scriptContext</code> to be made available as local Rexx variables.                 <li> If the string contains (blank delimited) attribute names then each                      attribute will be looked up using the ScriptContext's Bindings sorted                      ascendingly by their scope number. The value of the first found entry                      will be made available for the matching Rexx variable. If attribute names                      contain blanks, then they must be enquoted in the Rexx script annotation.                 <li>If the attribute name is immediately followed by a colon (:) then immediately                     a scope number must be following. This will restrict the lookup to the ScriptContext's                     Bindings having that scope number.                 <li>If the attribute name is a number and that number is not used as an attribute                     name in any Bindings, then it is taken as the scope number to restrict lookups to                     for all following attribute names.                 </ul> <br />
+                                                            <b>return</b>: a Rexx directory object where the index is a valid Rexx variable name derived from          the attribute name [illegal Rexx variable characters get replaced by question marks (?),          cf. class method {@link normalizeName}] and the item is the attribute's value <br />
+                                                    </div>
+                                                </div>
+
+
+                                                <br /><span class="keyword">USE ARG</span> scriptContext, attributeNames=&quot;&quot;
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="getAttribute"></a>
+                                    <ul>
+                                        <li><b>getAttribute</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Class method that returns the requested attribute from the ScriptContext.
+                                                            <br /><br />
+                                                            <b>param</b>: scriptContext the javax.script.ScriptContext <br />
+                                                            <b>param</b>: name the attribute's name <br />
+                                                            <b>param</b>: scope the scope number for the javax.script.Binding to be retrieved from scriptContext <br />
+                                                            <b>return</b>: the attribute's value or <code>.nil</code> if not found <br />
+                                                    </div>
+                                                </div>
+
+
+                                                <br /><span class="keyword">USE ARG</span> scriptContext, name, scope=.nil
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="getAttributes"></a>
+                                    <ul>
+                                        <li><b>getAttributes</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Fetches the supplied names from the ScriptContext Bindings and returns them as a Rexx directory where the   index names are mangled to allow it to be used as a Rexx variable (hence suitable for <code>BSFContextVariables()</code>).
+                                                            <br /><br />
+                                                            <b>param</b>: scriptContext    the Java <code>ScriptContext</code> object containing entries in different                          bindings or the caller's .context object which is expected to have                          slotDir as its last argument that contains the ScriptContext to work with                          (which is the case, if the caller was invoked by Java via the javax.script framework) <br />
+                                                            <b>param</b>: name, ...        optional list of case-sensitive names serving as entries into the ScriptContext's Bindings. If omitted                          all found attributes will be queried (searching from lowest to highest Bindings) and                          returned with their mangled names; optionally the second argument may be an ordered                          Rexx collection of case-sensitive names to be looked up in the ScriptContext's Bindings. <br />
+                                                            <b>return</b>: a Rexx directory where the index is the mangled name of the Bindings entry and its item that Bindings entry's value <br />
+                                                    </div>
+                                                </div>
+
+
+                                                <br /><span class="keyword">USE ARG</span> scriptContext, ...
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="getBindings"></a>
+                                    <ul>
+                                        <li><b>getBindings</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Class method that returns the requested Binding from the ScriptContext.
+                                                            <br /><br />
+                                                            <b>param</b>: scriptContext the javax.script.ScriptContext <br />
+                                                            <b>param</b>: sc the scope number for the javax.script.Binding to be retrieved from scriptContext <br />
+                                                            <b>return</b>: the javax.script.Binding or <code>.nil</code> if not found <br />
+                                                    </div>
+                                                </div>
+
+
+                                                <br /><span class="keyword">USE ARG</span> scriptContext, sc
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="normalizeName"></a>
+                                    <ul>
+                                        <li><b>normalizeName</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Returns the normalized (mangled) name for the supplied name. The returned name consists of   characters that are valid for Rexx symbols (invalid characters get replaced by a question mark)   only and prepends a question mark of the new name would start with a dot or a digit (Rexx   variables must not start with a dot or a digit).
+                                                            <br /><br />
+                                                            <b>param</b>: name the name to be normalized such that it can be used as a Rexx variable name <br />
+                                                            <b>return</b>: either the unchanged name, if it can be used as a Rexx variable name already, otherwise the         normalized (mangled) form <br />
+                                                    </div>
+                                                </div>
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> name
+
+                                        </li>
+                                    </ul>
+                                    <a id="ScriptContext2RexxDir"></a>
+                                    <ul>
+                                        <li><b>ScriptContext2RexxDir</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Class method that creates and returns a Rexx directory object off the supplied <code>ScriptContext</code>   which is meant to be used with the external Rexx function <code>BSFContextVariables()</code> to set   and drop context variables. Dots in the Java supplied variable names get replaced by underscores   to inhibit the creation of Rexx stem objects.
+                                                            <br /><br />
+                                                            <b>param</b>: scriptContext    the Java <code>ScriptContext</code> object containing entries in different                          bindings or the caller's .context object which is expected to have
+                           slotDir as its last argument that contains the ScriptContext to work with
+                           (which is the case, if the caller was invoked by Java via the javax.script framework) <br />
+                                                            <b>param</b>: bMangleName      defaults to .true, which makes sure that each key in the Binding is a
+                           a valid Rexx variable name, and if not will mangle it accordingly; if .false
+                           no mangling will take place <br />
+                                                            <b>param</b>: scope...         optional, defaults to option <code>&quot;A[ll]&quot;</code> (all bindings from highest to lowest),                          <code>&quot;G[lobal]&quot;</code> (global scope, i.e. scope value <code>200</code>),                          <code>&quot;E[ngine]&quot;</code> (engine scope, i.e. scope value <code>100</code>),                          the scope number to process, optionally followed by additional scope numbers;                          the explicit given sequence of scope numbers determines the order in which the                          bindings get added to the directory (entries in bindings of latter scopes override                          entries in bindings of previous scopes) <br />
+                                                            <b>return</b>: a Rexx directory object containing the name/value mappings matching the ScriptContext; the                          name are mangled to valid Rexx variable names if bMangleName was .true <br />
+                                                    </div>
+                                                </div>
+
+
+                                                <br /><span class="keyword">USE ARG</span> scriptContext, bMangleName=.true, scope=&quot;AllBindings&quot;, ...
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="set"></a>
+                                    <ul>
+                                        <li><b>set</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        This method will be used by the Rexx injection code in Rexx scripts if the Rexx script annotation   <code>@SET(quoted list of blank delimited attribute names)</code> is contained in Rexx block comments.   <p>   If an attribute in the attribute list cannot be found in the ScriptContext's scope, a warning will   be given. The attribute name will be normalized and that value will be used to look up the current   Rexx value in the Rexx variable Rexx directory passed in as the second argument. If there is no   Rexx variable with the normalized name a warning will be issued.
+                                                            <br /><br />
+                                                            <b>param</b>: scriptContext a Java <code>scriptContext</code> or a RexxContext <code>.context</code>                 object from which the last argument will be fetched (expecting a slotDir argument                 appended by BSF4ooRexx) which is expected to have the Java <code>scriptContext</code>                 stored with the index named <code>SCRIPTCONTEXT</code>. <br />
+                                                            <b>param</b>: attributeNames optional.                 <ul>                 <li> If omitted or blank string will cause all attributes from all Bindings in                      the <code>scriptContext</code> to be updated with the values from                      <code>RxVarDir</code>.                 <li> If the string contains (blank delimited) attribute names then each                      attribute will be looked up using the ScriptContext's Bindings sorted                      ascendingly by their scope number. The value of the first found entry                      with a normalized name matching a Rexx variable name from                      <code>RxVarDir</code> will cause that attribute to be updated with                      the Rexx value, if that is different.                      If attribute names contain blanks, then they must be enquoted in the                      Rexx script annotation.                 <li>If the attribute name is immediately followed by a colon (:) then immediately                     a scope number must be following. This will restrict the lookup to the                     ScriptContext's Bindings having that scope number. If the attribute's normalized                     name matches a Rexx variable name from <code>RxVarDir</code> then that                     attribute will be updated with the Rexx value, if that is different.                 <li>If the attribute name is a number and that number is not used as an attribute                     name in any Bindings, then it is taken as the scope number to restrict lookups to                     for all following attribute names.                 </ul> <br />
+                                                            <b>param</b>: rxVarDir   a Rexx directory containing variable names as index and their values as items.                    From each attribute name its (maybe mangled) Rexx variable name will be inferred,                    and the attribute's value in the Bindings updated to the Rexx value, if that                    value differs in its class or objectname value. <br />
+                                                    </div>
+                                                </div>
+
+
+                                                <br /><span class="keyword">USE ARG</span> scriptContext, attributeNames=&quot;&quot;, rxVarDir
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="setAttribute"></a>
+                                    <ul>
+                                        <li><b>setAttribute</b>
+                                                <span class="label label-info">CLASS</span>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Class method that returns the requested Binding from the ScriptContext.
+                                                            <br /><br />
+                                                            <b>param</b>: scriptContext the javax.script.ScriptContext <br />
+                                                            <b>param</b>: sc the scope number for the javax.script.Binding to be retrieved from scriptContext <br />
+                                                            <b>return</b>: the javax.script.Binding or <code>.nil</code> if not found <br />
+                                                    </div>
+                                                </div>
+
+
+                                                <br /><span class="keyword">USE ARG</span> scriptContext, name, value, scope=100
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                        <a id="ENGINE_SCOPE"></a>
+                                        <ul>
+                                            <li><b>ENGINE_SCOPE</b>
+                                                Value: 100
+
+                                            </li>
+                                        </ul>
+                                        <a id="GLOBAL_SCOPE"></a>
+                                        <ul>
+                                            <li><b>GLOBAL_SCOPE</b>
+                                                Value: 200
+
+                                            </li>
+                                        </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="Slot.Argument"></a>
+                        <div class="panel-heading">
+                            <h4>Class: Slot.Argument</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Sub-Class: Directory</span>
+                            </div>
+
+
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        This class gets instantiated either by native or Java code and contains additional, but optional,   entries when sending a message to a Rexx object (a callback from native/Java code to Rexx)
+                                    </div>
+                                </div>
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <i>No Attributes</i>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <i>No Methods</i>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h2>Requires</h2>
+                        </div>
+                        <div class="panel-body">
+                                BSF4ooRexx library <br />
+                        </div>
+                    </div>
+                </div>
+
+
+
+
+        </div>
+    </div>
+    <br />
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/typeahead-bootstrap.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+    <script src="../js/search-data.js"></script>
+    <script>
+        $(document).ready(function(){
+            $('body').append('<div id="toTop" class="btn btn-info"><span class="glyphicon glyphicon-chevron-up"></span> Back to Top</div>');
+            $(window).scroll(function () {
+                if ($(this).scrollTop() != 0) {
+                    $('#toTop').fadeIn();
+                } else {
+                    $('#toTop').fadeOut();
+                }
+            });
+            $('#toTop').click(function(){
+                $("html, body").animate({ scrollTop: 0 }, 200);
+                return false;
+            });
+        });
+
+    </script>
+    <script>
+        $(document).ready(function() {
+            $('#search').typeahead({
+                source: searchData,
+                displayText: function(item) {
+                    if(item.info !== null) {
+                        return item.type + ":" + item.name + " (" + item.info + ")";
+                    }
+
+                    return item.type + ":" + item.name;
+                },
+                matcher: function(item) {
+                    return item.name.toLowerCase().indexOf(this.query.toLowerCase()) != -1
+                },
+                afterSelect: function(item) {
+                    window.location.href = item.href;
+                    $("#search").val(item.name)
+                },
+                items: 20
+            });
+        })
+    </script>
+</body>
+</html>

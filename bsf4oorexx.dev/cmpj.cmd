@@ -25,7 +25,7 @@ set path2root=%cd%\..
 
 rem set default path to org.rexxla.bsf, 2005-06-02, ---rgf
 set path2engine=%path2root%\org\rexxla\bsf\engines\rexx
-set path2jsr223=%path2root%\org\rexxla\bsf\engines\rexx\jsr223
+set path2jsr223=%path2root%\org\rexxla\bsf\engines\rexx
 
 set path2rexxlaBsf=%path2root%\org\rexxla\bsf
 

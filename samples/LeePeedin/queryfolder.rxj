@@ -1,5 +1,5 @@
 #!/usr/bin/env rexx
-/* querydir.rxj */
+/* queryfolder.rxj */
 /*
 This demonstration was written in ooRexx by Lee Peedin
 using BSF4ooRexx, created and distributed by Dr. Rony Flatscher.
@@ -20,6 +20,7 @@ Linux Version       Suse 10
                     2010-05-09, rgf, - adapting example to take full advantage of BSF4ooRexx
                                      - replacing bsf.addEventListener[WithEventObject] with a Rexx event handlers
                     2010-05-15, rgf, - changed folder_list from a comma delimited string to an array
+                    2022-08-08, rgf, - changed to use bsf.loadClass("java.text.NumberFormat")
 */
     parse source os how what
     call SysCls
@@ -42,9 +43,9 @@ Linux Version       Suse 10
 
     call bsf.importClass 'javax.swing.JProgressBar','JProgressBar'
 
--- Define the Jave NumberFormat class and import it - we'll use it to format our total
+-- Define the Jave NumberFormat class and load it - we'll use it to format our total
     clazz = "java.text.NumberFormat"
-    nfc = bsf.importClass(clazz)
+    nfc = bsf.loadClass(clazz)      -- bsf.importClass does not work on Interface classes
 -- Create a file chooser by importing the Java class
     fchooser = .bsf~new('javax.swing.JFileChooser')
 -- Create a frame to place the file chooser in by importing the Java class

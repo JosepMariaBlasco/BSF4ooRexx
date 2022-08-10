@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
   SVN Revision: $Rev: 9920 $
   Change Date:  $Date: 2014-02-15 13:19:42 -0800 (Sat, 15 Feb 2014) $

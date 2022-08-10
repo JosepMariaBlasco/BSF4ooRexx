@@ -190,4 +190,3 @@ return testResult
   clzName=pkgName"Test4"
   self~expectSyntax(40.900)
   bsf.loadClass(clzName)~staticMeth("")   -- neither Base4 nor Test4 have that method implemented!
-

@@ -1142,4 +1142,3 @@ any:                 -- something went wrong while executing the program
   if sysFileExists(homeDir) then return homeDir -- done
 
   return "$HOME"     -- not found, fall back to environment variable
-

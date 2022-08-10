@@ -106,4 +106,3 @@ say "... loading testNestedClasses and store in .context~package~local  ..."
 ::method "test_03g_nested_classes"
     self~expectSyntax(40.900)
     .clzNestedClasses~D_static_package_private
-

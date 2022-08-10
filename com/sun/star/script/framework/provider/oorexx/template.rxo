@@ -214,5 +214,3 @@ syntax:                 /* message "getUrl" caused a syntax condition           
 
    ::requires UNO.CLS               /* make sure the UNO support for ooRexx is loaded  */
 */
-
-

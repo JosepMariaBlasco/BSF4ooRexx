@@ -3,7 +3,7 @@
    author:  Rony G. Flatscher
    date:    2005-04-18/19/20
 
-   last change: $Revision: 803 $ $Author: Administrator $ $Date: 2010-07-24 19:09:19 +0200 (Sat, 24 Jul 2010) $
+   last change: $Revision$ $Author$ $Date$
 
    changed:
             2019-02-03, ---rgf, - now that bsf.import() does not accept abstract Java classes, use bsf.loadClass()

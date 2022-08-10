@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 -- 2021-02-06/07, rgf: testing nested classes
 say .bsf4rexx~display.version
 say
@@ -44,4 +45,3 @@ end
   return clz~send(name)    -- get nested class and return it
 syntax:
   return .nil
-

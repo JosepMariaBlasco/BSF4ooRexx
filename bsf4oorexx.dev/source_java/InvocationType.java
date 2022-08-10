@@ -7,7 +7,7 @@ import java.util.HashMap;
  * This Enum defines the invocation types and their corresponding Rexx name.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2018-2019 Rony G. Flatscher
+ *    Copyright (C) 2018-2022 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import java.util.HashMap;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
- * @version 1.03, 2019-08-13
+ * @version 1.04, 2022-08-06
  * @since BSF4ooRexx 600
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
  */
@@ -32,6 +32,7 @@ import java.util.HashMap;
      2018-11-01, rgf: - added enum value "CREATE_STRICT_ARGUMENT"
      2019-01-07, rgf: - added enum value "UNBOX"
      2019-08-13, rgf: - fix Javadoc reference
+     2022-08-06, rgf: - added enum value "SIMPLE_EXECUTE_ARGUMENT"
 */
 
 
@@ -119,7 +120,8 @@ enum InvocationType {
     REXX_REFLECT_OBJECT         ( "rexxReflectObject"        ) , //=  27 // rgf, 2018-02-17: return current rexxReflectObject; allows
                                                                          // querying & setting useCaching, useReflectInvoke, useUnreflect
     GET_BEAN_REFCOUNT           ( "getBeanRefCount"          ) , //=  28 // rgf, 2018-02-23: returns current refCount or -1 if not in registry
-    TEST_PING                   ( "testPing"                 )   //=  29 // rgf, 2018-02-25: just returns: allows to test and time calls to the bridge
+    TEST_PING                   ( "testPing"                 ) , //=  29 // rgf, 2018-02-25: just returns: allows to test and time calls to the bridge
+    SIMPLE_EXECUTE_ARGUMENT     ( "simpleExecute"            )   //=  30 // rgf, 2022-08-06
                                ;
 
 

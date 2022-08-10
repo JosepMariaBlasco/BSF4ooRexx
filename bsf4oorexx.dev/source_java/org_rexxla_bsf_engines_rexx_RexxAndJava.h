@@ -9,8 +9,6 @@ extern "C" {
 #endif
 #undef org_rexxla_bsf_engines_rexx_RexxAndJava_bDebugRefCounter
 #define org_rexxla_bsf_engines_rexx_RexxAndJava_bDebugRefCounter 0L
-#undef org_rexxla_bsf_engines_rexx_RexxAndJava_bRgfUseNewRexxReflect
-#define org_rexxla_bsf_engines_rexx_RexxAndJava_bRgfUseNewRexxReflect 0L
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
  * Method:    jniSetupNativeJVMPointer
@@ -325,35 +323,11 @@ JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniLanguage
 
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniForceConstructorNewInstance
- * Signature: (Ljava/lang/reflect/Constructor;[Ljava/lang/Object;)Ljava/lang/Object;
+ * Method:    jniTestPing
+ * Signature: ()V
  */
-JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniForceConstructorNewInstance
-  (JNIEnv *, jobject, jobject, jobjectArray);
-
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniForceFieldGet
- * Signature: (Ljava/lang/reflect/Field;Ljava/lang/Object;)Ljava/lang/Object;
- */
-JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniForceFieldGet
-  (JNIEnv *, jobject, jobject, jobject);
-
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniForceFieldSet
- * Signature: (Ljava/lang/reflect/Field;Ljava/lang/Object;Ljava/lang/Object;)V
- */
-JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniForceFieldSet
-  (JNIEnv *, jobject, jobject, jobject, jobject);
-
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniForceMethodInvoke
- * Signature: (Ljava/lang/reflect/Method;[Ljava/lang/Object;)Ljava/lang/Object;
- */
-JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniForceMethodInvoke
-  (JNIEnv *, jobject, jobject, jobjectArray);
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniTestPing
+  (JNIEnv *, jobject);
 
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
@@ -362,6 +336,14 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniForceM
  */
 JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniInitialize4Rexx
   (JNIEnv *, jobject);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniExecuteSimpleProcedureOnOwnRII
+ * Signature: (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniExecuteSimpleProcedureOnOwnRII
+  (JNIEnv *, jclass, jstring, jstring);
 
 #ifdef __cplusplus
 }

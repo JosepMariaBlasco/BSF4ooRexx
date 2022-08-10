@@ -1,4 +1,4 @@
-package org.rexxla.bsf.engines.rexx.jsr223;
+package org.rexxla.bsf.engines.rexx;
 
 import java.util.Arrays;
 import java.util.Vector;
@@ -13,7 +13,7 @@ import org.rexxla.bsf.engines.rexx.RexxProxy;
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015-2020 Rony G. Flatscher
+   Copyright 2015-2022 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -54,6 +54,8 @@ Changes:
 
     2020-01-28, ---rgf, - removed code to change filename this is not possible for a
                           RexxCompiledScript
+
+    2022-08-06, ---rgf, - changed package name to 'org.rexxla.bsf.engines.rexx'
 */
 
 
@@ -396,7 +398,7 @@ if (bDebug==true)
     /** Returns an implementation of a Java interface where the Java method invocations will be implemented
      *  by the methods of the supplied Rexx object (a <code>RexxProxy</code>.
      *
-     *  <p>Note: Uses the implementation in {@link org.rexxla.bsf.engines.rexx.jsr223.RexxScriptEngine#getInterface(Object thiz, Class clasz)}.
+     *  <p>Note: Uses the implementation in {@link org.rexxla.bsf.engines.rexx.RexxScriptEngine#getInterface(Object thiz, Class clasz)}.
      *
      *  <p>Hint #1: the external <code>BSF4ooRexx</code> external Rexx function <code>BSFCreateRexxProxy(...)</code>
      *           is much more versatile and among other things allows for implementing multiple Java interface
@@ -509,7 +511,7 @@ if (bDebug)
 
     /** Sends a Rexx message to the Rexx object contained in the addressed <code>RexxProxy</code> object.
      *
-     *  <p>Note: Uses the implementation in {@link org.rexxla.bsf.engines.rexx.jsr223.RexxScriptEngine#invokeMethod(Object thiz, String name, Object... args)}
+     *  <p>Note: Uses the implementation in {@link org.rexxla.bsf.engines.rexx.RexxScriptEngine#invokeMethod(Object thiz, String name, Object... args)}
      *           where this method belongs to.
      *
      *  @param thiz - The wrapped (as a <code>RexxProxy</code>) Rexx object to receive the message

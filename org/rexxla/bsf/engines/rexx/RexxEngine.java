@@ -8,6 +8,11 @@ import org.rexxla.bsf.engines.rexx.RexxAndJava;
 
 import java.lang.reflect.Method;
 
+// the following imports only necessary for isTerminationFixed()
+import java.text.SimpleDateFormat;
+
+
+
 /**
   * This class manages the calls from Java via JNI to Open Object Rexx (ooRexx).
   *
@@ -27,7 +32,7 @@ import java.lang.reflect.Method;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
   *
-  * @version 6.1, 20220802
+  * @version 6.1, 20220806
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   *
   */
@@ -35,6 +40,11 @@ import java.lang.reflect.Method;
 
 /*
     last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+
+    2022-08-06, ---rgf, - added static getter for languageVersionString
+
+                        - added static protected boolean isTerminationFixed() to determine
+                          the defaults for termination
 
     2022-08-02, ---rgf, - changed the name from "interpreterVersionString" to "languageVersionString"
                           and its getter accordingly; this way the name is consistent to the
@@ -224,7 +234,7 @@ public class RexxEngine extends BSFEngineImpl {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "601.20220802";
+    static final public String version = "601.20220806";
 
     static int terminationCounter = 0;  // for termination thread name counts
 
@@ -386,11 +396,108 @@ public class RexxEngine extends BSFEngineImpl {
     }
 
 
+    /** The <code>PARSE VERSION</code> string of the currently ooRexx interpreter in use. */
     static protected String languageVersionString=null;  // set in initialize()
 
+    /** Getter method.
+     *
+     * @return returns the <code>PARSE VERSION</code> string of the currently ooRexx
+     *         interpreter in use.
+    */
     static public String getLanguageVersionString()
     {
+final boolean bDebug=false;
+        if (languageVersionString==null)
+        {
+            String rexxCode="PARSE VERSION v; return v;";
+            languageVersionString=RexxAndJava.jniExecuteSimpleProcedureOnOwnRII(rexxCode, null);
+
+            boolean bFixed=isTerminationFixed();
+if (bDebug) System.err.println("RexxEngine, bFixed="+bFixed+", terminateFixed="+terminateFixed+" | languageVersionString="+languageVersionString);
+            if (bFixed)   // if Termination() works change the defaults accordingly
+            {
+                terminateOnSeparateThreadDefault=true;  // set default to separate thread Termination()
+                resetLocalBeforeTerminateDefault=false; // set default to not reset .local
+if (bDebug) System.err.println("RexxEngine, bFixed=true, changed the defaults!");
+            }
+        }
         return languageVersionString;
+    }
+
+    /** Determines whether the ooRexx version string indicates an interpretr that has
+     *  Terminate() fixed.
+     */
+    static protected boolean isTerminationFixed()
+    {
+final boolean bDebug=false;
+        // String languageVersionString = "REXX-ooRexx_5.0.0(MT)_64-bit 6.05 25 Jul 2022";
+if (bDebug)
+{
+    System.out.println("languageVersionString=["+languageVersionString+"]");
+    System.out.println("terminateFixed       =["+terminateFixed+"]");
+}
+
+         String formatSorted="YYYYMMd";
+         boolean bFixed=false;
+
+         String tfMajorVersion="";
+         String tfDate="";
+         String [] tfStrings=terminateFixed.split(" ");   // find blank
+         if (tfStrings.length==2)   // o.k. we have two strings, proceed
+         {
+             tfMajorVersion=tfStrings[0];
+             tfDate        =tfStrings[1];
+
+             int pos1=languageVersionString.indexOf("_");
+             int pos2=languageVersionString.indexOf(".");
+             String lvsMajorVersion=languageVersionString.substring(pos1+1,pos2);
+
+             pos1=languageVersionString.indexOf(" ");
+             pos2=languageVersionString.indexOf(" ", pos1+1);
+             String strDate=languageVersionString.substring(pos2+1);
+
+if (bDebug)
+{
+    System.out.println("tfMajorVersion =["+tfStrings[0]+"]");
+    System.out.println("tfDate         =["+tfStrings[1]+"]\n");
+
+    System.out.println("lvsMajorVersion=["+lvsMajorVersion+"]");
+    System.out.println("strDate        =["+strDate+"]\n");
+}
+                // for parsing the Rexx date
+            SimpleDateFormat formatter = new SimpleDateFormat("d MMM yyyy", Locale.ENGLISH);
+            Date   date = null;
+            String lvsStrDate="";
+
+            try {
+                 date = formatter.parse(strDate);
+                 formatter=new SimpleDateFormat("yyyyMMdd");
+                 lvsStrDate=formatter.format(date);
+
+                 bFixed = (tfMajorVersion.compareTo(lvsMajorVersion)<0);
+                 if (bFixed == false)
+                 {
+                     bFixed = (tfMajorVersion.compareTo(lvsMajorVersion) == 0 ) &&
+                              (tfDate        .compareTo(lvsStrDate     )<=0);
+                 }
+            }
+            catch (Throwable t)
+            {
+if (bDebug) System.err.println(" !! exception: "+t+" !!");
+            }
+
+if (bDebug)
+{
+    System.out.println("date           =["+date+"]\n");
+    System.out.println("lvsStrDate     =["+lvsStrDate+"]\n");
+
+    System.out.println("tfMajorVersion<=lvsMajorVersion? "+(tfMajorVersion.compareTo(lvsMajorVersion)<=0));
+    System.out.println("tfDate        >=lvsStrDate     ? \n"+(tfDate        .compareTo(lvsStrDate     )>=0));
+
+    System.out.println("bFixed         =["+bFixed+"]");
+}
+         }
+         return bFixed;
     }
 
 
@@ -412,7 +519,6 @@ public class RexxEngine extends BSFEngineImpl {
      */
     protected void set_rii_ID(String rii_ID)
     {
-boolean bDebug=true;
         this.rii_ID=rii_ID;
 
         if (bDebug || bDebugTermination)
@@ -495,36 +601,29 @@ boolean bDebug=true;
       * Rexx interpreter. Therefore Rexx programs invoked from Java
       * have these two functions available to them and are therefore
       * able to communicate with Java.
+     *
+     * <p>
+     * <em>Note:</em> at this point in time the Rexx interpreter instance has
+     *       not been created yet. If using apply(), eval() and the like an
+     *       instance with the default configuration gets created such
+     *       that no instance creation options that a Java client may be
+     *       defining can get honored. Therefore never use apply(), eval()
+     *       in here.
       */
     public void initialize (BSFManager mgr, String lang,
                             Vector declaredBeans) throws BSFException
     {
         super.initialize (mgr, lang, declaredBeans);
         id=++id_counter;    // increase RexxEngine instance counter
+
+if (bDebug) System.err.println("RexxEngine, 1) # id=["+id+"], languageVersionString="+languageVersionString);
+
         rexxInterface = new RexxAndJava(mgr, this);         // create interface to native
 
         // now we can use the instance?
         if (languageVersionString==null) // get the interpreter string from ooRexx once
         {
-            String rexxCode =   // returns a string with fields delimited by '!'
-                  "parse arg minMajor minDate                                                    ; \n" +
-                  "parse version v 1 '_' major '.' release  '.' modification '(MT)' . level date ; \n" +
-                  "return v || '!' || ( (major>=minMajor) & (minDate <= date('S',date)) ) || '!' || minMajor || '!' || minDate ; \n";
-            Vector vArgs=new Vector();
-            // vArgs.add("5 20220901");    // minimum major number, minimum date of a Terminate() fix
-            vArgs.add(terminateFixed);  // minimum major number, minimum date of a Terminate() fix
-
-            String res = (String) this.apply("", 0, 0, rexxCode,null,vArgs);
-            String parts[]=res.split("!");
-
-            languageVersionString=parts[0];         // set static field to the ooRexx version string
-            boolean bFixed = parts[1].equals("1");  // determine whether ooRexx is able to handle Terminate() from a different thread
-if (bDebug) System.err.println("RexxEngine: bFixed="+bFixed+", terminateFixed="+terminateFixed+" | languageVersionString="+languageVersionString);
-            if (bFixed) // save some time
-            {
-                terminateOnSeparateThreadDefault=true;  // set default to separate thread Termination()
-                resetLocalBeforeTerminateDefault=false; // set default to not reset .local
-            }
+            languageVersionString=getLanguageVersionString();
         }
 
         terminateOnSeparateThread = terminateOnSeparateThreadDefault;   // use default for this instance
@@ -534,7 +633,7 @@ if (bDebug) System.err.println("RexxEngine: bFixed="+bFixed+", terminateFixed="+
         if (bDebug || bDebugTermination)
         {
             long currTid=Thread.currentThread().getId();
-//            System.err.println("\n<I_RE_"+id+"_on_"+currTid+"I> (initialize)");
+            System.err.println("\n<RE_"+id+"_on_"+currTid+"> (initialize)");
         }
 
 
@@ -548,7 +647,6 @@ if (bDebug)
         System.err.println("\t... it.next()=["+el+"] .getClass().getName()=["+el.getClass().getName()+"]");
     }
 }
-
 
         Iterator<BSFDeclaredBean> it = declaredBeans.iterator();
         while (it.hasNext())

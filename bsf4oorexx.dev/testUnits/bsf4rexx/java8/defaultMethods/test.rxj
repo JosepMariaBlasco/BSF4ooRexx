@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 parse source . . thisFile
 
 call dump_reflect_info
@@ -117,6 +118,4 @@ syntax:
    say "    useUnreflect    ="pp(rrj~useUnreflect    ) "(.true=use unreflect from java.lang.reflect object)"
    say "    debugLevel      ="pp(rrj~debugLevel      )
    say "-"~copies(100)
-
-
 

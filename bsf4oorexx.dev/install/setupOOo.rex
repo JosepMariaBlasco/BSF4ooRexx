@@ -1188,4 +1188,3 @@ syntax2:                   -- no OOo-entry
   if sysFileExists(homeDir) then return homeDir -- done
 
   return "$HOME"     -- not found, fall back to environment variable
-

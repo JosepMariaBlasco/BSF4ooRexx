@@ -1,0 +1,1445 @@
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">-->
+
+    <title>ooRexxDoc - rgf_util2.rex ooRexx Documentation - rgf_util2.rex</title>
+
+    <style type="text/css">
+        body { padding-top: 70px; }
+
+        #toTop{
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            cursor: pointer;
+            display: none;
+        }
+
+        pre {
+            overflow-x: auto;
+        }
+        pre code {
+            overflow-wrap: normal;
+            white-space: pre;
+        }
+
+        .keyword {
+            color: #ff5f00;
+        }
+
+        #search {
+            margin-left: 10px;
+        }
+
+        :target {
+            display: block;
+            position: relative;
+            top: -50px;
+            visibility: hidden;
+        }
+
+        .class-info {
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+    </style>
+</head>
+
+<body>
+<nav class="navbar navbar-default navbar-fixed-top">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">ooRexxDoc</a>
+        </div>
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav">
+                <li><a href="../oorexxdoc.html">Home</a></li>
+                <li class="active"><a href="rgf_util2.rex.html">rgf_util2.rex</a></li>
+            </ul>
+            <form class="navbar-form">
+                <div class="form-group">
+                    <input type="text" id="search" class="form-control" placeholder="Search" id="test" data-provide="typeahead" autocomplete=off>
+                </div>
+                <span class="navbar-right">
+                        <span class="label label-info">Run-Date: Aug 4, 2022, 4:15:33 PM</span>
+                </span>
+            </form>
+        </div>
+    </div>
+</nav>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="panel panel-default">
+                <div class="panel-heading">Packages</div>
+                <div class="panel-body" style="max-height: 420px;overflow-y: scroll;">
+                        <a href="rgf_util2.rex.html">rgf_util2.rex</a>
+                        <hr width="99%"/>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="panel panel-default">
+                <div class="panel-heading">rgf_util2.rex Overview</div>
+                <div class="panel-body">
+                    <ul>
+                            <li>Routines
+                                    <a href="rgf_util2.rex.html#abbrev2">abbrev2</a>
+                                    <a href="rgf_util2.rex.html#changeStr2">changeStr2</a>
+                                    <a href="rgf_util2.rex.html#compare2">compare2</a>
+                                    <a href="rgf_util2.rex.html#countStr2">countStr2</a>
+                                    <a href="rgf_util2.rex.html#delStr2">delStr2</a>
+                                    <a href="rgf_util2.rex.html#delWord2">delWord2</a>
+                                    <a href="rgf_util2.rex.html#dump2">dump2</a>
+                                    <a href="rgf_util2.rex.html#enquote2">enquote2</a>
+                                    <a href="rgf_util2.rex.html#escape2">escape2</a>
+                                    <a href="rgf_util2.rex.html#lastPos2">lastPos2</a>
+                                    <a href="rgf_util2.rex.html#left2">left2</a>
+                                    <a href="rgf_util2.rex.html#lower2">lower2</a>
+                                    <a href="rgf_util2.rex.html#makeRelation2">makeRelation2</a>
+                                    <a href="rgf_util2.rex.html#overlay2">overlay2</a>
+                                    <a href="rgf_util2.rex.html#parseWords2">parseWords2</a>
+                                    <a href="rgf_util2.rex.html#Pos2">Pos2</a>
+                                    <a href="rgf_util2.rex.html#pp2">pp2</a>
+                                    <a href="rgf_util2.rex.html#ppCondition2">ppCondition2</a>
+                                    <a href="rgf_util2.rex.html#ppIndex2">ppIndex2</a>
+                                    <a href="rgf_util2.rex.html#ppMethod2">ppMethod2</a>
+                                    <a href="rgf_util2.rex.html#ppPackage2">ppPackage2</a>
+                                    <a href="rgf_util2.rex.html#right2">right2</a>
+                                    <a href="rgf_util2.rex.html#sort2">sort2</a>
+                                    <a href="rgf_util2.rex.html#stableSort2">stableSort2</a>
+                                    <a href="rgf_util2.rex.html#subchar2">subchar2</a>
+                                    <a href="rgf_util2.rex.html#substr2">substr2</a>
+                                    <a href="rgf_util2.rex.html#subWord2">subWord2</a>
+                                    <a href="rgf_util2.rex.html#upper2">upper2</a>
+                                    <a href="rgf_util2.rex.html#word2">word2</a>
+                                    <a href="rgf_util2.rex.html#wordIndex2">wordIndex2</a>
+                                    <a href="rgf_util2.rex.html#wordLength2">wordLength2</a>
+                                    <a href="rgf_util2.rex.html#wordPos2">wordPos2</a>
+                            </li>
+                            <li>Classes
+                                <ul>
+                                        <li><a href="rgf_util2.rex.html#MessageComparator">MessageComparator</a>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="rgf_util2.rex.html#init">init</a>
+                                                            <a href="rgf_util2.rex.html#cached_plain_caseless_compare">cached_plain_caseless_compare</a>
+                                                            <a href="rgf_util2.rex.html#cached_plain_compare">cached_plain_compare</a>
+                                                            <a href="rgf_util2.rex.html#cached_plain_numeric_compare">cached_plain_numeric_compare</a>
+                                                            <a href="rgf_util2.rex.html#multiple_messages_compare">multiple_messages_compare</a>
+                                                            <a href="rgf_util2.rex.html#plain_caseless_compare">plain_caseless_compare</a>
+                                                            <a href="rgf_util2.rex.html#plain_compare">plain_compare</a>
+                                                            <a href="rgf_util2.rex.html#plain_numeric_compare">plain_numeric_compare</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="rgf_util2.rex.html#NumberComparator">NumberComparator</a>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="rgf_util2.rex.html#init-1">init</a>
+                                                            <a href="rgf_util2.rex.html#compare">compare</a>
+                                                            <a href="rgf_util2.rex.html#compareWithNonNumbers">compareWithNonNumbers</a>
+                                                            <a href="rgf_util2.rex.html#compareWithNonNumbersDescending">compareWithNonNumbersDescending</a>
+                                                            <a href="rgf_util2.rex.html#stringComparator">stringComparator</a>
+                                                            <a href="rgf_util2.rex.html#stringComparator%3D">stringComparator=</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="rgf_util2.rex.html#%27StringColumnComparator%27">'StringColumnComparator'</a>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="rgf_util2.rex.html#init-3">init</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="rgf_util2.rex.html#StringComparator">StringComparator</a>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="rgf_util2.rex.html#init-2">init</a>
+                                                            <a href="rgf_util2.rex.html#compare-1">compare</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                        <li><a href="rgf_util2.rex.html#StringOfWords">StringOfWords</a>
+                                                <ul>
+                                                    <li>Attributes:
+                                                            <a href="rgf_util2.rex.html#kind">kind</a>
+                                                            <a href="rgf_util2.rex.html#kind-1">kind</a>
+                                                            <a href="rgf_util2.rex.html#positionArray">positionArray</a>
+                                                            <a href="rgf_util2.rex.html#reference">reference</a>
+                                                            <a href="rgf_util2.rex.html#reference-1">reference</a>
+                                                            <a href="rgf_util2.rex.html#string">string</a>
+                                                            <a href="rgf_util2.rex.html#string-1">string</a>
+                                                            <a href="rgf_util2.rex.html#wordArray">wordArray</a>
+                                                    </li>
+                                                </ul>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="rgf_util2.rex.html#init-4">init</a>
+                                                            <a href="rgf_util2.rex.html#delWord">delWord</a>
+                                                            <a href="rgf_util2.rex.html#makeArray">makeArray</a>
+                                                            <a href="rgf_util2.rex.html#subWord">subWord</a>
+                                                            <a href="rgf_util2.rex.html#word">word</a>
+                                                            <a href="rgf_util2.rex.html#wordIndex">wordIndex</a>
+                                                            <a href="rgf_util2.rex.html#wordLength">wordLength</a>
+                                                            <a href="rgf_util2.rex.html#wordPos">wordPos</a>
+                                                            <a href="rgf_util2.rex.html#words">words</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                </ul>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-xs-9">
+            <div class="container-fluid" id="content-main">
+
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container-fluid">
+    <div class="row">
+        <div class="container-fluid">
+            <h1>rgf_util2.rex</h1>
+
+
+
+
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="abbrev2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: abbrev2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> arg1, arg2, ...
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="changeStr2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: changeStr2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> arg1needle, arg2haystack, arg3newNeedle, ...
+
+                                <br /><span class="keyword">PARSE ARG</span> arg1needle, arg2haystack, arg3newNeedle, arg4count
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="compare2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: compare2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> arg1string1, arg2string2, arg3padChar=&quot; &quot;, ...
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="countStr2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: countStr2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> arg1needle, arg2haystack, ...
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="delStr2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: delStr2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> arg1, ...
+
+                                <br /><span class="keyword">PARSE ARG</span> ., arg2, arg3
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="delWord2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: delWord2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> string, arg2, ...
+
+                                <br /><span class="keyword">PARSE ARG</span> string, arg2, arg3
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="dump2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: dump2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> coll, title=(&quot;type: The&quot; coll~class~id &quot;class&quot;), comparator=.nil
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="enquote2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: enquote2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> string, quote='&quot;'
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="escape2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: escape2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+
+                                <br /><span class="keyword">PARSE ARG</span> a1
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="lastPos2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: lastPos2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> arg1needle, arg2haystack, ...
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="left2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: left2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> arg1string, arg2length, ...
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="lower2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: lower2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> arg1, ...
+
+                                <br /><span class="keyword">PARSE ARG</span> ., arg2, arg3
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="makeRelation2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: makeRelation2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> coll, message=.nil
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="overlay2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: overlay2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> new1string, arg1string, ...
+
+                                <br /><span class="keyword">PARSE ARG</span> ., ., arg2start, arg3NewLength, arg4pad
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="parseWords2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: parseWords2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> string, reference=(&quot; &quot;||&quot;09&quot;x), kind=&quot;D&quot;, returnType=&quot;W&quot;
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="Pos2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: Pos2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> arg1needle, arg2haystack, ...
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="pp2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: pp2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> a1
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="ppCondition2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: ppCondition2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> co, bShowPackageInfo=.false, indent1=&quot;09&quot;x, lf=.endOfLine
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="ppIndex2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: ppIndex2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> a1
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="ppMethod2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: ppMethod2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> meth, indent=&quot;&quot;
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="ppPackage2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: ppPackage2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> package, indent1=&quot;&quot;, indent2=&quot;09&quot;x, lf=.endOfLine
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="right2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: right2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> arg1string, arg2length, ...
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="sort2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: sort2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> arg1, arg2=&quot;A&quot;, arg3=&quot;IN&quot;, ...
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="stableSort2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: stableSort2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> arg1, arg2=&quot;A&quot;, arg3=&quot;I&quot;, ...
+
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="subchar2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: subchar2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> arg1, arg2
+
+                                <br /><span class="keyword">PARSE ARG</span> arg1, arg2
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="substr2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: substr2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> arg1, ...
+
+                                <br /><span class="keyword">PARSE ARG</span> ., arg2, arg3, arg4
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="subWord2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: subWord2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> string, arg2, ...
+
+                                <br /><span class="keyword">PARSE ARG</span> string, arg2, arg3
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="upper2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: upper2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> arg1, ...
+
+                                <br /><span class="keyword">PARSE ARG</span> ., arg2, arg3
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="word2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: word2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> string, arg2
+
+                                <br /><span class="keyword">PARSE ARG</span> string, arg2
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="wordIndex2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: wordIndex2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> string, arg2
+
+                                <br /><span class="keyword">PARSE ARG</span> string, arg2
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="wordLength2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: wordLength2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> string, arg2
+
+                                <br /><span class="keyword">PARSE ARG</span> string, arg2
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="wordPos2"></a>
+                        <div class="panel-heading">
+                            <h4>Routine: wordPos2</h4>
+                        </div>
+                        <div class="panel-body">
+
+
+
+
+
+                                <br /><span class="keyword">USE ARG</span> arg1, arg2, arg3=1, ...
+
+
+                        </div>
+                    </div>
+                </div>
+
+
+
+
+
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="MessageComparator"></a>
+                        <div class="panel-heading">
+                            <h4>Class: MessageComparator</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Mixin-Classes: Comparator</span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <i>No Attributes</i>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> message, bCache=.false
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="cached_plain_caseless_compare"></a>
+                                    <ul>
+                                        <li><b>cached_plain_caseless_compare</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> left, right
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="cached_plain_compare"></a>
+                                    <ul>
+                                        <li><b>cached_plain_compare</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> left, right
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="cached_plain_numeric_compare"></a>
+                                    <ul>
+                                        <li><b>cached_plain_numeric_compare</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> left, right
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="multiple_messages_compare"></a>
+                                    <ul>
+                                        <li><b>multiple_messages_compare</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> left, right
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="plain_caseless_compare"></a>
+                                    <ul>
+                                        <li><b>plain_caseless_compare</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> left, right
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="plain_compare"></a>
+                                    <ul>
+                                        <li><b>plain_compare</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> left, right
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="plain_numeric_compare"></a>
+                                    <ul>
+                                        <li><b>plain_numeric_compare</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> left, right
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="NumberComparator"></a>
+                        <div class="panel-heading">
+                            <h4>Class: NumberComparator</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Mixin-Classes: Comparator</span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <i>No Attributes</i>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-1"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> bIgnoreNonNumbers=.true, order=&quot;A&quot;, case=&quot;I&quot;
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="compare"></a>
+                                    <ul>
+                                        <li><b>compare</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> left, right
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="compareWithNonNumbers"></a>
+                                    <ul>
+                                        <li><b>compareWithNonNumbers</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> left, right
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="compareWithNonNumbersDescending"></a>
+                                    <ul>
+                                        <li><b>compareWithNonNumbersDescending</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> left, right
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="stringComparator"></a>
+                                    <ul>
+                                        <li><b>stringComparator</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="stringComparator%3D"></a>
+                                    <ul>
+                                        <li><b>stringComparator=</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> stringComparator
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="%27StringColumnComparator%27"></a>
+                        <div class="panel-heading">
+                            <h4>Class: 'StringColumnComparator'</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Mixin-Classes: Comparator</span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <i>No Attributes</i>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-3"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> arg1, ...
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="StringComparator"></a>
+                        <div class="panel-heading">
+                            <h4>Class: StringComparator</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                                    <span class="label label-info class-info">Mixin-Classes: Comparator</span>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <i>No Attributes</i>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-2"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> order, case
+
+                                        </li>
+                                    </ul>
+                                    <a id="compare-1"></a>
+                                    <ul>
+                                        <li><b>compare</b>
+                                                <span class="label label-info">ABSTRACT</span>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="StringOfWords"></a>
+                        <div class="panel-heading">
+                            <h4>Class: StringOfWords</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <a id="kind"></a>
+                                    <ul>
+                                        <li><b>kind</b>
+                                                <span class="label label-info">GETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="kind-1"></a>
+                                    <ul>
+                                        <li><b>kind</b>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> tmp .
+
+                                        </li>
+                                    </ul>
+                                    <a id="positionArray"></a>
+                                    <ul>
+                                        <li><b>positionArray</b>
+                                                <span class="label label-info">GETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="reference"></a>
+                                    <ul>
+                                        <li><b>reference</b>
+                                                <span class="label label-info">GETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="reference-1"></a>
+                                    <ul>
+                                        <li><b>reference</b>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> tmp
+
+                                        </li>
+                                    </ul>
+                                    <a id="string"></a>
+                                    <ul>
+                                        <li><b>string</b>
+                                                <span class="label label-info">GETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="string-1"></a>
+                                    <ul>
+                                        <li><b>string</b>
+                                                <span class="label label-info">SETTER</span>
+
+
+
+
+                                                <br /><span class="keyword">PARSE ARG</span> string
+
+                                        </li>
+                                    </ul>
+                                    <a id="wordArray"></a>
+                                    <ul>
+                                        <li><b>wordArray</b>
+                                                <span class="label label-info">GETTER</span>
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init-4"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> string, reference=(&quot; &quot;||&quot;09&quot;x), kind=&quot;D&quot;
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="delWord"></a>
+                                    <ul>
+                                        <li><b>delWord</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> position, ...
+
+                                                <br /><span class="keyword">PARSE ARG</span> position, length
+
+                                        </li>
+                                    </ul>
+                                    <a id="makeArray"></a>
+                                    <ul>
+                                        <li><b>makeArray</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="subWord"></a>
+                                    <ul>
+                                        <li><b>subWord</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> position, ...
+
+                                                <br /><span class="keyword">PARSE ARG</span> position, length
+
+                                        </li>
+                                    </ul>
+                                    <a id="word"></a>
+                                    <ul>
+                                        <li><b>word</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> position
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="wordIndex"></a>
+                                    <ul>
+                                        <li><b>wordIndex</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> position
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="wordLength"></a>
+                                    <ul>
+                                        <li><b>wordLength</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> position
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="wordPos"></a>
+                                    <ul>
+                                        <li><b>wordPos</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> phrase, startPos=1, letter=&quot;I&quot;
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="words"></a>
+                                    <ul>
+                                        <li><b>words</b>
+
+
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+
+
+
+        </div>
+    </div>
+    <br />
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/typeahead-bootstrap.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+    <script src="../js/search-data.js"></script>
+    <script>
+        $(document).ready(function(){
+            $('body').append('<div id="toTop" class="btn btn-info"><span class="glyphicon glyphicon-chevron-up"></span> Back to Top</div>');
+            $(window).scroll(function () {
+                if ($(this).scrollTop() != 0) {
+                    $('#toTop').fadeIn();
+                } else {
+                    $('#toTop').fadeOut();
+                }
+            });
+            $('#toTop').click(function(){
+                $("html, body").animate({ scrollTop: 0 }, 200);
+                return false;
+            });
+        });
+
+    </script>
+    <script>
+        $(document).ready(function() {
+            $('#search').typeahead({
+                source: searchData,
+                displayText: function(item) {
+                    if(item.info !== null) {
+                        return item.type + ":" + item.name + " (" + item.info + ")";
+                    }
+
+                    return item.type + ":" + item.name;
+                },
+                matcher: function(item) {
+                    return item.name.toLowerCase().indexOf(this.query.toLowerCase()) != -1
+                },
+                afterSelect: function(item) {
+                    window.location.href = item.href;
+                    $("#search").val(item.name)
+                },
+                items: 20
+            });
+        })
+    </script>
+</body>
+</html>

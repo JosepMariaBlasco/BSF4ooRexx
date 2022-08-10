@@ -41,15 +41,15 @@ The following files and Rexx packages (Rexx programs) are used in this applicati
 
 <dl>
 
-    <dt> <a href="jar/controlsfx-8.40.14.jar">jar/controlsfx-8.40.14.jar</a>
+    <dt> <a href="jar/controlsfx-8.40.18.jar">jar/controlsfx-8.40.18.jar</a>
     <dd> The Java archive containing all free and opensource JavaFX controls from the
-         ControlsFX project as of 2017-09-24 for Java 8. This file needs to be present on the
+         ControlsFX project as of 2022-08-22 for Java 8. This file needs to be present on the
          Java <code>CLASSPATH</code> environment variable in order for the Java runtime to find
          its contained Java classes.
 
-    <dt> <a href="jar/controlsfx-9.0.0.jar">jar/controlsfx-9.0.0.jar</a>
+    <dt> <a href="jar/controlsfx-11.1.1.jar">jar/controlsfx-11.1.1.jar</a>
     <dd> The Java archive containing all free and opensource JavaFX controls from the
-         ControlsFX project as of 2017-09-24 for Java 9 and later. This file needs to be present on the
+         ControlsFX project as of 2022-08-22 for Java 11 and later. This file needs to be present on the
          Java <code>CLASSPATH</code> environment variable in order for the Java runtime to find
          its contained Java classes.
 
@@ -62,8 +62,30 @@ The following files and Rexx packages (Rexx programs) are used in this applicati
          It also supplies links to the ControlsFX web site and links to the description of the
          free and opensource JavaFX controls used from that project.
 
+    <dt> <a href="run_on_java_8.cmd">run_on_java_8.cmd</a> (Windows) and
+         <a href="run_on_java_8.sh">run_on_java_8.sh</a> (Unix)
+    <dd> Shell script that sets <code>CLASSPATH</code> to use the Java 8 archive of the
+         <a href="https://controlsfx.github.io/">ControlsFX</a> JavaFX controls and then
+         runs <a href="staff.rxj">staff.rxj</a>.
+
+    <dt> <a href="run_on_java_11_or_later.cmd">run_on_java_11_or_later.cmd</a> (Windows) and
+         <a href="run_on_java_11_or_later.sh">run_on_java_11_or_later.sh</a> (Unix)
+    <dd> Shell script that sets <code>CLASSPATH</code> to use the Java 11 archive of the
+         <a href="https://controlsfx.github.io/">ControlsFX</a> JavaFX controls and then
+         runs <a href="staff.rxj">staff.rxj</a>.
+
+
+    <dt> <a href="staff.rex">staff.rex</a>
+    <dd> Rexx program that determines the current Java version and sets up <code>CLASSPATH</code>
+         accordingly and then runs the Rexx application <a href="staff.rxj">staff.rxj</a>. Alternatively
+         one can use the batch scripts to set <code>CLASSPATH</code> accordingly and then runs
+         <a href="staff.rxj">staff.rxj</a>.
+
     <dt> <a href="staff.rxj">staff.rxj</a>
-    <dd> The main Rexx program that sets up and starts the JavaFX application.
+    <dd> The ooRexx JavaFX application that takes advantage of the
+          <a href="https://controlsfx.github.io/">ControlsFX</a>
+         (<a href="https://github.com/controlsfx/controlsfx">https://github.com/controlsfx/controlsfx</a>)
+         JavaFX controls.
 
     <dt> <a href="fxml/put_FXID_objects_into.my.app.rex">fxml/put_FXID_objects_into.my.app.rex</a>
     <dd> A utility Rexx program/package that is called from within each GUI-FXML file which
@@ -96,6 +118,6 @@ The following files and Rexx packages (Rexx programs) are used in this applicati
 <p>
 <hr>
 <p style="font-size: smaller;">
-Rony G. Flatscher, 2017-03-22, 2018-03-17, 2018-09-15, Wien/Vienna, Austria, Europe
+Rony G. Flatscher, 2017-03-22 - 2022-08-09, Wien/Vienna, Austria, Europe
 </body>
 

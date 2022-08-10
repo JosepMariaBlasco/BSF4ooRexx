@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
 -- this is a ooRexx line comment, will get ignored by pre-processor which analyzes this header
 -- enclosed between the very first block comment, i.e. everything between the first "/*" .. "*/"

@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* Controller for stopWatchFX.fxml. */
 
 /*
@@ -78,4 +79,3 @@ end
 ::method stopUpdating      class unguarded
   expose  bUpdate
   bUpdate=.false           -- stop updating
-

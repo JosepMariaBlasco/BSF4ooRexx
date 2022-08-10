@@ -18,7 +18,7 @@
    Purpose: Get the Java System Properties from java.lang.System
             using the services set up by "BSF.CLS" and show them on the console
 
-   last change: $Revision: 579 $ $Author: rony $ $Date: 2010-02-16 22:43:46 +0100 (Tue, 16 Feb 2010) $
+   last change: $Revision$ $Author$ $Date$
             05 July 2009 Walter Pachl add help and display line.separator in hex
             2010-02-16, rgf, adapted library name to "BSF4ooRexx"
 

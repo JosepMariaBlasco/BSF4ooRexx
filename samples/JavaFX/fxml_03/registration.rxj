@@ -8,6 +8,7 @@
                2019-08-13, rgf: warn, if not running run on ooRexx 5.0 or higher, ask user whether to proceed
                2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
                                 - removing dependency on "rgf_util2.rex"
+               2022-08-08, rgf: - added third gender "neuter"
 
    purpose:    - show how versatile and easy JavaFX can be
                - demonstrate how to use resources in subdirectories (loading files using an URLClassLoader)

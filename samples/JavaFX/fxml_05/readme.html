@@ -36,17 +36,24 @@
 
     <p>This application consists of a TableView with predefined data. You can change the data by clicking on items of the BreadCrumbBar located at the top right corner of the window. By activating the TableRowExpanderColumn marked with a "+" in the table a Rating bar shows up to rate each employee. Every user interaction in the <i>staff</i> nutshell example is followed either by the MaskerPane appearing or a Notification.
     </p>
-    <p>To start this Application, the JAR file &quot;controlsfx-8.40.14.jar&quot; (Java 8) or
-       &quot;controlsfx-9.0.0.jar&quot; (Java 9 or later), both located in the
+    <p>To start this Application, the JAR file &quot;controlsfx-8.40.18.jar&quot; (Java 8) or
+       &quot;controlsfx-11.1.1.jar&quot; (Java 11 or later), both located in the
         &quot;jar&auto; subdirectory, has to be added to the Java environmental variable <code>CLASSPATH</code> in order for
         the Java runtime to find its classes.
 
-        The <i>staff</i> application provides a way to do this on-the-fly using one of the following shell files:
+        The <i>staff</i> application provides a way to do this on-the-fly using one of the following files:
     </p>
     <p></p>
 
     <ul>
-        <li> running the ooRexx application on Java 8:
+        <li>running the following Rexx program (note the file extension <code><em>.rex</em></code>):
+            <ul>
+                <li><code><a href="staff.rex">staff.rex</a></code>:
+                    this Rexx program determines the Java version, sets <code>CLASSPATH</code> accordingly
+                    and then runs <code><a href="staff.rxj">staff.rxj</a></code>
+            </ul>
+
+        <li> running the ooRexx application on Java 8 with scripts setting <code>CLASSPATH</code> appropriately:
             <ul>
                 <li><code><a href="run_on_java_8.cmd">run_on_java_8.cmd</a></code> for Windows
                 </li>
@@ -55,11 +62,11 @@
             </ul>
         </li>
 
-        <li> running the ooRexx application on Java 9 or later:
+        <li> running the ooRexx application on Java 9 or later with scripts setting <code>CLASSPATH</code> appropriately:
             <ul>
-                <li><code><a href="run_on_java_9_or_later.cmd">run_on_java_9_or_later.cmd</a></code> for Windows
+                <li><code><a href="run_on_java_11_or_later.cmd">run_on_java_11_or_later.cmd</a></code> for Windows
                 </li>
-                <li><code><a href="run_on_java_9_or_later.sh">run_on_java_9_or_later.sh</a></code> for Linux and MacOS
+                <li><code><a href="run_on_java_11_or_later.sh">run_on_java_11_or_later.sh</a></code> for Linux and MacOS
                 </li>
             </ul>
         </li>
@@ -72,7 +79,7 @@
         <dd>
           <table>
               <tr><td>
-                    <pre><a href="jar/controlsfx-8.40.14.jar">jar/controlsfx-8.40.14.jar</a></pre>
+                    <pre><a href="controlsfx-8.40.18.jar">jar/controlsfx-8.40.18.jar</a></pre>
                   </td>
                   <td>
                     Java archive containing the ControlsFX JavaFX GUI controls for Java 8.
@@ -80,10 +87,10 @@
               </tr>
 
               <tr><td>
-                    <pre><a href="jar/controlsfx-9.0.0.jar">jar/controlsfx-9.0.0.jar</a></pre>
+                    <pre><a href="jar/controlsfx-11.1.1.jar">jar/controlsfx-11.1.1.jar</a></pre>
                   </td>
                   <td>
-                    Java archive containing the ControlsFX JavaFX GUI controls for Java 9 or later.
+                    Java archive containing the ControlsFX JavaFX GUI controls for Java 11 or later.
                   </td>
               </tr>
 
@@ -154,6 +161,16 @@
 
 
               <tr><td>
+                    <pre><a href="staff.rex">staff.<em>rex</em></a></pre>
+                  </td>
+                  <td>
+                    The Rexx program that determines the Java version and
+                    sets <code>CLASSPATH</code> accordingly and then runs
+                    <i>staff</i> application program <code><a href="staff.rxj">staff.rxj</a></code>.
+
+                  </td>
+
+              <tr><td>
                     <pre><a href="staff.rxj">staff.rxj</a></pre>
                   </td>
                   <td>
@@ -179,7 +196,7 @@
     </p>
     <p>Date of Creation: 2017-03-20
     </p>
-    <p>Updated 2018-03-17, 2018-09-15 by Rony G. Flatscher</p>
+    <p>Updated 2018-03-17 - 2022-08-09 by Rony G. Flatscher</p>
 </body>
 
 </html>

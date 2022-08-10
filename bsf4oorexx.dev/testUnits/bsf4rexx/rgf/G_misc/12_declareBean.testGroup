@@ -84,4 +84,3 @@ return testResult
     self~assertEquals(222,viaRE_myDim ~getHeight)
     self~assertEquals(333,viaRE_myDim2~getWidth)
     self~assertEquals(444,viaRE_myDim2~getHeight)
-

@@ -1,0 +1,57 @@
+#!/usr/bin/env rexx
+/*
+   name:       1-062_DateRgfCatholicEaster.rxj
+   author:     Rony G. Flatscher
+   date:       2022-08-05
+   purpose:    demonstrate the usage of the DateRgf class (part of samples distribution) for
+               calculating the Catholic Easter Sunday and some dependent holidays
+   needs:      ooRexx, BSF4ooRexx
+   changes:    ---
+   usage:      1-062_DateRgfCatholicEaster.rxj [startYear [years]]
+               ... years number of years to calculate Catholic Easter related holidays, default: 5
+               ... startYear startYear for calculating Catholic Easter related holidays, default: current year
+
+   last change: $Revision$ $Author$ $Date$
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2022 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+-- import the Java class (part of BSF4ooRexx samples), make it available as ".DATERGF"
+.bsf~bsf.import("org.oorexx.datergf.DateRGF", "dateRgf")
+
+parse arg startYear years           -- parse command line arguments, if any
+if years=""     then years=5        -- default to 5 years
+if startYear="" then startYear=date('s')~left(4)   -- default to current year
+
+do i=startYear for years            -- iterate over years
+   tmpDate=.DateRgf~new(i,1,1)      -- get January 1st of this year
+   say left("Year/Jahr:" pp(i) "", 79, "-")
+   say
+   easter = .DateRgf~easter(tmpDate)       /* get Easter sunday for this year      */
+   say "Palm Sunday/Palmsonntag           " pp(.dateRgf~easter(tmpDate)~add(-7)~toString) "(Easter Sunday -  7 days)"
+   say "Good Friday/Karfreitag:           " pp(.dateRgf~easter(tmpDate)~add(-2)~toString) "(Easter Sunday -  2 days)"
+   say "Easter Sunday/Ostersonntag:       " pp(.dateRgf~easter(tmpDate)        ~toString)
+   say "Ascension Day/Christi Himmelfahrt:" pp(.dateRgf~easter(tmpDate)~add(39)~toString) "(Easter Sunday + 39 days)"
+   say "Pentecost/Pfingstsonntag:         " pp(.dateRgf~easter(tmpDate)~add(49)~toString) "(Easter Sunday + 49 days)"
+   say "Whit Monday/Pfingstmontag:        " pp(.dateRgf~easter(tmpDate)~add(50)~toString) "(Easter Sunday + 50 days)"
+   say "Corpus Christi/Fronleichnam:      " pp(.dateRgf~easter(tmpDate)~add(60)~toString) "(Easter Sunday + 60 days)"
+   say
+end
+
+::requires "BSF.CLS"    -- get ooRexx-Java bridge

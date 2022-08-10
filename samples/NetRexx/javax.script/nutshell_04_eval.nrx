@@ -1,17 +1,14 @@
-import javax.script.
+import javax.script
 import java.awt.Dimension
 import java.io.FileReader
 
 import java.text.SimpleDateFormat
-import java.util.Date
 
-import org.rexxla.bsf.engines.rexx.RexxEngine
-import org.rexxla.bsf.engines.rexx.RexxProxy
-import org.rexxla.bsf.engines.rexx.jsr223.RexxScriptEngine
+import org.rexxla.bsf.engines.rexx
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015-2020 Rony G. Flatscher
+   Copyright 2015-2022 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -33,6 +30,10 @@ import org.rexxla.bsf.engines.rexx.jsr223.RexxScriptEngine
               and therefore does not need setting ARGV explicitly
 
     changed:    2020-01-26, rgf: spelling of "Rexx" to "rexx"
+                2022-08-08, rgf: - adjust for removing "jsr223" from package name
+                                 - explicitly end Java with System.exit(0);
+                                 - using fully qualified name "java.util.Date()" as
+                                   otherwise RexxDate.Date() gets used with NetRexx version 4.03
 */
 
 
@@ -48,8 +49,7 @@ import org.rexxla.bsf.engines.rexx.jsr223.RexxScriptEngine
         rse=RexxScriptEngine manager.getEngineByName("rexx")
         do
             sc=rse.getContext()  -- get the default ScriptContext
-
-            timeStamp = SimpleDateFormat("yyyy.MM.dd.HH.mm.ss.SSSSSS").format(Date())
+            timeStamp = SimpleDateFormat("yyyy.MM.dd.HH.mm.ss.SSSSSS").format(java.util.Date())
             sc.setAttribute("started_at", timeStamp, ScriptContext.GLOBAL_SCOPE)
 
                 -- add the fileName to the ENGINE_SCOPE bindings
@@ -114,3 +114,4 @@ import org.rexxla.bsf.engines.rexx.jsr223.RexxScriptEngine
             System.exit(-1)
         end
 
+        System.exit(0)                         -- end Java

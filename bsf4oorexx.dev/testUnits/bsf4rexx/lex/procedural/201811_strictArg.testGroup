@@ -242,4 +242,3 @@ return testResult
    if abbrev(className, "BO")  then return bsf('invoke', objectName, "booeanValue") -- o~booleanValue
 
    return bsf('invoke', objectName, 'toString') -- o~toString -- Java string representation suffices for ooRexx
-

@@ -11,6 +11,14 @@
                                before the children section to make its public members available
                                to all event code
 
+            2022-08-09, rgf: - force picking remove(int) version by using box.strictArg()
+                             - corrected wrong "\selectedIndex~isNil" with "selectedIndex>-1"
+                             - at startup make sure that tableViewData is empty to match display
+                             - correcting interface logic errors (in menu and popup menu):
+                               - added missing listener to id_menu_remove
+                               - make sure id_tableview gets set to tableViewData on first id_menu_add
+                               - make sure CTL-Click only operational if in edit mode
+
    purpose: demonstrate - TableView with editing, binding Person's simple properties with cell values
                         - Setting TableView item to null as a whole as opposed to removing the item
                         - Enabling/disabling menu options
@@ -154,6 +162,7 @@ syntax:
   .my.app~showDebugOutput=.my.app~demoTableViewSimple.fxml~id_menu_show_debug~isSelected
    -- as .my.app got populated, all the FXML fx:id objects are available to Rexx
   call setupApplicationData   -- now that the graphics subsystem is initialized
+  .my.app~tableViewData~clear  -- make sure list is empty
 
    -- demo action! :) will fade on and off for a minute while user can interact with GUI!
   ft=.bsf~new("javafx.animation.FadeTransition", .fx.Duration~millis(1000),rootNode)
@@ -209,7 +218,8 @@ syntax:
    /* set callback for menu click */
   id_menu_show_debug~setOnAction(rp)
   id_menu_enable_editing~setOnAction(rp)
-  id_menu_setitems  ~setOnAction(rp)
+  id_menu_setItems  ~setOnAction(rp)
+  id_menu_remove    ~setOnAction(rp)
   id_menu_clear     ~setOnAction(rp)
   id_menu_quit      ~setOnAction(rp)
 
@@ -372,6 +382,7 @@ syntax:
               id_tableview~setEditable(isSelected)
               id_button_add   ~setDisable(\isSelected)
               id_button_delete~setDisable(\isSelected)
+              id_menu_enable_editing~setSelected(isSelected)
               return
            end
 
@@ -379,15 +390,11 @@ syntax:
            do
               if .my.app~showDebugOutput=.true then
                  say "09"x .line":" "*** handling" pp(eventType) "for" pp(tgtId)
-              bSelected=event~source~isSelected    -- get ContextMenu's CheckMenuItem object
-              id_tableview~setEditable(bSelected)  -- set TableView editing mode
-              id_menu_enable_editing~setSelected(bSelected)
-
-              if id_menu_clear~isDisable=.false then
-              do
-                 id_button_add   ~setDisable(\bSelected)
-                 id_button_delete~setDisable(\bSelected)
-              end
+              isSelected=event~source~isSelected   -- get ContextMenu's CheckMenuItem object
+              id_tableview~setEditable(isSelected)
+              id_button_add   ~setDisable(\isSelected)
+              id_button_delete~setDisable(\isSelected)
+              id_menu_enable_editing~setSelected(isSelected)
               return
            end
 
@@ -416,7 +423,14 @@ syntax:
                  say "09"x .line":" "*** handling" pp(eventType) "for" pp(tgtId)
               do idx=tableViewData~size-1 to 0 by -1     -- remove empty cells
                  if tableViewData~get(idx)~isNil then
-                    tableViewData~remove(box('int',idx))  -- make sure integer version of remove() gets used
+                 do
+                     -- there are different remove() methods to pick from, unfortunately
+                     -- also one remove(Object) which might get picked instead of the
+                     -- remove(int) version that we need here; to force remove(int) we
+                     -- can either use the message tableViewData~bsf.invokeStrict('remove', 'int',idx)
+                     -- or create a RexxStrictArgument of type 'int' with box.strictArg('int',idx)
+                    tableViewData~remove(box.strictArg('int',idx))  -- make sure integer version of remove() gets used
+                 end
               end
 
               if tableViewData~size>0 then               -- set state of menu items
@@ -430,6 +444,7 @@ syntax:
                  id_menu_clear   ~setDisable(.true)
               end
               id_menu_remove  ~setDisable(.true)
+              id_menu_enable_editing~setSelected(.false)
               id_label~setText("TableView has" tableViewData~size "row(s)")
 
               return
@@ -446,6 +461,7 @@ syntax:
               id_label~setText("TableView has" tableViewData~size "cell(s)")
               id_button_add   ~setDisable(.true)
               id_button_delete~setDisable(.true)
+              id_menu_enable_editing~setSelected(.false)
               return
            end
 
@@ -462,6 +478,8 @@ syntax:
                if .my.app~showDebugOutput=.true then
                   say "09"x .line":" "*** handling" pp(eventType) "for" pp(tgtId)
                iin=.my.app~imageIndexNames
+               if tableViewData~size=0 then   -- if yet empty, make sure id_listview gets set to listViewData
+                  id_tableview~setItems(tableViewData)
                tableViewData~add(.person~createTestPerson)
                id_tableView~refresh
                size=tableViewData~size
@@ -483,14 +501,20 @@ syntax:
                if .my.app~showDebugOutput=.true then
                   say "09"x .line":" "id_button_delete, selectedIndex="pp(selectedIndex)
 
-               if \selectedIndex~isNil then
+               if selectedIndex>-1 then
                do
-                  tableViewData~remove(box('int',selectedIndex))
+                  -- there are different remove() methods to pick from, unfortunately
+                  -- also one remove(Object) which might get picked instead of the
+                  -- remove(int) version that we need here; to force remove(int) we
+                  -- can either use the message listViewData~bsf.invokeStrict('remove','int',idx)
+                  -- or create a RexxStrictArgument of type 'int' with box.strictArg('int',idx)
+                  tableViewData~remove(box.strictArg('int',selectedIndex))  -- force remove(int) version to be used!
+
                   id_tableView~refresh
                   id_label~setText("TableView has" tableViewData~size "row(s)")
                end
                else if .my.app~showDebugOutput=.true then
-                   say "09"x .line":" "id_button_delete, selectedIndex="pp(selectedIndex)
+                   say "09"x .line":" "id_button_delete, selectedIndex="pp(selectedIndex) "(nothing to delete)"
                return
             end
 
@@ -510,7 +534,7 @@ syntax:
   idx=getIndex(event)
   if idx>-1, isMouseEvent, event~getClickCount=1 then
   do
-      if idx<tableViewData~size, event~isControlDown then      -- clicked cell index is within bounds
+      if idx<tableViewData~size, event~isControlDown, id_menu_enable_editing~isSelected then      -- clicked cell index is within bounds
       do
          val=tableViewData~get(Idx)
 
@@ -542,7 +566,8 @@ syntax:
       end
       else  -- left mouse button click at a cell outside of the range of our currently defined data
       do
-         if event~button~toString="PRIMARY", idx>(tableViewData~size-1) then   -- this way only left mouse buttong clicks
+         if (event~isControlDown & \id_menu_enable_editing~isSelected) | -
+            (event~button~toString="PRIMARY" & idx>(tableViewData~size-1)) then   -- this way only left mouse button clicks
          do
             call beep 250,100             -- beep via Rexx (may not beep on some Unixes)
             .my.app~alert.audioclip~play  -- use JavaFX to have an "oops" clip played on all platforms alike!
