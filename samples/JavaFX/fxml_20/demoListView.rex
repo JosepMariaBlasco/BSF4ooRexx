@@ -20,6 +20,11 @@
                                - make sure id_listview gets set to listViewData on first id_menu_add
                                - make sure CTL-Click only operational if in edit mode
 
+             2022-08-11, rgf: - demoListView.fxml: changed "select" property of 'CheckMenuItem
+                                fx:id="id_menu_show_debug"' to "false", henc start out without
+                                debug mode (change to "true" to see the debug output on start-up
+                                of this program)
+
    purpose: demonstrate - ListView with cells containing text and graphics
                         - Setting ListView cell to null as opposed to removing the cell
                         - Setting ToolTips with a graphic and a text to the cells in the RexxCellFactory
