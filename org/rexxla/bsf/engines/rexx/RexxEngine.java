@@ -32,7 +32,7 @@ import java.text.SimpleDateFormat;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
   *
-  * @version 6.1, 20220806
+  * @version 850, 20220810
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   *
   */
@@ -234,7 +234,7 @@ public class RexxEngine extends BSFEngineImpl {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "601.20220806";
+    static final public String version = "850.20220810";
 
     static int terminationCounter = 0;  // for termination thread name counts
 

@@ -45,7 +45,7 @@ set doc_date=20220810
 @rem set bsfVersion=v400
 @rem set releaseVersion=v452
 @rem 6...baseline Java 1.6/6, ...41 ... baseline ooRexx 4.1
-set releaseVersion=v641
+set releaseVersion=v850
 set releaseName=bsf4ooRexx-%releaseVersion%-%releaseDate%
 set bsfJarNameBin=%releaseName%-bin.jar
 set bsfJarNameSource=%releaseName%-source.jar

@@ -18,11 +18,11 @@ set doc_date=%runDate%
 
 set doc_release_version=%releaseVersion%
 if not "%doc_release_version%"=="" goto set_doc_date
-set doc_release_version=v641
+set doc_release_version=v850
 
 :set_doc_date
 if not "%doc_date%"=="" goto continue
-set doc_date=20190813
+set doc_date=20220810
 
 :continue
 set docs_header=-header "%doc_date%, rgf"

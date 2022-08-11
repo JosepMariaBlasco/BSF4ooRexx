@@ -36,6 +36,10 @@ remarks:
 
 inline jint impl_jniRexxHaltInterpreterInstance (JNIEnv *env, jobject jobj, jstring j_rii_ID)
 
+    8.0.0   2022-08-10, rgf: - now based on minimum Java 8
+
+    ===============================================================================================
+
     6.0.0   2022-08-07, rgf: - now using RexxAllocateMemory() instead of malloc()
                                JNU_JavaString2pRxString(...) for RXSTRING structures
                                as otherwise heap-guard errors occur on Windows
@@ -1036,21 +1040,21 @@ thread_id_t  RgfGetTID();
 
 #if defined (BSF4REXX_32_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "600.20220807 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "800.20220807 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "600.20220807 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "800.20220807 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #elif defined (BSF4REXX_64_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "600.20220807 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "800.20220807 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "600.20220807 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "800.20220807 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #else
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "600.20220807 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "800.20220807 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "600.20220807 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "800.20220807 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #endif
 
@@ -7933,9 +7937,9 @@ void RexxEntry bsfUnloader (RexxThreadContext * rtc)
     RexxPackageEntry bsf_package_entry =
     {
         STANDARD_PACKAGE_HEADER
-        REXX_INTERPRETER_4_1_0,              // anything including and after 4.1.0 will work
+        REXX_INTERPRETER_5_0_0,              // anything including and after 5.0.0 will work
         "bsf",                               // name of the package
-        "6.0",                               // package version information
+        "8.0",                               // package version information
         bsfLoader,                           // load function
         bsfUnloader,                         // unload function
         bsf_external_functions,              // the exported functions

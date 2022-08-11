@@ -1,5 +1,6 @@
 package org.rexxla.bsf.engines.rexx;   // belongs to that fine package ;) ...
 
+
 import org.apache.bsf.*;   // BSF support
 import java.io.*;       // exception handling
 
@@ -42,6 +43,7 @@ import java.io.*;       // exception handling
  */
 
 /* changes:
+
     - 2012-02-04, rgf: cater for new (deferred) logic of creating a Rexx interpreter instance
     - 2012-02-06, rgf: supply new (default) RexxConfiguration object for creating Rexx interpreter instance
     - 2012-02-09, rgf: need to use try-block for createRexxInterpreterInstance() as it now throws a BSFException
@@ -57,11 +59,17 @@ import java.io.*;       // exception handling
                        apply which will cause the primodal Rexx interpreter to be created; as a
                        result rii_ID for the peer RAJ and RE get set such that Java4Rexx must not
                        set them again (which would cause an exception in RAJ)
+
+     =======================================================================================
+
+     - 2022-08-10, rgf  - indicate by version number that this is for BSFooRexx 850:
+                        - Java baseline:   1.8/8
+                        - ooRexx baseline: 5.0
 */
 
 class Java4Rexx {
     /** Version string indicating version of this class. */
-    static public String version = "641.20220801";
+    static public String version = "850.20220810";
 
     final static boolean bDebug= // true;
                                  false;

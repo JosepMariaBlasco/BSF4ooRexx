@@ -54,6 +54,11 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
  /*
 
+     2022-08-10, rgf  - indicate by version number that this is for BSFooRexx 850:
+                        - Java baseline:   1.8/8
+                        - ooRexx baseline: 5.0
+     =========================================================================
+
      2022-08-06, rgf  - new case SIMPLE_EXECUTE_ARGUMENT, usage:
                         call BSF 'simpleExecute', [rexxCode], [rexxArgument]
 
@@ -599,7 +604,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20220806";
+    static final public String version = "850.20220810";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 

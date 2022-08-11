@@ -1,3 +1,27 @@
+
+
+-------------------------------------- 2022-08-10 ----------------------------------
+
+
+- branches/461, branches/850 created
+
+- branches/850
+
+- renamed to createDistributionForBSF4ooRexx8.cmd
+
+        - baseline Java version set to "-source 8 -target 8"
+
+- BSF4ooRexx.cc
+
+        - mandate ooRexx 5.0.0 as minimum
+
+        - change version string to indicate new Java baseline 8 and ooRexx baseline 5.0
+
+- Java4Rexx.java, RexxAndJava.java, RexxEngine.java
+
+        - change version string to indicate new Java baseline 8 and ooRexx baseline 5.0
+
+
 -------------------------------------- 2022-08-09 ----------------------------------
 
 - samples/JavaFX/fxml_03/fxml/registration.fxml

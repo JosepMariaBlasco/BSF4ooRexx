@@ -1,6 +1,6 @@
 @echo off
 rem  ------------------------ Apache Version 2.0 license -------------------------
-rem     Copyright (C) 2001-2021 Rony G. Flatscher
+rem     Copyright (C) 2001-2022 Rony G. Flatscher
 rem
 rem     Licensed under the Apache License, Version 2.0 (the "License")rem
 rem     you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@ rem     See the License for the specific language governing permissions and
 rem     limitations under the License.
 rem  -----------------------------------------------------------------------------
 rem 2016-11-04, rgf: now basing BSF4ooRexx on Java 1.6/6.0
+rem 2022-08-10, rgf: now basing BSF4ooRexx on Java 1.8/8.0
 
 @echo on
 @echo off
@@ -31,12 +32,13 @@ set path2rexxlaBsf=%path2root%\org\rexxla\bsf
 
 rem rgf, 20140927: make sure that the extension jar is not picked up (if bsf4oorexx-jar got installed there)
 set javacDefines=-Djava.ext.dirs=""
-set target=-target 1.6
-set source=-source 1.6
+set target=-target 8
+set source=-source 8
 @rem baseline is Java 1.6/6 (decided during 2017 as earlier Java version deployments cannot be located anymore)
-set javaBaseLine=-source 1.6 -target 1.6
+@rem baseline is Java 1.6/6 (decided during 2017 as earlier Java version deployments cannot be located anymore)
+set javaBaseLine=-source 8   -target 8
 
-set java7=-source 1.7 -target 1.7
+@rem set java7=-source 1.7 -target 1.7  --> baseline is Java 8 use 'java8' instead as a result
 set java8=-source 1.8 -target 1.8
 set java9=-source 9 -target 9
 
@@ -108,7 +110,7 @@ copy %javaSrc%\RexxCleanupRef.java            %path2engine%
 javac %javacDefines% %javaBaseLine%        %javaSrc%\InvocationType.java        && copy %javaSrc%\InvocationT*                %path2engine%
 javac %javacDefines% %javaBaseLine%        %javaSrc%\RexxReflectInterface.java  && copy %javaSrc%\RexxReflectInterface*       %path2engine%
 javac %javacDefines% %javaBaseLine%        %javaSrc%\RexxReflectJava6.java      && copy %javaSrc%\RexxReflectJava6*           %path2engine%
-javac %java7%                              %javaSrc%\RexxReflectJava7.java      && copy %javaSrc%\RexxReflectJava7*           %path2engine%
+javac %javacDefines% %javaBaseLine%        %javaSrc%\RexxReflectJava7.java      && copy %javaSrc%\RexxReflectJava7*           %path2engine%
 javac %javacDefines% %javaBaseLine%        %javaSrc%\RexxReflectUtil.java       && copy %javaSrc%\RexxReflectUtil*            %path2engine%
 
 
@@ -154,7 +156,7 @@ javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxStrictArgument.java        
 javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxCleanupRef.java            && copy %javaSrc%\RexxCleanupRef*             %path2engine%
 
 @rem 2022-04-21: needs Java 1.8 due to using Arrays.stream()
-javac %javacDefines% %java8%           %javaSrc%\RexxAnalyzeRegistry.java       && copy %javaSrc%\RexxAnalyzeRegistry*        %path2engine%
+javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxAnalyzeRegistry.java       && copy %javaSrc%\RexxAnalyzeRegistry*        %path2engine%
 
 endlocal
 
