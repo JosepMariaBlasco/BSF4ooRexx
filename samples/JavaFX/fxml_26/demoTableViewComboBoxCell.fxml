@@ -29,7 +29,7 @@
       <menus>
         <Menu fx:id="id_menu_file" mnemonicParsing="false" text="File">
           <items>
-            <CheckMenuItem fx:id="id_menu_show_debug" mnemonicParsing="false" selected="true" text="Show Debug Output" />
+            <CheckMenuItem fx:id="id_menu_show_debug" mnemonicParsing="false" selected="false" text="Show Debug Output" />
             <CheckMenuItem fx:id="id_menu_enable_editing" mnemonicParsing="false" selected="false" text="Enable Editing" />
             <SeparatorMenuItem mnemonicParsing="false" />
             <MenuItem fx:id="id_menu_setitems" mnemonicParsing="false" text="Fill TableView with Testdata" />
