@@ -18,6 +18,11 @@
                                - make sure id_tableview gets set to tableViewData on first id_menu_add
                                - make sure CTL-Click only operational if in edit mode
 
+             2022-08-11, rgf: - demoTableView.fxml: changed "select" property of 'CheckMenuItem
+                                fx:id="id_menu_show_debug"' to "false", henc start out without
+                                debug mode (change to "true" to see the debug output on start-up
+                                of this program)
+
    purpose: demonstrate - TableView with cells containing text and graphics
                         - Setting TableView item to null as a whole as opposed to removing the item
                         - Enabling/disabling menu options
