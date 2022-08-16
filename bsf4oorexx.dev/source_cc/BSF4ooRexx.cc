@@ -3459,7 +3459,8 @@ inline char * RgfCreateRexxlikeErrorInfo (RexxThreadContext *rtc, RexxDirectoryO
                                      (NULL != cond.message && rtc->Nil() != cond.message ? rtc->CString( cond.message ) : "message n/a") );
 
         snprintf( msg, 4096, "%.16s%.512s:\n%.1024s\n%.1024s\n%.1024s", DLLNAME, header, line1, line2, line3);
-fprintf(stderr, "---> BSF4ooRexx.cc %d %s:\n%s\n<---\n", __LINE__, __FUNCTION__, msg);fflush(stderr),
+
+// fprintf(stderr, "---> BSF4ooRexx.cc %d %s:\n%s\n<---\n", __LINE__, __FUNCTION__, msg);fflush(stderr),
 
         delete[] line2;
         delete[] line3;
@@ -4749,16 +4750,6 @@ RexxRoutine0(CSTRING, BsfInvokedBy) // 20090505, ---rgf
         case  1:  return "1";   // JVM present, BSF4Rexx invoked by Java
         default:  return "2";   // JVM present, BSF4Rexx invoked by Rexx
     }
-}
-
-
-RexxRoutine0(logical_t, BsfCheckCondition) // 20220814, ---rgf, trying to debug missing condition
-{
-#if defined (DEBUG) || defined (DEBUG_BSF_FUNCTION) || defined (DEBUG_CREATE_REXX_EXCEPTION)
-    fprintf(stderr, "*** BSF4ooRexx: %d %s: GetCondition, context->CheckCondition()=[%d] ...\n", __LINE__, __FUNCTION__, context->CheckCondition());
-    fflush(stderr);
-#endif
-    return context->CheckCondition();
 }
 
 
@@ -8225,7 +8216,6 @@ void RexxEntry bsfUnloader (RexxThreadContext * rtc)
         REXX_TYPED_ROUTINE( BsfGetRTC                   , BsfGetRTC                   ),  // rgf, 2017-10-05: for debugging only
         REXX_TYPED_ROUTINE( BsfGetTID                   , BsfGetTID                   ),
         REXX_TYPED_ROUTINE( BsfInvokedBy                , BsfInvokedBy                ),
- // REXX_TYPED_ROUTINE( BsfCheckCondition           , BsfCheckCondition           ),
         REXX_TYPED_ROUTINE( BsfJavaException            , BsfJavaException            ),
         REXX_TYPED_ROUTINE( BsfLoadFuncs                , BsfLoadFuncs                ),
         REXX_TYPED_ROUTINE( BsfLoadJava                 , BsfLoadJava                 ),

@@ -35,12 +35,9 @@ set javacDefines=-Djava.ext.dirs=""
 set target=-target 8
 set source=-source 8
 @rem baseline is Java 1.6/6 (decided during 2017 as earlier Java version deployments cannot be located anymore)
-@rem baseline is Java 1.6/6 (decided during 2017 as earlier Java version deployments cannot be located anymore)
 set javaBaseLine=-source 8   -target 8
 
 @rem set java7=-source 1.7 -target 1.7  --> baseline is Java 8 use 'java8' instead as a result
-set java8=-source 1.8 -target 1.8
-set java9=-source 9 -target 9
 
 rem default to Apache's BSF
 set javaSrc=%cd%\source_java

@@ -19,6 +19,11 @@
           .BSF in .environment;
 
    date:
+
+         2022-08-11, ---rgf, - version now reflects 850
+
+         =================================================== below 641, above 850
+
          2022-06-27, ---rgf, - class .uno_proxy is usually not visible to BSF.CLS, adjust
                                *createArrayOf routines/methods accordingly (use class id
                                to determine whether instance of uno_proxy)
@@ -912,7 +917,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="641.20220810" -- set version (date distribution got created)
+      .bsf4rexx~version="850.20220816" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
