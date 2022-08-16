@@ -135,6 +135,38 @@ return testResult
    self~assertSame(.ro~info:.class_level2(1,2,3), bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", raj, 'info', class_level2, .jArgs3)) )
    self~assertSame(.ro~info:.class_level1(1,2,3), bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", raj, 'info', class_level1, .jArgs3)) )
 
+::method "test_04_SendMailScoped_illegal_argument"
+self~expectSyntax(40.900)
+.jo~sendMessageScoped('info', class_that_does_not_exist, .nil)
+
+::method "test_05_SendMailScoped_illegal_argument"
+self~expectSyntax(40.900)
+.jo~sendMessageScoped('info', .array, .nil)
+
+::method "test_06_SendMailScoped_illegal_argument"
+self~expectSyntax(40.900)
+.jo~sendMessageScoped('info', class_that_does_not_exist, 1,2,3)
+
+::method "test_07_SendMailScoped_illegal_argument"
+self~expectSyntax(40.900)
+.jo~sendMessageScoped('info', .array, .nil, 1, 2, 3)
+
+::method "test_08_SendMailScoped_illegal_argument"
+self~expectSyntax(40.900)
+call xbsf invoke, .jo, "sendMessageScoped", 'info', class_that_does_not_exist, .nil
+
+::method "test_09_SendMailScoped_illegal_argument"
+self~expectSyntax(40.900)
+call xbsf invoke, .jo, "sendMessageScoped", 'info', .array, .nil
+
+::method "test_10_SendMailScoped_illegal_argument"
+self~expectSyntax(40.900)
+call xbsf invoke, .jo, "sendMessageScoped", 'info', class_that_does_not_exist, .jArgs3
+
+::method "test_11_SendMailScoped_illegal_argument"
+self~expectSyntax(40.900)
+call xbsf invoke, .jo, "sendMessageScoped", 'info', .array, .jArgs3
+
 
 ::class class_level1
 ::method info
