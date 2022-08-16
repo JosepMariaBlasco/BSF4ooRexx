@@ -76,10 +76,10 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
  * Method:    jniRexxSendMessageToRexxObject
- * Signature: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;
+ * Signature: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;
  */
 JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSendMessageToRexxObject
-  (JNIEnv *, jobject, jstring, jstring, jstring, jstring, jstring, jstring, jstring, jobjectArray, jstring);
+  (JNIEnv *, jobject, jstring, jstring, jstring, jstring, jstring, jstring, jstring, jobjectArray, jstring, jstring);
 
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava

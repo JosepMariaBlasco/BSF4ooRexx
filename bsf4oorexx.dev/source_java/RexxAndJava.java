@@ -57,6 +57,10 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
      2022-08-10, rgf  - indicate by version number that this is for BSFooRexx 850:
                         - Java baseline:   1.8/8
                         - ooRexx baseline: 5.0
+
+                      - changed type of rexxEngine from BSFEngine to RexxEngine, adjusted
+                        also in argument; BSF4ooRexx.cc needs adjustment as well
+
      =========================================================================
 
      2022-08-06, rgf  - new case SIMPLE_EXECUTE_ARGUMENT, usage:
@@ -687,10 +691,10 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     BSFManager mgr;
 
     /** Stores the Rexx engine. */
-    BSFEngine  rexxEngine;
+    RexxEngine rexxEngine;
 
     /** Getter method for field {@link #rexxEngine}. */
-    protected BSFEngine getRexxEngine()     // accessor
+    protected RexxEngine getRexxEngine()     // accessor
     {
         return rexxEngine;
     }
@@ -1036,7 +1040,7 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
 
     /** Constructor to receive and store the BSF manager and the Rexx engine.
      */
-    RexxAndJava (BSFManager mgr, BSFEngine rengine)
+    RexxAndJava (BSFManager mgr, RexxEngine rengine)
     {
         this.mgr        = mgr;     //the current BSFManager
         this.rexxEngine = rengine; //the current RexxEngine
@@ -1235,7 +1239,8 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
                     String  messageName,        // message name (determines name of method to invoke)
                     String  methodDescription,  // messageDesscription, internal string describing arguments and return value
                     Object[]args,               // arguments, edited for native layer
-                    String  returnType          // primitive type signature or null
+                    String  returnType,         // primitive type signature or null
+                    String  scope_obj_ID        // a String or RexxProxy objectID denoting scope (superclass) to start resolving method
                                                            );
                     // args: of type String (keys to registry or pure values) or
                     //       RexxProxy (JNI needs to fetch and use it)
@@ -3392,8 +3397,9 @@ if (bDebug)
                   RexxReflectUtil rru=new RexxReflectUtil(this, choice, args);
 
                   if (bDebug) System.err.println("RexxAndJava: about to reflect for subfunction \""+choice+"\": "+rru+": "+rru.debugString());
-
+// System.err.println("\n\n/// RAJ, l# 3400, choice=["+choice+"] - before rxReflector.reflect(rru) // args.length=["+args.length+"], args=\""+Arrays.deepToString(args)+"\"");
                   rxReflector.reflect(rru);     // BSFException may get raised, do not intercept
+// System.err.println("\n\n/// RAJ, l# 3402, choice=["+choice+"] - AFTER  rxReflector.reflect(rru) // args.length=["+args.length+"], args=\""+Arrays.deepToString(args)+"\"");
 
                   if (rru.success)
                   {
@@ -3632,7 +3638,7 @@ if (bDebug)
 
     if (bDebug)
     {
-        System.err.print("\n==> "+choice+" <===");
+        System.err.print("\n==> "+choice+" <=== ");
         System.err.println("invoke: beanName=["+args[1]+"], function: ["+args[2]+"] args.length="+args.length+", args=\""+Arrays.deepToString(args)+"\"");
     }
 
@@ -3642,7 +3648,13 @@ if (bDebug)
 
                     if (bDebug) System.err.println(this+": ---rgf-debug: "+rru+": "+rru.debugString());
 
-                    rxReflector.reflect(rru);
+// System.err.println("\n\n/// RAJ, l# 3651, choice=["+choice+"] - before rxReflector.reflect(rru) // args.length=["+args.length+"], args=\""+Arrays.deepToString(args)+"\"");
+// try {
+
+                     rxReflector.reflect(rru);
+// } catch (Throwable t) {System.err.println("\n\n/// RAJ: # 3658 CAUGHT, CAUGHT: t=["+t+"]\n"); t.printStackTrace();System.err.println("t.getCause()=["+t.getCause()+"]\n");}
+
+// System.err.println("\n\n/// RAJ: # 3657   (AFTER rxReflector.reflect(rru):\n/// \trru.memberName=["+rru.memberName+"], rru.success=["+rru.success+"], rru.throwable=["+rru.throwable+"]\n,rru.debugString()=["+rru.debugString()+"]\n"+"\n");
 
                     if (rru.success)
                     {
@@ -3675,6 +3687,7 @@ if (bDebug)
                     // no matching Method object found or execution error
                     if (rru.throwable != null)
                     {
+// System.err.println("//// RAJ --- 1");
 // rgf, 20181030, temporarily: System.err.println(this+": rru.throwable="+rru.throwable);
                         throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                                  "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": "+
@@ -3682,6 +3695,7 @@ if (bDebug)
                                  "\n\tmethod: ["+args[2]+"] not found or execution error!",
                                 rru.throwable);       // supply the Throwable from trying to invoke while searching for a Method
                     }
+// System.err.println("//// RAJ --- 2 \\\\\\");
                     throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                              "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": "+
                              "\n\tbean:   ["+truncObject(rru.bean,65)+"] type: ["+rru.beanClz+"]"+
@@ -4092,7 +4106,9 @@ if (args[2]!=null && args[2].equals("java.lang.Class")) System.err.print("("+jav
 
                       if (bDebug) System.err.println(this+": ---rgf-debug: "+rru+": "+rru.debugString());
 
+// System.err.println("\n\n/// RAJ, l# 4102, choice=["+choice+"] - before rxReflector.reflect(rru) // args.length=["+args.length+"], args=\""+Arrays.deepToString(args)+"\"");
                       rxReflector.reflect(rru);
+// System.err.println("\n\n/// RAJ, l# 4104, choice=["+choice+"] - AFTER  rxReflector.reflect(rru) // args.length=["+args.length+"], args=\""+Arrays.deepToString(args)+"\"");
 
                       if (rru.success)
                       {   // if the user supplied a beanName, use it

@@ -2,7 +2,7 @@
 /*
    name:             07_rexx_JSR_223.testGroup
    author:           Rony G. Flatscher
-   version:          1.0.1
+   version:          1.0.2
    date:             2015-07-05, 2015-07-07, 2021-01-11
    changed:          2017-08-16, rgf:
                         - adjust for new formatting of Rexx code when produced by the RexxEngine factory
@@ -14,6 +14,7 @@
                         - adjust for the change in returning "rexx" instead of "Rexx" in the extension list
                      2021-01-11, rgf: - adjust for change in getOutputStatement() which now uses "SAY" again
                                       - adjust for change in using unqualified ".RexxScriptEngine@"
+                     2022-08-16, rgf: - remove ".jsr223." from package name
 
 
    license:          ASF 2.0 (Apache Software License)
@@ -141,7 +142,7 @@ return testResult
   call check self, ref, .array~of('say "hi"', .nil, "", " ", "say 'holla'")
 
 
-  reName="org.rexxla.bsf.engines.rexx.jsr223.RexxScriptEngine@"
+  reName="org.rexxla.bsf.engines.rexx.RexxScriptEngine@"
   self~assertTrue(ref~getScriptEngine~objectName~abbrev(reName))    -- get a new RexxScriptEngine
   return
 

@@ -1,0 +1,155 @@
+#!/usr/bin/env rexx
+/*
+   name:             rexx_testBsfRexxProxy1.testGroup
+   author:           Rony G. Flatscher
+   version:          1.0.0
+   date:             2022-08-16
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          test BSF4Rexx 850 new SendMessageScope()-API for the Java RexxProxy class
+   hint:             RexxProxy objects are Java objects and allow Java to interface with Rexx objects
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.test850Features)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+::class "test850Features" subclass ooTestCase public
+
+
+::method setup
+  -- make the classes available in this Rexx instance via .local, such that calls
+  -- from native (no Rexx context) can succeed; note: PUBLIC would not work in this
+  -- context as the native side in this case would only get a ThreadContext
+  .local~class_level1=.class_level1
+  .local~class_level2=.class_level2
+  .local~class_level3=.class_level3
+  .local~class_level4=.class_level4
+
+::method teardown
+  -- remove the .local class object entries that are only needed for this test group
+  .local~removeEntry("class_level1")
+  .local~removeEntry("class_level2")
+  .local~removeEntry("class_level3")
+  .local~removeEntry("class_level4")
+
+
+
+::method "test_01_SendMailScoped"
+   /* due to the naming in this testgroup, this method will be the first that gets
+      run; as previous tests may have changed the "bsfPrefixReturnValue", make sure
+      that it is set as BSF.CLS routines and methods depend on that */
+    if bsf("bsfPrefixReturnValue")=0 then
+       call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
+
+   .context~package~local~ro=.class_level4~new
+   .context~package~local~jo=BsfCreateRexxProxy(.ro)
+
+   .context~package~local~jArgs3=bsf.createJavaArrayOf("java.lang.Object", 1, 2, 3)
+
+   -- test normal message, using .BSF' unknown method
+   self~assertSame(.ro~info,               .jo~sendMessage0('info')                           )
+
+   -- #1 ===========================================================
+   -- testing without arguments
+   -- test scoped message, using .BSF' unknown method, supply SCOPE with class objects
+   self~assertSame(.ro~info:.class_level3, .jo~sendMessageScoped('info', .class_level3, .nil) )
+   self~assertSame(.ro~info:.class_level2, .jo~sendMessageScoped('info', .class_level2, .nil) )
+   self~assertSame(.ro~info:.class_level1, .jo~sendMessageScoped('info', .class_level1, .nil) )
+
+   -- test scoped message, using .BSF' unknown method, supply SCOPE with names of class objects (.local will be looked up)
+   self~assertSame(.ro~info:.class_level3, .jo~sendMessageScoped('info', class_level3, .nil) )
+   self~assertSame(.ro~info:.class_level2, .jo~sendMessageScoped('info', class_level2, .nil) )
+   self~assertSame(.ro~info:.class_level1, .jo~sendMessageScoped('info', class_level1, .nil) )
+
+   -- direct calls via BSF()
+   -- supply SCOPE with class objects
+   self~assertSame(.ro~info:.class_level3, bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", 'info', .class_level3, .nil)) )
+   self~assertSame(.ro~info:.class_level2, bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", 'info', .class_level2, .nil)) )
+   self~assertSame(.ro~info:.class_level1, bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", 'info', .class_level1, .nil)) )
+
+   -- supply SCOPE with names of class objects (.local will be looked up)
+   self~assertSame(.ro~info:.class_level3, bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", 'info', class_level3, .nil)) )
+   self~assertSame(.ro~info:.class_level2, bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", 'info', class_level2, .nil)) )
+   self~assertSame(.ro~info:.class_level1, bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", 'info', class_level1, .nil)) )
+
+   -- #2 ===========================================================
+   -- testing with arguments
+
+   -- test scoped message, using .BSF' unknown method, supply SCOPE with class objects
+   self~assertSame(.ro~info:.class_level3(1,2,3), .jo~sendMessageScoped('info', .class_level3, .jArgs3) )
+   self~assertSame(.ro~info:.class_level2(1,2,3), .jo~sendMessageScoped('info', .class_level2, .jArgs3) )
+   self~assertSame(.ro~info:.class_level1(1,2,3), .jo~sendMessageScoped('info', .class_level1, .jArgs3) )
+
+   -- test scoped message, using .BSF' unknown method, supply SCOPE with names of class objects (.local will be looked up)
+   self~assertSame(.ro~info:.class_level3(1,2,3), .jo~sendMessageScoped('info', class_level3, .jArgs3) )
+   self~assertSame(.ro~info:.class_level2(1,2,3), .jo~sendMessageScoped('info', class_level2, .jArgs3) )
+   self~assertSame(.ro~info:.class_level1(1,2,3), .jo~sendMessageScoped('info', class_level1, .jArgs3) )
+
+   -- direct calls via BSF()
+   -- supply SCOPE with class objects
+   self~assertSame(.ro~info:.class_level3(1,2,3), bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", 'info', .class_level3, .jArgs3)) )
+   self~assertSame(.ro~info:.class_level2(1,2,3), bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", 'info', .class_level2, .jArgs3)) )
+   self~assertSame(.ro~info:.class_level1(1,2,3), bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", 'info', .class_level1, .jArgs3)) )
+
+   -- supply SCOPE with names of class objects (.local will be looked up)
+   self~assertSame(.ro~info:.class_level3(1,2,3), bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", 'info', class_level3, .jArgs3)) )
+   self~assertSame(.ro~info:.class_level2(1,2,3), bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", 'info', class_level2, .jArgs3)) )
+   self~assertSame(.ro~info:.class_level1(1,2,3), bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", 'info', class_level1, .jArgs3)) )
+
+
+::method "test_02_SendMailScoped_via_explicit_RexxEngine"
+   -- direct calls via BSF()
+   re=bsf.wrap(xbsf('getRexxEngine'))
+   -- supply SCOPE with class objects
+   self~assertSame(.ro~info:.class_level3(1,2,3), bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", re, 'info', .class_level3, .jArgs3)) )
+   self~assertSame(.ro~info:.class_level2(1,2,3), bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", re, 'info', .class_level2, .jArgs3)) )
+   self~assertSame(.ro~info:.class_level1(1,2,3), bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", re, 'info', .class_level1, .jArgs3)) )
+
+   -- supply SCOPE with names of class objects (.local will be looked up)
+   self~assertSame(.ro~info:.class_level3(1,2,3), bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", re, 'info', class_level3, .jArgs3)) )
+   self~assertSame(.ro~info:.class_level2(1,2,3), bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", re, 'info', class_level2, .jArgs3)) )
+   self~assertSame(.ro~info:.class_level1(1,2,3), bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", re, 'info', class_level1, .jArgs3)) )
+
+
+::method "test_03_SendMailScoped_via_explicit_RexxAndJava"
+   -- direct calls via BSF()
+   raj=bsf.wrap(xbsf('getRexxAndJava'))
+   -- supply SCOPE with class objects
+   self~assertSame(.ro~info:.class_level3(1,2,3), bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", raj, 'info', .class_level3, .jArgs3)) )
+   self~assertSame(.ro~info:.class_level2(1,2,3), bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", raj, 'info', .class_level2, .jArgs3)) )
+   self~assertSame(.ro~info:.class_level1(1,2,3), bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", raj, 'info', .class_level1, .jArgs3)) )
+
+   -- supply SCOPE with names of class objects (.local will be looked up)
+   self~assertSame(.ro~info:.class_level3(1,2,3), bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", raj, 'info', class_level3, .jArgs3)) )
+   self~assertSame(.ro~info:.class_level2(1,2,3), bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", raj, 'info', class_level2, .jArgs3)) )
+   self~assertSame(.ro~info:.class_level1(1,2,3), bsf.wrap(xbsf(invoke, .jo, "sendMessageScoped", raj, 'info', class_level1, .jArgs3)) )
+
+
+::class class_level1
+::method info
+  return "<CLASS_LEVEL1" arg()">"
+
+::class class_level2 mixinclass class_level1
+::method info
+  return "<CLASS_LEVEL2" arg()">"
+
+::class class_level3 mixinclass class_level1
+::method info
+  return "<CLASS_LEVEL3" arg()">"
+
+::class class_level4 subclass class_level2 inherit class_level3
+::method info
+  return "<CLASS_LEVEL4" arg()">"
+
+

@@ -143,6 +143,10 @@ $(BSF4REXX) : $(BSF_OBJ_ORX)
     $(copy_cmd) $(BSF_ORX_TARGET) $(BSF4REXX)
     $(copy_cmd) $(BSF_ORX_TARGET) $(TGT_LIB_DIR)
 
+    $(copy_cmd) /y tmp\BSF4ooRexx.dll tmp.850-debug64
+    $(copy_cmd) /y tmp\BSF4ooRexx.pdb tmp.850-debug64
+    $(copy_cmd) /y tmp.850-debug64\* .
+
 # rgf's developer test installation on Windows as of 2017-01-08: just remove the following statement
 #    $(copy_cmd)  $(BSF4REXX)  ..\..\bsf4oorexx\BSF4ooRexx.dll
  @echo "done."

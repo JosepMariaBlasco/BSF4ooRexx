@@ -41,6 +41,13 @@ import java.text.SimpleDateFormat;
 /*
     last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
 
+    2022-08-11, ---rgf, - reduced (RexxProxy) casts in call(object,name, args)
+
+                        - new method "public Object call (Object object, String name, Object[] args, Object scope)"
+                          to allow scope argument (new in ooRexx 5.0)
+
+    ================================================ below 641, above 850
+
     2022-08-06, ---rgf, - added static getter for languageVersionString
 
                         - added static protected boolean isTerminationFixed() to determine
@@ -234,7 +241,7 @@ public class RexxEngine extends BSFEngineImpl {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "850.20220810";
+    static final public String version = "850.20220811";
 
     static int terminationCounter = 0;  // for termination thread name counts
 
@@ -854,13 +861,42 @@ if (bDebug) System.err.println(this+" <=== <=== <=== RexxEngine.eval()-1 - AFTER
       * @param name if given, name of the message to send to the ooRexx object
       * @param args arguments to be passed to Rexx, if any
       *
-      * @return a String object with the result from Rexx or <code>null</code>.
+      * @return an object with the result from Rexx or <code>null</code>.
       */
     public Object call (Object object, String name, Object[] args)
                         throws BSFException
     {
 
 if (bDebug) System.err.println(this+" ===> ===> ===> RexxEngine.call(Object object, String name, Object[] args) - begin...");
+
+        if (bTerminated==true)       // engine got terminated, cannot use it anymore
+        {
+            throw new RexxException("RexxEngine "+this+" got terminated, cannot be used anymore.");
+        }
+
+        return call (object, name, args, null); // carry out the operation
+    }
+
+    /** Call version that allows for supplying a Rexx class serving as the scope for the
+     *  method invocation (new in ooRexx 5.0, cf. rexxapi.pdf, <code>SendMessageScoped()</code>).
+     *
+     *
+     * @param object if an instance of RexxProxy, then a callback is carried out
+     * @param name if given, name of the message to send to the ooRexx object
+     * @param args arguments to be passed to Rexx, if any
+     * @param scope a string or RexxProxy representing an ooRexx class object, message
+     *        resolution will start at the supplied scope (must be a superclass of the
+     *        Rexx object resolving the message)
+     *
+     * @return an object with the result from Rexx or <code>null</code>.
+     *
+     * @since 850 (2022-08-11)
+     */
+    public Object call (Object object, String name, Object[] args, Object scope)
+                        throws BSFException
+    {
+
+if (bDebug) System.err.println(this+" ===> ===> ===> RexxEngine.call(Object object, String name, Object[] args, Object scope) - begin...");
 
         if (bTerminated==true)       // engine got terminated, cannot use it anymore
         {
@@ -874,6 +910,11 @@ if (bDebug || bDebugTermination) System.err.println(this+" ===> RexxEngine().cal
             this.rii_ID=rexxInterface.createRexxInterpreterInstance(rexxConfig);
 if (bDebug || bDebugTermination) System.err.println("===> RexxEngine() <I_RE_"+id+"> (CREATED) rii_ID=["+rii_ID+"] for <RE_"+id+">");
 if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]\n");
+        }
+
+        if (scope!=null && ! ((scope instanceof String) || (scope instanceof RexxProxy)) )
+        {
+            throw new RexxException("scope argument must be either null, a String or a RexxProxy: scope="+scope+", scope.getClass()="+scope.getClass().toString());
         }
 
         // String editedArgs[] = new String [ (args!= null ? args.length : 0) ];
@@ -926,17 +967,28 @@ if (bDebug) System.err.println(this+".call(): args2RexxString() created bean: ["
         {
 if (bDebug) System.err.println(this+" RexxEngine.call(): jniRexxSendMessageToRexxObject() ...");
 // System.err.println("RE.call(...) v# 1, name=["+name+"]");
+            RexxProxy rp = (RexxProxy) object;
+            String strScope=null;
+            if (scope instanceof RexxProxy)
+            {
+                strScope=((RexxProxy) scope).rexxObjectID;  // get rexxObjectID (should refer to a superclass object)
+            }
+            else
+            {
+                strScope=(scope==null ? null : (String) scope);
+            }
             o=rexxInterface.jniRexxSendMessageToRexxObject (
-                ((RexxProxy) object).rexxInterpreterID,   // RexxInstance instance ID
-                ((RexxProxy) object).rexxObjectID,        // RexxProxy objectID
-                ((RexxProxy) object).rexxUserDataID,      // RexxProxy userData_ID
+                rp.rexxInterpreterID,   // RexxInstance instance ID
+                rp.rexxObjectID,        // RexxProxy objectID
+                rp.rexxUserDataID,      // RexxProxy userData_ID
 //                ((RexxProxy) object).creationTID,         // RexxProxy creationTID
                 null,                       // javaObjectBean (a String)
                 null,                       // methodObjectBean (a String)
                 name,                       // message name (determines name of method to invoke)
                 null,                       // methodDescription (a String), not used here
                 editedArgs,                 // arguments, edited for native layer
-                null                        // unknown return type, hence any is o.k.
+                null,                       // unknown return type, hence any is o.k.
+                strScope                    // null, a String or a rexxObjectID of a RexxProxy denoting the scope (class) to start method resolution
                 );
         }
         else    // old, pre-4.0 behaviour
@@ -1131,7 +1183,8 @@ if (bDebug) System.err.println(this+" RexxEngine.call(p,m,a): jniRexxSendMessage
             name,                       // message name (determines name of method to invoke)
             null,                       // methodDescription (a String), not used here
             editedArgs,                 // arguments, edited for native layer
-            resultType                  // the expected (primitive) return type, or null else
+            resultType,                 // the expected (primitive) return type, or null else
+            null                        // null, a String or a RexxProxy denoting the scope (class) to start method resolution
             );
 
         // now deregister Beans
@@ -1354,7 +1407,8 @@ if (bDebug) System.err.println(this+" RexxEngine.call(): jniRexxSendMessageToRex
             methodName,                 // message name (determines name of method to invoke)
             methodDescriptor,           // methodDescriptor (a String)
             editedArgs,                 // arguments, edited for native layer
-            resultType                  // the expected (primitive) return type, or null else
+            resultType,                 // the expected (primitive) return type, or null else
+            null                        // null, a String or a RexxProxy denoting the scope (class) to start method resolution
             );
 
         // now deregister Beans

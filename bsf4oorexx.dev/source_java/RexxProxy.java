@@ -27,7 +27,7 @@ import org.apache.bsf.BSFException;
  *
 
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2009-2021 Rony G. Flatscher
+ *    Copyright (C) 2009-2022 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -42,11 +42,19 @@ import org.apache.bsf.BSFException;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 1.0.4, 2009-05-03, 2009-06-27, 2009-07-11, 2009-07-31, 2010-04-16, 2016-11-04, 2018-01-07, 2019-09-21
-  * @author Rony G. Flatscher (<a href="http://www.wu.ac.at">WU/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu.ac.at/english">http://www.wu.ac.at/english</a>)
+  * @version 1.0.6, 2009-05-03 - 2022-08-11
+  * @author Rony G. Flatscher
   */
 
 /*
+
+    2022-08-11, rgf - adding methods sendMessageScoped()
+
+                    - make sure that sendMessage[1|2|3|4|5] directly invoke the new
+                      RexxEngine.call() method that can process the new scope argument,
+                      supplying null for it
+
+    ====================================================== below 641, above 850
 
     2021-08-05, rgf - removing finalize() which got deprecated for Java
 
@@ -133,13 +141,12 @@ import org.apache.bsf.BSFException;
                        instead of just a method name
 */
 
-// TODO: 2016-11-04, rgf: tidy up code that uses reflection to see whether running on Java = 1.4
 
 public class RexxProxy implements InvocationHandler
 {
 
      /** Version information on this class. */
-    static final public String version="105.20210805";
+    static final public String version="106.20220811";
 
 
     /** If set, then output for debugging is created. */
@@ -336,6 +343,27 @@ if (bDebug==true)
 
 
 
+    /** Sends the given message, with the given scope and arguments using a
+     *  callback to ooRexx using the RexxEngine instance.
+     *
+     * @param   messageName name of the method to invoke
+     * @param   scope a String or a RexxProxy denoting the Rexx object's superclass to start
+     *          looking for the method by the name of messageName
+     * @param   args array of Objects serving as arguments
+     *
+     * @return  value that the ooRexx method returns, if any
+     */
+    public Object sendMessageScoped (String messageName, Object scope, Object[] args) throws BSFException
+    {
+if (bDebug)
+{
+    System.err.println("////// ---> RexxProxy.sendMessageScoped(m,scope,args):  m=["+messageName+"], scope=["+scope+"], args.length=["+(args==null ? null+"" : args.length+"")+"]...");
+    System.err.println("////// ---> RexxProxy.sendMessageScoped(m,scope,args):     Arrays.deepToString(args)=\""+Arrays.deepToString(args)+"\"");
+}
+
+        return this.rexxEngine.call(this, messageName, args, scope);
+    }
+
     /** Sends the given message with the given arguments using a callback to ooRexx using the RexxEngine instance.
      *
      * @param   messageName name of the method to invoke
@@ -351,7 +379,7 @@ if (bDebug)
     System.err.println("////// ---> RexxProxy.sendMessage(m,args):        Arrays.deepToString(args)=\""+Arrays.deepToString(args)+"\"");
 }
 
-        return this.rexxEngine.call(this, messageName, args);
+        return this.rexxEngine.call(this, messageName, args, null);
     }
 
     /** Sends the given message using a callback to ooRexx using the RexxEngine instance.
@@ -364,7 +392,7 @@ if (bDebug)
     {
 if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage0(m): m=["+messageName+"]...");
 
-        return this.rexxEngine.call(this, messageName, null);
+        return this.rexxEngine.call(this, messageName, null, null);
     }
 
     /** Sends the given message with the given argument using a callback to ooRexx using the RexxEngine instance.
@@ -378,7 +406,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage0(m): m=["+mess
     {
 if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage1(m,arg1): m=["+messageName+"], arg1=["+arg1+"]...");
 
-        return this.rexxEngine.call(this, messageName, new Object[]{arg1} );
+        return this.rexxEngine.call(this, messageName, new Object[]{arg1}, null );
     }
 
 
@@ -394,7 +422,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage1(m,arg1): m=["
     {
 if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage2(m,arg1,arg2): m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"]...");
 
-        return this.rexxEngine.call(this, messageName, new Object[]{arg1,arg2} );
+        return this.rexxEngine.call(this, messageName, new Object[]{arg1,arg2}, null );
     }
 
     /** Sends the given message with the three given arguments using a callback to ooRexx using the RexxEngine instance.
@@ -410,7 +438,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage2(m,arg1,arg2):
     {
 if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage3(m,arg1,arg2,arg3): m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"]...");
 
-        return this.rexxEngine.call(this, messageName, new Object[]{arg1,arg2,arg3} );
+        return this.rexxEngine.call(this, messageName, new Object[]{arg1,arg2,arg3}, null );
     }
 
 
@@ -428,7 +456,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage3(m,arg1,arg2,a
     {
 if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage4(m,arg1,arg2,arg3,arg4): m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"], arg4=["+arg4+"]...");
 
-        return this.rexxEngine.call(this, messageName, new Object[]{arg1,arg2,arg3,arg4} );
+        return this.rexxEngine.call(this, messageName, new Object[]{arg1,arg2,arg3,arg4}, null );
     }
 
 
@@ -447,7 +475,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage4(m,arg1,arg2,a
     {
 if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage5(m,arg1,arg2,arg3,arg4,arg5): m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"], arg4=["+arg4+"], arg5=["+arg5+"]...");
 
-        return this.rexxEngine.call(this, messageName, new Object[]{arg1,arg2,arg3,arg4,arg5} );
+        return this.rexxEngine.call(this, messageName, new Object[]{arg1,arg2,arg3,arg4,arg5}, null );
     }
 
 
@@ -455,6 +483,28 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage5(m,arg1,arg2,a
 
     /* ---------------------------------------------------------------------------- */
 
+
+    /** Sends the given message with the given scope and arguments using a callback
+     *  to ooRexx using the supplied RexxEngine instance.
+     *
+     * @param   re RexxEngine object to use for the call, if null, using RexxEngine object that created this RexxProxy object
+     * @param   messageName name of the method to invoke
+     * @param   scope a String or a RexxProxy denoting the Rexx object's superclass to start
+     *          looking for the method by the name of messageName
+     * @param   args array of Objects serving as arguments
+     *
+     * @return  value that the ooRexx method returns, if any
+     */
+    public Object sendMessageScoped (RexxEngine re, String messageName, Object scope, Object[] args) throws BSFException
+    {
+if (bDebug)
+{
+    System.err.println("////// ---> RexxProxy.sendMessageScoped(re,m,scope,args): re=["+re+"], m=["+messageName+"], scope=["+scope+"], args.length=["+(args==null ? null+"" : args.length+"")+"]...");
+    System.err.println("////// ---> RexxProxy.sendMessageScoped(re,m,scope,args):                     Arrays.deepToString(args)=\""+Arrays.deepToString(args)+"\" ");
+}
+
+        return (re==null ? this.rexxEngine : re).call(this, messageName, args, scope);
+    }
 
     /** Sends the given message with the given arguments using a callback to ooRexx using the RexxEngine instance.
      *
@@ -473,7 +523,7 @@ if (bDebug)
     System.err.println("////// ---> RexxProxy.sendMessage(re,m,args):                     Arrays.deepToString(args)=\""+Arrays.deepToString(args)+"\"");
 }
 
-        return (re==null ? this.rexxEngine : re).call(this, messageName, args);
+        return (re==null ? this.rexxEngine : re).call(this, messageName, args, null);
     }
 
     /** Sends the given message using a callback to ooRexx using the RexxEngine instance.
@@ -488,7 +538,7 @@ if (bDebug)
 if (bDebug)
 System.err.println("////// ---> RexxProxy.sendMessage0(re,m): re=["+re+"], m=["+messageName+"]...");
 
-        return (re==null ? this.rexxEngine : re).call(this, messageName, null);
+        return (re==null ? this.rexxEngine : re).call(this, messageName, null, null);
     }
 
     /** Sends the given message with the given argument using a callback to ooRexx using the RexxEngine instance.
@@ -503,7 +553,7 @@ System.err.println("////// ---> RexxProxy.sendMessage0(re,m): re=["+re+"], m=["+
     {
 if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage1(re,m,arg1): re=["+re+"], m=["+messageName+"], arg1=["+arg1+"]...");
 
-        return (re==null ? this.rexxEngine : re).call(this, messageName, new Object[]{arg1} );
+        return (re==null ? this.rexxEngine : re).call(this, messageName, new Object[]{arg1}, null );
     }
 
 
@@ -520,7 +570,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage1(re,m,arg1): r
     {
 if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage2(re,m,arg1,arg2): re=["+re+"], m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"]...");
 
-        return (re==null ? this.rexxEngine : re).call(this, messageName, new Object[]{arg1,arg2} );
+        return (re==null ? this.rexxEngine : re).call(this, messageName, new Object[]{arg1,arg2}, null );
     }
 
     /** Sends the given message with the three given arguments using a callback to ooRexx using the RexxEngine instance.
@@ -537,7 +587,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage2(re,m,arg1,arg
     {
 if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage3(re,m,arg1,arg2,arg3): re=["+re+"], m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"]...");
 
-        return (re==null ? this.rexxEngine : re).call(this, messageName, new Object[]{arg1,arg2,arg3} );
+        return (re==null ? this.rexxEngine : re).call(this, messageName, new Object[]{arg1,arg2,arg3}, null );
     }
 
 
@@ -556,7 +606,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage3(re,m,arg1,arg
     {
 if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage4(re,m,arg1,arg2,arg3,arg4): re=["+re+"], m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"], arg4=["+arg4+"]...");
 
-        return (re==null ? this.rexxEngine : re).call(this, messageName, new Object[]{arg1,arg2,arg3,arg4} );
+        return (re==null ? this.rexxEngine : re).call(this, messageName, new Object[]{arg1,arg2,arg3,arg4}, null );
     }
 
 
@@ -576,7 +626,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage4(re,m,arg1,arg
     {
 if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage5(re,m,arg1,arg2,arg3,arg4,arg5): re=["+re+"], m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"], arg4=["+arg4+"], arg5=["+arg5+"]...");
 
-        return (re==null ? this.rexxEngine : re).call(this, messageName, new Object[]{arg1,arg2,arg3,arg4,arg5} );
+        return (re==null ? this.rexxEngine : re).call(this, messageName, new Object[]{arg1,arg2,arg3,arg4,arg5}, null );
     }
 
 
@@ -587,6 +637,28 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage5(re,m,arg1,arg
 
     /* ---------------------------------------------------------------------------- */
 
+
+    /** Sends the given message with the given scope and arguments using a
+     *  callback to ooRexx using the RexxEngine instance.
+     *
+     * @param   raj RexxAndJava object which RexxEngine will be used for the call, if null, using RexxEngine object that created this RexxProxy object
+     * @param   messageName name of the method to invoke
+     * @param   scope a String or a RexxProxy denoting the Rexx object's superclass to start
+     *          looking for the method by the name of messageName
+     * @param   args array of Objects serving as arguments
+     *
+     * @return  value that the ooRexx method returns, if any
+     */
+    public Object sendMessageScoped (RexxAndJava raj, String messageName, Object scope, Object[] args) throws BSFException
+    {
+if (bDebug)
+{
+    System.err.println("////// ---> RexxProxy.sendMessageScoped(raj,m,scope,args): raj=["+raj+"], m=["+messageName+"], scope=["+scope+"], args.length=["+(args==null ? null+"" : args.length+"")+"]...");
+    System.err.println("////// ---> RexxProxy.sendMessageScoped(raj,m,scope,args):                       Arrays.deepToString(args)=\""+Arrays.deepToString(args)+"\"");
+}
+
+        return (raj==null ? this.rexxEngine : raj.getRexxEngine()).call(this, messageName, args, scope);
+    }
 
     /** Sends the given message with the given arguments using a callback to ooRexx using the RexxEngine instance.
      *
@@ -604,8 +676,9 @@ if (bDebug)
     System.err.println("////// ---> RexxProxy.sendMessage(raj,m,args):                       Arrays.deepToString(args)=\""+Arrays.deepToString(args)+"\"");
 }
 
-        return (raj==null ? this.rexxEngine : raj.getRexxEngine()).call(this, messageName, args);
+        return (raj==null ? this.rexxEngine : raj.getRexxEngine()).call(this, messageName, args, null);
     }
+
 
     /** Sends the given message using a callback to ooRexx using the RexxEngine instance.
      *
@@ -616,11 +689,10 @@ if (bDebug)
      */
     public Object sendMessage0 (RexxAndJava raj, String messageName) throws BSFException
     {
-// TODO: analyze execution path if Java started from Rexx (RAJ gets registerBean() via registerBean4JNI
 if (bDebug)
 System.err.println("////// ---> RexxProxy.sendMessage0(raj,m): raj=["+raj+"], m=["+messageName+"]...");
 
-        return (raj==null ? this.rexxEngine : raj.getRexxEngine()).call(this, messageName, null);
+        return (raj==null ? this.rexxEngine : raj.getRexxEngine()).call(this, messageName, null, null);
 /*
         Object o= (raj==null ? this.rexxEngine : raj.getRexxEngine()).call(this, messageName, null);
 
@@ -641,7 +713,7 @@ return o;
     {
 if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage1(raj,m,arg1): raj=["+raj+"], m=["+messageName+"], arg1=["+arg1+"]...");
 
-        return (raj==null ? this.rexxEngine : raj.getRexxEngine()).call(this, messageName, new Object[]{arg1} );
+        return (raj==null ? this.rexxEngine : raj.getRexxEngine()).call(this, messageName, new Object[]{arg1}, null );
     }
 
 
@@ -658,7 +730,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage1(raj,m,arg1): 
     {
 if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage2(raj,m,arg1,arg2): raj=["+raj+"], m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"]...");
 
-        return (raj==null ? this.rexxEngine : raj.getRexxEngine()).call(this, messageName, new Object[]{arg1,arg2} );
+        return (raj==null ? this.rexxEngine : raj.getRexxEngine()).call(this, messageName, new Object[]{arg1,arg2}, null );
     }
 
     /** Sends the given message with the three given arguments using a callback to ooRexx using the RexxEngine instance.
@@ -675,7 +747,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage2(raj,m,arg1,ar
     {
 if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage3(raj,m,arg1,arg2,arg3): raj=["+raj+"], m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"]...");
 
-        return (raj==null ? this.rexxEngine : raj.getRexxEngine()).call(this, messageName, new Object[]{arg1,arg2,arg3} );
+        return (raj==null ? this.rexxEngine : raj.getRexxEngine()).call(this, messageName, new Object[]{arg1,arg2,arg3}, null );
     }
 
 
@@ -694,7 +766,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage3(raj,m,arg1,ar
     {
 if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage4(raj,m,arg1,arg2,arg3,arg4): raj=["+raj+"], m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"], arg4=["+arg4+"]...");
 
-        return (raj==null ? this.rexxEngine : raj.getRexxEngine()).call(this, messageName, new Object[]{arg1,arg2,arg3,arg4} );
+        return (raj==null ? this.rexxEngine : raj.getRexxEngine()).call(this, messageName, new Object[]{arg1,arg2,arg3,arg4}, null );
     }
 
 
@@ -714,7 +786,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage4(raj,m,arg1,ar
     {
 if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage5(raj,m,arg1,arg2,arg3,arg4,arg5): raj=["+raj+"], m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"], arg4=["+arg4+"], arg5=["+arg5+"]...");
 
-        return (raj==null ? this.rexxEngine : raj.getRexxEngine()).call(this, messageName, new Object[]{arg1,arg2,arg3,arg4,arg5} );
+        return (raj==null ? this.rexxEngine : raj.getRexxEngine()).call(this, messageName, new Object[]{arg1,arg2,arg3,arg4,arg5}, null );
     }
 
 
