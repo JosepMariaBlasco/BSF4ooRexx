@@ -14,7 +14,7 @@ import java.util.*;         // BitSet
  *
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2012-2016 Rony G. Flatscher
+ *    Copyright (C) 2012-2022 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -31,16 +31,19 @@ import java.util.*;         // BitSet
  *
  *
  * @author Rony G. Flatscher
- * @version 1.01
- * @since 2012-02-04
+ * @version 850
+ * @since 2022-08-20
  */
 
 /*
    2012-02-09, rgf: - ArrayList needs to be initialized, such that size() matches the number of exits
+
    2012-02-25, rgf: - fix problem with turning ArrayList into String[] for required libraries,
                       renamed getRequiredLibrary[4JNI]() to getRequiredLibraries[4JNI] to reflect the
                       fact, that multiple libraries can be required
+
    2012-02-26, rgf: - fix wrong documentation for getExitHandlers4JNI()
+
    2016-11-04, rgf: - rebasing on Java 1.6/6.0, fix generics related warnings:
                     RexxConfiguration.java:126: warning: [unchecked] unchecked call to add(E) as a member of the raw type java.util.ArrayList
                             load_required_library.add(libraryName);
@@ -61,12 +64,23 @@ import java.util.*;         // BitSet
                                 commandHandlers.put(name,commandHandler); // save exit handler with
                                                    ^
 
+    2022-08-19, rgf: - changed getCommandHandlers(): returns classic RexxCommandHandlers only
+                     - adding getRedirectingCommandHandlers(): returns RexxRedirectingCommandHandlers only
+                     - getAllCommandHandlers(): returns all RexxCommandHandlers
+                     - changed addCommandHandler(): now allowed even after interpreter got created
+                     - changed getCommandHandlerNames4JNI(): returns name array of non redirectable command handlers
+                     - new getRedirectableCommandHandlerNames4JNI(): returns name array of redirectable command handlers
+
+    2022-08-20, rgf: - added String[] getCommandHandlersAsStringArray(), returns ordered String array
+                       with "name javaHandlerAsString"
+                     - changed all get-methods to create ordered results to ease debugging for humans
+                     - make sure to uppercase addCommandHandler() and getCommandHandler() name argument
  */
 
 public class RexxConfiguration {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change. */
-    final static public String version = "101.20161104";
+    final static public String version = "850.20220820";
 
 
     // ------------------------------------------------------------------------------------
@@ -287,14 +301,14 @@ public class RexxConfiguration {
     private HashMap<String,RexxCommandHandler> commandHandlers=new HashMap<String,RexxCommandHandler>();
 
     /** Returns an array with two elements, where the first element
-     *  is a String array denoting the environment name and the second element is an array of type
+     *  is a String array denoting the command environment name and the second element is an array of type
      *  RexxCommandHandler with the matching Java command handler object.
      *
-     * @return array of Object where at index <code>[0]</code> an <code>int[]</code> and
+     * @return array of Object where at index <code>[0]</code> a <code>String[]</code> and
      *                               at index <code>[1]</code> a <code>RexxCommandHandler[]</code>
      *                               array object gets returned
     */
-    public Object[] getCommandHandlers()
+    public Object[] getCommandHandlers_ori()
     {
         int nrDefined=commandHandlers.size();   // number of command handlers defined
         String            name[]   =new String            [nrDefined];
@@ -316,33 +330,174 @@ public class RexxConfiguration {
 
 
     /** Returns an array with two elements, where the first element
-     *  is a String array denoting the environment name and the second element is an array of type
-     *  RexxCommandHandler with the matching Java command handler object.
-     *  If no command handlers got defined, then <code>null</code> gets returned.
+     *  is a String array denoting the command environment name and the second element is an array of type
+     *  RexxCommandHandler and RexxDirectingCommandHandler with the matching Java command handler object.
      *
-     * @return a String array of the environment names or <code>null</code> if no
-     *         RexxCommandHandlers got defined
+     * @return array of Object where at index <code>[0]</code> a <code>String[]</code> and
+     *                               at index <code>[1]</code> a <code>RexxCommandHandler[]</code>
+     *                               array object gets returned
     */
-    public String [] getCommandHandlerNames4JNI()
+    public Object[] getAllCommandHandlers()
     {
-        int nrDefined=commandHandlers.size();   // number of command handlers defined
-        if (nrDefined==0)       // no command handlers defined, return null
-        {
-            return null;
-        }
-
-        String   names[]=new String [nrDefined];
+        ArrayList<String>             alName = new ArrayList<>();
+        ArrayList<RexxCommandHandler> alRCH  = new ArrayList<>();
 
         int idx=0;      // determines index for name[] and rch[]
-        Iterator it = commandHandlers.keySet().iterator();
+        Iterator<String> it = new TreeSet(commandHandlers.keySet()).iterator();
 
         while (it.hasNext())
         {
-            Object key=it.next();
-            names[idx]=(String) key;
+            String             key = it.next();
+            RexxCommandHandler och = commandHandlers.get(key);
+            alName.add(key);
+            alRCH .add(och);
             idx++;
         }
+            // turn ArrayLists to appropriate Arrays
+        String []arrName = new String[alName.size()];
+        arrName = alName.toArray(arrName);
 
+        RexxCommandHandler []arrRCH  = new RexxCommandHandler[alRCH.size()];
+        arrRCH = alRCH.toArray(arrRCH);
+
+        // return an array with the two arrays as elements
+        return new Object[]{ arrName, arrRCH };
+    }
+
+    // ooRexx defines: interpreter/platform/windows/MiscSystem.cpp:74:const size_t MAX_ADDRESS_NAME_LENGTH = 250;
+    /** Returns a String array where the first word represents the environment followed by
+     *  a blank and the command handler's String representation.
+     *
+     * @return String array
+    */
+    public String[] getCommandHandlersAsStringArray()
+    {
+        ArrayList<String>             alName = new ArrayList<>();
+
+        int idx=0;      // determines index for name[] and rch[]
+        Iterator<String> it = new TreeSet(commandHandlers.keySet()).iterator();
+
+        while (it.hasNext())
+        {
+            String             key = it.next();
+            RexxCommandHandler rch = commandHandlers.get(key);
+            alName.add(String.format("name: %-15s redirectable: %d handler: %s", key, (rch.isRedirectable() ? 1 : 0), rch.toString()));
+            idx++;
+        }
+            // turn ArrayList to appropriate Array
+        String []arrName = new String[alName.size()];
+        arrName = alName.toArray(arrName);
+        return arrName;
+    }
+
+
+    /** Returns an array with two elements, where the first element
+     *  is a String array denoting the command environment name and the second element is an array of type
+     *  RexxCommandHandler with the matching Java command handler object.
+     *
+     * @return array of Object where at index <code>[0]</code> a <code>String[]</code> and
+     *                               at index <code>[1]</code> a <code>RexxCommandHandler[]</code>
+     *                               array object gets returned
+    */
+    public Object[] getCommandHandlers()
+    {
+        ArrayList<String>             alName = new ArrayList<>();
+        ArrayList<RexxCommandHandler> alRCH  = new ArrayList<>();
+
+        Iterator<String> it = new TreeSet(commandHandlers.keySet()).iterator();
+
+        while (it.hasNext())
+        {
+            String             key = it.next();
+            RexxCommandHandler och = commandHandlers.get(key);
+            // process the classic RexxCommandHandlers only
+            if (! (och instanceof RexxRedirectingCommandHandler) )
+            {
+                alName.add(key);
+                alRCH .add(och);
+            }
+        }
+            // turn ArrayLists to appropriate Arrays
+        String []arrName = new String[alName.size()];
+        arrName = alName.toArray(arrName);
+
+        RexxCommandHandler []arrRCH  = new RexxCommandHandler[alRCH.size()];
+        arrRCH = alRCH.toArray(arrRCH);
+
+        // return an array with the two arrays as elements
+        return new Object[]{ arrName, arrRCH };
+    }
+
+
+    /** Returns an array with two elements, where the first element
+     *  is a String array denoting the command environment name and the second element is an array of type
+     *  RexxRedirectingCommandHandler with the matching Java command handler object.
+     *
+     * @return array of Object where at index <code>[0]</code> a <code>String[]</code> and
+     *                               at index <code>[1]</code> a <code>RexxCommandHandler[]</code>
+     *                               array object gets returned
+     * @since 8.50 (2022-08-19)
+    */
+    public Object[] getRedirectingCommandHandlers()
+    {
+        ArrayList<String>             alName = new ArrayList<>();
+        ArrayList<RexxCommandHandler> alRCH  = new ArrayList<>();
+
+        Iterator<String> it = new TreeSet(commandHandlers.keySet()).iterator();
+
+        while (it.hasNext())
+        {
+            String             key = it.next();
+            RexxCommandHandler och = commandHandlers.get(key);
+            if (och instanceof RexxRedirectingCommandHandler)
+            {
+                alName.add(key);
+                alRCH .add(och);
+            }
+        }
+            // turn ArrayLists to appropriate Arrays
+        String []arrName = new String[alName.size()];
+        arrName = alName.toArray(arrName);
+
+        RexxCommandHandler []arrRCH  = new RexxCommandHandler[alRCH.size()];
+        arrRCH = alRCH.toArray(arrRCH);
+
+        // return an array with the two arrays as elements
+        return new Object[]{ arrName, arrRCH };
+    }
+
+
+    /** Returns a String array denoting the environment names defined at the moment
+     *  that are backed by a Java implemented non redirectable RexxCommandHandler.
+     *  If no such command handlers got defined, then <code>null</code> gets returned.
+     *
+     * @return a String array of the environment names or <code>null</code> if no
+     *         non redirectable RexxCommandHandlers got defined
+    */
+    public String [] getCommandHandlerNames4JNI()
+    {
+        String [] names = (String []) getCommandHandlers()[0];
+        if (names.length==0)
+        {
+            return null;
+        }
+        return names;
+    }
+
+    /** Returns a String array denoting the environment names defined at the moment
+     *  that are backed by a Java implemented RexxRedirectableCommandHandler.
+     *  If no such command handlers got defined, then <code>null</code> gets returned.
+     *
+     * @return a String array of the environment names or <code>null</code> if no
+     *         RexxRedirectableCommandHandlers got defined
+    */
+    public String [] getRedirectingCommandHandlerNames4JNI()
+    {
+        String [] names = (String []) getRedirectingCommandHandlers()[0];
+        if (names.length==0)
+        {
+            return null;
+        }
         return names;
     }
 
@@ -480,11 +635,13 @@ public class RexxConfiguration {
     */
     public void addCommandHandler(String name, RexxCommandHandler commandHandler) throws BSFException
     {
+/* ---
+// TODO: in ooRexx 5.0 allow replacing defined one as the new AddCommandEnvironment-API allows for that
         if (modifiable==false)
         {
             throw new BSFException("RexxConfiguration already deployed, must not add new command handlers. To change a RexxCommandHandler object use 'setCommandHandler()' instead.");
         }
-
+--- */
         if (name==null)
         {
             throw new BSFException("Rexx environment name must not be null!");
@@ -495,7 +652,7 @@ public class RexxConfiguration {
             throw new BSFException("RexxCommandHandler must not be null!");
         }
 
-        commandHandlers.put(name,commandHandler); // save exit handler wit
+        commandHandlers.put(name.toUpperCase(),commandHandler); // save exit handler with environment name
     }
 
     /** Allows to replace a defined {@link RexxCommandHandler} with a new one.
@@ -546,7 +703,7 @@ public class RexxConfiguration {
 
         RexxCommandHandler rch=null;
         synchronized (this) {  // "critical section"
-            rch=(RexxCommandHandler) commandHandlers.get(name);
+            rch=(RexxCommandHandler) commandHandlers.get(name.toUpperCase());
         }
 
         return rch;
@@ -567,13 +724,14 @@ public class RexxConfiguration {
     {
         Object args4jni [] =
             {
-                this,                               // [0}: this RexxConfiguration object
-                initial_address_environment,        // [1]: INITIAL_ADDRESS_ENVIRONMENT (null or String)
-                external_call_path,                 // [2]: EXTERNAL_CALL_PATH (null or String)
-                external_call_extensions,           // [3]: EXTERNAL_CALL_EXTENSIONS (null or String)
-                getRequiredLibraries4JNI(),         // [4]: LOAD_REQUIRED_LIBRARY  (null or String[])
-                getExitHandlers4JNI(),              // [5]: DIRECT_EXITS  (null or int[] exits)
-                getCommandHandlerNames4JNI()        // [6]: DIRECT_ENVIRONMENTS  (null or String[] commandNames)
+                this,                                   // [0}: this RexxConfiguration object
+                initial_address_environment,            // [1]: INITIAL_ADDRESS_ENVIRONMENT (null or String)
+                external_call_path,                     // [2]: EXTERNAL_CALL_PATH (null or String)
+                external_call_extensions,               // [3]: EXTERNAL_CALL_EXTENSIONS (null or String)
+                getRequiredLibraries4JNI(),             // [4]: LOAD_REQUIRED_LIBRARY  (null or String[])
+                getExitHandlers4JNI(),                  // [5]: DIRECT_EXITS  (null or int[] exits)
+                getCommandHandlerNames4JNI(),           // [6]: DIRECT_ENVIRONMENTS  (null or String[] commandNames)
+                getRedirectingCommandHandlerNames4JNI() // [7]: REDIRECTING_ENVIRONMENTS  (null or String[] commandNames)
             };
         return args4jni;
     }
@@ -590,22 +748,32 @@ public class RexxConfiguration {
         // sb.append(RexxConfiguration.class.getName());
         sb.append(this.getClass().getName());
         sb.append('[');
+
         sb.append("initialAddressEnvironment=[").append(initial_address_environment).append(']');
         sb.append(',');
+
         sb.append("externalCallPath=[")     .append(external_call_path)     .append(']');
         sb.append(',');
+
         sb.append("externalCallExtensions=[").append(external_call_extensions).append(']');
         sb.append(',');
 
-        sb.append("loadRequiredLibrary="); requiredLibraryToString(sb);
+        sb.append("loadRequiredLibrary=");
+                  requiredLibraryToString(sb);
         sb.append(',');
 
-        sb.append("exitHandlers=");        exitHandlersToString(sb);
+        sb.append("exitHandlers=");
+                   exitHandlersToString(sb);
         sb.append(',');
 
-        sb.append("commandHandlers=");     commandHandlersToString(sb);
+        sb.append("commandHandlers=");
+                  commandHandlersToString(sb);
+        sb.append(',');
+
+        sb.append("redirectingCommandHandlers=");
+                  redirectingCommandHandlersToString(sb);
+
         sb.append(']');
-
         return sb.toString();
     }
 
@@ -629,7 +797,7 @@ public class RexxConfiguration {
     }
 
 
-    /** Create a String rendering of the command handler HashMap.
+    /** Create a String rendering of the not redirecting command handlers in the HashMap.
      *  @param sb StringBuffer to append to
      */
     private void commandHandlersToString(StringBuffer sb)
@@ -637,17 +805,48 @@ public class RexxConfiguration {
         boolean addComma=false;
         sb.append('{');
 
-        Iterator it = commandHandlers.keySet().iterator();
+        Iterator<String> it = new TreeSet(commandHandlers.keySet()).iterator();
 
         while (it.hasNext())
         {
-            if (addComma==true)
+            String key=it.next();
+            RexxCommandHandler rch = commandHandlers.get(key);
+            if (! (rch instanceof RexxRedirectingCommandHandler))
             {
-                sb.append(',');
+                if (addComma==true)
+                {
+                    sb.append(',');
+                }
+                sb.append(key) .append('=') .append(rch);
+                addComma=true;
             }
-            Object key=it.next();
-            sb.append(key) .append('=') .append(commandHandlers.get(key));
-            addComma=true;
+        }
+        sb.append('}');
+    }
+
+    /** Create a String rendering of the redirecting command handlers in the HashMap.
+     *  @param sb StringBuffer to append to
+     */
+    private void redirectingCommandHandlersToString(StringBuffer sb)
+    {
+        boolean addComma=false;
+        sb.append('{');
+
+        Iterator<String> it = new TreeSet (commandHandlers.keySet()).iterator();
+
+        while (it.hasNext())
+        {
+            String key=it.next();
+            RexxCommandHandler rch = commandHandlers.get(key);
+            if ( rch instanceof RexxRedirectingCommandHandler)
+            {
+                if (addComma==true)
+                {
+                    sb.append(',');
+                }
+                sb.append(key) .append('=') .append(rch);
+                addComma=true;
+            }
         }
         sb.append('}');
     }

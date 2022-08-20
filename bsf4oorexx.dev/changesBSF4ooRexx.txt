@@ -1,4 +1,45 @@
 
+-------------------------------------- 2022-08-16 ----------------------------------
+
+-  branches/850/bsf4oorexx.dev/source_cc/BSF4ooRexx.cc
+   branches/850/bsf4oorexx.dev/source_cc/Makefile-64-windows
+   branches/850/bsf4oorexx.dev/source_cc/lib/BSF4ooRexx.dll-64-amd64
+   branches/850/bsf4oorexx.dev/source_cc/org_rexxla_bsf_engines_rexx_RexxAndJava.h
+   branches/850/bsf4oorexx.dev/source_java/RexxAndJava.java
+   branches/850/bsf4oorexx.dev/source_java/RexxEngine.java
+   branches/850/bsf4oorexx.dev/source_java/RexxProxy.java
+   branches/850/bsf4oorexx.dev/testUnits/bsf4rexx/rgf/G_misc/07_rexx_JSR_223.testGroup
+
+        - added new SendMessageScoped-API to RexxProxy, adjusted code in all
+          affected programs
+
+        - added a new test group to test the new API
+
+
+-------------------------------------- 2022-08-11 ----------------------------------
+
+- for both 461 and 850, JavaFX samples: change ListView and TableView
+  samples such that they do not start out in debug mode (too noisy,
+  beginners get mixed up):
+
+        - branches/461/samples/JavaFX/fxml_20/demoListView.fxml
+          branches/461/samples/JavaFX/fxml_20/demoListView.rex
+          branches/461/samples/JavaFX/fxml_25/demoTableViewSimple.fxml
+          branches/461/samples/JavaFX/fxml_25/demoTableViewSimple.rex
+          branches/461/samples/JavaFX/fxml_26/demoTableViewComboBoxCell.fxml
+          branches/461/samples/JavaFX/fxml_26/demoTableViewComboBoxCell.rex
+          branches/461/samples/JavaFX/fxml_27/demoTableView.fxml
+          branches/461/samples/JavaFX/fxml_27/demoTableView.rex
+          branches/850/samples/JavaFX/fxml_20/demoListView.fxml
+          branches/850/samples/JavaFX/fxml_20/demoListView.rex
+          branches/850/samples/JavaFX/fxml_25/demoTableViewSimple.fxml
+          branches/850/samples/JavaFX/fxml_25/demoTableViewSimple.rex
+          branches/850/samples/JavaFX/fxml_26/demoTableViewComboBoxCell.fxml
+          branches/850/samples/JavaFX/fxml_26/demoTableViewComboBoxCell.rex
+          branches/850/samples/JavaFX/fxml_27/demoTableView.fxml
+          branches/850/samples/JavaFX/fxml_27/demoTableView.rex
+
+
 
 -------------------------------------- 2022-08-10 ----------------------------------
 
@@ -20,6 +61,9 @@
 - Java4Rexx.java, RexxAndJava.java, RexxEngine.java
 
         - change version string to indicate new Java baseline 8 and ooRexx baseline 5.0
+
+====================================================== below 641, above 850
+
 
 
 -------------------------------------- 2022-08-09 ----------------------------------

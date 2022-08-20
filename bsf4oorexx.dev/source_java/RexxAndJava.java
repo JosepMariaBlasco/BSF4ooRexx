@@ -54,6 +54,18 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
  /*
 
+    public RexxConfiguration getRexxConfiguration()
+
+     2022-08-19, rgf  - added new native methods to support new RexxRedirectedCommandHandler
+                        native String jniRCH_ReadInput           (Object[] slot, int flag);
+                        native byte[] jniRCH_ReadInputAsByteArray(Object[] slot);
+
+                        native void jniRCH_WriteOutput(Object[] slot, int flag, String data);
+                        native void jniRCH_WriteOutput(Object[] slot, byte[] data);
+
+                        native void jniRCH_ErrorOutput(Object[] slot, int flag, String data);
+                        native void jniRCH_ErrorOutput(Object[] slot, byte[] data);
+
      2022-08-10, rgf  - indicate by version number that this is for BSFooRexx 850:
                         - Java baseline:   1.8/8
                         - ooRexx baseline: 5.0
@@ -608,7 +620,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "850.20220810";
+    static final public String version = "850.20220820";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -686,7 +698,6 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     boolean eventDeprecationWarningAlreadyGiven=false;
 
 
-
     /** Stores the BSF manager. */
     BSFManager mgr;
 
@@ -699,8 +710,13 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
         return rexxEngine;
     }
 
-
-
+    /** As ooRexx 5.0 allows to add command handlers at runtime simplify access to {@link RexxConfiguration}.
+     * @since 850 (2022-08-20)
+    */
+    protected RexxConfiguration getRexxConfiguration()
+    {
+        return rexxEngine.getRexxConfiguration();
+    }
 
     /**
       * To store the default TypeConvertorRegistry, if needed.
@@ -1343,6 +1359,15 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
      {
          return;
      }
+
+     // rgf, 2022-08-19 _-------- add support for RexxRedirectingCommandHandler
+     // flag: 0=readInput, 1=readInputBuffer
+     protected native String jniRCH_Read           (Object[] slot, int flag);
+     protected native byte[] jniRCH_ReadAsByteArray(Object[] slot);
+
+     // flag: 0=writeOutput, 1=writeOutputBuffer, 2=errorOutput, 3=errorOutputBuffer
+     protected native void   jniRCH_Write(Object[] slot, int flag, String data);
+     protected native void   jniRCH_Write(Object[] slot, int flag, byte[] data);
 
 
     /**  rgf, 2003-01-15, used for allowing the BSF4ooRexx-DLL to get at *env, *obj and then to mid etc.

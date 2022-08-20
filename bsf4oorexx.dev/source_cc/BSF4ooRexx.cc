@@ -36,16 +36,37 @@ remarks:
 
 inline jint impl_jniRexxHaltInterpreterInstance (JNIEnv *env, jobject jobj, jstring j_rii_ID)
 
-    8.5.0   2022-08-11, rgf: - changed signature of _jniRexxSendMessageToRexxObject by a new
-                               argument 'scope' which can be NULL, a String or a RexxProxy
 
-                               - now checking whether receiver RexxProxy and messageName are
-                                 supplied, otherwise throw a Java exception
+    2022-08-19, rgf: - new: JNI functions Read() and Write() for redirecting command handlers;
+                       these functions employ RexxIORedirectorContext for ReadInput(),
+                       ReadInputBuffer(), WriteOutput(), WriteOutputBuffer(), WriteError(),
+                       WriteErrorBuffer()
 
-                             - adjust for type change in getRexxEngine:
-                               "getRexxEngine", "()Lorg/rexxla/bsf/engines/rexx/RexxEngine;"
+                     - new: BsfCommandHandler( Add, environmentName, jhandler | List)
 
-    8.5.0   2022-08-10, rgf: - now based on minimum Java 8
+                     - NOTE: with the ability of ooRexx 5.0 to add command handlers at runtime,
+                             even in the case that the non-Java initiated primodal RexxEngine
+                             was not set up with its RexxConfiguration, we now need to use it
+
+    2022-08-19, rgf: - jniCreateRexxInterpreterInstance: process new option REDIRECTING_ENVIRONMENTS
+                     - added new rexx_command_handler_worker() to serve
+                       - changed rexx_command_handler_entry()
+                       - new rexx_redirecting_command_handler_entry()
+
+    2022-08-18, rgf: - loading BitSet and BitSet.set(int) for RedirectingCommandHandler use
+                       - defining RCH_ (RedirectingCommandHandler) constants defining the bit positions
+
+    2022-08-11, rgf: - changed signature of _jniRexxSendMessageToRexxObject by a new
+                       argument 'scope' which can be NULL, a String or a RexxProxy
+
+                       - now checking whether receiver RexxProxy and messageName are
+                         supplied, otherwise throw a Java exception
+
+                     - adjust for type change in getRexxEngine:
+                       "getRexxEngine", "()Lorg/rexxla/bsf/engines/rexx/RexxEngine;"
+
+
+    850     2022-08-10, rgf: - new baseline: Java 8 and ooRexx 5.0 minimum
 
     ===============================================================================================
 
@@ -941,6 +962,8 @@ extern "C" {            // make sure no C++ name mangling comes into the way
     #define DEBUG_CONTEXT_VARS          // 2017-02-14
 
     #define DEBUG_CREATE_REXX_EXCEPTION // 2017-08-23
+
+    #define DEBUG_COMMAND_HANDLER       // 2022-08-20: allow for debugging command handler interactions
 #endif
 
     // rgf, 2012-06-06
@@ -952,6 +975,9 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 //  #define DEBUG_BSF_FUNCTION
 //  #define DEBUG_SEND_MESSAGE_TO_REXX_OBJECT
 //  #define DEBUG_CREATE_REXX_EXCEPTION
+
+#define DEBUG_COMMAND_HANDLER       // 2022-08-20: allow for debugging command handler interactions
+// #define DEBUG_JNI
 
 
 #if defined WINDOWS                     // meant for debugging
@@ -984,6 +1010,14 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
     // rgf, 2014-03-30, name of entry into .local for primodal TID (will allow one to attach even if no TID is known to the Rexx programmer)
 #define PRIMODAL_TID                          "BSF.PRIMODALTID"
+
+    // rgf, 2022-08-18, RedirectingCommandHandler (RCH) constants for bit positions in Java BitSet
+#define  RCH_IS_REDIRECTION_REQUESTED           0
+#define  RCH_IS_INPUT_REDIRECTED                1
+#define  RCH_IS_OUTPUT_REDIRECTED               2
+#define  RCH_IS_ERROR_REDIRECTED                3
+#define  RCH_ARE_OUTPUT_AND_ERROR_SAME_TARGET   4
+
 
 #include "oorexxapi.h"
 
@@ -1051,26 +1085,27 @@ char * RgfCreateRexxlikeErrorInfo (RexxThreadContext *rtc, RexxDirectoryObject c
 typedef jint (JNICALL *rgf_JNI_CreateJavaVM)             (JavaVM **, void **, void *);
 typedef jint (JNICALL *rgf_JNI_GetDefaultJavaVMInitArgs) (void    *);
 
+
 thread_id_t  RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20220815 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220820 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20220815 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220820 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #elif defined (BSF4REXX_64_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20220815 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220820 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20220815 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220820 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #else
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20220815 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220820 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20220815 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220820 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #endif
 
@@ -2244,6 +2279,7 @@ typedef struct _STRUCT_JVM {
     jmethodID                   mid_RexxAndJava_convFromJNI;
     jmethodID                   mid_RexxAndJava_convFromRexx;
     jmethodID                   mid_RexxAndJava_getRexxEngine;
+    jmethodID                   mid_RexxAndJava_getRexxConfiguration;   // 2022-08-20
     jmethodID                   mid_RexxAndJava_hashCode;
     jmethodID                   mid_RexxAndJava_javaCallFromBSF;
     jmethodID                   mid_RexxAndJava_lookupBean4JNI;         // 20091018, rgf
@@ -2276,10 +2312,12 @@ typedef struct _STRUCT_JVM {
     // rgf, 2012-02-07
     jclass                      clz_RexxConfiguration;  // org.rexxla.bsf.engines.rexx.RexxConfiguration
 
+    jmethodID                   mid_RexxConfiguration_addCommandHandler;
                                                         // public RexxExitHandler getExitHandler(int function)
     jmethodID                   mid_RexxConfiguration_getExitHandler;
                                                         // public RexxCommandHandler getCommandHandler(String name)
     jmethodID                   mid_RexxConfiguration_getCommandHandler;
+    jmethodID                   mid_RexxConfiguration_getCommandHandlersAsStringArray;   // 2022-08-20
 
     // rgf, 2018-01-19
     jmethodID                   mid_Java_Lang_Reflect_Constructor_newInstance;
@@ -2287,6 +2325,14 @@ typedef struct _STRUCT_JVM {
     jmethodID                   mid_Java_Lang_Reflect_Field_set;
     jmethodID                   mid_Java_Lang_Reflect_Method_invoke;
 
+    // rgf, 2022-08-18
+    jclass                      clz_BitSet;         // java.util.BitSet
+    jmethodID                   mid_BitSet_init;    // <init>
+    jmethodID                   mid_BitSet_set;     // public void set(int bitIndex)
+
+    // rgf, 2022-08-20
+    jclass                      clz_RexxCommandHandler; // org.rexxla.bsf.engines.rexx.RexxCommandHandler
+    jclass                      clz_RexxRedirectingCommandHandler; // org.rexxla.bsf.engines.rexx.RexxRedirectingCommandHandler
 
 } STRUCT_JVM;
 
@@ -2328,18 +2374,19 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
     struct_JVM->clz_RexxAndJava     =tmpClz;
 
     // 20180223, static method !
-    struct_JVM->mid_RexxAndJava_unregisterBean4JNI =env->GetStaticMethodID( tmpClz, "unregisterBean4JNI",  "(Ljava/lang/String;)I");
-    struct_JVM->mid_RexxAndJava_javaTestPing       =env->GetStaticMethodID( tmpClz, "javaTestPing",        "()V");
+    struct_JVM->mid_RexxAndJava_unregisterBean4JNI  =env->GetStaticMethodID( tmpClz, "unregisterBean4JNI",  "(Ljava/lang/String;)I");
+    struct_JVM->mid_RexxAndJava_javaTestPing        =env->GetStaticMethodID( tmpClz, "javaTestPing",        "()V");
 
-    struct_JVM->mid_RexxAndJava_convFromJNI        =env->GetMethodID( tmpClz, "convFromJNI",         "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;");
-    struct_JVM->mid_RexxAndJava_convFromRexx       =env->GetMethodID( tmpClz, "convFromRexx",        "(Ljava/lang/String;)Ljava/lang/Object;");
-    struct_JVM->mid_RexxAndJava_getRexxEngine      =env->GetMethodID( tmpClz, "getRexxEngine",       "()Lorg/rexxla/bsf/engines/rexx/RexxEngine;");
-    struct_JVM->mid_RexxAndJava_hashCode           =env->GetMethodID( tmpClz, "hashCode",            "()I");
-    struct_JVM->mid_RexxAndJava_javaCallFromBSF    =env->GetMethodID( tmpClz, "javaCallBSF",         "([Ljava/lang/String;)Ljava/lang/String;" );
-    struct_JVM->mid_RexxAndJava_lookupBean4JNI     =env->GetMethodID( tmpClz, "lookupBean4JNI",      "(Ljava/lang/String;)Ljava/lang/Object;" );
-    struct_JVM->mid_RexxAndJava_registerBean4JNI   =env->GetMethodID( tmpClz, "registerBean4JNI",    "(Ljava/lang/Object;)Ljava/lang/String;" );
-    struct_JVM->mid_RexxAndJava_unregisterBean     =env->GetMethodID( tmpClz, "unregisterBean",      "(Ljava/lang/String;)I");
-    struct_JVM->mid_RexxAndJava_makeString4Rexx    =env->GetMethodID( tmpClz, "makeString4Rexx",     "(Ljava/lang/Object;)Ljava/lang/String;");
+    struct_JVM->mid_RexxAndJava_convFromJNI         =env->GetMethodID( tmpClz, "convFromJNI",         "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;");
+    struct_JVM->mid_RexxAndJava_convFromRexx        =env->GetMethodID( tmpClz, "convFromRexx",        "(Ljava/lang/String;)Ljava/lang/Object;");
+    struct_JVM->mid_RexxAndJava_getRexxConfiguration=env->GetMethodID( tmpClz, "getRexxConfiguration","()Lorg/rexxla/bsf/engines/rexx/RexxConfiguration;");
+    struct_JVM->mid_RexxAndJava_getRexxEngine       =env->GetMethodID( tmpClz, "getRexxEngine",       "()Lorg/rexxla/bsf/engines/rexx/RexxEngine;");
+    struct_JVM->mid_RexxAndJava_hashCode            =env->GetMethodID( tmpClz, "hashCode",            "()I");
+    struct_JVM->mid_RexxAndJava_javaCallFromBSF     =env->GetMethodID( tmpClz, "javaCallBSF",         "([Ljava/lang/String;)Ljava/lang/String;" );
+    struct_JVM->mid_RexxAndJava_lookupBean4JNI      =env->GetMethodID( tmpClz, "lookupBean4JNI",      "(Ljava/lang/String;)Ljava/lang/Object;" );
+    struct_JVM->mid_RexxAndJava_registerBean4JNI    =env->GetMethodID( tmpClz, "registerBean4JNI",    "(Ljava/lang/Object;)Ljava/lang/String;" );
+    struct_JVM->mid_RexxAndJava_unregisterBean      =env->GetMethodID( tmpClz, "unregisterBean",      "(Ljava/lang/String;)I");
+    struct_JVM->mid_RexxAndJava_makeString4Rexx     =env->GetMethodID( tmpClz, "makeString4Rexx",     "(Ljava/lang/Object;)Ljava/lang/String;");
 
 // 2012-03-11, rgf: get static field (type class) "nlR_class", may be NULL, if no NetRexx available
 //                  get toString() mid as well, needed for RgfJavaObject2RexxObject(...)
@@ -2384,10 +2431,14 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
     // rgf, 2012-02-07 -- begin
     tmpClz=env->FindClass("org/rexxla/bsf/engines/rexx/RexxConfiguration");    // get class object
     struct_JVM->clz_RexxConfiguration=tmpClz;  // org.rexxla.bsf.engines.rexx.RexxConfiguration
+
+    struct_JVM->mid_RexxConfiguration_addCommandHandler=env->GetMethodID(tmpClz, "addCommandHandler", "(Ljava/lang/String;Lorg/rexxla/bsf/engines/rexx/RexxCommandHandler;)V") ;
         // public RexxExitHandler getExitHandler(int function)
     struct_JVM->mid_RexxConfiguration_getExitHandler=env->GetMethodID(tmpClz, "getExitHandler", "(I)Lorg/rexxla/bsf/engines/rexx/RexxExitHandler;") ;
         // public RexxCommandHandler getCommandHandler(String name)
     struct_JVM->mid_RexxConfiguration_getCommandHandler=env->GetMethodID(tmpClz, "getCommandHandler", "(Ljava/lang/String;)Lorg/rexxla/bsf/engines/rexx/RexxCommandHandler;")  ;
+    // 2022-08-20: added String[] getCommandHandlersAsStringArray()
+    struct_JVM->mid_RexxConfiguration_getCommandHandlersAsStringArray=env->GetMethodID(tmpClz, "getCommandHandlersAsStringArray", "()[Ljava/lang/String;")  ;
 
     // rgf, 2018-01-19
     tmpClz                    =env->FindClass("java/lang/reflect/Constructor");
@@ -2397,6 +2448,16 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
     struct_JVM->mid_Java_Lang_Reflect_Field_set              =env->GetMethodID( tmpClz, "set"        , "(Ljava/lang/Object;Ljava/lang/Object;)V" );
     tmpClz                    =env->FindClass("java/lang/reflect/Method");
     struct_JVM->mid_Java_Lang_Reflect_Method_invoke          =env->GetMethodID( tmpClz, "invoke"     , "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;" );
+
+
+    // 2022-08-18
+    tmpClz = struct_JVM->clz_BitSet=env->FindClass("java/util/BitSet");
+    struct_JVM->mid_BitSet_init=env->GetMethodID(tmpClz, "<init>", "()V");
+    struct_JVM->mid_BitSet_set =env->GetMethodID(tmpClz, "set", "(I)V");
+
+    // 2022-08-20
+    struct_JVM->clz_RexxCommandHandler=env->FindClass("org/rexxla/bsf/engines/rexx/RexxCommandHandler");
+    struct_JVM->clz_RexxRedirectingCommandHandler=env->FindClass("org/rexxla/bsf/engines/rexx/RexxRedirectingCommandHandler");
 
         // create global references for these important objects
     struct_JVM->clz_Object       =(jclass)  env->NewGlobalRef(struct_JVM->clz_Object);
@@ -2418,6 +2479,13 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
 
     struct_JVM->clz_RexxConfiguration =(jclass)  env->NewGlobalRef(struct_JVM->clz_RexxConfiguration);  // rgf, 2012-02-07
 
+    struct_JVM->clz_BitSet       =(jclass)  env->NewGlobalRef(struct_JVM->clz_BitSet);  // rgf, 2022-08-18
+
+
+    struct_JVM->clz_RexxCommandHandler =(jclass) env->NewGlobalRef(struct_JVM->clz_RexxCommandHandler);  // rgf, 2022-08-20
+    struct_JVM->clz_RexxRedirectingCommandHandler =(jclass) env->NewGlobalRef(struct_JVM->clz_RexxRedirectingCommandHandler);  // rgf, 2022-08-20
+
+
 
 #if defined ( DEBUG_JNI )  || defined (RGF_JENV_OBJECTS)
    fprintf(stderr, "\ninit_STRUCT_JVM(): after setting up, struct_JVM->jvm=[%p], env->ExceptionCheck()=[%d]\n\n",
@@ -2427,18 +2495,19 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
 
    fprintf(stderr, "\tclz_RexxAndJava  =[%p]\n", struct_JVM->clz_RexxAndJava);
 
-   fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_unregisterBean4JNI =[%p]\n", struct_JVM->mid_RexxAndJava_unregisterBean4JNI);
-   fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_javaTestPing       =[%p]\n", struct_JVM->mid_RexxAndJava_javaTestPing     );
+   fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_unregisterBean4JNI  =[%p]\n", struct_JVM->mid_RexxAndJava_unregisterBean4JNI);
+   fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_javaTestPing        =[%p]\n", struct_JVM->mid_RexxAndJava_javaTestPing     );
 
-   fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_convFromJNI        =[%p]\n", struct_JVM->mid_RexxAndJava_convFromJNI      );
-   fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_convFromRexx       =[%p]\n", struct_JVM->mid_RexxAndJava_convFromRexx     );
-   fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_getRexxEngine      =[%p]\n", struct_JVM->mid_RexxAndJava_getRexxEngine    );
-   fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_hashCode           =[%p]\n", struct_JVM->mid_RexxAndJava_hashCode         );
-   fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_javaCallFromBSF    =[%p]\n", struct_JVM->mid_RexxAndJava_javaCallFromBSF  );
-   fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_lookupBean4JNI     =[%p]\n", struct_JVM->mid_RexxAndJava_lookupBean4JNI   );
-   fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_makeString4Rexx    =[%p]\n", struct_JVM->mid_RexxAndJava_makeString4Rexx  );
-   fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_registerBean4JNI   =[%p]\n", struct_JVM->mid_RexxAndJava_registerBean4JNI );
-   fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_unregisterBean     =[%p]\n", struct_JVM->mid_RexxAndJava_unregisterBean   );
+   fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_convFromJNI         =[%p]\n", struct_JVM->mid_RexxAndJava_convFromJNI      );
+   fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_convFromRexx        =[%p]\n", struct_JVM->mid_RexxAndJava_convFromRexx     );
+   fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_getRexxConfiguration=[%p]\n", struct_JVM->mid_RexxAndJava_getRexxConfiguration);  // 2022-08-20
+   fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_getRexxEngine       =[%p]\n", struct_JVM->mid_RexxAndJava_getRexxEngine    );
+   fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_hashCode            =[%p]\n", struct_JVM->mid_RexxAndJava_hashCode         );
+   fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_javaCallFromBSF     =[%p]\n", struct_JVM->mid_RexxAndJava_javaCallFromBSF  );
+   fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_lookupBean4JNI      =[%p]\n", struct_JVM->mid_RexxAndJava_lookupBean4JNI   );
+   fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_makeString4Rexx     =[%p]\n", struct_JVM->mid_RexxAndJava_makeString4Rexx  );
+   fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_registerBean4JNI    =[%p]\n", struct_JVM->mid_RexxAndJava_registerBean4JNI );
+   fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_unregisterBean      =[%p]\n", struct_JVM->mid_RexxAndJava_unregisterBean   );
 
 #if defined (CONFIG_HANDLE_NETREXX_AS_STRING_4_REXX)
    fprintf(stderr, "\tclz_NetRexx      =[%p]\n", struct_JVM->clz_NetRexx);
@@ -2464,8 +2533,10 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
 
    fprintf(stderr, "\n--- 2012-02-07, rgf:\n");
    fprintf(stderr, "\tclz_RexxConfiguration =[%p]\n", struct_JVM->clz_RexxConfiguration);
+   fprintf(stderr, "\t\tstruct_JVM->mid_RexxConfiguration_addCommandHandler=[%p]\n",   struct_JVM->mid_RexxConfiguration_addCommandHandler);
    fprintf(stderr, "\t\tstruct_JVM->mid_RexxConfiguration_getExitHandler   =[%p]\n",   struct_JVM->mid_RexxConfiguration_getExitHandler);
    fprintf(stderr, "\t\tstruct_JVM->mid_RexxConfiguration_getCommandHandler=[%p]\n",   struct_JVM->mid_RexxConfiguration_getCommandHandler);
+   fprintf(stderr, "\t\tstruct_JVM->mid_RexxConfiguration_getCommandHandlersAsStringArray=[%p]\n", struct_JVM->mid_RexxConfiguration_getCommandHandlersAsStringArray); // 2022-08-20
 
    fprintf(stderr, "\n--- 2018-01-19, rgf:\n");
    fprintf(stderr, "\t\tstruct_JVM->mid_Java_Lang_Reflect_Constructor_newInstance=[%p]\n",   struct_JVM->mid_Java_Lang_Reflect_Constructor_newInstance);
@@ -2473,9 +2544,17 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
    fprintf(stderr, "\t\tstruct_JVM->mid_Java_Lang_Reflect_Field_set              =[%p]\n",   struct_JVM->mid_Java_Lang_Reflect_Field_set              );
    fprintf(stderr, "\t\tstruct_JVM->mid_Java_Lang_Reflect_Method_invoke          =[%p]\n",   struct_JVM->mid_Java_Lang_Reflect_Method_invoke          );
 
+   fprintf(stderr, "\n--- 2022-08-18, rgf:\n");
+   fprintf(stderr, "\tclz_BitSet       =[%p]\n", struct_JVM->clz_BitSet);
+   fprintf(stderr, "\t\tstruct_JVM->mid_BitSet_init                              =[%p]\n",   struct_JVM->mid_BitSet_init                              );
+   fprintf(stderr, "\t\tstruct_JVM->mid_BitSet_set                               =[%p]\n",   struct_JVM->mid_BitSet_set                               );
+
+   fprintf(stderr, "\n--- 2022-08-20, rgf:\n");
+   fprintf(stderr, "\tclz_RexxCommandHandler           =[%p]\n", struct_JVM->clz_RexxCommandHandler);
+   fprintf(stderr, "\tclz_RexxRedirectingCommandHandler=[%p]\n", struct_JVM->clz_RexxRedirectingCommandHandler);
+
    fprintf(stderr, "---\n");
    fflush(stderr);
-
 #endif
 
    RgfReleaseLock2(JVM_setup_lock);
@@ -2515,6 +2594,11 @@ inline void uninit_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM)
     env->DeleteGlobalRef(struct_JVM->jstring_emptyUTFString);
 
     env->DeleteGlobalRef(struct_JVM->clz_RexxConfiguration);    // rgf, 2012-02-07
+
+    env->DeleteGlobalRef(struct_JVM->clz_BitSet);   // rgf, 2022-08-18
+
+    env->DeleteGlobalRef(struct_JVM->clz_RexxCommandHandler);   // rgf, 2022-08-20
+    env->DeleteGlobalRef(struct_JVM->clz_RexxRedirectingCommandHandler);   // rgf, 2022-08-20
 
     if (struct_JVM->primodal_rajo!=NULL)    //
     {
@@ -3718,6 +3802,8 @@ void RexxEntry rgfDestroyLocks();  //                  destroy/delete it
 // rgf, 2012-02-07
 int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber, int subfunction, void *parmBlock);
 RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, RexxStringObject address, RexxStringObject command);
+// rgf, 2022-08-19
+RexxObjectPtr RexxEntry rexx_redirecting_command_handler_entry(RexxExitContext *context, RexxStringObject address, RexxStringObject command, RexxIORedirectorContext *ioContext);
 
 
 
@@ -7263,11 +7349,15 @@ RexxRoutine2(RexxObjectPtr, BsfJavaException, OPTIONAL_CSTRING, option, OPTIONAL
         {
             snprintf( msg, 4096, "%.16s/routine/BsfJavaException(), error 5: supplied argument (Java Throwable object) with the beanName=[%s] cannot be found in the BSFRegistry)", DLLNAME, c_beanNameOrMsg);
             context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+            RgfAcquireLock();
+            environmentDetachFromNew(&param);
+            RgfReleaseLock();
+            delete[] msg;
             return NULL;
         }
         else if (param.env->IsInstanceOf(jobj, defaultJVM->clz_Throwable)==JNI_FALSE)   // not a Throwable object !
         {
-            snprintf( msg, 4096, "%.16s/routine/BsfJavaException(), error 6: supplied argument with the beanName=[%s] is not a sbuclass of 'java.lang.Throwable'", DLLNAME, c_beanNameOrMsg);
+            snprintf( msg, 4096, "%.16s/routine/BsfJavaException(), error 6: supplied argument with the beanName=[%s] is not a subclass of 'java.lang.Throwable'", DLLNAME, c_beanNameOrMsg);
             context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
             param.env->DeleteLocalRef(jobj);
             result_Obj=NULL;
@@ -7685,6 +7775,236 @@ RexxRoutine1(RexxObjectPtr, BsfTestPing, OPTIONAL_size_t,  repetitions)
 }
 
 
+// ---------------------------------------------------------------------------------------
+//    // rgf, 2022-08-20, BsfCommandHandler( Add, environmentName, jhandler | List)
+//  Function to allow to tackle the Java exception facility, syntax:
+//       BsfJavaException( "throw", exceptionObject )
+//       ... throws a Java exception using the supplied 'exceptionObject'
+//
+//  following commands may be implemented: "check" (.true/.false), "clear",
+//            "object|occurred" (Throwable), "fatalError"
+//
+//  - if exceptionProxy is of type .BSF or .UNO_PROXY use its objectName, else
+//    use string value of object as the beanName to look up in the BSF registry
+//
+//  - check whether a Java exception is already pending, if so return .false
+//
+//  - lookup beanName in the BSF-registry, must exist and an instance of java.lang.Throwable
+//
+//    - throw the given Java exception;
+//      - if an error occured, then report it to ooRexx in form of a Rexx condition (and return .false)
+//      - else return .true
+//
+RexxRoutine3(RexxObjectPtr, BsfCommandHandler, CSTRING, option, OPTIONAL_CSTRING, name, OPTIONAL_RexxObjectPtr, javaHandler)
+{
+    thread_id_t tid=RgfGetTID();    // current thread
+
+#if defined (DEBUG_COMMAND_HANDLER)
+    fprintf(stderr, "*** BsfCommandHandler() 1, BEGIN: tid=[%lu], option=[%s], name=[%s], javaHandler=[%p] ...\n",
+            (unsigned long) tid, option, name, javaHandler
+            );
+    fflush(stderr);
+#endif
+
+    RexxObjectPtr ropResult = NULLOBJECT;
+
+    int  mode=0;        // mode=0 ... Add, mode=1 ...List
+    logical_t flag=false, isRedirectable=false;
+    char msg[256];
+
+    if (option[0]=='A' || option[0]=='a')       // Add
+    {
+
+#if defined (DEBUG_COMMAND_HANDLER)
+        fprintf(stderr, "BSF4ooRexx.cc %d %s: option 'Add'\n", __LINE__, __FUNCTION__);fflush(stderr);
+#endif
+
+        if (argumentOmitted(2) || strlen(name)==0)
+        {
+            snprintf( msg, 256, "%.16s/routine/BsfCommandHandler(), error 1 (option \"ADD\"): argument 2 (environment name) must be supplied", DLLNAME);
+            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+            return NULLOBJECT;
+        }
+
+        if (strlen(name)>250)
+        {
+            snprintf( msg, 256, "%.16s/routine/BsfCommandHandler(), error 2 (option \"ADD\"): argument 2 (environment name) exceeds limit of 250", DLLNAME);
+            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+            return NULLOBJECT;
+        }
+
+        if (argumentOmitted(3))
+        {
+            snprintf( msg, 256, "%.16s/routine/BsfCommandHandler(), error 3 (option \"ADD\"): argument 3 (javaHandler) must be supplied", DLLNAME);
+            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+            return NULLOBJECT;
+        }
+
+        if (! context->IsInstanceOf(javaHandler, context->FindClass("BSF")))
+        {
+            snprintf( msg, 256, "%.16s/routine/BsfCommandHandler(), error 4 (option \"ADD\"): argument 3 (javaHandler) is not an instance of the \"BSF\" class", DLLNAME);
+            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+            return NULLOBJECT;
+        }
+
+        // assuming that javaHandler is indeed a RexxCommandHandler
+        RexxObjectPtr ropRes=context->SendMessage0(javaHandler,"isRedirectable");
+        if (context->CheckCondition())  // if a condition raised, then this
+        {
+            snprintf( msg, 256, "%.16s/routine/BsfCommandHandler(), error 5 (option \"ADD\"): argument 3 (javaHandler) could not answer the message \"isRedirectable\", hence not a command handler", DLLNAME);
+            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+            return NULLOBJECT;
+        }
+
+        // convert information whether command handler is redirectable to appropriate variable
+        if (! context->ObjectToLogical(ropRes, &isRedirectable) )
+        {
+            snprintf( msg, 256, "%.16s/routine/BsfCommandHandler(), error 6 (option \"ADD\"): argument 3 (javaHandler) did not answer a logical value for the message \"isRedirectable\", not a command handler", DLLNAME);
+            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+            return NULLOBJECT;
+        }
+
+        // register with ooRexx only after we have registered the javaHandler with BSF4ooRexx
+        mode=0;
+    }
+    else if (option[0]=='L' || option[0]=='l')  // List
+    {
+#if defined (DEBUG_COMMAND_HANDLER)
+        fprintf(stderr, "BSF4ooRexx.cc %d %s: option 'List'\n", __LINE__, __FUNCTION__);fflush(stderr);
+#endif
+
+        mode=1;
+    }
+    else    // unknown option
+    {
+#if defined (DEBUG_COMMAND_HANDLER)
+        fprintf(stderr, "BSF4ooRexx.cc %d %s: unknown option '%s'\n", __LINE__, __FUNCTION__, option);fflush(stderr);
+#endif
+
+        snprintf( msg, 256, "%.16s/routine/BsfCommandHandler(), error 7: supplied option (argument 1) \"%s\" unknown, must be one of \"Add\" or \"List\"", DLLNAME);
+        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+        return NULLOBJECT;
+    }
+
+    // attach to Java
+    // ------------------------------------------------------------------------------------
+    // attach to Java thread
+    // STRUCT_ATTACH_PARAM param={env,rajo,riid,bDetach,error};
+    STRUCT_ATTACH_PARAM param={0, 0, (void *)context->threadContext->instance, false, 0};
+    RgfAcquireLock();
+    environmentAttachToNew(&param);     // attach to Java
+
+    // - param->error:  -1 ... Attach-error, attachResult holds Java error code, raise an exception in caller
+    //                  -2 ... no rajo found, raise an exception in caller
+    //                  -3 ... cannot safely use the given RAJO in TID, as actual RAJO is being used in multiple Rexx threads
+    //                  -4 ... cannot attach to target TID
+    //                 -99 ... no JVM available !
+    if (param.error!= 0)    // problem attaching, cannot proceed
+    {
+        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined,
+                                 createAttachErrorMessageRSONew
+                                 (context, "routine/BsfCommandHandler(), error 8", &param)
+                                 );
+        RgfReleaseLock();
+        return NULL;
+    }
+    RgfReleaseLock();
+
+        // get RexxConfiguration from RexxEngine via rajo (5.0 allows to add command handlers)
+    jobject j_rexxConfiguration=param.env->CallObjectMethod(param.rajo,
+                                             defaultJVM->mid_RexxAndJava_getRexxConfiguration,
+                                             NULL);
+
+    // TODO: check for Java exception and NULL ?
+
+    if (mode==0)    // adding a new command handler
+    {
+        CSTRING c_beanName   = NULL;  // the beanName of the exceptionProxy
+        RexxStringObject rso = (RexxStringObject) context->SendMessage0(javaHandler, "OBJECTNAME");
+        c_beanName      = context->ObjectToStringValue(rso);
+
+        // get bean from the Java side ----------------------------------------------------------------
+        jstring j_beanName=param.env->NewStringUTF(c_beanName);
+        jobject jobj = param.env->CallObjectMethod(param.rajo,
+                                                   defaultJVM->mid_RexxAndJava_lookupBean4JNI,
+                                                   j_beanName
+                                                   );
+        param.env->DeleteLocalRef(j_beanName);
+
+        if (jobj==NULL)     // no bean found by the given beanName
+        {
+            snprintf( msg, 256, "%.16s/routine/BsfCommandHandler(), error 9 (option \"ADD\"): argument 3 (javaHandler, beanName=[%s]) cannot be found in the BSFRegistry)", DLLNAME, c_beanName);
+            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+            param.env->DeleteLocalRef(jobj);
+            param.env->DeleteLocalRef(j_rexxConfiguration);
+            RgfAcquireLock();
+            environmentDetachFromNew(&param);   // detach from Java
+            RgfReleaseLock();
+            return NULL;
+        }
+        else if (param.env->IsInstanceOf(jobj, defaultJVM->clz_RexxCommandHandler)==JNI_FALSE)
+        {
+            snprintf( msg, 256, "%.16s/routine/BsfCommandHandler(), error 10 (option \"ADD\"): argument 3 (javaHandler, beanName=[%s]) is not an instance of 'org.rexxla.bsf.engines.rexx.RexxCommandHandler'", DLLNAME, c_beanName);
+            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+            param.env->DeleteLocalRef(jobj);
+            param.env->DeleteLocalRef(j_rexxConfiguration);
+            RgfAcquireLock();
+            environmentDetachFromNew(&param);   // detach from Java
+            RgfReleaseLock();
+            return NULL;
+        }
+
+        // register with Java
+        jstring jName=param.env->NewStringUTF(name);  // CSTRING
+
+        param.env->CallObjectMethod(j_rexxConfiguration,
+                                    defaultJVM->mid_RexxConfiguration_addCommandHandler,
+                                    jName,                // < 250 chars!
+                                    jobj
+                                    );
+        param.env->DeleteLocalRef(jName);
+        param.env->DeleteLocalRef(jobj);
+
+        // register with ooRexx
+        if (isRedirectable)
+        {
+            context->AddCommandEnvironment(name, (REXXPFN) rexx_redirecting_command_handler_entry, REDIRECTING_COMMAND_ENVIRONMENT );
+        }
+        else
+        {
+            context->AddCommandEnvironment(name, (REXXPFN) rexx_command_handler_entry, DIRECT_COMMAND_ENVIRONMENT );
+        }
+    }
+    else            // get the list (string array) of currently defined Java command handlers
+    {
+        jobjectArray jarr=(jobjectArray) param.env->CallObjectMethod(j_rexxConfiguration, defaultJVM->mid_RexxConfiguration_getCommandHandlersAsStringArray);
+        if (jarr==NULL || param.env->GetArrayLength(jarr)==0)
+        {
+            ropResult=context->NewArray(0);     // define an empty Rexx array
+        }
+        else
+        {
+            jsize size=param.env->GetArrayLength(jarr);
+            RexxArrayObject arr=context->NewArray(size);
+
+            for (jsize i=0; i<size; i++)
+            {
+               jstring jstr  =(jstring) param.env->GetObjectArrayElement(jarr, i);
+               CSTRING tmpStr=param.env->GetStringUTFChars(jstr, JNI_FALSE);
+               context->ArrayAppendString(arr, tmpStr, strlen(tmpStr));
+               param.env->ReleaseStringUTFChars( (jstring) jstr, tmpStr);
+            }
+            ropResult=arr;
+        }
+    }
+
+    param.env->DeleteLocalRef(j_rexxConfiguration);
+    RgfAcquireLock();
+    environmentDetachFromNew(&param);   // detach from Java
+    RgfReleaseLock();
+
+    return ropResult ;
+}
 
 
 // ---------------------------------------------------------------------------------------
@@ -8131,6 +8451,38 @@ void RexxEntry bsfLoader (RexxThreadContext *rtc)
 
     rgfInitLocks();        // Initialize critical section
 
+
+/* e.g. cf. <https://stackoverflow.com/questions/34463637/what-is-the-address-of-a-function-in-a-c-program>:
+
+int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber, int subfunction, void *parmBlock);
+RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, RexxStringObject address, RexxStringObject command);
+
+*/
+
+/* --- testing with the handler addresses
+// int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber, int subfunction, void *parmBlock);
+int (*func_exith1) (RexxExitContext *, int , int , void *);
+func_exith1 = & rexx_exit_handler_entry;
+RexxPointerObject rpo1a = rtc->NewPointer(func_exith1);
+fprintf(stderr, "BSF4ooRexx.cc %d %s: func_exith1=[%p] | rpo1a=[%p] rpo1a->PointerValue()=[%p]\n",
+                __LINE__, __FUNCTION__, func_exith1, rpo1a, rtc->PointerValue(rpo1a)); fflush(stderr);
+
+
+// RexxObjectPtr RexxEntry (*func_ptr)(RexxExitContext *context, RexxStringObject address, RexxStringObject command);
+// RexxObjectPtr (*func_cmdh1)(RexxExitContext *context, RexxStringObject address, RexxStringObject command);
+RexxObjectPtr (*func_cmdh1)(RexxExitContext *, RexxStringObject , RexxStringObject );
+func_cmdh1 = & rexx_command_handler_entry;
+
+RexxPointerObject rpo1 = rtc->NewPointer(func_cmdh1);
+fprintf(stderr, "BSF4ooRexx.cc %d %s: func_cmdh1 =[%p] | rpo1=[%p]  rpo1->PointerValue()=[%p]\n",
+                __LINE__, __FUNCTION__, func_cmdh1, rpo1, rtc->PointerValue(rpo1)); fflush(stderr);
+
+fprintf(stderr, "BSF4ooRexx.cc %d %s: func_cmdh1==func_cmdh1->[%d], func_cmdh1==func_exith1->[%d]",
+        __LINE__, __FUNCTION__, (void*)func_cmdh1==(void*)func_cmdh1, (void*)func_cmdh1==(void*)func_exith1);
+        fflush(stderr);
+-- */
+
+
 #if defined (INFO_PRIMODAL_RII)        // rgf, 2017-10-04
     fprintf(stderr, "===> ===> ===>\n===> bsfLoader(): PRIMODAL REXX INTERPRETER INSTANCE (RII), PRIMODAL RII: tid=[%6lu], rii_ID=[%p], rtc=[%p] <===\n<=== <=== <===\n\n",
                         (unsigned long) RgfGetTID(), rtc->instance, rtc);
@@ -8239,6 +8591,8 @@ void RexxEntry bsfUnloader (RexxThreadContext * rtc)
         REXX_TYPED_ROUTINE( BsfUninit4JavaBean          , BsfUninit4JavaBean          ),    // rgf, 2018-02-23
         REXX_TYPED_ROUTINE( BsfTestPing                 , BsfTestPing                 ),    // rgf, 2018-02-24
 
+        REXX_TYPED_ROUTINE( BsfCommandHandler           , BsfCommandHandler           ),    // rgf, 2022-08-20
+
         REXX_LAST_ROUTINE()
     };
 
@@ -8248,7 +8602,7 @@ void RexxEntry bsfUnloader (RexxThreadContext * rtc)
         STANDARD_PACKAGE_HEADER
         REXX_INTERPRETER_5_0_0,              // anything including and after 5.0.0 will work
         "bsf",                               // name of the package
-        "8.0",                               // package version information
+        "850.0",                             // package version information
         bsfLoader,                           // load function
         bsfUnloader,                         // unload function
         bsf_external_functions,              // the exported functions
@@ -8323,6 +8677,9 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
     jobjectArray  j_direct_environments   = NULL;   // [6]
     long    nr_direct_environments        = 0;              // number of commands
 
+    jobjectArray  j_redirecting_environments   = NULL;  // [7]
+    long    nr_redirecting_environments        = 0;              // number of commands
+
     if (joptions!=NULL)     // options from Java ?
     {
             // INITIAL_ADDRESS_ENVIRONMENT, jstring
@@ -8359,6 +8716,13 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
         j_direct_environments = (jobjectArray) env->GetObjectArrayElement(joptions,6);
         if ( j_direct_environments != NULL) {
             nr_direct_environments=env->GetArrayLength( j_direct_environments );
+            countOptions++;
+        }
+
+            // REDIRECTING_ENVIRONMENTS (one option with a RexxContextEnvironment[]), jstring[]
+        j_redirecting_environments = (jobjectArray) env->GetObjectArrayElement(joptions,7);
+        if ( j_redirecting_environments != NULL) {
+            nr_redirecting_environments=env->GetArrayLength( j_redirecting_environments );
             countOptions++;
         }
     }
@@ -8526,6 +8890,38 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
         idx++;  // increase options index
     }
 
+    // REDIRECTING_ENVIRONMENTS: jstring[] - for each library set one option
+    RexxRedirectingEnvironment *redirectingEnvironments=NULL;
+    if (j_redirecting_environments!=NULL)
+    {
+            // allocate necessary memory for RexxRedirectingEnvironment
+        long tmpSize=(nr_redirecting_environments+1)*sizeof(RexxRedirectingEnvironment);
+        redirectingEnvironments=(RexxRedirectingEnvironment *) malloc(tmpSize);
+        memset(environments,0,tmpSize);
+
+        for (int i=0; i<nr_redirecting_environments; i++)
+        {
+            redirectingEnvironments[i].handler=rexx_redirecting_command_handler_entry;   // point to generic exit handler
+            jstring jstr=(jstring) env->GetObjectArrayElement(j_redirecting_environments,i);
+            redirectingEnvironments[i].name=JNU_GetStringNativeChars(env, jstr);
+            env->DeleteLocalRef(jstr);
+
+#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
+    fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): redirecting environment # [%d], name=[%s]\n",
+                    i, environments[i].name);
+#endif
+        }
+        redirectingEnvironments[nr_redirecting_environments].name=NULL;     // indicate list has ended
+
+        options[idx].optionName=REDIRECTING_ENVIRONMENTS;
+        options[idx].option=(void *)environments;
+#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
+    fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): idx=[%ld], .optionName=[%s]\n",
+                    idx, options[idx].optionName);
+#endif
+        idx++;  // increase options index
+    }
+
         // indicate end of options
     options[idx].optionName=NULL;
 
@@ -8649,6 +9045,14 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
             free((void *)environments[i].name);
         }
         free(environments);
+    }
+
+    if ( redirectingEnvironments!=NULL)
+    {
+        for (int i=0;i<nr_redirecting_environments;i++) {
+            free((void *)redirectingEnvironments[i].name);
+        }
+        free(redirectingEnvironments);
     }
 
         // delete required library names, if any
@@ -11620,10 +12024,9 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
 
 
 // ----------------------------------------------------------------------------------------------
-// Generic Rexx command handler function, which will attach to Java, fetch the matching Java command handler
-// and invoke it.
-RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, RexxStringObject address, RexxStringObject command)
+RexxObjectPtr RexxEntry rexx_command_handler_worker(RexxExitContext *context, RexxStringObject address, RexxStringObject command, RexxIORedirectorContext *ioContext)
 {
+    // -----------------------
 #if defined ( RGF_COMMAND_HANDLER ) // || defined ( RGF_COMMAND_HANDLER )
     fprintf(stderr, "*** rexx_command_handler_entry() 1 ---> ...\n");
     fflush(stderr);
@@ -11634,7 +12037,10 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
         // get the RII structure to get access to
     RexxInstance *ri=context->threadContext->instance;
     PSTRUCT_RII struRii=RgfGetRexxInterpreterInstanceStructFromList(ri);
-    if (struRii==NULL || struRii->rajo==NULL || struRii->rexxconf==NULL) {
+
+    // if (struRii==NULL || struRii->rajo==NULL || struRii->rexxconf==NULL)
+    if (struRii==NULL || struRii->rajo==NULL )
+    {
         snprintf(msg, 1024, "%.16s/internal/rexx_command_handler_entry(), error 1: panic - cannot find Rexx interpreter instance related Java interface objects, address=[%s], command=[%s] for RexxInterpreterInstance=[%p]",
                             DLLNAME, context->CString(address), context->CString(command), ri );
 
@@ -11660,8 +12066,19 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
     }
     RgfReleaseLock();
 
+    // o.k. primodal RII (Java loaded by Rexx): since 5.0 we set its RexxConfiguration to allow dynamically added
+    // Java command handlers to be fetchable
+    if (struRii->rexxconf==NULL)
+    {
+
+        struRii->rexxconf=param.env->CallObjectMethod(struRii->rajo,
+                                    defaultJVM->mid_RexxAndJava_getRexxConfiguration);
+    }
+
+
         // get Java command handler object, if any
     jstring jaddress=param.env->NewStringUTF(context->CString(address));
+
     jobject jhandler=param.env->CallObjectMethod(struRii->rexxconf,
                                       defaultJVM->mid_RexxConfiguration_getCommandHandler,
                                       jaddress);
@@ -11689,7 +12106,8 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
     }
 
         // check whether jhandler==NULL, if so raise appropriate RexxCondtion
-    if (jhandler==NULL) {
+    if (jhandler==NULL)
+    {
         param.env->DeleteLocalRef(jaddress);
 
         RgfAcquireLock();
@@ -11706,7 +12124,7 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
         // invoke command handler
             // create slot array argument
     jobjectArray jslot = param.env->NewObjectArray (
-                              (jsize) 4,                // needed size (number of elements)
+                             (jsize) (ioContext==NULL ? 4 : 6),     // needed size (number of elements)
                               defaultJVM->clz_Object,   // type
                               NULL                      // initial value
                               );
@@ -11725,12 +12143,49 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
     jstring jstr=param.env->NewStringUTF(c_context);
     param.env->SetObjectArrayElement(jslot, (jint) 2, jstr);
     param.env->DeleteLocalRef(jstr);
+    delete [] c_context;
 
         // index [3]: add context pointer type: 0=ThreadContext, 1=MethodContext, 2=FunctionContext, 3=ExitContext
     jstr=param.env->NewStringUTF("3");
     param.env->SetObjectArrayElement(jslot, (jint) 3, jstr);
     param.env->DeleteLocalRef(jstr);
-    delete [] c_context;
+
+    if (ioContext!=NULL)    // 2022-08-19: add support for redirecting environment handler
+    {
+            // index [4]: save RexxIORedirectorContext pointer as a jstring
+        char *c_ioContext=new char[RGF_POINTER_STRING_WIDTH];
+        RgfPointer2String(ioContext, c_ioContext);  // create a string representation of RexxExitContext
+
+        jstr=param.env->NewStringUTF(c_ioContext);
+        param.env->SetObjectArrayElement(jslot, (jint) 4, jstr);
+        param.env->DeleteLocalRef(jstr);
+        delete [] c_ioContext;
+
+            // index [5]: new BitSet, set flags assign to jslolt
+        jobject j_bitset = param.env->NewObject(defaultJVM->clz_BitSet,
+                                                defaultJVM->mid_BitSet_init);
+        param.env->SetObjectArrayElement(jslot, (jint) 5, j_bitset);
+        if (ioContext->IsRedirectionRequested())
+        {
+            param.env->CallObjectMethod(j_bitset, defaultJVM->mid_BitSet_set, RCH_IS_REDIRECTION_REQUESTED);
+        }
+        if (ioContext->IsInputRedirected())
+        {
+            param.env->CallObjectMethod(j_bitset, defaultJVM->mid_BitSet_set, RCH_IS_INPUT_REDIRECTED);
+        }
+        if (ioContext->IsOutputRedirected())
+        {
+            param.env->CallObjectMethod(j_bitset, defaultJVM->mid_BitSet_set, RCH_IS_OUTPUT_REDIRECTED);
+        }
+        if (ioContext->IsErrorRedirected())
+        {
+            param.env->CallObjectMethod(j_bitset, defaultJVM->mid_BitSet_set, RCH_IS_ERROR_REDIRECTED);
+        }
+        if (ioContext->AreOutputAndErrorSameTarget())
+        {
+            param.env->CallObjectMethod(j_bitset, defaultJVM->mid_BitSet_set, RCH_ARE_OUTPUT_AND_ERROR_SAME_TARGET);
+        }
+    }
 
         // public abstract Object handleCommand(Object slot, String address, String command);
     jobject jresult=NULL;
@@ -11841,6 +12296,21 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
     return res;
 }
 
+
+
+
+// Generic Rexx command handler function, which will attach to Java, fetch the matching Java command handler
+// and invoke it.
+RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, RexxStringObject address, RexxStringObject command)
+{
+    return rexx_command_handler_worker(context, address, command, NULL);
+}
+
+// 2022-08-19, rgf: this is the redirecting version
+RexxObjectPtr RexxEntry rexx_redirecting_command_handler_entry(RexxExitContext *context, RexxStringObject address, RexxStringObject command, RexxIORedirectorContext *ioContext)
+{
+    return rexx_command_handler_worker(context, address, command, ioContext);
+}
 
 
 // ----------------------------------------------------------------------------------------------
@@ -13317,6 +13787,264 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniExecut
     }
     return jres;
 }
+
+
+// ============= 2022-08-19: support for RexxRedirectedCommandHandler
+
+/*
+ * The opaque jslot argument is in effect an Object [] with:
+ *    - [0] object: RexxAndJava
+ *    - [1] object: RexxConfiguration
+ *    - [2] object: pointer to context object
+ *    - [3] String: "0"=ThreadContext, "1"=MethodContext, "2"=CallContext, "3"=ExitContext
+ *    for redirecting command handlers in addition
+ *    - [4] object: pointer to RexxIO context object
+ *    - [5] object: BitSet with the invocation's redirection flags
+*/
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniRCH_ReadInput
+ * Signature: ([Ljava/lang/Object;I)Ljava/lang/String;
+ *
+ *
+ */
+ //       jflag: 0=readInput, 1=readInputBuffer
+JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRCH_1Read
+  (JNIEnv *env, jobject rajo, jobjectArray j_slot, jint j_flag)
+{
+#if defined (DEBUG_JNI) || defined (DEBUG_COMMAND_HANDLER)
+    fprintf(stderr, "==> ==> 1/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRCH_1ReadInput, flag=[%d] <== <==\n", (int) j_flag);fflush(stderr);
+#endif
+
+        // get RexxIORedirectorContext from opaque slot argument
+    RexxIORedirectorContext *ioContext=(RexxIORedirectorContext *) rgfUnwrapPointer(env, (jstring) env->GetObjectArrayElement(j_slot, (jint) 4));
+    CSTRING data   = NULL;
+    size_t  length = 0;
+    if (j_flag==0)
+    {
+        ioContext->ReadInput(&data, &length);
+    }
+    else
+    {
+        ioContext->ReadInputBuffer(&data, &length);
+    }
+
+    if (data==NULL)
+    {
+        return NULL;
+    }
+
+    jbyteArray  jba=env->NewByteArray((jsize) length); // create Java primitive byte array
+    jstring     jstrRes=NULL;
+
+    if ( ! env->ExceptionCheck() )   // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+    {
+        if (length>0)   // this version allows for \0 in data (as opposed to ->NewString())
+        {
+            env->SetByteArrayRegion(jba, 0, (jsize) length, (jbyte *) data);
+
+            if ( ! env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+            {
+                jstrRes = (jstring) env->CallObjectMethod(rajo,
+                                         defaultJVM->mid_String_initFromByteArray,
+                                         jba);
+            }
+        }
+        else
+        {
+            jstrRes=env->NewStringUTF("");
+        }
+    }
+    env->DeleteLocalRef(jba);
+
+#if defined (DEBUG_JNI) || defined (DEBUG_COMMAND_HANDLER)
+    fprintf(stderr, "==> ==> 2/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRCH_1ReadInput, returning Java String with length=[%d]<== <==\n", length);fflush(stderr);
+#endif
+
+    return jstrRes;
+}
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniRCH_ReadInputAsByteArray
+ * Signature: ([Ljava/lang/Object;)[B
+ */
+//  use: ReadInput() which allows for retrieving the data unprocessed (CR-LF have no effect, hence binary data could be read as well)
+JNIEXPORT jbyteArray JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRCH_1ReadAsByteArray
+  (JNIEnv *env, jobject rajo, jobjectArray j_slot)
+{
+
+#if defined (DEBUG_JNI) || defined (DEBUG_COMMAND_HANDLER)
+    fprintf(stderr, "==> ==> 1/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRCH_1ReadInputAsByteArray <== <==\n");fflush(stderr);
+#endif
+
+        // get RexxExitContext from opaque slot argument
+    RexxIORedirectorContext *ioContext=(RexxIORedirectorContext *) rgfUnwrapPointer(env, (jstring) env->GetObjectArrayElement(j_slot, (jint) 4));
+    CSTRING data   = NULL;
+    size_t  length = 0;
+    ioContext->ReadInput(&data, &length);
+
+    // TODO: should we check for a Rexx condition or assume taht ReadInput[Buffer] won't raise a condition
+
+    if (data==NULL)
+    {
+        // return env->NewByteArray((jsize) 0);    // return empty array
+        return NULL;
+    }
+
+    // turn CSTRING to jbyteArray and from there to a jstring
+    jbyteArray  jba=env->NewByteArray((jsize) length); // create Java primitive byte array
+    jstring     jstrRes=NULL;
+
+    if ( ! env->ExceptionCheck() )   // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+    {
+        if (length>0)   // this version allows for \0 in data (as opposed to ->NewString())
+        {
+            env->SetByteArrayRegion(jba, 0, (jsize) length, (jbyte *) data);
+        }
+    }
+    env->DeleteLocalRef(jba);
+
+#if defined (DEBUG_JNI) || defined (DEBUG_COMMAND_HANDLER)
+    fprintf(stderr, "==> ==> 2/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRCH_1ReadInputAsByteArray, returning Java byte array with length=[%d] <== <==\n", length);fflush(stderr);
+#endif
+
+    return jba;
+}
+
+
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniRCH_Write
+ * Signature: ([Ljava/lang/Object;ILjava/lang/String;)V
+ */
+// 0=writeOutput, 1=writeOutputBuffer, 2=writeError, 3=writeErrorBuffer
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRCH_1Write___3Ljava_lang_Object_2ILjava_lang_String_2
+  (JNIEnv *env, jobject rajo, jobjectArray j_slot, jint j_flag, jstring j_data)
+{
+#if defined (DEBUG_JNI) || defined (DEBUG_COMMAND_HANDLER)
+    fprintf(stderr, "==> ==> 1/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRCH_1Write_String, flag=[%d] <== <==\n", (int) j_flag);fflush(stderr);
+#endif
+
+    // get RexxExitContext from opaque slot argument
+    RexxExitContext *context=(RexxExitContext *) rgfUnwrapPointer(env, (jstring) env->GetObjectArrayElement(j_slot, (jint) 3));
+
+    // get RexxIORedirectorContext from opaque slot argument
+    RexxIORedirectorContext *ioContext=(RexxIORedirectorContext *) rgfUnwrapPointer(env, (jstring) env->GetObjectArrayElement(j_slot, (jint) 4));
+
+    // we may have \0 in the string
+    jbyteArray jba = (jbyteArray) env->CallObjectMethod(j_data, defaultJVM->mid_String_getBytes);
+
+    if ( env->ExceptionCheck()==JNI_FALSE )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+    {
+        jint len = env->GetArrayLength(jba);
+
+        char *data = (char *) malloc(len);
+        if (data == NULL)
+        {
+            JNU_ThrowByName(env, "java/lang/OutOfMemoryError", 0);
+            env->DeleteLocalRef(jba);
+            return;
+        }
+        env->GetByteArrayRegion(jba, 0, len, (jbyte *)data);
+
+        // 0=writeOutput, 1=writeOutputBuffer, 2=writeError, 3=writeErrorBuffer
+        switch ((int)j_flag)
+        {
+        case 1:
+            ioContext->WriteOutput(data, len);
+            break;
+        case 2:
+            ioContext->WriteOutputBuffer(data, len);
+            break;
+        case 3:
+            ioContext->WriteError(data, len);
+            break;
+        case 4:
+            ioContext->WriteErrorBuffer(data, len);
+            break;
+        }
+
+        free(data);        // make sure memory is freed
+    }
+    else    // a Java exception occurred
+    {
+        env->DeleteLocalRef(jba);
+        return;     // pass exception on
+    }
+    env->DeleteLocalRef(jba);
+
+#if defined (DEBUG_JNI) || defined (DEBUG_COMMAND_HANDLER)
+    fprintf(stderr, "==> ==> 2/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRCH_1Write_String, flag=[%d]  <== <==\n", (int) j_flag);fflush(stderr);
+#endif
+
+    return;
+}
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniRCH_Write
+ * Signature: ([Ljava/lang/Object;I[B)V
+ */
+// 0=writeOutput, 1=writeOutputBuffer, 2=writeError, 3=writeErrorBuffer
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRCH_1Write___3Ljava_lang_Object_2I_3B
+  (JNIEnv *env, jobject rajo, jobjectArray j_slot, jint j_flag, jbyteArray j_data)
+{
+
+#if defined (DEBUG_JNI) || defined (DEBUG_COMMAND_HANDLER)
+    fprintf(stderr, "==> ==> 1/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRCH_1Write_[B, flag=[%d] <== <==\n", (int) j_flag);fflush(stderr);
+#endif
+
+    // get RexxExitContext from opaque slot argument
+    RexxExitContext *context=(RexxExitContext *) rgfUnwrapPointer(env, (jstring) env->GetObjectArrayElement(j_slot, (jint) 3));
+
+    // get RexxIORedirectorContext from opaque slot argument
+    RexxIORedirectorContext *ioContext=(RexxIORedirectorContext *) rgfUnwrapPointer(env, (jstring) env->GetObjectArrayElement(j_slot, (jint) 4));
+
+    jint len = env->GetArrayLength(j_data);
+
+    char *data = (char *) malloc(len);
+    if (data == NULL)
+    {
+        JNU_ThrowByName(env, "java/lang/OutOfMemoryError", 0);
+        return;
+    }
+    env->GetByteArrayRegion(j_data, 0, len, (jbyte *)data);
+
+    // 0=writeOutput, 1=writeOutputBuffer, 2=writeError, 3=writeErrorBuffer
+    switch ((int)j_flag)
+    {
+    case 1:
+        ioContext->WriteOutput(data, len);
+        break;
+    case 2:
+        ioContext->WriteOutputBuffer(data, len);
+        break;
+    case 3:
+        ioContext->WriteError(data, len);
+        break;
+    case 4:
+        ioContext->WriteErrorBuffer(data, len);
+        break;
+    }
+
+    free(data);        // make sure memory is freed
+
+
+#if defined (DEBUG_JNI) || defined (DEBUG_COMMAND_HANDLER)
+    fprintf(stderr, "==> ==> 2/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRCH_1Write_[B, flag=[%d]  <== <==\n", (int) j_flag);fflush(stderr);
+#endif
+
+
+    // TODO: implementation
+    return;
+}
+
+
+
+
 
 
 #ifdef __cplusplus

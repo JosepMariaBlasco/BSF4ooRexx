@@ -28,6 +28,7 @@ LIBRARY   BSF4ooRexx.dll-32-x86
 HEAPSIZE  131072
 STACKSIZE  131072
 
+; ooRexx 5.0.0: not needed anymore
 ; ooRexx 4.0.0 (and later) related function, which allows the interpreter to load all external functions
-EXPORTS
-        RexxGetPackage
+; EXPORTS
+;        RexxGetPackage

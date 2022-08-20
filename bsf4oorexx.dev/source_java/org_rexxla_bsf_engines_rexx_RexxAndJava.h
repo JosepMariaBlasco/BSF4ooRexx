@@ -76,10 +76,10 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
  * Method:    jniRexxSendMessageToRexxObject
- * Signature: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;
+ * Signature: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;
  */
 JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSendMessageToRexxObject
-  (JNIEnv *, jobject, jstring, jstring, jstring, jstring, jstring, jstring, jstring, jobjectArray, jstring);
+  (JNIEnv *, jobject, jstring, jstring, jstring, jstring, jstring, jstring, jstring, jobjectArray, jstring, jstring);
 
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
@@ -328,6 +328,38 @@ JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniLanguage
  */
 JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniTestPing
   (JNIEnv *, jobject);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniRCH_Read
+ * Signature: ([Ljava/lang/Object;I)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRCH_1Read
+  (JNIEnv *, jobject, jobjectArray, jint);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniRCH_ReadAsByteArray
+ * Signature: ([Ljava/lang/Object;)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRCH_1ReadAsByteArray
+  (JNIEnv *, jobject, jobjectArray);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniRCH_Write
+ * Signature: ([Ljava/lang/Object;ILjava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRCH_1Write___3Ljava_lang_Object_2ILjava_lang_String_2
+  (JNIEnv *, jobject, jobjectArray, jint, jstring);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniRCH_Write
+ * Signature: ([Ljava/lang/Object;I[B)V
+ */
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRCH_1Write___3Ljava_lang_Object_2I_3B
+  (JNIEnv *, jobject, jobjectArray, jint, jbyteArray);
 
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
