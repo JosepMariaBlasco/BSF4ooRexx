@@ -53,8 +53,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
 
  /*
-
-    public RexxConfiguration getRexxConfiguration()
+     2022-08-20, rgf  - new: getRexxConfiguration(), returns the RexxEngine's RexxConfiguration
 
      2022-08-19, rgf  - added new native methods to support new RexxRedirectedCommandHandler
                         native String jniRCH_ReadInput           (Object[] slot, int flag);

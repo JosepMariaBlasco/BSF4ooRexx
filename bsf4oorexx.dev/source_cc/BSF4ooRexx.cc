@@ -7776,25 +7776,16 @@ RexxRoutine1(RexxObjectPtr, BsfTestPing, OPTIONAL_size_t,  repetitions)
 
 
 // ---------------------------------------------------------------------------------------
-//    // rgf, 2022-08-20, BsfCommandHandler( Add, environmentName, jhandler | List)
-//  Function to allow to tackle the Java exception facility, syntax:
-//       BsfJavaException( "throw", exceptionObject )
-//       ... throws a Java exception using the supplied 'exceptionObject'
-//
-//  following commands may be implemented: "check" (.true/.false), "clear",
-//            "object|occurred" (Throwable), "fatalError"
-//
-//  - if exceptionProxy is of type .BSF or .UNO_PROXY use its objectName, else
-//    use string value of object as the beanName to look up in the BSF registry
-//
-//  - check whether a Java exception is already pending, if so return .false
-//
-//  - lookup beanName in the BSF-registry, must exist and an instance of java.lang.Throwable
-//
-//    - throw the given Java exception;
-//      - if an error occured, then report it to ooRexx in form of a Rexx condition (and return .false)
-//      - else return .true
-//
+//  rgf, 2022-08-20, BsfCommandHandler( Add, environmentName, jhandler | List)
+//                   makes ooRexx 5.0 ability to dynamically load environment command handlers
+//                   that are implemented in Java (and ooRexx using BSF4ooRexx! :) )
+//              "Add", "environmentName", jhandler
+//                      environmentName ... <=250 characters, will be uppercased
+//                      jhandler ... needs to implement one of the two interfaces:
+//                                   RexxCommandHandler or RexxRedirectingCommandHandler
+//                      ... does not return anything, can be invoked multiple times for
+//                          the same environmentName (replaces any existing one)
+//              "List" ... returns an ooRexx array of Java command handlers
 RexxRoutine3(RexxObjectPtr, BsfCommandHandler, CSTRING, option, OPTIONAL_CSTRING, name, OPTIONAL_RexxObjectPtr, javaHandler)
 {
     thread_id_t tid=RgfGetTID();    // current thread
