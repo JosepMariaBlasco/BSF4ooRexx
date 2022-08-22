@@ -24,8 +24,8 @@ import java.util.BitSet;
  *
  *
  * @author Rony G. Flatscher
- * @version 1.0
- * @since 2022-08-18 (BSF4ooRexx 850, baseline Java=8, ooRexx=5.0)
+ * @version 850.0
+ * @since 2022-08-22 (BSF4ooRexx 850, baseline Java=8, ooRexx=5.0)
  */
 /*
  * The opaque slot argument is in effect an Object [] with:
@@ -41,7 +41,7 @@ public interface RexxRedirectingCommandHandler extends RexxCommandHandler
 {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change. */
-    final static public String version = "2.20220819";
+    final static public String version = "2.20220822";
 
     // define constants for indexing the BitSet
     final static int IS_REDIRECTION_REQUESTED         =  0;
@@ -147,12 +147,9 @@ public interface RexxRedirectingCommandHandler extends RexxCommandHandler
             return null;
         }
 
-/*
+// System.err.println("RRCH: readInput(slot) ...");
         // 0=readInput, 1=readInputBuffer
         return ((RexxAndJava) arrSlot[0]).jniRCH_Read(arrSlot, 0);
-*/
-
-        return "n/a ";
     }
 
     /** Reads the next line from input, does not apply a codepage translation to Java but
@@ -167,10 +164,11 @@ public interface RexxRedirectingCommandHandler extends RexxCommandHandler
         {
             return null;
         }
-/*
-        return ((RexxAndJava) arrSlot[0]).jniRCH_ReadAsByteArray(arrSlot);
-*/
-        return "n/a".getBytes();
+// System.err.println("RRCH: readInputAsByteArray(slot) ...");
+        // return ((RexxAndJava) arrSlot[0]).jniRCH_ReadAsByteArray(arrSlot);
+        byte []returnVal= ((RexxAndJava) arrSlot[0]).jniRCH_ReadAsByteArray(arrSlot);
+
+        return returnVal;
     }
 
     /** Reads all remaining items from input separated by the platform specific line-end character(s).
@@ -185,12 +183,9 @@ public interface RexxRedirectingCommandHandler extends RexxCommandHandler
         {
             return null;
         }
-
-/*
+// System.err.println("RRCH: readInputBuffer(slot) ...");
         // 0=readInput, 1=readInputBuffer
         return ((RexxAndJava) arrSlot[0]).jniRCH_Read(arrSlot,1);
-*/
-        return "n/a";
     }
 
     /** Writes a single line of String data.
@@ -206,10 +201,9 @@ public interface RexxRedirectingCommandHandler extends RexxCommandHandler
         {
             return;
         }
-/*
+// System.err.println("RRCH: writeOutput(slot,line) ...");
         // 0=writeOutput, 1=writeOutputBuffer, 2=writeError, 3=writeErrorBuffer
         ((RexxAndJava) arrSlot[0]).jniRCH_Write(arrSlot, 0, line);
-*/
     }
 
     /** Writes all byte[] data as a single line, does not apply a codepage translation.
@@ -225,10 +219,9 @@ public interface RexxRedirectingCommandHandler extends RexxCommandHandler
         {
             return;
         }
-/*
+// System.err.println("RRCH: writeOutput(slot,bytArray) ...");
         // byte[] data
-        ((RexxAndJava) arrSlot[0]).jniRCH_Write(arrSlot, flag=0, byte[] data);
-*/
+        ((RexxAndJava) arrSlot[0]).jniRCH_Write(arrSlot, 0, data);
     }
 
     /** Writes the supplied string data, ooRexx will split it into individual lines
@@ -245,10 +238,9 @@ public interface RexxRedirectingCommandHandler extends RexxCommandHandler
         {
             return;
         }
-/*
+// System.err.println("RRCH: writeOutputBuffer(slot,line) ...");
     // 0=writeOutput, 1=writeOutputBuffer, 2=writeError, 3=writeErrorBuffer
         ((RexxAndJava) arrSlot[0]).jniRCH_Write(arrSlot, 1, data);
-*/
     }
 
     // 0=writeOutput, 1=writeOutputBuffer, 2=writeError, 3=writeErrorBuffer
@@ -265,10 +257,9 @@ public interface RexxRedirectingCommandHandler extends RexxCommandHandler
         {
             return;
         }
-/*
-        // 0=writeError, 1=writeErrorBuffer
-        return ((RexxAndJava) arrSlot[0]).jniRCH_Write(arrSlot, 2, line);
-*/
+// System.err.println("RRCH: writeError(slot,line) ...");
+        // 0=writeOutput, 1=writeOutputBuffer, 2=writeError, 3=writeErrorBuffer
+        ((RexxAndJava) arrSlot[0]).jniRCH_Write(arrSlot, 2, line);
     }
 
     /** Writes all byte[] data as a single line, does not apply a codepage translation.
@@ -284,10 +275,9 @@ public interface RexxRedirectingCommandHandler extends RexxCommandHandler
         {
             return;
         }
-/*
+// System.err.println("RRCH: writeError(slot,byteArray) ...");
         // byte[] data
-        return ((RexxAndJava) arrSlot[0]).jniRCH_Write(arrSlot, 2, data);
-*/
+        ((RexxAndJava) arrSlot[0]).jniRCH_Write(arrSlot, 2, data);
     }
 
     /** Writes all String data.
@@ -303,10 +293,9 @@ public interface RexxRedirectingCommandHandler extends RexxCommandHandler
         {
             return;
         }
-/*
-    // 0=writeOutput, 1=writeOutputBuffer, 2=writeError, 3=writeErrorBuffer
-        return ((RexxAndJava) arrSlot[0]).jniRCH_Write(arrSlot, 3, data);
-*/
+// System.err.println("RRCH: writeErrorBuffer(slot,line) ...");
+        // 0=writeOutput, 1=writeOutputBuffer, 2=writeError, 3=writeErrorBuffer
+        ((RexxAndJava) arrSlot[0]).jniRCH_Write(arrSlot, 3, data);
     }
 
     /** Create a string rendering of this environment handler with current settings.

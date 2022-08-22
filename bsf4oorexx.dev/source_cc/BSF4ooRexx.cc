@@ -979,6 +979,9 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 #define DEBUG_COMMAND_HANDLER       // 2022-08-20: allow for debugging command handler interactions
 // #define DEBUG_JNI
 
+#define DEBUG_CREATE_HALT_TERMINATE
+
+
 
 #if defined WINDOWS                     // meant for debugging
     // __asm Int 3;     // break
@@ -1091,21 +1094,21 @@ thread_id_t  RgfGetTID();
 
 #if defined (BSF4REXX_32_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20220820 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220822 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20220820 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220822 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #elif defined (BSF4REXX_64_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20220820 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220822 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20220820 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220822 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #else
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20220820 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220822 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20220820 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220822 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #endif
 
@@ -7788,9 +7791,9 @@ RexxRoutine1(RexxObjectPtr, BsfTestPing, OPTIONAL_size_t,  repetitions)
 //              "List" ... returns an ooRexx array of Java command handlers
 RexxRoutine3(RexxObjectPtr, BsfCommandHandler, CSTRING, option, OPTIONAL_CSTRING, name, OPTIONAL_RexxObjectPtr, javaHandler)
 {
+#if defined (DEBUG_COMMAND_HANDLER)
     thread_id_t tid=RgfGetTID();    // current thread
 
-#if defined (DEBUG_COMMAND_HANDLER)
     fprintf(stderr, "*** BsfCommandHandler() 1, BEGIN: tid=[%lu], option=[%s], name=[%s], javaHandler=[%p] ...\n",
             (unsigned long) tid, option, name, javaHandler
             );
@@ -8708,6 +8711,10 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
         if ( j_direct_environments != NULL) {
             nr_direct_environments=env->GetArrayLength( j_direct_environments );
             countOptions++;
+#if  defined (RGF_COMMAND_HANDLER)
+    fprintf(stderr, "_jniRexxCreateInterpreterInstance %d: nr_direct_environments=[%d] countOptions=[%d]\n",
+            __LINE__, nr_direct_environments, countOptions);
+#endif
         }
 
             // REDIRECTING_ENVIRONMENTS (one option with a RexxContextEnvironment[]), jstring[]
@@ -8715,6 +8722,10 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
         if ( j_redirecting_environments != NULL) {
             nr_redirecting_environments=env->GetArrayLength( j_redirecting_environments );
             countOptions++;
+#if  defined (RGF_COMMAND_HANDLER)
+    fprintf(stderr, "_jniRexxCreateInterpreterInstance %d: nr_redirecting_environments=[%d] countOptions=[%d]\n",
+            __LINE__, nr_redirecting_environments, countOptions);
+#endif
         }
     }
 
@@ -8899,13 +8910,13 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
 
 #if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
     fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): redirecting environment # [%d], name=[%s]\n",
-                    i, environments[i].name);
+                    i, redirectingEnvironments[i].name);
 #endif
         }
         redirectingEnvironments[nr_redirecting_environments].name=NULL;     // indicate list has ended
 
         options[idx].optionName=REDIRECTING_ENVIRONMENTS;
-        options[idx].option=(void *)environments;
+        options[idx].option=(void *)redirectingEnvironments;
 #if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
     fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): idx=[%ld], .optionName=[%s]\n",
                     idx, options[idx].optionName);
@@ -13821,6 +13832,10 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRCH_1R
         ioContext->ReadInputBuffer(&data, &length);
     }
 
+#if defined (DEBUG_JNI) || defined (DEBUG_COMMAND_HANDLER)
+    fprintf(stderr, "--> --> 1/ jniRCH_1Read: flag=[%d], length=[%d] data=[%.10s]\n <-- <--\n", (int) j_flag, length, data);fflush(stderr);
+#endif
+
     if (data==NULL)
     {
         return NULL;
@@ -13837,9 +13852,9 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRCH_1R
 
             if ( ! env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
             {
-                jstrRes = (jstring) env->CallObjectMethod(rajo,
-                                         defaultJVM->mid_String_initFromByteArray,
-                                         jba);
+                jstrRes=(jstring) env->NewObject(defaultJVM->clz_String,
+                                    defaultJVM->mid_String_initFromByteArray,
+                                    jba);
             }
         }
         else
@@ -13880,8 +13895,8 @@ JNIEXPORT jbyteArray JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRCH
 
     if (data==NULL)
     {
-        // return env->NewByteArray((jsize) 0);    // return empty array
         return NULL;
+        // return env->NewByteArray((jsize) 0);    // return empty array, NULL would throw a NPE
     }
 
     // turn CSTRING to jbyteArray and from there to a jstring
@@ -13895,7 +13910,7 @@ JNIEXPORT jbyteArray JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRCH
             env->SetByteArrayRegion(jba, 0, (jsize) length, (jbyte *) data);
         }
     }
-    env->DeleteLocalRef(jba);
+    // env->DeleteLocalRef(jba);
 
 #if defined (DEBUG_JNI) || defined (DEBUG_COMMAND_HANDLER)
     fprintf(stderr, "==> ==> 2/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRCH_1ReadInputAsByteArray, returning Java byte array with length=[%d] <== <==\n", length);fflush(stderr);
@@ -13944,18 +13959,35 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRCH_1Writ
         // 0=writeOutput, 1=writeOutputBuffer, 2=writeError, 3=writeErrorBuffer
         switch ((int)j_flag)
         {
-        case 1:
+        case 0:
+#if defined (DEBUG_JNI) || defined (DEBUG_COMMAND_HANDLER)
+    fprintf(stderr, "--> --> case 0, WriteOutput(d=[%.10s...],len=[%d] flag=[%d] <== <==\n", data, len, (int) j_flag);fflush(stderr);
+#endif
             ioContext->WriteOutput(data, len);
             break;
-        case 2:
+        case 1:
+#if defined (DEBUG_JNI) || defined (DEBUG_COMMAND_HANDLER)
+    fprintf(stderr, "--> --> case 1, WriteOutputBuffer(d=[%.10s...],len=[%d] flag=[%d] <== <==\n", data, len, (int) j_flag);fflush(stderr);
+#endif
             ioContext->WriteOutputBuffer(data, len);
             break;
-        case 3:
+        case 2:
+#if defined (DEBUG_JNI) || defined (DEBUG_COMMAND_HANDLER)
+    fprintf(stderr, "--> --> case 2, WriteError(d=[%.10s...],len=[%d] flag=[%d] <== <==\n", data, len, (int) j_flag);fflush(stderr);
+#endif
             ioContext->WriteError(data, len);
             break;
-        case 4:
+        case 3:
+#if defined (DEBUG_JNI) || defined (DEBUG_COMMAND_HANDLER)
+    fprintf(stderr, "--> --> case 3, WriteErrorBuffer(d=[%.10s...],len=[%d] flag=[%d] <== <==\n", data, len, (int) j_flag);fflush(stderr);
+#endif
             ioContext->WriteErrorBuffer(data, len);
             break;
+
+#if defined (DEBUG_JNI) || defined (DEBUG_COMMAND_HANDLER)
+        default:
+    fprintf(stderr, "--> --> default: !!! SHOULD NEVER ARRIVE HERE!    flag=[%d] <== <==\n", (int) j_flag);fflush(stderr);
+#endif
         }
 
         free(data);        // make sure memory is freed
@@ -14007,16 +14039,16 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRCH_1Writ
     // 0=writeOutput, 1=writeOutputBuffer, 2=writeError, 3=writeErrorBuffer
     switch ((int)j_flag)
     {
-    case 1:
+    case 0:
         ioContext->WriteOutput(data, len);
         break;
-    case 2:
+    case 1:
         ioContext->WriteOutputBuffer(data, len);
         break;
-    case 3:
+    case 2:
         ioContext->WriteError(data, len);
         break;
-    case 4:
+    case 3:
         ioContext->WriteErrorBuffer(data, len);
         break;
     }

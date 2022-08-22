@@ -31,7 +31,7 @@ return testResult
   pkglocal=.context~package~local   -- new in 5.0.0
   if \pkglocal~hasentry("clzNestedClasses") then
   do
-say "... loading testNestedClasses and store in .context~package~local  ..."
+say .line "..." .line": loading testNestedClasses and store in .context~package~local  ..."
      pkglocal~clzNestedClasses   =bsf.importClass("rgf.G_misc.TestNestedClasses")
      pkglocal~clzNestedClassesSub=bsf.importClass("rgf.G_misc.TestNestedClassesSub")
   end
