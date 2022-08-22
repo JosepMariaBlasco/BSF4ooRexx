@@ -53,36 +53,14 @@ return testResult
     if bsf("bsfPrefixReturnValue")=0 then
        call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
 
--- signal on syntax
     -- use BSF implementation
     bm = .bsf~new("org.apache.bsf.BSFManager")
     re = bm~loadScriptingEngine("rexx")
-
+      -- we could use getRexxConfiguration() and configure the command handlers
+      -- to be preexistent
     vArg = .bsf~new("java.util.Vector")~~add(self) -- add this object
-say "arrived in" .context~name "..."
-say "re   :" pp(re)
-say "self :" pp(self)
-say "arg():" pp(arg())
-say "vArg :" pp(varg) "~size:" pp(varg~size)
-
-/*
-    -- res=re~apply("ohadackel.rex", 0, 0, "say '** HOLLA **'~copies; parse pull .;", .nil, .nil)
-    res=re~apply("ohadackel.rex", 0, 0, "say 'hello, world'; parse pull .;", .nil, vArg)
-    say "a) res:" pp(res)
--- */
-
--- say "hit enter..."; parse pull .
-
-say .context~name": about to apply (run) the Rexx program..."
-
     res=re~apply(.context~name, 0, 0, .resources~test_01_redirectingHandler_code~toString, .nil, vArg)
-    say "b) res:" pp(res)
-    return
-syntax:
-    co=condition('object')
-    say ppJavaExceptionChain(co, .true)
-    say "---"
-    raise propagate
+
 
 
 ::resource test_01_redirectingHandler_code
@@ -103,7 +81,7 @@ syntax:
    testObj~assertEquals(bRedir,      .false)
    testObj~assertEquals(handlerName, clzHandlerName)
 
-   say "addressing 'dhenv':"
+   -- say "addressing 'dhenv':"
    address dhenv 'some command #1'
 
    parse var rc "address=[" envName1 "] command=[" command "] version=[" handlerName "[" -
@@ -130,7 +108,6 @@ say "... bIsRedirectable="pp(bIsRedirectable)
    testObj~assertEquals(handlerName,clzHandlerName)
    testObj~assertEquals(envName2,   "DHENV")
    testObj~assertEquals(bIsRedirectable, "false", "isRedirectable")
-   say "rc:" rc
 
    address dhenv 'some command #3'
    parse var rc "address=[" envName1 "] command=[" command "] version=[" handlerName "[" -
@@ -140,9 +117,6 @@ say "... bIsRedirectable="pp(bIsRedirectable)
    testObj~assertEquals(handlerName,clzHandlerName)
    testObj~assertEquals(envName2,   "DHENV")
    testObj~assertEquals(bIsRedirectable, "false", "isRedirectable")
-   say "rc:" rc
-   say
-   say "-"~copies(79)
 
 /* ===================================================================================== */
 -- testing RedirectingHandler1
@@ -151,7 +125,7 @@ say "... bIsRedirectable="pp(bIsRedirectable)
    call bsfcommandHandler "add", "rhenv", jrch
 
    arr=BsfCommandHandler(list)
-   call showJavaHandlers arr
+--   call showJavaHandlers arr
 
    testObj~assertEquals(2,arr~items, "after adding redirecting command handler #1")
    parse value arr[2] with "name:" envName "redirectable:" bRedir "handler:" handlerName "@" .
@@ -170,7 +144,7 @@ say "... handlerName ="pp(handlerName) "clzHandlerName="pp(clzHandlerName)
    out=.array~new
    err=.array~new
 
-   say "addressing 'rhenv':"
+   -- say "addressing 'rhenv':"
    address rhenv 'some command #1'
 
    parse var rc "address=[" envName1 "] command=[" command "] version=[" handlerName "[" -
@@ -364,64 +338,152 @@ say
 -- testing RedirectingHandler2: test access to RexxHandler methods
 
 
-   say "... adding third command handler ..."
+   -- say "... adding third command handler ..."
    jrch=.bsf~new("rgf.H_850.RedirectingHandler2")
    call bsfcommandHandler "add", "testRexxHandler", jrch
 
    arr=BsfCommandHandler(list)
    testObj~assertEquals(3,arr~items)
-   call showJavaHandlers arr
+--   call showJavaHandlers arr
 
-   say
    rgfWasHere="tsk, rgf Was here!"
    address testRexxHandler "getContextVariable rgfWasHere"
-   say "rc:" pp(rc) "rgfWasHere:" pp(rgfWasHere)
-   say
+   -- say "rc:" pp(rc) "rgfWasHere:" pp(rgfWasHere);say
+   testObj~assertEquals(rc, rgfWasHere)
 
-   address testRexxHandler "setContextVariable rgfWasHere tsk_test_the_command_handler"
-   say "rc:" pp(rc) "rgfWasHere:" pp(rgfWasHere)
-   say
+   newVal="tsk_test_the_command_handler"
+   address testRexxHandler "setContextVariable rgfWasHere" newVal
+   -- say "rc:" pp(rc) "rgfWasHere:" pp(rgfWasHere);say
+   testObj~assertEquals(rc, 0)
+   testObj~assertEquals(rgfWasHere, newVal)
 
    address testRexxHandler "setContextVariableToNil rgfWasHere"
-   say "rc:" pp(rc) "rgfWasHere:" pp(rgfWasHere)
-   say
+   -- say "rc:" pp(rc) "rgfWasHere:" pp(rgfWasHere); say
+   testObj~assertEquals(rc, 0)
+   testObj~assertEquals(rgfWasHere, .nil)
+   testObj~assertTrue(var("RGFWASHERE"))
 
    address testRexxHandler "dropContextVariable rgfWasHere"
-   say "rc:" pp(rc) "rgfWasHere:" pp(rgfWasHere)
-   say
+   -- say "rc:" pp(rc) "rgfWasHere:" pp(rgfWasHere); say
+   testObj~assertEquals(rc, 0)
+   testObj~assertEquals(rgfWasHere, "RGFWASHERE")
+   testObj~assertFalse(var("RGFWASHERE"))
 
    address testRexxHandler "getLocalEnvironment"
-   say "rc:" pp(rc)
-   say
+   -- say "rc:" pp(rc);say
+   testObj~assertEquals(rc, .local)
 
    address testRexxHandler "getGlobalEnvironment"
-   say "rc:" pp(rc)
-   say
+   -- say "rc:" pp(rc);say
+   testObj~assertEquals(rc, .environment)
+
+   -- ======================================================
 
 
+   helpInfo="dropContextVariable getContextVariable setContextVariable setContextVariableToNil getInterpreterVersion getLanguageLevel getLocalEnvironment getGlobalEnvironment getNil raiseException getVersion "
+
+   -- =========================== out
+   out=.array~new
+   -- input not redirected, so handler won't output to out
+   address testRexxHandler "" with output using (out)
+   testObj~assertEquals(rc,helpInfo)
+   testObj~assertEquals(out~items,0)
+
+   inW   = .array~of(0) -- write()
+   inWB  = .array~of(1) -- writeBuffer()
+   inWBA = .array~of(2) -- writeBuffer(arrBytes)
+   out=.array~new
+
+   -- use write(), only one item
+   address testRexxHandler "help    " with input using (inW) output using (out)
+   testObj~assertEquals(rc,helpInfo)
+   testObj~assertEquals(out~items,1)   -- all text in one item
+
+   -- use writeBuffer(), \n get procecessed, causing 14 items
+   address testRexxHandler "help    " with input using (inWB) output using (out)
+   testObj~assertEquals(rc,helpInfo)
+   testObj~assertEquals(out~items,14)
+
+   -- use writeBuffer(byteArray), only one item
+   address testRexxHandler "help    " with input using (inWBA) output using (out)
+   testObj~assertEquals(rc,helpInfo)
+   testObj~assertEquals(out~items,1)   -- all text in one item
+
+   -- =========================== err
+   err=.array~new
+   -- input not redirected, so handler won't output to err either
+   address testRexxHandler "" with error using (err)
+   testObj~assertEquals(rc,helpInfo)
+   testObj~assertEquals(err~items,0)
+
+   err=.array~new
+
+   -- use write(), only one item
+   address testRexxHandler "help    " with input using (inW) error using (err)
+   testObj~assertEquals(rc,helpInfo)
+   testObj~assertEquals(err~items,1)
+
+   -- use writeBuffer(), \n get procecessed, causing 14 items
+   address testRexxHandler "help    " with input using (inWB) error using (err)
+   testObj~assertEquals(rc,helpInfo)
+   testObj~assertEquals(err~items,14)
+
+   -- use writeBuffer(byteArray), only one item
+   address testRexxHandler "help    " with input using (inWBA) error using (err)
+   testObj~assertEquals(rc,helpInfo)
+   testObj~assertEquals(err~items,1)
+
+   address testRexxHandler " ?    "
+   -- say "rc:" pp(rc);say
+   testObj~assertEquals(rc,helpInfo)
+
+   -- =========================== test reading input in various ways
+   str1result="one"
+   inS1  = .array~of(str1result)
+   inS10 = .array~of("a", "b", "c", "d", "e", "f", "g", "h", "i", "j")
+   str10basis  = "a_b_c_d_e_f_g_h_i_j"
+   str10result = str10basis~changestr('_',.endOfLine)  || .endofline -- readInputBuffer appends .endofline at the end as well!
+
+   -- readInput
+   address testRexxHandler "secret 0" with input using (inS1)
+   testObj~assertEquals(rc,"one")
+
+   -- readInputBuffer, appends .endOfLine at the end?
+   address testRexxHandler "secret 1" with input using (inS1)
+   testObj~assertEquals(rc,"one".endofline)
+
+   -- readInputBufferAsByteArray (entry 1)
+   address testRexxHandler "secret 2" with input using (inS1)
+   testObj~assertEquals(bsfRawBytes(rc),"one")
+
+   -- readInputBufferAsByteArray (entry 1)
+   address testRexxHandler "secret 3" with input using (inS1)
+   testObj~assertEquals(bsfRawBytes(rc),"one")
+
+   -- readInput
+   address testRexxHandler "secret 0" with input using (inS10)
+   testObj~assertEquals(rc,"a")
+
+   -- readInputBuffer
+   address testRexxHandler "secret 1" with input using (inS10)
+   testObj~assertEquals(rc,str10result)
+
+   -- readInputBufferAsByteArray (entry 1)
+   address testRexxHandler "secret 2" with input using (inS10)
+   testObj~assertEquals(bsfRawBytes(rc),"a")
+
+   -- readInputBufferAsByteArray (entry 1)
+   address testRexxHandler "secret 3" with input using (inS10)
+   testObj~assertEquals(bsfRawBytes(rc),"a")
+
+   -- test the readInputAsByteArray multiple times
+   -- readInputBufferAsByteArray (entry 1)
+   address testRexxHandler "secret 2 repeatedly" with input using (inS10)
+   testObj~assertEquals(rc,str10basis~changeStr("_",""))
 
       -- the following command is not defined for this handler which will raise 40.900
    testObj~expectSyntax(40.900)
-   address testRexxHandler  'some   command  #1 '
-   say "rc:" rc
-/*
-   address disco 'some command #2 in        ' with input using (in)
-   say "rc:" rc
-   address disco 'some command #3 in/out    ' with input using (in) output using (out)
-   say "rc:" rc
-   address disco 'some command #4 in/out/err' with input using (in) output using (out) error using (err)
-   say "rc:" rc
-   address disco 'some command #5    out/err' with                  output using (out) error using (err)
-   say "rc:" rc
-   address disco 'some command #6       /err' with                                     error using (err)
-   say "rc:" rc
-   address disco 'some command #7 in/out=err' with input using (in) output using (out) error using (out)
-   say "rc:" rc
-   address disco 'some command #8 in/out=err' with input using (in) output using (err) error using (err)
-   say "rc:" rc
-*/
-   say
-   say "-"~copies(79)
+   address testRexxHandler  'some   command  #1 ' -- unknown command will raise exception
 
 
 ::requires bsf.cls
