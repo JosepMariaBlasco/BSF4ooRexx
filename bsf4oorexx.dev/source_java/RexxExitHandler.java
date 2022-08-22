@@ -9,7 +9,7 @@ package org.rexxla.bsf.engines.rexx;   // belongs to that fine package ;) ...
  *
 
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2012 Rony G. Flatscher
+ *    Copyright (C) 2012-2022 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -26,18 +26,20 @@ package org.rexxla.bsf.engines.rexx;   // belongs to that fine package ;) ...
  *
  *
  * @author Rony G. Flatscher
- * @version 1.0
- * @since 2012-02-25
+ * @version 850.0
+ * @since 2022-08-22
  */
 
 /* 2012-02-26, rgf  - fixed some formatting
+   2022-08-22, rgf  - making this an extension to RexxHandler (just turned into an interface)
+                      to ease access to its static methods
 */
 
-public interface RexxExitHandler
+public interface RexxExitHandler extends RexxHandler
 {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change. */
-    final static public String version = "100.20120225";
+    final static public String version = "850.20220822";
 
     // --------------------------------------------------------------------------------
     //    Exit return actions

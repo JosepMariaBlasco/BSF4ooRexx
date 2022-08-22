@@ -36,8 +36,10 @@ package org.rexxla.bsf.engines.rexx;   // belongs to that fine package ;) ...
 /*
     changed:    2022-08-16, adding default methods (new in Java 8) to interface
                             to indicate that this interface is not redirectable
+                2022-08-22, make command handler extend RexxHandler (newly an interface)
+                            to ease access to its static methods
 */
-public interface RexxCommandHandler
+public interface RexxCommandHandler extends RexxHandler
 {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change. */
