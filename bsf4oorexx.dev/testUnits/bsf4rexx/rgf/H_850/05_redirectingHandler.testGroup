@@ -1,0 +1,436 @@
+#!/usr/bin/env rexx
+/*
+   name:             05_redirectingHandler.testGroup
+   author:           Rony G. Flatscher
+   version:          1.0.0
+   date:             2022-08-22
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          test BSF4Rexx 850 new SendMessageScope()-API for the Java RexxProxy class
+   hint:             RexxProxy objects are Java objects and allow Java to interface with Rexx objects
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.test850rediretingHandler)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+::class "test850rediretingHandler" subclass ooTestCase public
+
+
+/* --
+::method setup
+  -- make the classes available in this Rexx instance via .local, such that calls
+  -- from native (no Rexx context) can succeed; note: PUBLIC would not work in this
+  -- context as the native side in this case would only get a ThreadContext
+  .local~class_level1=.class_level1
+  .local~class_level2=.class_level2
+  .local~class_level3=.class_level3
+  .local~class_level4=.class_level4
+
+::method teardown
+  -- remove the .local class object entries that are only needed for this test group
+  .local~removeEntry("class_level1")
+  .local~removeEntry("class_level2")
+  .local~removeEntry("class_level3")
+  .local~removeEntry("class_level4")
+-- */
+
+
+::method "test_01_redirectingHandler"
+   /* due to the naming in this testgroup, this method will be the first that gets
+      run; as previous tests may have changed the "bsfPrefixReturnValue", make sure
+      that it is set as BSF.CLS routines and methods depend on that */
+    if bsf("bsfPrefixReturnValue")=0 then
+       call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
+
+-- signal on syntax
+    -- use BSF implementation
+    bm = .bsf~new("org.apache.bsf.BSFManager")
+    re = bm~loadScriptingEngine("rexx")
+
+    vArg = .bsf~new("java.util.Vector")~~add(self) -- add this object
+say "arrived in" .context~name "..."
+say "re   :" pp(re)
+say "self :" pp(self)
+say "arg():" pp(arg())
+say "vArg :" pp(varg) "~size:" pp(varg~size)
+
+/*
+    -- res=re~apply("ohadackel.rex", 0, 0, "say '** HOLLA **'~copies; parse pull .;", .nil, .nil)
+    res=re~apply("ohadackel.rex", 0, 0, "say 'hello, world'; parse pull .;", .nil, vArg)
+    say "a) res:" pp(res)
+-- */
+
+-- say "hit enter..."; parse pull .
+
+say .context~name": about to apply (run) the Rexx program..."
+
+    res=re~apply(.context~name, 0, 0, .resources~test_01_redirectingHandler_code~toString, .nil, vArg)
+    say "b) res:" pp(res)
+    return
+syntax:
+    co=condition('object')
+    say ppJavaExceptionChain(co, .true)
+    say "---"
+    raise propagate
+
+
+::resource test_01_redirectingHandler_code
+  use arg testObj
+   arr=BsfCommandHandler("list")
+   testObj~assertEquals(0,arr~items, "no command handlers as of yet")
+
+/* ===================================================================================== */
+-- testing DirectHandler1
+   clzHandlerName="rgf.H_850.DirectHandler1"
+   jdch=.bsf~new(clzHandlerName)
+   call bsfcommandHandler "add", "dhenv", jdch
+
+   arr=BsfCommandHandler(list)
+   testObj~assertEquals(1,arr~items, "a direct command handler")
+   parse value arr[1] with "name:" envName "redirectable:" bRedir "handler:" handlerName "@" .
+   testObj~assertEquals(envName,     "DHENV")
+   testObj~assertEquals(bRedir,      .false)
+   testObj~assertEquals(handlerName, clzHandlerName)
+
+   say "addressing 'dhenv':"
+   address dhenv 'some command #1'
+
+   parse var rc "address=[" envName1 "] command=[" command "] version=[" handlerName "[" -
+                "environmentName=" envName2 ",isRedirectable=" bIsRedirectable "]]"
+/*
+say ".... rc            ="pp(rc)
+say "... envName1       ="pp(envName1)
+say "... command        ="pp(command )
+say "... handlerName    ="pp(handlerName )
+say "... envName2       ="pp(envName2)
+say "... bIsRedirectable="pp(bIsRedirectable)
+*/
+   testObj~assertEquals(envName1,     "DHENV")
+   testObj~assertEquals(command,    "some command #1")
+   testObj~assertEquals(handlerName,clzHandlerName)
+   testObj~assertEquals(envName2,   "DHENV")
+   testObj~assertEquals(bIsRedirectable, "false", "isRedirectable")
+
+   address dhenv 'some command #2'
+   parse var rc "address=[" envName1 "] command=[" command "] version=[" handlerName "[" -
+                "environmentName=" envName2 ",isRedirectable=" bIsRedirectable "]]"
+   testObj~assertEquals(envName1,     "DHENV")
+   testObj~assertEquals(command,    "some command #2")
+   testObj~assertEquals(handlerName,clzHandlerName)
+   testObj~assertEquals(envName2,   "DHENV")
+   testObj~assertEquals(bIsRedirectable, "false", "isRedirectable")
+   say "rc:" rc
+
+   address dhenv 'some command #3'
+   parse var rc "address=[" envName1 "] command=[" command "] version=[" handlerName "[" -
+                "environmentName=" envName2 ",isRedirectable=" bIsRedirectable "]]"
+   testObj~assertEquals(envName1,     "DHENV")
+   testObj~assertEquals(command,    "some command #3")
+   testObj~assertEquals(handlerName,clzHandlerName)
+   testObj~assertEquals(envName2,   "DHENV")
+   testObj~assertEquals(bIsRedirectable, "false", "isRedirectable")
+   say "rc:" rc
+   say
+   say "-"~copies(79)
+
+/* ===================================================================================== */
+-- testing RedirectingHandler1
+   clzHandlerName="rgf.H_850.RedirectingHandler1"
+   jrch=.bsf~new(clzHandlerName)
+   call bsfcommandHandler "add", "rhenv", jrch
+
+   arr=BsfCommandHandler(list)
+   call showJavaHandlers arr
+
+   testObj~assertEquals(2,arr~items, "after adding redirecting command handler #1")
+   parse value arr[2] with "name:" envName "redirectable:" bRedir "handler:" handlerName "@" .
+/*
+say "... envName     ="pp(envName)
+say "... redirectable="pp(bRedir)
+say "... handlerName ="pp(handlerName) "clzHandlerName="pp(clzHandlerName)
+-- */
+   testObj~assertEquals(envName,     "RHENV")
+   testObj~assertEquals(bRedir,      .true)
+   testObj~assertEquals(handlerName, clzHandlerName)
+
+--   call showJavaHandlers arr
+      -- arrays for redirecting
+   in =.array~new
+   out=.array~new
+   err=.array~new
+
+   say "addressing 'rhenv':"
+   address rhenv 'some command #1'
+
+   parse var rc "address=[" envName1 "] command=[" command "] version=[" handlerName "[" -
+                "environmentName=" envName2 ",isRedirectable=" bIsRedirectable "," -
+                "isRedirectionRequested=" bIsRedirectionRequested              "," -
+                "isInputRedirected=" bIsInputRedirected                        "," -
+                "isOutputRedirected=" bIsOutputRedirected                      "," -
+                "isErrorRedirected=" bIsErrorRedirected                        "," -
+                "areOutputAndErrorSameTarget=" bAreOutputAndErrorSameTarget    "]]"
+
+-- rc: address=[RHENV] command=[some command #1] version=[rgf.H_850.RedirectingHandler1[environmentName=RHENV,isRedirectable=true,isRedirectionRequested=false,isInputRedirected=false,isOutputRedirected=false,isErrorRedirected=false,areOutputAndErrorSameTarget=false]]
+
+   testObj~assertEquals(envName1,   "RHENV")
+   testObj~assertEquals(command,    "some command #1")
+   testObj~assertEquals(handlerName,clzHandlerName)
+   testObj~assertEquals(envName2,   "RHENV")
+   testObj~assertEquals(bIsRedirectable, "true", "isRedirectable")
+   testObj~assertEquals(bIsRedirectionRequested, "false", "isRedirectionRequested")
+   testObj~assertEquals(bIsInputRedirected, "false", "isInputRedirected")
+   testObj~assertEquals(bIsOutputRedirected, "false", "isOutputRedirected")
+   testObj~assertEquals(bIsErrorRedirected, "false", "isErrorRedirected")
+   testObj~assertEquals(bAreOutputAndErrorSameTarget, "false", "areOutputAndErrorSameTarget")
+
+
+   address rhenv 'some command #2 in        ' with input using (in)
+   parse var rc "address=[" envName1 "] command=[" command "] version=[" handlerName "[" -
+                "environmentName=" envName2 ",isRedirectable=" bIsRedirectable "," -
+                "isRedirectionRequested=" bIsRedirectionRequested              "," -
+                "isInputRedirected=" bIsInputRedirected                        "," -
+                "isOutputRedirected=" bIsOutputRedirected                      "," -
+                "isErrorRedirected=" bIsErrorRedirected                        "," -
+                "areOutputAndErrorSameTarget=" bAreOutputAndErrorSameTarget    "]]"
+
+-- address=[RHENV] command=[some command #2 in        ] version=[rgf.H_850.RedirectingHandler1[environmentName=RHENV,isRedirectable=true,isRedirectionRequested=true,isInputRedirected=true,isOutputRedirected=false,isErrorRedirected=false,areOutputAndErrorSameTarget=false]]
+
+   testObj~assertEquals(envName1,   "RHENV")
+   testObj~assertEquals(command,    "some command #2 in")
+   testObj~assertEquals(handlerName,clzHandlerName)
+   testObj~assertEquals(envName2,   "RHENV")
+   testObj~assertEquals(bIsRedirectable, "true", "isRedirectable")
+   testObj~assertEquals(bIsRedirectionRequested, "true", "isRedirectionRequested")
+   testObj~assertEquals(bIsInputRedirected, "true", "isInputRedirected")
+   testObj~assertEquals(bIsOutputRedirected, "false", "isOutputRedirected")
+   testObj~assertEquals(bIsErrorRedirected, "false", "isErrorRedirected")
+   testObj~assertEquals(bAreOutputAndErrorSameTarget, "false", "areOutputAndErrorSameTarget")
+
+
+   address rhenv 'some command #3 in/out    ' with input using (in) output using (out)
+   parse var rc "address=[" envName1 "] command=[" command "] version=[" handlerName "[" -
+                "environmentName=" envName2 ",isRedirectable=" bIsRedirectable "," -
+                "isRedirectionRequested=" bIsRedirectionRequested              "," -
+                "isInputRedirected=" bIsInputRedirected                        "," -
+                "isOutputRedirected=" bIsOutputRedirected                      "," -
+                "isErrorRedirected=" bIsErrorRedirected                        "," -
+                "areOutputAndErrorSameTarget=" bAreOutputAndErrorSameTarget    "]]"
+
+-- address=[RHENV] command=[some command #3 in/out    ] version=[rgf.H_850.RedirectingHandler1[environmentName=RHENV,isRedirectable=true,isRedirectionRequested=true,isInputRedirected=true,isOutputRedirected=true,isErrorRedirected=false,areOutputAndErrorSameTarget=false]]
+   testObj~assertEquals(envName1,   "RHENV")
+   testObj~assertEquals(command,    "some command #3 in/out")
+   testObj~assertEquals(handlerName,clzHandlerName)
+   testObj~assertEquals(envName2,   "RHENV")
+   testObj~assertEquals(bIsRedirectable, "true", "isRedirectable")
+   testObj~assertEquals(bIsRedirectionRequested, "true", "isRedirectionRequested")
+   testObj~assertEquals(bIsInputRedirected, "true", "isInputRedirected")
+   testObj~assertEquals(bIsOutputRedirected, "true", "isOutputRedirected")
+   testObj~assertEquals(bIsErrorRedirected, "false", "isErrorRedirected")
+   testObj~assertEquals(bAreOutputAndErrorSameTarget, "false", "areOutputAndErrorSameTarget")
+
+
+
+   address rhenv 'some command #4 in/out/err' with input using (in) output using (out) error using (err)
+   parse var rc "address=[" envName1 "] command=[" command "] version=[" handlerName "[" -
+                "environmentName=" envName2 ",isRedirectable=" bIsRedirectable "," -
+                "isRedirectionRequested=" bIsRedirectionRequested              "," -
+                "isInputRedirected=" bIsInputRedirected                        "," -
+                "isOutputRedirected=" bIsOutputRedirected                      "," -
+                "isErrorRedirected=" bIsErrorRedirected                        "," -
+                "areOutputAndErrorSameTarget=" bAreOutputAndErrorSameTarget    "]]"
+-- address=[RHENV] command=[some command #4 in/out/err] version=[rgf.H_850.RedirectingHandler1[environmentName=RHENV,isRedirectable=true,isRedirectionRequested=true,isInputRedirected=true,isOutputRedirected=true,isErrorRedirected=true,areOutputAndErrorSameTarget=false]]
+   testObj~assertEquals(envName1,   "RHENV")
+   testObj~assertEquals(command,    "some command #4 in/out/err")
+   testObj~assertEquals(handlerName,clzHandlerName)
+   testObj~assertEquals(envName2,   "RHENV")
+   testObj~assertEquals(bIsRedirectable, "true", "isRedirectable")
+   testObj~assertEquals(bIsRedirectionRequested, "true", "isRedirectionRequested")
+   testObj~assertEquals(bIsInputRedirected, "true", "isInputRedirected")
+   testObj~assertEquals(bIsOutputRedirected, "true", "isOutputRedirected")
+   testObj~assertEquals(bIsErrorRedirected, "true", "isErrorRedirected")
+   testObj~assertEquals(bAreOutputAndErrorSameTarget, "false", "areOutputAndErrorSameTarget")
+
+
+   address rhenv 'some command #5    out/err' with                  output using (out) error using (err)
+   parse var rc "address=[" envName1 "] command=[" command "] version=[" handlerName "[" -
+                "environmentName=" envName2 ",isRedirectable=" bIsRedirectable "," -
+                "isRedirectionRequested=" bIsRedirectionRequested              "," -
+                "isInputRedirected=" bIsInputRedirected                        "," -
+                "isOutputRedirected=" bIsOutputRedirected                      "," -
+                "isErrorRedirected=" bIsErrorRedirected                        "," -
+                "areOutputAndErrorSameTarget=" bAreOutputAndErrorSameTarget    "]]"
+-- [address=[RHENV] command=[some command #5    out/err] version=[rgf.H_850.RedirectingHandler1[environmentName=RHENV,isRedirectable=true,isRedirectionRequested=true,isInputRedirected=false,isOutputRedirected=true,isErrorRedirected=true,areOutputAndErrorSameTarget=false]]
+   testObj~assertEquals(envName1,   "RHENV")
+   testObj~assertEquals(command,    "some command #5    out/err")
+   testObj~assertEquals(handlerName,clzHandlerName)
+   testObj~assertEquals(envName2,   "RHENV")
+   testObj~assertEquals(bIsRedirectable, "true", "isRedirectable")
+   testObj~assertEquals(bIsRedirectionRequested, "true", "isRedirectionRequested")
+   testObj~assertEquals(bIsInputRedirected, "false", "isInputRedirected")
+   testObj~assertEquals(bIsOutputRedirected, "true", "isOutputRedirected")
+   testObj~assertEquals(bIsErrorRedirected, "true", "isErrorRedirected")
+   testObj~assertEquals(bAreOutputAndErrorSameTarget, "false", "areOutputAndErrorSameTarget")
+
+
+   address rhenv 'some command #6       /err' with                                     error using (err)
+   parse var rc "address=[" envName1 "] command=[" command "] version=[" handlerName "[" -
+                "environmentName=" envName2 ",isRedirectable=" bIsRedirectable "," -
+                "isRedirectionRequested=" bIsRedirectionRequested              "," -
+                "isInputRedirected=" bIsInputRedirected                        "," -
+                "isOutputRedirected=" bIsOutputRedirected                      "," -
+                "isErrorRedirected=" bIsErrorRedirected                        "," -
+                "areOutputAndErrorSameTarget=" bAreOutputAndErrorSameTarget    "]]"
+-- address=[RHENV] command=[some command #6       /err] version=[rgf.H_850.RedirectingHandler1[environmentName=RHENV,isRedirectable=true,isRedirectionRequested=true,isInputRedirected=false,isOutputRedirected=false,isErrorRedirected=true,areOutputAndErrorSameTarget=false]]
+   testObj~assertEquals(envName1,   "RHENV")
+   testObj~assertEquals(command,    "some command #6       /err")
+   testObj~assertEquals(handlerName,clzHandlerName)
+   testObj~assertEquals(envName2,   "RHENV")
+   testObj~assertEquals(bIsRedirectable, "true", "isRedirectable")
+   testObj~assertEquals(bIsRedirectionRequested, "true", "isRedirectionRequested")
+   testObj~assertEquals(bIsInputRedirected, "false", "isInputRedirected")
+   testObj~assertEquals(bIsOutputRedirected, "false", "isOutputRedirected")
+   testObj~assertEquals(bIsErrorRedirected, "true", "isErrorRedirected")
+   testObj~assertEquals(bAreOutputAndErrorSameTarget, "false", "areOutputAndErrorSameTarget")
+
+
+   address rhenv 'some command #7 in/out=err' with input using (in) output using (out) error using (out)
+   parse var rc "address=[" envName1 "] command=[" command "] version=[" handlerName "[" -
+                "environmentName=" envName2 ",isRedirectable=" bIsRedirectable "," -
+                "isRedirectionRequested=" bIsRedirectionRequested              "," -
+                "isInputRedirected=" bIsInputRedirected                        "," -
+                "isOutputRedirected=" bIsOutputRedirected                      "," -
+                "isErrorRedirected=" bIsErrorRedirected                        "," -
+                "areOutputAndErrorSameTarget=" bAreOutputAndErrorSameTarget    "]]"
+-- address=[RHENV] command=[some command #7 in/out=err] version=[rgf.H_850.RedirectingHandler1[environmentName=RHENV,isRedirectable=true,isRedirectionRequested=true,isInputRedirected=true,isOutputRedirected=true,isErrorRedirected=true,areOutputAndErrorSameTarget=true]]
+   testObj~assertEquals(envName1,   "RHENV")
+   testObj~assertEquals(command,    "some command #7 in/out=err")
+   testObj~assertEquals(handlerName,clzHandlerName)
+   testObj~assertEquals(envName2,   "RHENV")
+   testObj~assertEquals(bIsRedirectable, "true", "isRedirectable")
+   testObj~assertEquals(bIsRedirectionRequested, "true", "isRedirectionRequested")
+   testObj~assertEquals(bIsInputRedirected, "true", "isInputRedirected")
+   testObj~assertEquals(bIsOutputRedirected, "true", "isOutputRedirected")
+   testObj~assertEquals(bIsErrorRedirected, "true", "isErrorRedirected")
+   testObj~assertEquals(bAreOutputAndErrorSameTarget, "true", "areOutputAndErrorSameTarget")
+
+
+   address rhenv 'some command #8 in/out=err' with input using (in) output using (err) error using (err)
+   parse var rc "address=[" envName1 "] command=[" command "] version=[" handlerName "[" -
+                "environmentName=" envName2 ",isRedirectable=" bIsRedirectable "," -
+                "isRedirectionRequested=" bIsRedirectionRequested              "," -
+                "isInputRedirected=" bIsInputRedirected                        "," -
+                "isOutputRedirected=" bIsOutputRedirected                      "," -
+                "isErrorRedirected=" bIsErrorRedirected                        "," -
+                "areOutputAndErrorSameTarget=" bAreOutputAndErrorSameTarget    "]]"
+-- address=[RHENV] command=[some command #8 in/out=err] version=[rgf.H_850.RedirectingHandler1[environmentName=RHENV,isRedirectable=true,isRedirectionRequested=true,isInputRedirected=true,isOutputRedirected=true,isErrorRedirected=true,areOutputAndErrorSameTarget=true]]
+/* --->
+say ".... rc            ="pp(rc)
+say "... envName1       ="pp(envName1)
+say "... command        ="pp(command )
+say "... handlerName    ="pp(handlerName )
+say "... envName2       ="pp(envName2)
+say "... bIsRedirectable="pp(bIsRedirectable)
+say "... isRedirectionRequested="      pp(bIsRedirectionRequested     )
+say "... isInputRedirected="           pp(bIsInputRedirected          )
+say "... isOutputRedirected="          pp(bIsOutputRedirected         )
+say "... isErrorRedirected="           pp(bIsErrorRedirected          )
+say "... areOutputAndErrorSameTarget=" pp(bAreOutputAndErrorSameTarget)
+say
+<-- */
+   testObj~assertEquals(envName1,   "RHENV")
+   testObj~assertEquals(command,    "some command #8 in/out=err")
+   testObj~assertEquals(handlerName,clzHandlerName)
+   testObj~assertEquals(envName2,   "RHENV")
+   testObj~assertEquals(bIsRedirectable, "true", "isRedirectable")
+   testObj~assertEquals(bIsRedirectionRequested, "true", "isRedirectionRequested")
+   testObj~assertEquals(bIsInputRedirected, "true", "isInputRedirected")
+   testObj~assertEquals(bIsOutputRedirected, "true", "isOutputRedirected")
+   testObj~assertEquals(bIsErrorRedirected, "true", "isErrorRedirected")
+   testObj~assertEquals(bAreOutputAndErrorSameTarget, "true", "areOutputAndErrorSameTarget")
+
+
+/* ===================================================================================== */
+-- testing RedirectingHandler2: test access to RexxHandler methods
+
+
+   say "... adding third command handler ..."
+   jrch=.bsf~new("rgf.H_850.RedirectingHandler2")
+   call bsfcommandHandler "add", "testRexxHandler", jrch
+
+   arr=BsfCommandHandler(list)
+   testObj~assertEquals(3,arr~items)
+   call showJavaHandlers arr
+
+   say
+   rgfWasHere="tsk, rgf Was here!"
+   address testRexxHandler "getContextVariable rgfWasHere"
+   say "rc:" pp(rc) "rgfWasHere:" pp(rgfWasHere)
+   say
+
+   address testRexxHandler "setContextVariable rgfWasHere tsk_test_the_command_handler"
+   say "rc:" pp(rc) "rgfWasHere:" pp(rgfWasHere)
+   say
+
+   address testRexxHandler "setContextVariableToNil rgfWasHere"
+   say "rc:" pp(rc) "rgfWasHere:" pp(rgfWasHere)
+   say
+
+   address testRexxHandler "dropContextVariable rgfWasHere"
+   say "rc:" pp(rc) "rgfWasHere:" pp(rgfWasHere)
+   say
+
+   address testRexxHandler "getLocalEnvironment"
+   say "rc:" pp(rc)
+   say
+
+   address testRexxHandler "getGlobalEnvironment"
+   say "rc:" pp(rc)
+   say
+
+
+
+      -- the following command is not defined for this handler which will raise 40.900
+   testObj~expectSyntax(40.900)
+   address testRexxHandler  'some   command  #1 '
+   say "rc:" rc
+/*
+   address disco 'some command #2 in        ' with input using (in)
+   say "rc:" rc
+   address disco 'some command #3 in/out    ' with input using (in) output using (out)
+   say "rc:" rc
+   address disco 'some command #4 in/out/err' with input using (in) output using (out) error using (err)
+   say "rc:" rc
+   address disco 'some command #5    out/err' with                  output using (out) error using (err)
+   say "rc:" rc
+   address disco 'some command #6       /err' with                                     error using (err)
+   say "rc:" rc
+   address disco 'some command #7 in/out=err' with input using (in) output using (out) error using (out)
+   say "rc:" rc
+   address disco 'some command #8 in/out=err' with input using (in) output using (err) error using (err)
+   say "rc:" rc
+*/
+   say
+   say "-"~copies(79)
+
+
+::requires bsf.cls
+
+::routine showJavaHandlers
+  use arg arr
+  say "showJavaHandlers:"
+  indent="09"x
+  do counter c val over arr
+     say indent c":" val
+  end
+::END
