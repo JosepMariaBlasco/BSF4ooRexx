@@ -976,10 +976,9 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 //  #define DEBUG_SEND_MESSAGE_TO_REXX_OBJECT
 //  #define DEBUG_CREATE_REXX_EXCEPTION
 
-#define DEBUG_COMMAND_HANDLER       // 2022-08-20: allow for debugging command handler interactions
+// #define DEBUG_COMMAND_HANDLER       // 2022-08-20: allow for debugging command handler interactions
 // #define DEBUG_JNI
-
-#define DEBUG_CREATE_HALT_TERMINATE
+// #define DEBUG_CREATE_HALT_TERMINATE
 
 
 
@@ -1094,21 +1093,21 @@ thread_id_t  RgfGetTID();
 
 #if defined (BSF4REXX_32_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20220822 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220823 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20220822 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220823 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #elif defined (BSF4REXX_64_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20220822 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220823 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20220822 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220823 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #else
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20220822 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220823 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20220822 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220823 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #endif
 
@@ -8637,7 +8636,7 @@ void RexxEntry bsfUnloader (RexxThreadContext * rtc)
 JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCreateInterpreterInstance
   (JNIEnv *env, jobject jobj, jobjectArray joptions)
 {
-#if defined(RGF_JNI_RII) || defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
+#if defined(RGF_JNI_RII) || defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER) || defined (DEBUG_COMMAND_HANDLER)
     thread_id_t thisTid=RgfGetTID();
 
     fprintf(stderr, "--> arrived: .._jniRexxCreateInterpreterInstance(...), thisTid=[%lu]\n", (unsigned long) thisTid);
@@ -8711,7 +8710,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
         if ( j_direct_environments != NULL) {
             nr_direct_environments=env->GetArrayLength( j_direct_environments );
             countOptions++;
-#if  defined (RGF_COMMAND_HANDLER)
+#if  defined (RGF_COMMAND_HANDLER) || defined (DEBUG_COMMAND_HANDLER)
     fprintf(stderr, "_jniRexxCreateInterpreterInstance %d: nr_direct_environments=[%d] countOptions=[%d]\n",
             __LINE__, nr_direct_environments, countOptions);
 #endif
@@ -8722,7 +8721,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
         if ( j_redirecting_environments != NULL) {
             nr_redirecting_environments=env->GetArrayLength( j_redirecting_environments );
             countOptions++;
-#if  defined (RGF_COMMAND_HANDLER)
+#if  defined (RGF_COMMAND_HANDLER) || defined (DEBUG_COMMAND_HANDLER)
     fprintf(stderr, "_jniRexxCreateInterpreterInstance %d: nr_redirecting_environments=[%d] countOptions=[%d]\n",
             __LINE__, nr_redirecting_environments, countOptions);
 #endif
@@ -8767,7 +8766,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
     }
     options[1].option    = c_external_call_extensions;
 
-#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
+#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER) || defined (DEBUG_COMMAND_HANDLER)
     fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): idx=[1], .optionName=[%s], .option=[%.80s]\n",
                     options[1].optionName, (CSTRING) options[1].option);
 #endif
@@ -8786,7 +8785,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
         options[idx].optionName=INITIAL_ADDRESS_ENVIRONMENT;
         options[idx].option=c_initial_address_environment;
 
-#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
+#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER) || defined (DEBUG_COMMAND_HANDLER)
     fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): idx=[%ld], .optionName=[%s], .option=[%.80s]\n",
                     idx, options[idx].optionName, (CSTRING) options[idx].option);
 #endif
@@ -8819,7 +8818,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
             options[idx].option=JNU_GetStringNativeChars(env, jstr);
             env->DeleteLocalRef(jstr);
 
-#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
+#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER) || defined (DEBUG_COMMAND_HANDLER)
     fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): required library, idx=[%ld], .optionName=[%s] | i=[%d]: .option=[%s]\n",
                     idx, options[idx].optionName, i, (CSTRING) options[idx].option);
 #endif
@@ -8841,7 +8840,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
         {
             exits[i].handler=(RexxContextExitHandler *) rexx_exit_handler_entry;   // point to generic exit handler
             exits[i].sysexit_code=tmpArrExits[i];
-#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
+#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER) || defined (DEBUG_COMMAND_HANDLER)
     fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): exit # [%d], sysexit_code=[%d]\n",
                     i, exits[i].sysexit_code);
 #endif
@@ -8852,7 +8851,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
 
         options[idx].optionName=DIRECT_EXITS;
         options[idx].option=(void *)exits;
-#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
+#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER) || defined (DEBUG_COMMAND_HANDLER)
     fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): idx=[%ld], .optionName=[%s]\n",
                     idx, options[idx].optionName);
 #endif
@@ -8876,7 +8875,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
             environments[i].name=JNU_GetStringNativeChars(env, jstr);
             env->DeleteLocalRef(jstr);
 
-#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
+#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER) || defined (DEBUG_COMMAND_HANDLER)
     fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): environment # [%d], name=[%s]\n",
                     i, environments[i].name);
 #endif
@@ -8885,7 +8884,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
 
         options[idx].optionName=DIRECT_ENVIRONMENTS;
         options[idx].option=(void *)environments;
-#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
+#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER) || defined (DEBUG_COMMAND_HANDLER)
     fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): idx=[%ld], .optionName=[%s]\n",
                     idx, options[idx].optionName);
 #endif
@@ -8899,7 +8898,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
             // allocate necessary memory for RexxRedirectingEnvironment
         long tmpSize=(nr_redirecting_environments+1)*sizeof(RexxRedirectingEnvironment);
         redirectingEnvironments=(RexxRedirectingEnvironment *) malloc(tmpSize);
-        memset(environments,0,tmpSize);
+        memset(redirectingEnvironments,0,tmpSize);
 
         for (int i=0; i<nr_redirecting_environments; i++)
         {
@@ -8908,7 +8907,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
             redirectingEnvironments[i].name=JNU_GetStringNativeChars(env, jstr);
             env->DeleteLocalRef(jstr);
 
-#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
+#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER) || defined (DEBUG_COMMAND_HANDLER)
     fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): redirecting environment # [%d], name=[%s]\n",
                     i, redirectingEnvironments[i].name);
 #endif
@@ -8917,7 +8916,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
 
         options[idx].optionName=REDIRECTING_ENVIRONMENTS;
         options[idx].option=(void *)redirectingEnvironments;
-#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
+#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER) || defined (DEBUG_COMMAND_HANDLER)
     fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): idx=[%ld], .optionName=[%s]\n",
                     idx, options[idx].optionName);
 #endif
@@ -8928,7 +8927,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
     options[idx].optionName=NULL;
 
 
-#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
+#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER) || defined (DEBUG_COMMAND_HANDLER)
     fprintf(stderr, "\n===> _jniRexxCreateInterpreterInstance(): iterating over all options, display option names, idx=[%ld], optionCount=[%d]:\n", idx, countOptions);
 
     {
@@ -8940,7 +8939,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
 #endif
 
 
-#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
+#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER) || defined (DEBUG_COMMAND_HANDLER)
     fprintf(stderr, "\n===> _jniRexxCreateInterpreterInstance(): before creating RII, iniEnv=[%s], callPath=[%s], callExt=[%s], #opts=[%d], #req_lib=[%lu], #exits=[%lu], #env=[%lu]\n",
             c_initial_address_environment, c_external_call_path, c_external_call_extensions, countOptions,
             nr_load_required_library, nr_direct_exits, nr_direct_environments);
@@ -8962,7 +8961,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
     {
 
         // RgfPointer2String(instance, c_rii_ID);  // create a string
-#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
+#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER) || defined (DEBUG_COMMAND_HANDLER)
         fprintf(stderr, "===---=== .._jniRexxCreateInterpreterInstance(...), thisTid=[%lu], CREATED: c_rii_ID={%p]\n", (unsigned long) thisTid, instance);
         fflush(stderr);
 #endif
@@ -9002,7 +9001,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
 
         RgfPointer2String(instance, c_rii_ID);  // create a string
 
-#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
+#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER) || defined (DEBUG_COMMAND_HANDLER)
         fprintf(stderr, "===---=== .._jniRexxCreateInterpreterInstance(...), thisTid=[%lu], CREATED: c_rii_ID=[%p]=[%s]\n", (unsigned long) thisTid, instance, c_rii_ID);
         fflush(stderr);
 #endif
@@ -9067,7 +9066,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
 
     free(options);
 
-#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
+#if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER) || defined (DEBUG_COMMAND_HANDLER)
     fprintf(stderr, "<-- returning from: .._jniRexxCreateInterpreterInstance(...), thisTid=[%lu], c_rii_ID=[%.256s]\n",
                         (unsigned long) thisTid, c_rii_ID);
     fflush(stderr);

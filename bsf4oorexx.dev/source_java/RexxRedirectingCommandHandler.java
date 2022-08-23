@@ -167,6 +167,7 @@ public interface RexxRedirectingCommandHandler extends RexxCommandHandler
 // System.err.println("RRCH: readInputAsByteArray(slot) ...");
         // return ((RexxAndJava) arrSlot[0]).jniRCH_ReadAsByteArray(arrSlot);
         byte []returnVal= ((RexxAndJava) arrSlot[0]).jniRCH_ReadAsByteArray(arrSlot);
+// System.err.println("RRCH: readInputAsByteArray(slot). returnVal.length=["+(returnVal!=null ? returnVal.length : null)+"]");
 
         return returnVal;
     }

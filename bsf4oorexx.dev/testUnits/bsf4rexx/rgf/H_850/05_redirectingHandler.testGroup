@@ -52,14 +52,21 @@ return testResult
       that it is set as BSF.CLS routines and methods depend on that */
     if bsf("bsfPrefixReturnValue")=0 then
        call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
-
+-- signal on syntax  -- for debugging
     -- use BSF implementation
     bm = .bsf~new("org.apache.bsf.BSFManager")
     re = bm~loadScriptingEngine("rexx")
+    say re~getRexxConfiguration~toString
       -- we could use getRexxConfiguration() and configure the command handlers
       -- to be preexistent
     vArg = .bsf~new("java.util.Vector")~~add(self) -- add this object
     res=re~apply(.context~name, 0, 0, .resources~test_01_redirectingHandler_code~toString, .nil, vArg)
+    return
+syntax:
+    co=condition('o')
+    say ppJavaExceptionChain(co,.true)
+    say "---"
+    raise propagate
 
 
 
@@ -480,6 +487,29 @@ say
    -- readInputBufferAsByteArray (entry 1)
    address testRexxHandler "secret 2 repeatedly" with input using (inS10)
    testObj~assertEquals(rc,str10basis~changeStr("_",""))
+
+   -- test binary reads and binary writes (will use inputRead, writeOutput, errorOutput
+   in~empty
+   out~empty
+   err~empty
+   do i=0 to 255
+      in[i+1]= i~d2c ~copies(500)  -- create binary data
+   end
+   in~append( xrange('00'x, 'FF'x) ~copies(4) )
+
+   do i=1 to in~items
+      out~empty
+      err~empty
+      address testRexxHandler "secretBinary" with input using (in) output using (out)
+      do k=1 to out~items
+         testObj~assertEquals(in[k],out[k],"out: k="k)
+      end
+         -- test whether output is identical to input after running command
+      address testRexxHandler "secretBinary" with input using (in) error using (err)
+      do k=1 to out~items
+         testObj~assertEquals(in[k],err[k],"err: k="k)
+      end
+   end
 
       -- the following command is not defined for this handler which will raise 40.900
    testObj~expectSyntax(40.900)

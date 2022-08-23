@@ -277,6 +277,7 @@ public interface RexxHandler
      * @return a {@link RexxProxy} for the Rexx <code>.local</code> object
      */
     default Object getLocalEnvironment(Object slot)
+    // static Object getLocalEnvironment(Object slot)
     {
         Object [] arrSlot=(Object[]) slot;
         return ((RexxAndJava) arrSlot[0]).jniGetLocalEnvironment(arrSlot);

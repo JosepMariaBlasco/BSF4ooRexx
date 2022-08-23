@@ -111,6 +111,22 @@ public class RedirectingHandler2 implements RexxRedirectingCommandHandler
                   }
 
 
+                    // test reading and writing binary data
+            case "SECRETBINARY":   // test reading input into byte arrays, write byte array to output
+                  byte [] arrByte = null;
+                  for (arrByte=readInputAsByteArray(slot); arrByte!=null; arrByte=readInputAsByteArray(slot))
+                  {
+                      if (isOutputRedirected(slot))
+                      {
+                          writeOutput(slot,arrByte);
+                      }
+                      else
+                      {
+                          writeError(slot,arrByte);
+                      }
+                  }
+                  return "0";
+
             case "GETVERSION":
                  return "address=["+address+"] command=["+command+"] version=["+this.toString(slot,address)+"]";
 
