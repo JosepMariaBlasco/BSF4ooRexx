@@ -26,26 +26,6 @@ return testResult
 
 ::class "test850rediretingHandler" subclass ooTestCase public
 
-
-/* --
-::method setup
-  -- make the classes available in this Rexx instance via .local, such that calls
-  -- from native (no Rexx context) can succeed; note: PUBLIC would not work in this
-  -- context as the native side in this case would only get a ThreadContext
-  .local~class_level1=.class_level1
-  .local~class_level2=.class_level2
-  .local~class_level3=.class_level3
-  .local~class_level4=.class_level4
-
-::method teardown
-  -- remove the .local class object entries that are only needed for this test group
-  .local~removeEntry("class_level1")
-  .local~removeEntry("class_level2")
-  .local~removeEntry("class_level3")
-  .local~removeEntry("class_level4")
--- */
-
-
 ::method "test_01_redirectingHandler"
    /* due to the naming in this testgroup, this method will be the first that gets
       run; as previous tests may have changed the "bsfPrefixReturnValue", make sure

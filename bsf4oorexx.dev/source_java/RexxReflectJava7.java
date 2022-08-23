@@ -1568,6 +1568,12 @@ System.err.println("... reflectMethod(): trying method, using method name ["+tmp
      * This method will process all default methods of an interface and {@link #processMethod} will
      * get invoked. The reflection process will take all interface ancestors into account.
      *
+     * <br>There is a problem using Java Proxy for default methods (as of 2022-08-23):
+     *     <https://stackoverflow.com/questions/26206614/java8-dynamic-proxy-and-default-methods>.
+     *     (For allowing Rexx direct and redirecting command handlers to be implementable in Rexx
+     *     with BSF4ooRexx the solution will be to define abstract classes for each kind to be used
+     *     instead of the respecitve interface classes.)
+     *
      * @param tmpClz the interface class object to process
      * @param rru the {@link RexxReflectUtil} object that contains all the necessary information for the reflection
      */

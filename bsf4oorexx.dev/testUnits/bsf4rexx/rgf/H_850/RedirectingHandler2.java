@@ -2,26 +2,21 @@ package rgf.H_850;
 import org.rexxla.bsf.engines.rexx.*;
 
 // purpose allow access tests to RexxHandler default methods (now available via inheritance)
-
-
 public class RedirectingHandler2 implements RexxRedirectingCommandHandler
 {
     // entry to this command handler
     public Object handleCommand(Object slot, String address, String command)
     {
-
 // System.err.println("address=["+address+"] command=["+command+"] version=["+this.toString(slot,address)+"]");
 
         // split at (and consume) whitespace
         String [] arrCommand = command.split("\\p{javaWhitespace}+");
-
-        String cmd = arrCommand[0].toUpperCase();   // split on whitespace
-
+        String cmd = arrCommand[0].toUpperCase();       // get command, uppercase it
         if (arrCommand.length==0 || cmd.length()==0)    // command omitted, show help
         {
-            cmd="?";
+            cmd="?";    // default to help command ("?" or synonym "help")
         }
-
+        // excercise the default methods from RexxRedirectingCommandHandler or RexxHandler
         switch (cmd)
         {
             case "DROPCONTEXTVARIABLE":
@@ -128,7 +123,8 @@ public class RedirectingHandler2 implements RexxRedirectingCommandHandler
                   return "0";
 
             case "GETVERSION":
-                 return "address=["+address+"] command=["+command+"] version=["+this.toString(slot,address)+"]";
+                // toString(slot,address) method is a default method of RexxRedirectingCommandHandler interface
+                 return "address=["+address+"] command=["+command+"] version=["+toString(slot,address)+"]";
 
             case "?":
             case "HELP":
@@ -226,7 +222,6 @@ public class RedirectingHandler2 implements RexxRedirectingCommandHandler
                 raiseException(slot, 40900, msg);
                 return null;
         }
-
     }
 }
 

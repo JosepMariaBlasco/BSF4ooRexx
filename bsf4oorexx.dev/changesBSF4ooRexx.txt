@@ -1,4 +1,63 @@
 
+-------------------------------------- 2022-08-23 ----------------------------------
+-  ranches/850/bsf4oorexx.dev/bin/BSF.CLS
+   ranches/850/bsf4oorexx.dev/source_cc/BSF4ooRexx.cc
+   ranches/850/bsf4oorexx.dev/source_cc/lib/BSF4ooRexx.dll-64-amd64
+   ranches/850/bsf4oorexx.dev/source_java/RexxHandler.class
+   ranches/850/bsf4oorexx.dev/source_java/RexxHandler.java
+   ranches/850/bsf4oorexx.dev/source_java/RexxRedirectingCommandHandler.java
+   ranches/850/bsf4oorexx.dev/testUnits/bsf4rexx/rgf/H_850/05_redirectingHandler.testGroup
+   ranches/850/bsf4oorexx.dev/testUnits/bsf4rexx/rgf/H_850/RedirectingHandler2.class
+   ranches/850/bsf4oorexx.dev/testUnits/bsf4rexx/rgf/H_850/RedirectingHandler2.java
+   branches/850/bsf4oorexx.dev/testUnits/bsf4rexx/rgf/H_850/01_sendMailScoped.testGroup (new)
+   branches/850/bsf4oorexx.dev/testUnits/bsf4rexx/rgf/H_850/06_redirectingHandler_preconfigured.testGroup (new)
+
+        - finalized implementation, adding new testgroups. Implementation of SendmailScoped
+          and command handlers regarded to be complete and tested
+
+- branches/850/bsf4oorexx.dev/source_java/AbstractDirectCommandHandler.java (new)
+  branches/850/bsf4oorexx.dev/source_java/AbstractRedirectingCommandHandler.java (new)
+
+        - added to allow command handlers to be implemented in ooRexx as well
+
+-------------------------------------- 2022-08-22 ----------------------------------
+
+-  branches/850/bsf4oorexx.dev/testUnits/bsf4rexx/rgf/H_850/05_redirectingHandler.testGroup
+   branches/850/bsf4oorexx.dev/testUnits/bsf4rexx/rgf/H_850/DirectHandler1.java
+   branches/850/bsf4oorexx.dev/testUnits/bsf4rexx/rgf/H_850/RedirectingHandler1.java
+   branches/850/bsf4oorexx.dev/testUnits/bsf4rexx/rgf/H_850/RedirectingHandler2.java
+
+        - preparing testunits for command handler
+
+-  branches/850/bsf4oorexx.dev/source_java/RexxCommandHandler.java
+   branches/850/bsf4oorexx.dev/source_java/RexxExitHandler.java
+   branches/850/bsf4oorexx.dev/source_java/RexxHandler.java
+
+        - turning RexxHandler from abstract to interface, redefining the
+          static methods to default (instance) interface methods, rooting
+          RexxCommandHandler and RexxExitHandler to RexxHandler such that all these
+          utility methods (like setting, dropping context variables, getting access
+          to .nil, .local, .environment etc.) become directly available to the
+          handlers
+
+-------------------------------------- 2022-08-20 ----------------------------------
+
+-  branches/850/bsf4oorexx.dev/bin/BSF.CLS
+   branches/850/bsf4oorexx.dev/cmpj.cmd
+   branches/850/bsf4oorexx.dev/source_cc/BSF4ooRexx-32.def
+   branches/850/bsf4oorexx.dev/source_cc/BSF4ooRexx-64.def
+   branches/850/bsf4oorexx.dev/source_cc/BSF4ooRexx.cc
+   branches/850/bsf4oorexx.dev/source_cc/org_rexxla_bsf_engines_rexx_RexxAndJava.h
+   branches/850/bsf4oorexx.dev/source_java/RexxAndJava.java
+   branches/850/bsf4oorexx.dev/source_java/RexxCommandHandler.java
+   branches/850/bsf4oorexx.dev/source_java/RexxConfiguration.java
+   branches/850/bsf4oorexx.dev/source_java/org_rexxla_bsf_engines_rexx_RexxAndJava.h
+   branches/850/bsf4oorexx.dev/source_java/RexxRedirectingCommandHandler.java (new)
+
+        - adding command handlers at runtime, support for redirecting command handlers
+        - allow using RexxConfiguration to allow to configure redirecting command
+          handlers as well (direct command handlers have been supported since 2012)
+
 -------------------------------------- 2022-08-16 ----------------------------------
 
 -  branches/850/bsf4oorexx.dev/source_cc/BSF4ooRexx.cc
@@ -14,7 +73,6 @@
           affected programs
 
         - added a new test group to test the new API
-
 
 -------------------------------------- 2022-08-11 ----------------------------------
 
@@ -39,10 +97,7 @@
           branches/850/samples/JavaFX/fxml_27/demoTableView.fxml
           branches/850/samples/JavaFX/fxml_27/demoTableView.rex
 
-
-
 -------------------------------------- 2022-08-10 ----------------------------------
-
 
 - branches/461, branches/850 created
 
