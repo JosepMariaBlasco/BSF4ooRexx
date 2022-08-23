@@ -52,7 +52,7 @@ public interface RexxHandler
 {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change. */
-    final static public String version = "1.20220822";
+    final static public String version = "850.20220822";
 
 
     /** Raises a condition in the current Rexx thread, pass-through method to the Rexx API, which

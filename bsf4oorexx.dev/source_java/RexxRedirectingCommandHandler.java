@@ -41,7 +41,7 @@ public interface RexxRedirectingCommandHandler extends RexxCommandHandler
 {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change. */
-    final static public String version = "2.20220822";
+    final static public String version = "850.20220822";
 
     // define constants for indexing the BitSet
     final static int IS_REDIRECTION_REQUESTED         =  0;
@@ -153,7 +153,7 @@ public interface RexxRedirectingCommandHandler extends RexxCommandHandler
     }
 
     /** Reads the next line from input, does not apply a codepage translation to Java but
-     *  returns the data as a byte array.
+     *  returns the data as a byte array. Intended for fetching binary data.
      *
      * @return the line read from input or null if nothing could be read
      */
@@ -208,6 +208,7 @@ public interface RexxRedirectingCommandHandler extends RexxCommandHandler
     }
 
     /** Writes all byte[] data as a single line, does not apply a codepage translation.
+     * Intended for writing binary data.
      *
      * @param slot opaque argument supplied to the handler methods by the Rexx native
      *             code interface
@@ -264,6 +265,7 @@ public interface RexxRedirectingCommandHandler extends RexxCommandHandler
     }
 
     /** Writes all byte[] data as a single line, does not apply a codepage translation.
+     * Intended for writing binary data.
      *
      * @param slot opaque argument supplied to the handler methods by the Rexx native
      *             code interface

@@ -43,7 +43,7 @@ public interface RexxCommandHandler extends RexxHandler
 {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change. */
-    final static public String version = "2.20220818";
+    final static public String version = "850.20220818";
 
     /** Indicates that the command handler is not redirectable (a new feature
      *  in ooRexx 5.0).

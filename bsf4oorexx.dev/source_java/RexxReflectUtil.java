@@ -39,7 +39,7 @@ import        java.lang.reflect.Modifier;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
- * @version 1.04, 2022-07-14
+ * @version 1.05, 2022-07-14
  * @since BSF4ooRexx 600 (implementation started: 2018-01-05)
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
  */
@@ -57,6 +57,9 @@ import        java.lang.reflect.Modifier;
                            truncated for better legibility in error messages
         2022-07-14, rgf  - changed RexxReflectUtil.loadClass() to not register the
                             loaded class with the BSF registry, must be done by caller
+        2022-08-23, rgf  - truncate Rexx argument # 4 to 65 characters; this argument may
+                           be large (e.g. a program) such that its output makes debugging
+                           harder rather than easier
 */
 
 
@@ -705,8 +708,8 @@ if (bDebug) System.err.println("in ... # i: SUPPLIER branch...");
 
             if (distance==1)        // normal argument, no prepended type informaion
             {
-                // dump.append("Rexx argument=["+truncString(this.rexxArgs[3+i],45)+"]");
-                dump.append("Rexx argument=["+this.rexxArgs[3+i]+"]");
+                dump.append("Rexx argument=["+truncString(this.rexxArgs[3+i],65)+"]");
+                // dump.append("Rexx argument=["+this.rexxArgs[3+i]+"]");
             }
             else
             {
