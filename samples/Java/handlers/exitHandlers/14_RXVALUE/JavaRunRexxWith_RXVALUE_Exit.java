@@ -26,6 +26,15 @@
                             if that particular Rexx interpreter instance is not needed anymore,
                             such that its reserved system resources can be reclaimed
              2022-08-06, rgf, explicitly do System.exit(0);
+             2022-08-24, - adjust for having changed RexxHandler to a superclass interface
+                           (serving as the root interface class for all Rexx handler types)
+                           in 850 and the 461 static methods to interface default methods;
+                           this way invoking all default methods becomes simpler (no need
+                           to refer explicitly to the class RexxHandler, normal inheritance
+                           rules will take place)
+                         - all Rexx exit constants (e.g. RXEXIT_HANDLED, RXEXIT_NOT_HANDLED, ...)
+                           from RexxHandlerExit are now available via inheritance, hence no
+                           need to explicitly refer to the RexxExitHandler class anymore
 */
 
 import org.apache.bsf.*;
@@ -48,7 +57,7 @@ public class JavaRunRexxWith_RXVALUE_Exit implements RexxExitHandler
         System.err.println("default rexxconf=["+rexxconf+"]\n");
 
             // add system exits
-        rexxconf.addExitHandler(RexxExitHandler.RXVALUE, new JavaRunRexxWith_RXVALUE_Exit() );
+        rexxconf.addExitHandler(RXVALUE, new JavaRunRexxWith_RXVALUE_Exit() );
 
         System.err.println("edited  rexxconf=["+rexxconf+"]\n===> Java - starting Rexx program ===>");
 
@@ -92,15 +101,15 @@ public class JavaRunRexxWith_RXVALUE_Exit implements RexxExitHandler
             else    // set to new value
             {
                 System.err.println(", returning supplied value as new value ---> ["+value+"] <---");
-                RexxHandler.setContextVariable(slot,variable_name,value);
+                setContextVariable(slot,variable_name,value);
                 // parmBlock[3]=obj;       // return value
             }
             System.err.println();
-            return RexxExitHandler.RXEXIT_HANDLED;
+            return RXEXIT_HANDLED;
         }
 
         System.err.println(": unknown selector, not handling this exit");
-        return RexxExitHandler.RXEXIT_NOT_HANDLED;
+        return RXEXIT_NOT_HANDLED;
     }
 }
 

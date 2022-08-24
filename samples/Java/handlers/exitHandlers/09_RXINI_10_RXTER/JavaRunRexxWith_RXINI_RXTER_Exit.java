@@ -26,6 +26,16 @@
                             if that particular Rexx interpreter instance is not needed anymore,
                             such that its reserved system resources can be reclaimed
              2022-08-06, rgf, explicitly do System.exit(0);
+             2022-08-24, - adjust for having changed RexxHandler to a superclass interface
+                           (serving as the root interface class for all Rexx handler types)
+                           in 850 and the 461 static methods to interface default methods;
+                           this way invoking all default methods becomes simpler (no need
+                           to refer explicitly to the class RexxHandler, normal inheritance
+                           rules will take place)
+                         - all Rexx exit constants (e.g. RXEXIT_HANDLED, RXEXIT_NOT_HANDLED, ...)
+                           from RexxHandlerExit are now available via inheritance, hence no
+                           need to explicitly refer to the RexxExitHandler class anymore
+
 */
 
 import org.apache.bsf.*;
@@ -47,8 +57,8 @@ public class JavaRunRexxWith_RXINI_RXTER_Exit implements RexxExitHandler
             // add system exits
             // we handle RXINI and RXTER by the same handler, i.e. this instance
         JavaRunRexxWith_RXINI_RXTER_Exit obj=new JavaRunRexxWith_RXINI_RXTER_Exit(rexxEngine, rexxConf);
-        rexxConf.addExitHandler(RexxExitHandler.RXINI, obj );
-        rexxConf.addExitHandler(RexxExitHandler.RXTER, obj );
+        rexxConf.addExitHandler(RXINI, obj );
+        rexxConf.addExitHandler(RXTER, obj );
 
 
         // invoke the interpreter and run the Rexx program
@@ -97,7 +107,7 @@ public class JavaRunRexxWith_RXINI_RXTER_Exit implements RexxExitHandler
     {
         counter++;
 
-        if (exitNumber==RexxExitHandler.RXINI)
+        if (exitNumber==RXINI)
         {
             RXINI_count++;
             System.err.println("(Java-side) [RXINI_exit] exitNumber=["+exitNumber+"] subFunction=["+subFunction+"], setting Rexx context variable 'RXSIO_START' to a new GregorianCalendar() value, counter=["+counter+"], RXINI_count=["+RXINI_count+"]");
@@ -113,7 +123,7 @@ public class JavaRunRexxWith_RXINI_RXTER_Exit implements RexxExitHandler
                 old=rexxConf.setExitHandler(exitNumber, null);
 
                     // now set Rexx variable to a Java object (will be wrapped up appropriately)
-                RexxHandler.setContextVariable(slot, "RXINI_START", new GregorianCalendar());
+                setContextVariable(slot, "RXINI_START", new GregorianCalendar());
 
                     // reactivate RXINI/RXTER exits again
                 old=rexxConf.setExitHandler(exitNumber, old);
@@ -121,22 +131,22 @@ public class JavaRunRexxWith_RXINI_RXTER_Exit implements RexxExitHandler
             catch (Throwable t) {}
         }
 
-        else if (exitNumber==RexxExitHandler.RXTER)
+        else if (exitNumber==RXTER)
         {
             RXTER_count++;
             System.err.println("(Java-side) [RXTER_exit] exitNumber=["+exitNumber+"] subFunction=["+subFunction+"], fetching Rexx context variable 'RXINI_START' to calculate duration, counter=["+counter+"], RXTER_count=["+RXTER_count+"]");
             GregorianCalendar gcEnd  =new GregorianCalendar();
-            Object gcOStart=RexxHandler.getContextVariable(slot, "RXINI_START");
+            Object gcOStart=getContextVariable(slot, "RXINI_START");
 
                 // NOTE: it may be the case that this handler is invoked many times before
                 //       our Rexx program runs; in that case the BSF support has not been
                 //       set up on the Rexx side and hence the value returned from Rexx
                 //       is the beanName (a String), instead of the Java object
-            Object oStart=RexxHandler.getContextVariable(slot, "RXINI_START");
+            Object oStart=getContextVariable(slot, "RXINI_START");
             GregorianCalendar gcStart=null;
             if (oStart instanceof GregorianCalendar)    // o.k. infrastructure fully initialized, we received the pure Java object
             {
-                gcStart=(GregorianCalendar) RexxHandler.getContextVariable(slot, "RXINI_START");
+                gcStart=(GregorianCalendar) getContextVariable(slot, "RXINI_START");
             }
 
             else if (oStart instanceof String)   // is String a beanName, if so try to fetch bean from BSF registry
@@ -165,10 +175,10 @@ public class JavaRunRexxWith_RXINI_RXTER_Exit implements RexxExitHandler
         else
         {
             System.err.println("(Java-side) ===> [RXINI_RXTER_exit] unhandled exit by this handler, counter=["+counter+"], RXINI_count=["+RXINI_count+"], RXTER_count=["+RXTER_count+"] <===");
-            return RexxExitHandler.RXEXIT_NOT_HANDLED;
+            return RXEXIT_NOT_HANDLED;
         }
 
-        return RexxExitHandler.RXEXIT_HANDLED;
+        return RXEXIT_HANDLED;
     }
 }
 

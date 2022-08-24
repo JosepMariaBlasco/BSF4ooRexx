@@ -26,6 +26,15 @@
                             if that particular Rexx interpreter instance is not needed anymore,
                             such that its reserved system resources can be reclaimed
              2022-08-06, rgf, explicitly do System.exit(0);
+             2022-08-24, - adjust for having changed RexxHandler to a superclass interface
+                           (serving as the root interface class for all Rexx handler types)
+                           in 850 and the 461 static methods to interface default methods;
+                           this way invoking all default methods becomes simpler (no need
+                           to refer explicitly to the class RexxHandler, normal inheritance
+                           rules will take place)
+                         - all Rexx exit constants (e.g. RXEXIT_HANDLED, RXEXIT_NOT_HANDLED, ...)
+                           from RexxHandlerExit are now available via inheritance, hence no
+                           need to explicitly refer to the RexxExitHandler class anymore
 */
 
 import org.apache.bsf.*;
@@ -49,7 +58,7 @@ public class JavaRunRexxWith_RXTRC_Exit implements RexxExitHandler
         System.err.println("default rexxConf=["+rexxConf+"]\n");
 
             // add system exits
-        rexxConf.addExitHandler(RexxExitHandler.RXTRC, new JavaRunRexxWith_RXTRC_Exit() );
+        rexxConf.addExitHandler(RXTRC, new JavaRunRexxWith_RXTRC_Exit() );
 
         System.err.println("edited  rexxConf=["+rexxConf+"]\n===> Java - starting Rexx program ===>");
 
@@ -72,13 +81,13 @@ public class JavaRunRexxWith_RXTRC_Exit implements RexxExitHandler
         boolean flag[]=(boolean[]) parmBlock[0];    // fetch flag array
         System.err.print("(Java-side) [RXTRC_exit] exitNumber=["+exitNumber+"] subFunction=["+subFunction+"], counter: "+counter);
 
-        System.err.print(" - 'traceVar'=["+RexxHandler.getContextVariable(slot, "traceVar")+"]");
+        System.err.print(" - 'traceVar'=["+getContextVariable(slot, "traceVar")+"]");
         System.err.print(", _RXTRTST=1: flag[0]=["+flag[0]+"]");
 
         if (subFunction==1)
         {
             System.err.print(", _RXTRTST=1: flag[0]=["+flag[0]+"]");
-            String clearVar=(String) RexxHandler.getContextVariable(slot, "traceVar");
+            String clearVar=(String) getContextVariable(slot, "traceVar");
             if ( clearVar.compareTo("1")==0 )   // set trace on
             {
                 flag[0]=true;
@@ -88,10 +97,10 @@ public class JavaRunRexxWith_RXTRC_Exit implements RexxExitHandler
                 flag[0]=false;
             }
             System.err.println(" -> now set to=["+flag[0]+"]");
-            return RexxExitHandler.RXEXIT_HANDLED;
+            return RXEXIT_HANDLED;
         }
 
-        return RexxExitHandler.RXEXIT_NOT_HANDLED;
+        return RXEXIT_NOT_HANDLED;
     }
 }
 

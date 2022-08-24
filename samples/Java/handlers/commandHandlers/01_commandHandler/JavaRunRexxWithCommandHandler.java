@@ -20,6 +20,12 @@
  *                         if that particular Rexx interpreter instance is not needed anymore,
  *                         such that its reserved system resources can be reclaimed
                2022-08-06, explicitly do System.exit(0);
+               2022-08-24, adjust for having changed RexxHandler to a superclass interface
+                           (serving as the root interface class for all Rexx handler types)
+                           in 850 and the 461 static methods to interface default methods;
+                           this way invoking all default methods becomes simpler (no need
+                           to refer explicitly to the class RexxHandler, normal inheritance
+                           rules will take place)
  *
  * needs:   testRexxWithCommandHandler.rxj
  *
@@ -83,18 +89,18 @@ public class JavaRunRexxWithCommandHandler implements RexxCommandHandler
             case 1:     return "123";
             case 2:     return new GregorianCalendar();
             case 3:     return null;
-            case 4:     return RexxHandler.getNil(slot);
-            case 5:     long iv=RexxHandler.getInterpreterVersion(slot);
+            case 4:     return getNil(slot);
+            case 5:     long iv=getInterpreterVersion(slot);
                         return "InterpreterVersion: -> as hex string: ["+Long.toHexString(iv)+"] -> as long: ["+iv+"]";
-            case 6:     long ll=RexxHandler.getLanguageLevel(slot);
+            case 6:     long ll=getLanguageLevel(slot);
                         return "LanguageLevel:      -> as hex string: ["+Long.toHexString(ll)+"] -> as long: ["+ll+"]";
-            case 7:     return RexxHandler.getGlobalEnvironment(slot);
-            case 8:     return RexxHandler.getLocalEnvironment(slot);
-            case 9:     return RexxHandler.getCallerContext(slot);
-            case 10:    return RexxHandler.getAllContextVariables(slot);
-            case 11:    return (RexxHandler.checkCondition(slot) == true ? "1" : "0");
-            case 12:    return RexxHandler.getConditionInfo(slot);
-            case 13:    return (RexxHandler.checkCondition(slot) == true ? "1" : "0");
+            case 7:     return getGlobalEnvironment(slot);
+            case 8:     return getLocalEnvironment(slot);
+            case 9:     return getCallerContext(slot);
+            case 10:    return getAllContextVariables(slot);
+            case 11:    return (checkCondition(slot) == true ? "1" : "0");
+            case 12:    return getConditionInfo(slot);
+            case 13:    return (checkCondition(slot) == true ? "1" : "0");
             case 14:    return "This is \"case 14\", hence returning this interesting String... ;)";
 
             default:    return ""+counter;      // turn primitive into Java String

@@ -1,5 +1,5 @@
 /* ------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2012 Rony G. Flatscher
+ *    Copyright (C) 2012-2022 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -26,6 +26,15 @@
                             if that particular Rexx interpreter instance is not needed anymore,
                             such that its reserved system resources can be reclaimed
              2022-08-05, rgf, use System.exit(0); to end Java program
+             2022-08-24, - adjust for having changed RexxHandler to a superclass interface
+                           (serving as the root interface class for all Rexx handler types)
+                           in 850 and the 461 static methods to interface default methods;
+                           this way invoking all default methods becomes simpler (no need
+                           to refer explicitly to the class RexxHandler, normal inheritance
+                           rules will take place)
+                         - all Rexx exit constants (e.g. RXEXIT_HANDLED, RXEXIT_NOT_HANDLED, ...)
+                           from RexxHandlerExit are now available via inheritance, hence no
+                           need to explicitly refer to the RexxExitHandler class anymore
 */
 
 import org.apache.bsf.*;
@@ -48,7 +57,7 @@ public class JavaRunRexxWith_RXCMD_Exit implements RexxExitHandler
         System.err.println("default rexxConf=["+rexxConf+"]\n");
 
             // add system exits
-        rexxConf.addExitHandler(RexxExitHandler.RXCMD, new JavaRunRexxWith_RXCMD_Exit() );
+        rexxConf.addExitHandler(RXCMD, new JavaRunRexxWith_RXCMD_Exit() );
 
         System.err.println("edited  rexxConf=["+rexxConf+"]\n===> Java - starting Rexx program ===>");
 
@@ -80,13 +89,13 @@ public class JavaRunRexxWith_RXCMD_Exit implements RexxExitHandler
         if (subFunction==1)     // RXCMDHST
         {
             System.err.println(", RXCMDHST=1: flag rxfcfail=["+flag[0]+"], flag rxfcerr=["+flag[0]+"]");
-            if (((String) RexxHandler.getContextVariable(slot,"RGF_JAVA")).compareTo("0")==0) // o.k. addressed to us
+            if (((String) getContextVariable(slot,"RGF_JAVA")).compareTo("0")==0) // o.k. addressed to us
             {
-                if (((String) RexxHandler.getContextVariable(slot,"RGF_FAILURE")).compareTo("1")==0)
+                if (((String) getContextVariable(slot,"RGF_FAILURE")).compareTo("1")==0)
                 {
                     flag[0]=true;       // set rxfcfail
                 }
-                else if (((String) RexxHandler.getContextVariable(slot,"RGF_ERROR")).compareTo("1")==0)
+                else if (((String) getContextVariable(slot,"RGF_ERROR")).compareTo("1")==0)
                 {
                     flag[1]=true;       // set rxfcerr
                 }
@@ -94,12 +103,12 @@ public class JavaRunRexxWith_RXCMD_Exit implements RexxExitHandler
                 {
                     parmBlock[4]="<dealt by Java exit handler for address=["+address+"], received command=["+command+"], handler invoked ["+counter+"] time"+(counter==1?"":"s")+" so far.>";
                 }
-                return RexxExitHandler.RXEXIT_HANDLED;
+                return RXEXIT_HANDLED;
             }
         }
         System.err.println();
 
-        return RexxExitHandler.RXEXIT_NOT_HANDLED;
+        return RXEXIT_NOT_HANDLED;
     }
 }
 

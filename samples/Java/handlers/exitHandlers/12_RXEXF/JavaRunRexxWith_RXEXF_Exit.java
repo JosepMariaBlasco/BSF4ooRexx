@@ -26,6 +26,15 @@
                             if that particular Rexx interpreter instance is not needed anymore,
                             such that its reserved system resources can be reclaimed
              2022-08-06, rgf, explicitly do System.exit(0);
+             2022-08-24, - adjust for having changed RexxHandler to a superclass interface
+                           (serving as the root interface class for all Rexx handler types)
+                           in 850 and the 461 static methods to interface default methods;
+                           this way invoking all default methods becomes simpler (no need
+                           to refer explicitly to the class RexxHandler, normal inheritance
+                           rules will take place)
+                         - all Rexx exit constants (e.g. RXEXIT_HANDLED, RXEXIT_NOT_HANDLED, ...)
+                           from RexxHandlerExit are now available via inheritance, hence no
+                           need to explicitly refer to the RexxExitHandler class anymore
 */
 
 import org.apache.bsf.*;
@@ -47,7 +56,7 @@ public class JavaRunRexxWith_RXEXF_Exit implements RexxExitHandler
         System.err.println("default rexxConf=["+rexxConf+"]\n");
 
             // add system exits
-        rexxConf.addExitHandler(RexxExitHandler.RXEXF, new JavaRunRexxWith_RXEXF_Exit() );
+        rexxConf.addExitHandler(RXEXF, new JavaRunRexxWith_RXEXF_Exit() );
 
 
         // invoke the interpreter and run the Rexx program
@@ -69,7 +78,7 @@ public class JavaRunRexxWith_RXEXF_Exit implements RexxExitHandler
         counter++;
         System.err.print("(Java-side) [RXEXF_exit] exitNumber=["+exitNumber+"] subFunction=["+subFunction+"], counter: "+counter);
 
-        if (subFunction==RexxExitHandler.RXEXFCAL)  // 1
+        if (subFunction==RXEXFCAL)  // 1
         {
             System.err.println(", RXEXFCAL=1:");
 
@@ -87,19 +96,19 @@ public class JavaRunRexxWith_RXEXF_Exit implements RexxExitHandler
                 }
             }
 
-            String handleVar=(String) RexxHandler.getContextVariable(slot, "handleVar");
+            String handleVar=(String) getContextVariable(slot, "handleVar");
 
             if ( handleVar.compareTo("1")==0 )   // handle exit
             {
-                flag[0]=(((String) RexxHandler.getContextVariable(slot, "invalidCallToRoutineFlag")).compareTo("1")==0);
-                flag[1]=(((String) RexxHandler.getContextVariable(slot, "functionNotFoundFlag")).compareTo("1")==0);
+                flag[0]=(((String) getContextVariable(slot, "invalidCallToRoutineFlag")).compareTo("1")==0);
+                flag[1]=(((String) getContextVariable(slot, "functionNotFoundFlag")).compareTo("1")==0);
                 parmBlock[3]="<value from Java, counter="+counter+">";  // return value
-                return RexxExitHandler.RXEXIT_HANDLED;
+                return RXEXIT_HANDLED;
             }
         }
 
         System.err.println();
-        return RexxExitHandler.RXEXIT_NOT_HANDLED;
+        return RXEXIT_NOT_HANDLED;
     }
 }
 

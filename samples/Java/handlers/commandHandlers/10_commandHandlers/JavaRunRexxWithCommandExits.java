@@ -21,6 +21,12 @@
  *                         if that particular Rexx interpreter instance is not needed anymore,
  *                         such that its reserved system resources can be reclaimed
                2022-08-06, explicitly do System.exit(0);
+               2022-08-24, adjust for having changed RexxHandler to a superclass interface
+                           (serving as the root interface class for all Rexx handler types)
+                           in 850 and the 461 static methods to interface default methods;
+                           this way invoking all default methods becomes simpler (no need
+                           to refer explicitly to the class RexxHandler, normal inheritance
+                           rules will take place)
  *
  * needs:   testRexxWithCommandExits.rxj
  * @author  Rony G. Flatscher
@@ -130,11 +136,11 @@ public class JavaRunRexxWithCommandExits
         {
             System.err.println("[JavaTestConditionCommandHandler] address=["+address+"]"+
                                  "\tcommand=["+command+"]"+
-                                 "\nraising a 'Failure' condition before returning to Rexx");
+                                 "\n--> raising intentionally a 'Failure' condition before returning to Rexx ...\n");
 
             GregorianCalendar gregCal=new GregorianCalendar();
             Object additional[]={"additional #1", "additional #2", gregCal, "additional #4"};
-            RexxHandler.raiseCondition(slot, "Failure", "description: test", additional, "43 -nixi, noxi");
+            raiseCondition(slot, "Failure", "description: test", additional, "43 -nixi, noxi");
             return null;
         }
     }
@@ -146,11 +152,11 @@ public class JavaRunRexxWithCommandExits
         {
             System.err.println("[JavaTestExceptionCommandHandler] address=["+address+"]"+
                                  "\tcommand=["+command+"]"+
-                                 "\nraising a syntax exception (# 98.945) before returning to Rexx");
+                                 "\n--> raising intentionally a syntax exception (# 98.945) before returning to Rexx ...\n");
 
             GregorianCalendar gregCal=new GregorianCalendar();
             Object substitutions[]={"substitution #1", "substitution #2", gregCal, "substitution #4"};
-            RexxHandler.raiseException(slot, 98945, substitutions); // some dummy Rexx error number ("98.945")
+            raiseException(slot, 98945, substitutions); // some dummy Rexx error number ("98.945")
             return null;
         }
     }
@@ -161,9 +167,9 @@ public class JavaRunRexxWithCommandExits
         {
             System.err.println("[JavaTestException0CommandHandler] address=["+address+"]"+
                                  "\tcommand=["+command+"]"+
-                                 "\nraising a syntax exception (# 98.945) before returning to Rexx");
+                                 "\n--> raising intentionally a syntax exception (# 98.945) before returning to Rexx ...\n");
 
-            RexxHandler.raiseException0(slot, 98945);   // some dummy Rexx error number ("98.945")
+            raiseException0(slot, 98945);   // some dummy Rexx error number ("98.945")
             return null;
         }
     }
@@ -174,9 +180,9 @@ public class JavaRunRexxWithCommandExits
         {
             System.err.println("[JavaTestException1CommandHandler] address=["+address+"]"+
                                  "\tcommand=["+command+"]"+
-                                 "\nraising a syntax exception (# 98.945) before returning to Rexx");
+                                 "\n--> raising intentionally a syntax exception (# 98.945) before returning to Rexx ...\n");
 
-            RexxHandler.raiseException1(slot, 98945, "substitution #1");   // some dummy Rexx error number ("98.945")
+            raiseException1(slot, 98945, "substitution #1");   // some dummy Rexx error number ("98.945")
             return null;
         }
     }
@@ -189,18 +195,18 @@ public class JavaRunRexxWithCommandExits
                                      "\tcommand=["+command+"]");
 
             System.err.println("\t(JAVA-side) fetching Rexx context variable 'TEST', which should NOT be set: ["
-                               + RexxHandler.getContextVariable(slot, "TEST")
+                               + getContextVariable(slot, "TEST")
                                + "]");
 
-            RexxHandler.setContextVariable(slot, "TEST", "This is a value from the Java command handler!");
+            setContextVariable(slot, "TEST", "This is a value from the Java command handler!");
 
             System.err.println("\t(JAVA-side) fetching Rexx context variable 'TEST', which now SHOULD be set: ["
-                               + RexxHandler.getContextVariable(slot, "TEST")
+                               + getContextVariable(slot, "TEST")
                                + "]");
 
-            System.err.println("\nraising a syntax exception (# 98.945) before returning to Rexx");
+            System.err.println("\n--> raising intentionally a syntax exception (# 98.945) before returning to Rexx ...\n");
 
-            RexxHandler.raiseException2(slot, 98945, "substitution #1", "substitution #2");   // some dummy Rexx error number ("98.945")
+            raiseException2(slot, 98945, "substitution #1", "substitution #2");   // some dummy Rexx error number ("98.945")
             return null;
         }
     }

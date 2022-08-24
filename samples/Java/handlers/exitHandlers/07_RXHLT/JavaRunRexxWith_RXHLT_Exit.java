@@ -26,6 +26,15 @@
                             if that particular Rexx interpreter instance is not needed anymore,
                             such that its reserved system resources can be reclaimed
              2022-08-06, rgf, explicitly do System.exit(0);
+             2022-08-24, - adjust for having changed RexxHandler to a superclass interface
+                           (serving as the root interface class for all Rexx handler types)
+                           in 850 and the 461 static methods to interface default methods;
+                           this way invoking all default methods becomes simpler (no need
+                           to refer explicitly to the class RexxHandler, normal inheritance
+                           rules will take place)
+                         - all Rexx exit constants (e.g. RXEXIT_HANDLED, RXEXIT_NOT_HANDLED, ...)
+                           from RexxHandlerExit are now available via inheritance, hence no
+                           need to explicitly refer to the RexxExitHandler class anymore
 */
 
 import org.apache.bsf.*;
@@ -48,7 +57,7 @@ public class JavaRunRexxWith_RXHLT_Exit implements RexxExitHandler
         System.err.println("default rexxConf=["+rexxConf+"]\n");
 
             // add system exits
-        rexxConf.addExitHandler(RexxExitHandler.RXHLT, new JavaRunRexxWith_RXHLT_Exit() );
+        rexxConf.addExitHandler(RXHLT, new JavaRunRexxWith_RXHLT_Exit() );
 
         System.err.println("edited  rexxConf=["+rexxConf+"]\n===> Java - starting Rexx program ===>");
 
@@ -78,38 +87,38 @@ public class JavaRunRexxWith_RXHLT_Exit implements RexxExitHandler
         boolean flag[]=(boolean[]) parmBlock[0];    // fetch flag array
         System.err.print("(Java-side) [RXHLT_exit] exitNumber=["+exitNumber+"] subFunction=["+subFunction+"], counter: "+counter);
 
-        System.err.print(" - 'haltVar'=["+RexxHandler.getContextVariable(slot, "haltVar")+"]"+
-                           ", clearVar=["+RexxHandler.getContextVariable(slot, "clearVar")+"]");
+        System.err.print(" - 'haltVar'=["+getContextVariable(slot, "haltVar")+"]"+
+                           ", clearVar=["+getContextVariable(slot, "clearVar")+"]");
 
         if (subFunction==1)
         {
             System.err.print(", RXHLTCLR=1: flag[0]=["+flag[0]+"]");
             clrCounter++;
-            String clearVar=(String) RexxHandler.getContextVariable(slot, "clearVar");
+            String clearVar=(String) getContextVariable(slot, "clearVar");
             if ( clearVar.compareTo("1")==0 )
             {
                 flag[0]=true;
                 System.err.println(" -> now set to=["+flag[0]+"]: \"Clears the HALT condition?\"");
-                return RexxExitHandler.RXEXIT_HANDLED;
+                return RXEXIT_HANDLED;
             }
         }
 
         else if (subFunction==2)
         {
             System.err.print(", RXHLTTST=2: flag[0]=["+flag[0]+"]");
-            String haltVar=(String) RexxHandler.getContextVariable(slot, "haltVar");
+            String haltVar=(String) getContextVariable(slot, "haltVar");
             if ( haltVar.compareTo("1")==0 )
             {
                 flag[0]=true;
                 System.err.println(" -> now set to=["+flag[0]+"]: \"Raises the HALT condition?\"");
-                RexxHandler.dropContextVariable(slot, "haltVar");
+                dropContextVariable(slot, "haltVar");
 
-                return RexxExitHandler.RXEXIT_HANDLED;
+                return RXEXIT_HANDLED;
             }
         }
         System.err.println();
 
-        return RexxExitHandler.RXEXIT_NOT_HANDLED;
+        return RXEXIT_NOT_HANDLED;
     }
 }
 
