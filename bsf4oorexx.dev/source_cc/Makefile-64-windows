@@ -87,9 +87,9 @@ BLD_PATH = tmp
 TGT_LIB_DIR     = .\lib
 
 BSF_SRC	        = BSF4ooRexx.cc
-BSF_OBJ_ORX     = $(BLD_PATH)\BSF4ooRexx-64-amd64.obj
-BSF_ORX_TARGET  = $(BLD_PATH)\BSF4ooRexx.dll-64-amd64
-BSF4REXX	= $(BLD_PATH)\BSF4ooRexx.dll
+BSF_OBJ_ORX     = $(BLD_PATH)\BSF4ooRexx850-64-amd64.obj
+BSF_ORX_TARGET  = $(BLD_PATH)\BSF4ooRexx850.dll-64-amd64
+BSF4REXX	= $(BLD_PATH)\BSF4ooRexx850.dll
 
 
 # <--- rgf
@@ -111,7 +111,8 @@ REXX_LIBS = rexx.lib rexxapi.lib
 
 WARNINGFLAGS = /W3 /D_CRT_SECURE_NO_DEPRECATE /D_CRT_NONSTDC_NO_DEPRECATE
 
-DEF_FILE = /def:BSF4ooRexx-64.def
+# TODO: 20220823: really still needed?
+# DEF_FILE = /def:BSF4ooRexx-64.def
 
 !IF DEFINED(RELEASE)
 # Set the compile and link flags for a release build
@@ -143,12 +144,12 @@ $(BSF4REXX) : $(BSF_OBJ_ORX)
     $(copy_cmd) $(BSF_ORX_TARGET) $(BSF4REXX)
     $(copy_cmd) $(BSF_ORX_TARGET) $(TGT_LIB_DIR)
 
-    $(copy_cmd) /y tmp\BSF4ooRexx.dll tmp.850-debug64
-    $(copy_cmd) /y tmp\BSF4ooRexx.pdb tmp.850-debug64
+    $(copy_cmd) /y tmp\BSF4ooRexx850.dll tmp.850-debug64
+    $(copy_cmd) /y tmp\BSF4ooRexx850.pdb tmp.850-debug64
     $(copy_cmd) /y tmp.850-debug64\* .
 
 # rgf's developer test installation on Windows as of 2017-01-08: just remove the following statement
-#    $(copy_cmd)  $(BSF4REXX)  ..\..\bsf4oorexx\BSF4ooRexx.dll
+#    $(copy_cmd)  $(BSF4REXX)  ..\..\bsf4oorexx\BSF4ooRexx850.dll
  @echo "done."
 
 

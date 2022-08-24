@@ -1093,29 +1093,28 @@ thread_id_t  RgfGetTID();
 
 #if defined (BSF4REXX_32_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20220823 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220824 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20220823 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220824 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #elif defined (BSF4REXX_64_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20220823 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220824 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20220823 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220824 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #else
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20220823 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220824 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20220823 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220824 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #endif
 
     // 2005-06-02, when BSF4ooRexx loads Java, the following Java class is used to initialize all necessary Java objects
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // can only be used from JNI as everything is private in it
 
-#define DLLNAME         "BSF4ooRexx"      // name of DLL and name for "PARSE SOURCE"
-
+#define DLLNAME         "BSF4ooRexx850"      // name of DLL and name for "PARSE SOURCE"
 
 // ---------------------------------------------------------------------------------------------------------
 // globals, rgf, 2008-08-01
@@ -3004,7 +3003,7 @@ inline RexxObjectPtr RgfJavaObject2RexxObject (JNIEnv *env, jobject rajo,     //
         RexxObjectPtr result_obj=NULL;
         // RexxRoutineObject rro=rtc->NewRoutine("FROM_BSF4ooRexx_DLL", "::requires BSF.CLS", 18);
         char code[]="::requires BSF.CLS";
-        RexxRoutineObject rro=rtc->NewRoutine("FROM_BSF4ooRexx_RgfJavaObject2RexxObject", code, strlen(code));
+        RexxRoutineObject rro=rtc->NewRoutine("FROM_BSF4ooRexx850_RgfJavaObject2RexxObject", code, strlen(code));
         if (rro!=NULL)      // object got created, let us run it
         {
             result_obj=rtc->CallRoutine(rro, NULL);   // call the program ?? NULL correct ??
@@ -3237,7 +3236,7 @@ inline RexxArrayObject RgfProcessJArgs (JNIEnv *env, RexxThreadContext *rtc,
    fprintf(stderr, "... RgfProcessJArgs(...): riid=[%p], rtc->checkCondition()=[%d], RUNTIME (PRE-)LOADING OF BSF.CLS ! | [1] ...\n", riid, (int) rtc->CheckCondition());fflush(stderr);
 #endif
 
-        RexxRoutineObject rro=rtc->NewRoutine("FROM_BSF4ooRexx_DLL", "::requires BSF.CLS", 18);
+        RexxRoutineObject rro=rtc->NewRoutine("FROM_BSF4ooRexx850_DLL", "::requires BSF.CLS", 18);
 
         if (rro!=NULL)      // object got created, let us run it
         {
@@ -3951,7 +3950,7 @@ char *JNU_GetStringNativeChars(JNIEnv *env, jstring jstr)  // JNIEnv *env, jstri
     }
     else
     {
-        fprintf(stderr, "BSF4ooRexx: JNU_GetStringNativeChars(): Exception active, panic, please report!\n"); fflush(stderr);
+        fprintf(stderr, "BSF4ooRexx850: JNU_GetStringNativeChars(): Exception active, panic, please report!\n"); fflush(stderr);
         env->ExceptionDescribe();
         env->ExceptionClear();      // ignore (very unlikely) exception
     }
@@ -4020,7 +4019,7 @@ RexxObjectPtr JNU_GetStringNativeCharsReturningRexxStringObject(JNIEnv *env, jst
     }
     else    // a Java exception occurred
     {
-        fprintf(stderr, "BSF4ooRexx: JNU_GetStringNativeCharsReturningRexxString(): Exception active, panic, please report!\n"); fflush(stderr);
+        fprintf(stderr, "BSF4ooRexx850: JNU_GetStringNativeCharsReturningRexxString(): Exception active, panic, please report!\n"); fflush(stderr);
         env->ExceptionDescribe();
         env->ExceptionClear();      // ignore exception (unlikely anyway)
     }
@@ -7749,14 +7748,14 @@ RexxRoutine1(RexxObjectPtr, BsfTestPing, OPTIONAL_size_t,  repetitions)
         // nope, not yet attached, attach, but detach before leaving this routine
         if ( (defaultJVM->jvm->AttachCurrentThread((void **) &jenv, (void *) &defaultJavaVMAttachArgs)) != JNI_OK) // attach to JVM
         {
-            fprintf(stderr, "BSF4ooRexx.BsfTestPing([repetitions=[%lu]]), cannot attach to Java!\n",repetitions);
+            fprintf(stderr, "%s.BsfTestPing([repetitions=[%lu]]), cannot attach to Java!\n",DLLNAME, repetitions);
             return context->String("-99");         // JNI attach error, return prematurely, indicate by returning -99
         }
     }
 
     if (jenv==NULL)         // attaching did not work!
     {
-        fprintf(stderr, "BSF4ooRexx.BsfTestPing([repetitions=[%lu]]), cannot attach to Java!\n",repetitions);
+        fprintf(stderr, "%s.BsfTestPing([repetitions=[%lu]]), cannot attach to Java!\n",DLLNAME, repetitions);
         return context->String("-99");
     }
 
@@ -7908,8 +7907,6 @@ RexxRoutine3(RexxObjectPtr, BsfCommandHandler, CSTRING, option, OPTIONAL_CSTRING
                                              defaultJVM->mid_RexxAndJava_getRexxConfiguration,
                                              NULL);
 
-    // TODO: check for Java exception and NULL ?
-
     if (mode==0)    // adding a new command handler
     {
         CSTRING c_beanName   = NULL;  // the beanName of the exceptionProxy
@@ -7924,20 +7921,17 @@ RexxRoutine3(RexxObjectPtr, BsfCommandHandler, CSTRING, option, OPTIONAL_CSTRING
                                                    );
         param.env->DeleteLocalRef(j_beanName);
 
-        if (jobj==NULL)     // no bean found by the given beanName
+        // error: no bean found by the given beanName or object not a RexxCommandHandler
+        if (jobj==NULL || param.env->IsInstanceOf(jobj, defaultJVM->clz_RexxCommandHandler)==JNI_FALSE  )
         {
-            snprintf( msg, 256, "%.16s/routine/BsfCommandHandler(), error 9 (option \"ADD\"): argument 3 (javaHandler, beanName=[%s]) cannot be found in the BSFRegistry)", DLLNAME, c_beanName);
-            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
-            param.env->DeleteLocalRef(jobj);
-            param.env->DeleteLocalRef(j_rexxConfiguration);
-            RgfAcquireLock();
-            environmentDetachFromNew(&param);   // detach from Java
-            RgfReleaseLock();
-            return NULL;
-        }
-        else if (param.env->IsInstanceOf(jobj, defaultJVM->clz_RexxCommandHandler)==JNI_FALSE)
-        {
-            snprintf( msg, 256, "%.16s/routine/BsfCommandHandler(), error 10 (option \"ADD\"): argument 3 (javaHandler, beanName=[%s]) is not an instance of 'org.rexxla.bsf.engines.rexx.RexxCommandHandler'", DLLNAME, c_beanName);
+            if (jobj==NULL)
+            {
+                snprintf( msg, 256, "%.16s/routine/BsfCommandHandler(), error 9 (option \"ADD\"): argument 3 (javaHandler, beanName=[%s]) cannot be found in the BSFRegistry)", DLLNAME, c_beanName);
+            }
+            else
+            {
+                snprintf( msg, 256, "%.16s/routine/BsfCommandHandler(), error 10 (option \"ADD\"): argument 3 (javaHandler, beanName=[%s]) is not an instance of 'org.rexxla.bsf.engines.rexx.RexxCommandHandler'", DLLNAME, c_beanName);
+            }
             context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
             param.env->DeleteLocalRef(jobj);
             param.env->DeleteLocalRef(j_rexxConfiguration);
@@ -8745,7 +8739,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
 
         // load the external functions from the defined RexxPackageEntry from this very dynamic Rexx library
     RexxLibraryPackage pkg;
-    pkg.registeredName   = "BSF4ooRexx";
+    pkg.registeredName   = DLLNAME;
     pkg.table            = &bsf_package_entry;
 
     options[0].optionName= REGISTER_LIBRARY;
@@ -13733,7 +13727,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniExecut
             {
                 char *rexxCode=(char *) JNU_GetStringNativeChars(env, jrexxCode);  // convert to native string
 // fprintf(stderr, "BSF4ooRexx.cc: Line # %d %s, \n\trexxCode=[%s]\n", __LINE__, __FUNCTION__, rexxCode);fflush(stderr);
-                RexxRoutineObject rro    = rtc->NewRoutine("BSF4ooRexx.jniExecuteSimpleProcedureOnOwnRII", rexxCode, strlen(rexxCode));
+                RexxRoutineObject rro    = rtc->NewRoutine("BSF4ooRexx850.jniExecuteSimpleProcedureOnOwnRII", rexxCode, strlen(rexxCode));
 
                 if (rtc->CheckCondition())      // a Rexx condition raised?
                 {

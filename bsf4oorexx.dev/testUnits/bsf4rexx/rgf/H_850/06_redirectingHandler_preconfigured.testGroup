@@ -59,7 +59,6 @@ return testResult
     vArg = .bsf~new("java.util.Vector")~~add(self) -- add this object
 
     res=re~apply(.context~name, 0, 0, .resources~test_01_redirectingHandler_preconfigured_code~toString, .nil, vArg)
-
     return
 
 syntax:

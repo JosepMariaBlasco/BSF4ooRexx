@@ -628,7 +628,8 @@ public class RexxConfiguration {
 
 
     // ------------------------------------------------------------------------------------
-    /** Allows to define an environment name and a {@link RexxCommandHandler} to serve the given environment.
+    /** Allows to define an environment name and a {@link RexxCommandHandler} to serve the
+     *  given environment.
      *
      * @param name the Rexx environment name
      * @param commandHandler a RexxCommandHandler object
@@ -636,7 +637,7 @@ public class RexxConfiguration {
     public void addCommandHandler(String name, RexxCommandHandler commandHandler) throws BSFException
     {
 /* ---
-// TODO: in ooRexx 5.0 allow replacing defined one as the new AddCommandEnvironment-API allows for that
+// Not necessary anymore: ooRexx 5.0 allows replacing defined one as the new AddCommandEnvironment-API allows for that
         if (modifiable==false)
         {
             throw new BSFException("RexxConfiguration already deployed, must not add new command handlers. To change a RexxCommandHandler object use 'setCommandHandler()' instead.");

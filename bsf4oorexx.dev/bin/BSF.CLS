@@ -868,7 +868,7 @@ if bDebug=.true then
 do
    parse source s
    .stderr~say("BSF.CLS - arrived in PROLOG code ... BSF.CLS - arrived in PROLOG code ... BSF.CLS - arrived in PROLOG code ...")
-   .stderr~say("BSF.CLS - parse source:" pp(s) "- editing it for new release, since Monday, 2018-02-19...")
+   .stderr~say("BSF.CLS - parse source:" pp(s) )
    .stderr~say("... BSF.CLS ... prolog code ..."  ".bsf.rii_ID:" pp(.bsf.rii_ID)  ".bsf.primodalTID="pp(.bsf.primodalTID)  "TID:" pp(BsfGetTid()) "created in RII:" pp(rii_id))
 end
 
@@ -952,7 +952,7 @@ syntax:
 
 -- ::requires "rgf_util2.rex"    -- 20180106, rgf, temporarily because of BSF's unknown usage
 
-::requires "BSF4ooRexx" library
+::requires "BSF4ooRexx850" library
 
 
 /* ================================================================================================= */
@@ -960,11 +960,11 @@ syntax:
 /* 2018-02-14, rgf: incorporate the native routines in the local .routines directory and invoke the routines
  *                  using call and callWith messages as this is about ten times faster according to tests
 */
-::routine xBSF                   PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx BSF                 "
-::routine xBsfCreateRexxProxy    PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx BsfCreateRexxProxy  "
-::routine xBsfRexxProxy          PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx BsfRexxProxy        "
-::routine xBsfUninit4JavaBean    PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx BsfUninit4JavaBean  "
-::routine xBsfLoadJava           PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx BsfLoadJava         "
+::routine xBSF                   PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx850 BSF                 "
+::routine xBsfCreateRexxProxy    PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx850 BsfCreateRexxProxy  "
+::routine xBsfRexxProxy          PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx850 BsfRexxProxy        "
+::routine xBsfUninit4JavaBean    PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx850 BsfUninit4JavaBean  "
+::routine xBsfLoadJava           PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx850 BsfLoadJava         "
 
 /*
 rBSF rBsfUninit4JavaBean rBsfRexxProxy

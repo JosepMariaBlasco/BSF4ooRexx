@@ -635,8 +635,9 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Defines the version string. */
     static final private String RAJ_VERSION = version + " " + pkgName + " (org.apache.bsf)";
 
+    // 850: use distinguished name from 641 version ("BSF4ooRexx"), also distinguish from 32-bit
     /** Defines the name of DLL to be used to resolve the native functions. */
-    static final protected String DLL_NAME = "BSF4ooRexx";
+    static protected String DLL_NAME = "BSF4ooRexx850"; // default name
 
     /** Defines the string to indicate an 'eventText' is passed in: &quot;&lt;eventText&gt;&quot;. */
     static final protected String EVENT_TEXT = "<eventText>";

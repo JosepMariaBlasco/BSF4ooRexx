@@ -21,8 +21,9 @@
 ; 2008-10-21, ---rgf, new MSVC (2008), version: 15.00.21022.08 for 80x86
 ; 2009-09-11, ---rgf, increased stack and heap size from 40KB (40960B) to 128KB (131072B)
 ; 2017-01-08, ---rgf, adjusted LIBRARY name the one the Makefile-32-windows uses for the link step
+; 2022-08-23, ---rgf, adjusted: renamed library name
 
-LIBRARY   BSF4ooRexx.dll-32-x86
+LIBRARY   BSF4ooRexx850_32.dll-32-x86
 ; LIBRARY   BSF4ooRexx-32
 
 HEAPSIZE  131072

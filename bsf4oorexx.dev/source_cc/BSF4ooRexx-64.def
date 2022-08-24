@@ -18,8 +18,9 @@
 ; 2009-09-07, ---rgf, 64-Bit version
 ; 2009-09-11, ---rgf, increased stack and heap size from 40KB (40960B) to 128KB (131072B)
 ; 2017-01-08, ---rgf, adjusted LIBRARY name the one the Makefile-64-windows uses for the link step
+; 2022-08-23, ---rgf, adjusted: renamed library name
 
-LIBRARY   BSF4ooRexx.dll-64-amd64
+LIBRARY   BSF4ooRexx850.dll-64-amd64
 ; LIBRARY   BSF4ooRexx-64
 
 HEAPSIZE  131072
