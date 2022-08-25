@@ -35,8 +35,8 @@ public class DirectCommandHandlers
     {
         public Object handleCommand(Object slot, String address, String command)
         {
-            System.err.println("[AliceCommandHandler] address=["+address+"]"+
-                                 "\tcommand=["+command+"]");
+            System.err.println("[AliceCommandHandler] address=["+address+"] "+
+                                 "command=["+command+"]\n\t -> info=["+toString(slot,address)+"]");
             return "118";
         }
     }
@@ -46,8 +46,8 @@ public class DirectCommandHandlers
     {
         public Object handleCommand(Object slot, String address, String command)
         {
-            System.err.println("[DanielCommandHandler] address=["+address+"]"+
-                                 "\tcommand=["+command+"]");
+            System.err.println("[DanielCommandHandler] address=["+address+"] "+
+                                 "command=["+command+"]\n\t -> info=["+toString(slot,address)+"]");
             return "521";
         }
     }
@@ -57,8 +57,8 @@ public class DirectCommandHandlers
     {
         public Object handleCommand(Object slot, String address, String command)
         {
-            System.err.println("[MichaelCommandHandler] address=["+address+"]"+
-                                 "\tcommand=["+command+"]");
+            System.err.println("[MichaelCommandHandler] address=["+address+"] "+
+                                 "command=["+command+"]\n\t -> info=["+toString(slot,address)+"]");
             return "922";
         }
     }
@@ -68,8 +68,8 @@ public class DirectCommandHandlers
     {
         public Object handleCommand(Object slot, String address, String command)
         {
-            System.err.println("[RonyCommandHandler] address=["+address+"]"+
-                                 "\tcommand=["+command+"]");
+            System.err.println("[RonyCommandHandler] address=["+address+"] "+
+                                 "command=["+command+"]\n\t -> info=["+toString(slot,address)+"]");
             return "520";
         }
     }
@@ -81,8 +81,8 @@ public class DirectCommandHandlers
     {
         public Object handleCommand(Object slot, String address, String command)
         {
-            System.err.println("[ReturnGregorianCalendarCommandHandler] address=["+address+"]"+
-                                 "\tcommand=["+command+"]");
+            System.err.println("[ReturnGregorianCalendarCommandHandler] address=["+address+"] "+
+                                 "command=["+command+"]\n\t -> info=["+toString(slot,address)+"]");
             return new java.util.GregorianCalendar();
         }
     }
@@ -101,8 +101,8 @@ public class DirectCommandHandlers
     {
         public Object handleCommand(Object slot, String address, String command)
         {
-            System.err.println("[TestFailureConditionCommandHandler] address=["+address+"]"+
-                                 "\tcommand=["+command+"]"+
+            System.err.println("[TestFailureConditionCommandHandler] address=["+address+"] "+
+                                 "command=["+command+"]\n\t -> info=["+toString(slot,address)+"]"+
                                  "\n--> raising intentionally a 'Failure' condition before returning to Rexx ...\n");
 
             GregorianCalendar gregCal=new GregorianCalendar();
@@ -126,8 +126,8 @@ public class DirectCommandHandlers
     {
         public Object handleCommand(Object slot, String address, String command)
         {
-            System.err.println("[TestErrorConditionCommandHandler] address=["+address+"]"+
-                                 "\tcommand=["+command+"]"+
+            System.err.println("[TestErrorConditionCommandHandler] address=["+address+"] "+
+                                 "command=["+command+"]\n\t -> info=["+toString(slot,address)+"]"+
                                  "\n--> raising intentionally an 'Error' condition before returning to Rexx ...\n");
 
                             //   name:      cause (command):  additional:   rc-value:
@@ -146,8 +146,8 @@ public class DirectCommandHandlers
     {
         public Object handleCommand(Object slot, String address, String command)
         {
-            System.err.println("[TestExceptionCommandHandler] address=["+address+"]"+
-                                 "\tcommand=["+command+"]"+
+            System.err.println("[TestExceptionCommandHandler] address=["+address+"] "+
+                                 "command=["+command+"]\n\t -> info=["+toString(slot,address)+"]"+
                                  "\n--> raising intentionally a syntax exception (# 98.945) before returning to Rexx ...\n");
 
             GregorianCalendar gregCal=new GregorianCalendar();
@@ -164,8 +164,8 @@ public class DirectCommandHandlers
     {
         public Object handleCommand(Object slot, String address, String command)
         {
-            System.err.println("[TestException0CommandHandler] address=["+address+"]"+
-                                 "\tcommand=["+command+"]"+
+            System.err.println("[TestException0CommandHandler] address=["+address+"] "+
+                                 "command=["+command+"]\n\t -> info=["+toString(slot,address)+"]"+
                                  "\n--> raising intentionally a syntax exception (# 98.945) before returning to Rexx ...\n");
 
             raiseException0(slot, 98945);   // some dummy Rexx error number ("98.945")
@@ -180,8 +180,8 @@ public class DirectCommandHandlers
     {
         public Object handleCommand(Object slot, String address, String command)
         {
-            System.err.println("[TestException1CommandHandler] address=["+address+"]"+
-                                 "\tcommand=["+command+"]"+
+            System.err.println("[TestException1CommandHandler] address=["+address+"] "+
+                                 "command=["+command+"]\n\t -> info=["+toString(slot,address)+"]"+
                                  "\n--> raising intentionally a syntax exception (# 98.945) before returning to Rexx ...\n");
 
             raiseException1(slot, 98945, "substitution #1");   // some dummy Rexx error number ("98.945")
@@ -196,8 +196,8 @@ public class DirectCommandHandlers
     {
         public Object handleCommand(Object slot, String address, String command)
         {
-            System.err.println("[TestException2CommandHandler] address=["+address+"]"+
-                                     "\tcommand=["+command+"]");
+            System.err.println("[TestException2CommandHandler] address=["+address+"] "+
+                                 "command=["+command+"]\n\t -> info=["+toString(slot,address)+"]");
 
             System.err.println("\t(JAVA-side) fetching Rexx context variable 'TEST', which should NOT be set: ["
                                + getContextVariable(slot, "TEST")

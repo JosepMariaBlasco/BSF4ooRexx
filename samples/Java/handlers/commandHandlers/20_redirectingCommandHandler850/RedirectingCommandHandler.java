@@ -1,5 +1,5 @@
 /* ------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2012-2022 Rony G. Flatscher
+ *    Copyright (C) 2022 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
  * purpose: demonstrate some possibilities of definining Rexx command handlers
  *           in Java
  * @author  Rony G. Flatscher
- * @since   2022-08-24
+ * @since   2022-08-25
  */
 
 import org.rexxla.bsf.engines.rexx.*;
@@ -26,14 +26,18 @@ import java.util.GregorianCalendar;
 public class RedirectingCommandHandler implements RexxRedirectingCommandHandler
 {
     int counter=0;  // count number of invocations
+    boolean bDebug=true; // false; // true
     /** This direct command handler keeps a counter of invocations and does
      *  different things depending on the counter's value.
      */
     public Object handleCommand(Object slot, String address, String command)
     {
         counter++;
-        System.err.println("[DirectCommandHandler] address=["+address+"]"+
-                             "\tcommand=["+command+"], counter=["+counter+"]");
+if (bDebug)
+{
+    System.err.println("[RedirectingCommandHandler].handleCommand(slot, address=["+address+"], "+
+                         "command=["+command+"]), counter=["+counter+"]");
+}
 
         // split at (and consume) whitespace
         String [] arrCommand = command.split("\\p{javaWhitespace}+");
@@ -51,6 +55,9 @@ public class RedirectingCommandHandler implements RexxRedirectingCommandHandler
             case "HELLO":   // return values set the RC variable in Rexx
                 return "Hello, ooRexx! This is your Java RedirectingCommandHandler working for you!";
 
+            case "INFO":    // return information about this handler
+                return toString(slot,address);
+
             case "PING":    // return values set the RC variable in Rexx
                 return "Pong!";
 
@@ -60,31 +67,19 @@ public class RedirectingCommandHandler implements RexxRedirectingCommandHandler
             case "ROT13":
                 boolean iOR=isOutputRedirected(slot);
                 boolean iER=isErrorRedirected(slot);
-System.err.println("iOR="+iOR+", iER="+iER);
-                if (! iOR )
+                if (! iOR )     // output not redirected
                 {
-System.err.println("! iOR");
-                    if (! iER)
+                    if (! iER)  // error also not redirected
                     {
-System.err.println("! iER");
                         strAdditional = new String[]{ "Neither \"output\" nor \"error\" redirected, cannot write any result" };
                         //                                                      RC:
                         raiseCondition(slot, "Failure", command, strAdditional, "-1");
+                        return null;    // uses fourth argument of raiseCondition as RC
                     }
-                    else
-                    {
-System.err.println("! iOR");
-                        strAdditional = new String[]{ "\"output\" not redirected, cannot write result" };
-                        //                                                    RC:
-                        raiseCondition(slot, "ERROR", command, strAdditional, "-10");
-                    }
-                    // ignored, because the condition's fourth argument will be used for the RC value
-                    return null;
                 }
 
                 boolean iIR  =isInputRedirected(slot);
 
-System.err.println("iIR="+iIR);
                 byte [] bData=null;
                 String  sData=null;
 
@@ -96,20 +91,15 @@ System.err.println("iIR="+iIR);
                     }                           // read into a String
                     else
                     {
-                        sData=readInputBuffer(slot);
+                        sData=readInput(slot);
                     }
                 }
                 else        // input not redirected, use remaining data after first blank after comand
                 {
                     int pos=command.indexOf(' ');   // get first whitespace, use everything after it as data
-
-System.err.println("command=["+command+"]: pos="+pos+", command.length()="+command.length());
-
-                    if ( command.length()>=(pos+1))
+                    if ( pos>1 && command.length()>=(pos+2))
                     {
                         sData=command.substring(pos+1);
-
-System.err.println("command=["+command+"]: pos="+pos+", command.length()="+command.length()+", sData=["+sData+"]");
                         if (cmd.equals("ROT13"))
                         {
                             bData=sData.getBytes();
@@ -124,61 +114,67 @@ System.err.println("command=["+command+"]: pos="+pos+", command.length()="+comma
                     }
                 }
 
-System.err.println("cmd="+cmd+", sData=["+sData+"], bData="+bData+" -> "+(bData==null? null : new String(bData))+" checkCondition()="+checkCondition(slot));
-
                 // now process data
                 if (cmd.equals("ROT13"))
                 {
                     if (iOR)    // output is redirected, write to it
                     {
-System.err.println("ROT13 - iOR");
                         writeOutput(slot,rot13(bData));
                         if (iER)    // if error redirected, reprocess (nullifying rot13) and write to error
                         {
-System.err.println("ROT13 - iER");
                             writeError(slot,rot13(bData));
                         }
                     }
                     else        // write to redirected error
                     {
-System.err.println("ROT13 - iER");
                         writeError(slot,rot13(bData));
                     }
-System.err.println("ROT13 - return 0!");
                     return "0";    // indicate all o.k.
                 }
 
                 if (cmd.equals("UPPERCASE"))
                 {
-                    sData.toUpperCase();
+                    sData=sData.toUpperCase();
                 }
-                else
+                else    // only command left
                 {
-                    sData.toLowerCase();
+                    sData=sData.toLowerCase();
                 }
-                if (iOR)
+
+                if (iOR)    // output redirected, then use it
                 {
                     writeOutput(slot,sData);
                 }
-                else
+                else        // use redirected error for output
                 {
                     writeError(slot,sData);
                 }
-                return 0;
+                return "0";
 
             default: // show help text, return -2
                 String usage="Error: ["+address+"] handler does not understand command: ["+command+"]"+
-                    "\n\tPING"                    +
                     "\n\tHELLO"                   +
-                    "\n\tROT13 [textToEncode]"    +
-                    "\n\t... if \"textToEncode\" is omitted, then redirected \"input\" gets processed, "+
+                    "\n\tINFO"                    +
+                    "\n\tLOWERCASE [text]"        +
+                    "\n\t... if \"text\" is omitted, then redirected \"input\" gets processed, "+
                     "\n\t    result is written to \"output\", if redirected, "+
-                    "\n\t    reprocessed data is written to \"error\", if redirected.";
+                    "\n\t    else to redirected \"error\"" +
+                    "\n\tPING"                    +
+                    "\n\tROT13 [text]"    +
+                    "\n\t... if \"text\" is omitted, then redirected \"input\" gets processed, "+
+                    "\n\t    result is written to \"output\", if redirected, "+
+                    "\n\t    reprocessed data is written to \"error\", if redirected" +
+                    "\n\tUPPERCASE [text]"        +
+                    "\n\t... if \"text\" is omitted, then redirected \"input\" gets processed, "+
+                    "\n\t    result is written to \"output\", if redirected, "+
+                    "\n\t    else to redirected \"error\"" ;
+
                 System.err.println(usage);
-                strAdditional = new String[]{ "O my God! An unknown command!!!" };
+                // strAdditional = new String[]{ "O my God! An unknown command!!!" };
+                strAdditional = usage.split("\n");
                 //                                                      RC:
-                raiseCondition(slot, "Failure", command, strAdditional, "-2");
-                return 0;   // as condition got raised, condition's RC will get used
+                raiseCondition(slot, "Error", command, strAdditional, "-2");
+                return null;   // as condition got raised, condition's RC will get used
         }
     }
 
@@ -186,14 +182,11 @@ System.err.println("ROT13 - return 0!");
      */
     static byte[] rot13 (byte [] bData)
     {
-System.err.println("...rot13(), bData.length="+bData.length+" -> "+new String(bData));
         for (int idx=0;idx<bData.length;idx++)
         {
             byte b=bData[idx];
-            if       (b >= 'a' && b <= 'm') b += 13;
-            else if  (b >= 'A' && b <= 'M') b += 13;
-            else if  (b >= 'n' && b <= 'z') b -= 13;
-            else if  (b >= 'N' && b <= 'Z') b -= 13;
+            if       ((b >= 'a' && b <= 'm') || (b >= 'A' && b <= 'M')) b += 13;
+            else if  ((b >= 'n' && b <= 'z') || (b >= 'N' && b <= 'Z')) b -= 13;
             bData[idx]=b;
         }
         return bData;

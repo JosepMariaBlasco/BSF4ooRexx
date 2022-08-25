@@ -25,9 +25,35 @@ all platforms and can be downloaded from its homepage at
         handler implemented in Java.
 
         <p> The companion Java program (implementing the Rexx command handler) is:
-        <a href="DirectCommandHandler.java">DirectCommandHandler.java</a>.
-        Among other things it demonstrates how to set context Rexx variables, raise
-        Rexx conditions and Rexx exceptions from the Java handler code.
+        <a href="ReirectingCommandHandler.java">RedirectingCommandHandler.java</a>.
+        Among other things it defines the commands
+        <ul>
+            <li>HELLO
+
+            <li>LOWERCASE [text]
+                <br>... if "text" is omitted, then redirected "input" gets processed,
+                result is written to "output", if redirected,
+                else to redirected "error"
+
+            <li>PING
+
+            <li>ROT13 [text]
+                <br>... if "text" is omitted, then redirected "input" gets processed,
+                    result is written to "output", if redirected,
+                    reprocessed data is written to "error", if redirected
+
+            <li>UPPERCASE [text]
+                <br>... if "text" is omitted, then redirected "input" gets processed,
+                    result is written to "output", if redirected,
+                    else to redirected "error"
+
+            <li>
+
+            <li>
+
+            <li>
+        </ul>
+        and demonstrates how to create failure and error conditions in the command handler.
 
         <p>To run enter the following command on the command line:<br>
            <pre>    rexx testAddCommandHandler</pre>
@@ -35,6 +61,6 @@ all platforms and can be downloaded from its homepage at
 
 <hr>
 <p style="font-size: 80%;">
-Rony G. Flatscher, 2022-08-24, Wien/Vienna, Austria, Europe
+Rony G. Flatscher, 2022-08-25, Wien/Vienna, Austria, Europe
 </body>
 
