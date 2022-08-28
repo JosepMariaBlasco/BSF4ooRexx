@@ -1,0 +1,167 @@
+/* ------------------------ Apache Version 2.0 license -------------------------
+
+ *    Copyright (C) 2022 Rony G. Flatscher
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        <a href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a>
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ * -----------------------------------------------------------------------------
+ *
+ * purpose: demonstrate the possibilities of a NetRexx (Java) command handler
+ *
+ * needs:   testRexxWithCommandHandler.rxj
+ *
+ * @author  Rony G. Flatscher
+ * @since   2022-08-28
+ */
+import org.rexxla.bsf.engines.rexx
+
+-------------------------------------------------------------------------------
+class NetRexxRedirectingCommandHandler implements RexxRedirectingCommandHandler
+   properties private
+   counter=0
+
+method handleCommand(slot=Object, address=String, command=String) returns Object
+   counter = counter+1
+   System.err.println("[NetRexxRedirectingCommandHandler] address=["address"], command=["command"], counter=["counter"]")
+
+   -- split at (and consume) whitespace
+   arrCommand = command.split("\\p{javaWhitespace}+")
+   cmd = ""
+   if arrCommand.length>0 then
+       cmd=arrCommand[0].toUpperCase()    -- get command, uppercase it
+
+   -- excercise the default methods from RexxRedirectingCommandHandler or RexxHandler
+   select case cmd
+       when "HELLO" then   -- return values set the RC variable in Rexx
+           return "Hello, ooRexx! This is your NetRexx (Java) RedirectingCommandHandler working for you!"
+
+       when "INFO" then    -- return information about this handler
+           return toString(slot,address)
+
+       when "PING" then    -- return values set the RC variable in Rexx
+           return "Pong!"
+
+           -- cases working on data with potential redirections
+       when "UPPERCASE", "LOWERCASE", "ROT13" then
+       do
+          iOR=isOutputRedirected(slot)
+          iER=isErrorRedirected(slot)
+          if \iOR then    -- output not redirected
+          do
+              if \iER then -- error also not redirected
+              do
+                  strAdditional = String[1]
+                  strAdditional[0] = "Neither ""output"" nor ""error"" redirected, cannot write any result"
+                  --                                                      RC:
+                  raiseCondition(slot, "Failure", command, strAdditional, "-1")
+                  return null    -- uses fourth argument of raiseCondition as RC
+              end
+          end
+
+          iIR  =isInputRedirected(slot)
+
+          bData=byte[] null
+          sData=String null
+
+          if iIR then   -- input is redirected
+          do
+              if cmd="ROT13" then    -- read into a byte array
+                  bData=readInputAsByteArray(slot)
+              else
+                  sData=readInput(slot)
+          end
+          else        -- input not redirected, use remaining data after first blank after comand
+          do
+              pos=command.indexOf(' ');   -- get first whitespace, use everything after it as data
+              if pos>1 & command.length()>=(pos+2) then
+              do
+                  sData=command.substring(pos+1);
+                  if cmd = "ROT13" then
+                      bData=sData.getBytes()
+              end
+              else
+              do
+                  strAdditional = String[1]
+                  strAdditional[0] = "neither ""input"" redirected, nor data supplied after command"
+                  --                                                    RC:
+                  raiseCondition(slot, "ERROR", command, strAdditional, "-11")
+                  return null
+              end
+          end
+
+          -- now process data
+          if cmd="ROT13" then
+          do
+              if (iOR) then    -- output is redirected, write to it
+              do
+                  writeOutput(slot,rot13(bData))
+                  if (iER) then   -- if error redirected, reprocess (nullifying rot13) and write to error
+                      writeError(slot,rot13(bData))
+              end
+              else        -- write to redirected error
+                  writeError(slot,rot13(bData))
+
+              return String "0"    -- indicate all o.k.
+          end
+
+          if cmd = "UPPERCASE" then
+              sData=sData.toUpperCase()
+          else    -- only command left
+              sData=sData.toLowerCase()
+
+          if iOR then   -- output redirected, then use it
+              writeOutput(slot,sData)
+          else        -- use redirected error for output
+              writeError(slot,sData)
+          return String "0"
+       end
+
+       -- default: -- show help text, return -2
+       otherwise -- show help text, return -2
+           usage="Error: ["address"] handler does not understand command: ["command"]"-
+               "\n\tHELLO"                   -
+               "\n\tINFO"                    -
+               "\n\tLOWERCASE [text]"        -
+               "\n\t... if ""text"" is omitted, then redirected ""input"" gets processed, "-
+               "\n\t    result is written to ""output"", if redirected, "-
+               "\n\t    else to redirected ""error""" -
+               "\n\tPING"                    -
+               "\n\tROT13 [text]"    -
+               "\n\t... if ""text"" is omitted, then redirected ""input"" gets processed, "-
+               "\n\t    result is written to ""output"", if redirected, "-
+               "\n\t    reprocessed data is written to ""error"", if redirected" -
+               "\n\tUPPERCASE [text]"        -
+               "\n\t... if ""text"" is omitted, then redirected ""input"" gets processed, "-
+               "\n\t    result is written to ""output"", if redirected, "-
+               "\n\t    else to redirected ""error"""
+
+           System.err.println(usage)
+           -- strAdditional = new String[]{ "O my God! An unknown command!!!" };
+           strAdditional = String(usage).split("\n")
+           --                                                      RC:
+           raiseCondition(slot, "Error", command, strAdditional, "-2")
+           return null   -- as condition got raised, condition's RC will get used
+   end
+
+
+    /** Carry out rot13 on bytes.
+     */
+method rot13(bData = byte[]) static returns byte[]
+   loop idx=0 to bData.length-1
+      b=bData[idx]
+      pos=String(      'abcdefghijklmABCDEFGHIJKLMnopqrstuvwxyzNOPQRSTUVWXYZ').indexOf(b)
+      if pos>-1 then
+        b=byte( String("nopqrstuvwxyzNOPQRSTUVWXYZabcdefghijklmABCDEFGHIJKLM").charAt(pos) )
+
+      bData[idx]=b
+   end
+   return bData

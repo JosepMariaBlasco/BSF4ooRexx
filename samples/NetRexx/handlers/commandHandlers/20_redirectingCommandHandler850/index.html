@@ -1,0 +1,67 @@
+<head>
+    <title>Brief Overview of the BSF4ooRexx Samples in this Directory</title>
+
+</head>
+
+<body>
+<h1>
+    Rexx Program Adds and Uses a Java Command Handler Named &quot;EPOQUE&quot;
+</h1>
+
+<em>Hint:</em> if you wish to look at the ooRexx code with syntax highlighting, then you can
+use the free and open-source editor <code>&quot;[g]vim&quot;</code>, which is available for practically
+all platforms and can be downloaded from its homepage at
+<a href="http://www.vim.org/">http://www.vim.org/</a>.
+
+<dl>
+    <dt><em><a href=".">.  &lt;directory&gt; (List of this directory)</a></em>
+    <dd>Display all of this directory's files and directories.
+
+    <dt><em><a href="..">..  &lt;directory&gt; (List of parent directory)</a></em>
+    <dd>Display all of the parent directory's files and directories.
+
+    <dt><a href="testAddNetRexxRedirectingCommandHandler.rex">testAddCommandHandler.rex</a>
+    <dd>A Rexx demonstration program to show how to add and use a Rexx command
+        handler implemented in NetRexx (Java).
+
+        <p> The companion NetRexx program (implementing the Rexx command handler) is:
+        <a href="NetRexxRedirectingCommandHandler.nrx">NetRexxRedirectingCommandHandler.nrx</a>.
+        Among other things it defines the commands
+        <ul>
+            <li>HELLO
+
+            <li>INFO
+
+            <li>LOWERCASE [text]
+                <br>... if "text" is omitted, then redirected "input" gets processed,
+                result is written to "output", if redirected,
+                else to redirected "error"
+
+            <li>PING
+
+            <li>ROT13 [text]
+                <br>... if "text" is omitted, then redirected "input" gets processed,
+                    result is written to "output", if redirected,
+                    reprocessed data is written to "error", if redirected
+
+            <li>UPPERCASE [text]
+                <br>... if "text" is omitted, then redirected "input" gets processed,
+                    result is written to "output", if redirected,
+                    else to redirected "error"
+
+        </ul>
+        and demonstrates how to create failure and error conditions in the command handler if
+        no or an unknown command gets issued by the Rexx program.
+
+        <p>To compile the NetRexx program enter the following command on the command line:<br>
+           <pre>    nrc -compile NetRexxRedirectingCommandHandler.nrx</pre>
+
+        <p>To run enter the following command on the command line:<br>
+           <pre>    rexx testAddRedirectingCommandHandler.rex</pre>
+</dl>
+
+<hr>
+<p style="font-size: 80%;">
+Rony G. Flatscher, 2022-08-28, Wien/Vienna, Austria, Europe
+</body>
+

@@ -1,0 +1,4 @@
+parse source s
+say "==> This is from" pp(s) "at" .dateTime~new
+
+::requires BSF.CLS
