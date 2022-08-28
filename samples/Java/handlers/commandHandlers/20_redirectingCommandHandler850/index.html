@@ -20,15 +20,17 @@ all platforms and can be downloaded from its homepage at
     <dt><em><a href="..">..  &lt;directory&gt; (List of parent directory)</a></em>
     <dd>Display all of the parent directory's files and directories.
 
-    <dt><a href="testAddCommandHandler.rex">testAddCommandHandler.rex</a>
+    <dt><a href="testAddRedirectingCommandHandler.rex">testAddCommandHandler.rex</a>
     <dd>A Rexx demonstration program to show how to add and use a Rexx command
         handler implemented in Java.
 
         <p> The companion Java program (implementing the Rexx command handler) is:
-        <a href="ReirectingCommandHandler.java">RedirectingCommandHandler.java</a>.
+        <a href="RedirectingCommandHandler.java">RedirectingCommandHandler.java</a>.
         Among other things it defines the commands
         <ul>
             <li>HELLO
+
+            <li>INFO
 
             <li>LOWERCASE [text]
                 <br>... if "text" is omitted, then redirected "input" gets processed,
@@ -47,20 +49,16 @@ all platforms and can be downloaded from its homepage at
                     result is written to "output", if redirected,
                     else to redirected "error"
 
-            <li>
-
-            <li>
-
-            <li>
         </ul>
-        and demonstrates how to create failure and error conditions in the command handler.
+        and demonstrates how to create failure and error conditions in the command handler if
+        no or an unknown command gets issued by the Rexx program.
 
         <p>To run enter the following command on the command line:<br>
-           <pre>    rexx testAddCommandHandler</pre>
+           <pre>    rexx testAddRedirectingCommandHandler.rex</pre>
 </dl>
 
 <hr>
 <p style="font-size: 80%;">
-Rony G. Flatscher, 2022-08-25, Wien/Vienna, Austria, Europe
+Rony G. Flatscher, 2022-08-28, Wien/Vienna, Austria, Europe
 </body>
 
