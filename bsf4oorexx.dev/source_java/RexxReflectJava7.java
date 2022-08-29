@@ -31,7 +31,7 @@ import        java.lang.reflect.Modifier;
  * ignored and resolution continues with the next ancestor.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2018-2021 Rony G. Flatscher
+ *    Copyright (C) 2018-2022 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -86,6 +86,10 @@ import        java.lang.reflect.Modifier;
 
         2021-02-07, rgf:    - relocate code to fetch nested classes after normal methods got sought
 
+        2022-08-28, rgf:    - processConstructor(): it turns out that public constructors in
+                              non-public classes can be used in javac compiled programs; hence
+                              adopting the code by using constructor.setAccessible(true) before
+                              unreflecting it (unreflection throws a "class not public" exception)
 */
 
 
@@ -2189,7 +2193,21 @@ if (debugLevel>0)       // Rexx arguments could be coerced successfully, show ca
             if (useUnreflect)      // use (simplest) the Lookup.unreflect(...) version
             {
                 strLookupName="unreflect";
+                // if constructor in a protected class unreflect would throw (class not public) exception
+                // although javac allows access to them; the Java specifications allow access to public
+                // methods and fields (and to protected methods and fields from the same package or subclasses)
+                boolean bisAccessible=tmpConstructor.isAccessible();
+                if (!bisAccessible)
+                {
+                   tmpConstructor.setAccessible(true);  // tell Java we want this constructor to be accessible
+                }
+
                 mh=thisLookup.unreflectConstructor(tmpConstructor);
+
+                if (!bisAccessible)
+                {
+                   tmpConstructor.setAccessible(false);
+                }
             }
             else
             {
