@@ -4,7 +4,7 @@
    Purpose: create a shell script which sets the environment variable CLASSPATH
             to point to the Java archives needed to drive/automate OpenOffice.org
    Author:  Rony G. Flatscher
-   Version: 1.21
+   Version: 1.22
    Date:    2006-01-04
    Changed:
             2006-01-16, ---rgf, make sure CLASSPATH is used in any case
@@ -103,6 +103,7 @@
                                              symbolic links get created; to change this behaviour back to copying
                                              change: "cmd.eUseSymbolicLink?=.false" below
                                            - little cleanup of code
+            2022-08-29, ---rgf, - changed BSF4ooRexx to BSF4ooRexx850
 
 
    last svn check-in: $Revision: 916 $ $Author: Administrator $ $Date: 2010-08-24 16:30:15 +0200 (Tue, 24 Aug 2010) $
@@ -110,7 +111,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2006-2021 Rony G. Flatscher
+       Copyright (C) 2006-2022 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -276,7 +277,7 @@ say "CLASSPATH in effect:   ["cp"]"
 cmd.eSupportInfos=qc("Support: Internet newsgroup <news:comp.lang.rexx>, <http://www.OpenOffice.org> or via <http://www.RexxLA.org>")
 
 -- 2010-03-19: create a unique needle (e.g. to allow deleting lines with sed from profiles later)
-cmd.eInstallationNeedle="BSF4ooRexxNeedle - OpenOffice support" -- .dateTime~new~string
+cmd.eInstallationNeedle="BSF4ooRexx850Needle - OpenOffice support" -- .dateTime~new~string
 
 if cmd.eIsUnix then
 do
@@ -314,9 +315,9 @@ do
    cmd.eJarVar = cmd.ePath.sep"$OOO_jars"cmd.eFile.sep   /* variable to use                        */
 
    if cmd.eIsMacOSX then
-      cmd.eDLL="libBSF4ooRexx.dylib"  /* define name of dynamic link library    */
+      cmd.eDLL="libBSF4ooRexx850.dylib"  /* define name of dynamic link library    */
    else
-      cmd.eDLL="libBSF4ooRexx.so"     /* define name of dynamic link library    */
+      cmd.eDLL="libBSF4ooRexx850.so"     /* define name of dynamic link library    */
 
    -- rgf, 2010-03-20: only use $CLASSPATH, if set
    cmd.eSetCP= '[ "$CLASSPATH" != "" ] && TMPCP=$CLASSPATH: || TMPCP=' || .endOfLine || -
@@ -387,7 +388,7 @@ do
 
    cmd.eJarVar = cmd.ePath.sep"%OOO_Jars%"cmd.eFile.sep  /* variable to use                        */
 
-   cmd.eDLL="BSF4ooRexx.dll"       /* define name of dynamic link library    */
+   cmd.eDLL="BSF4ooRexx850.dll"       /* define name of dynamic link library    */
 
    cmd.eSetCP  = "set CLASSPATH=.;%CLASSPATH%" -- rgf, 20100823: always assume CLASSPATH (e.g. BSF) exists already!
 
@@ -477,7 +478,7 @@ createInstallScript: procedure expose cmd. path.
   hintString="created:" q(date("S") time()) "by user" q(userid())
 
   call lineout fn, cmd.eEcho qe("created:" q(date("S") time()))
-  call lineout fn, cmd.eEcho qe("installing BSF4ooRexx ""OpenOffice"" support...")
+  call lineout fn, cmd.eEcho qe("installing BSF4ooRexx850 ""OpenOffice"" support...")
   call lineout fn, cmd.eEcho qe(".")
   call lineout fn, cmd.eEchoOff
   call lineout fn, ""
@@ -485,7 +486,7 @@ createInstallScript: procedure expose cmd. path.
      /* uninstall: */
   call lineout ui, cmd.eEcho qe("created:" q(date("S") time()))
   call lineout ui, cmd.eEchoOff
-  call lineout ui, cmd.eEcho qe("uninstalling BSF4ooRexx ""OpenOffice"" support...")
+  call lineout ui, cmd.eEcho qe("uninstalling BSF4ooRexx850 ""OpenOffice"" support...")
   call lineout ui, cmd.eEcho qe(".")
   call lineout ui, ""
   call lineout ui, cmd.eEcho qe("(make sure that no instances of ""OpenOffice"" are running!)")
@@ -595,7 +596,7 @@ createInstallScript: procedure expose cmd. path.
 
         call lineout fn, ""
 
-        call lineout ui, cmd.eEcho qe("removing BSF4ooRexx OpenOffice entries from" tmpTgt "...")
+        call lineout ui, cmd.eEcho qe("removing BSF4ooRexx850 OpenOffice entries from" tmpTgt "...")
         call lineout ui, cmd.e_sed_delete tmpTgt
         call lineout ui, ""
 

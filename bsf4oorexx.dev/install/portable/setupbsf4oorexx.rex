@@ -5,7 +5,8 @@
             OpenOffice (AOO) or LibreOffice (LO) can be found, then make it available
    Usage:   rexx setupbsf4oorexx.rex
    Date:    2022-02-07
-   Changed: 2022-02-09, rgf - have CLASSPATH to BSF4ooRexx use "*"
+   Changes: 2022-02-09, rgf - have CLASSPATH to BSF4ooRexx use "*"
+            2022-08-30, rgf, changed "BSF4ooRexx" to "BSF4ooRexx850"
    Needs:   Java to get the UNO CLASSPATH definition from AOO/LO
    license:
     ------------------------ Apache Version 2.0 license -------------------------
@@ -361,7 +362,7 @@ done:
 /* ========================================================================== */
 ::resource linux_rexxj
 #!/bin/sh
-# rexxj.sh: script to run "BSF4ooRexx" programs without prior installation ...
+# rexxj.sh: script to run "BSF4ooRexx850" programs without prior installation ...
 #           rexxj.sh testbsf4oorexx.rex
 #
 # created: '@DATETIME@' by '@USERNAME@'
@@ -399,7 +400,7 @@ fi
 /* ========================================================================== */
 ::resource mac_rexxj
 #!/bin/sh
-# rexxj.sh: script to run "BSF4ooRexx" programs without prior installation ...
+# rexxj.sh: script to run "BSF4ooRexx850" programs without prior installation ...
 #           rexxj.sh testbsf4oorexx.rex
 #
 # created: '@DATETIME@' by '@USERNAME@'
@@ -440,7 +441,7 @@ fi
 /* ========================================================================== */
 ::resource win_rexxj
 @echo off
-REM rexxj.cmd: script to run "BSF4ooRexx" programs without prior installation, e.g.
+REM rexxj.cmd: script to run "BSF4ooRexx850" programs without prior installation, e.g.
 REM            rexxj.cmd testbsf4oorexx.rex
 
 REM created: '@DATETIME@' by '@USERNAME@'
@@ -485,7 +486,7 @@ if not exist "%JAVA_BINARY%" set JAVA_BINARY=java
 /* ========================================================================== */
 ::resource linux_setenv2b4r
 #!/bin/sh
-# @SETENV2B4R@: script to allow "BSF4ooRexx" programs to run
+# @SETENV2B4R@: script to allow "BSF4ooRexx850" programs to run
 #
 # set environment:
 #
@@ -520,7 +521,7 @@ echo LD_LIBRARY_PATH=$LD_LIBRARY_PATH
 /* ========================================================================== */
 ::resource mac_setenv2b4r
 #!/bin/sh
-# @SETENV2B4R@: script to allow "BSF4ooRexx" programs to run
+# @SETENV2B4R@: script to allow "BSF4ooRexx850" programs to run
 #
 # set environment:
 #
@@ -555,7 +556,7 @@ echo DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH
 /* ========================================================================== */
 ::resource win_setenv2b4r
 @echo off
-REM @SETENV2B4R@: script to allow "BSF4ooRexx" programs to run
+REM @SETENV2B4R@: script to allow "BSF4ooRexx850" programs to run
 REM
 REM set environment:
 REM

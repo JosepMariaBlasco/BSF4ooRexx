@@ -13,10 +13,12 @@
 
    Last svn check-in: $Revision: 912 $ $Author: Administrator $ $Date: 2010-08-23 16:49:55 +0200 (Mon, 23 Aug 2010) $
 
+   Changed:    2022-08-29, --rgf - BSF4ooRexx to BSF4ooRexx850
+
    License:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2010 Rony G. Flatscher
+       Copyright (C) 2010-2022 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -41,7 +43,7 @@ parse var args msg (deli) title (deli) type
 
 if msg=""   then msg  ="Problem: No message argument given!"
             else msg  =msg~changeStr("/LF/","0a"x) -- change escaped LF back to LF
-if title="" then title="BSF4ooRexx: no title argument given!"
+if title="" then title="BSF4ooRexx850: no title argument given!"
 if type=""  then type ="information"
 
 .bsf.dialog~messageBox(msg,title,type)

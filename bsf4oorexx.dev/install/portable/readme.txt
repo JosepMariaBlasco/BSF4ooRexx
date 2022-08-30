@@ -1,15 +1,15 @@
-2022-02-07, rgf
+2022-02-07, 2022-08-30, rgf
 
 The following scripts need to reside in the same directory:
 
-        createPortableB4R.rex ... creates portable versions of BSF4ooRexx
+        createPortableB4R.rex ... creates portable versions of BSF4ooRexx850
         setupbsf4oorexx.rex   ... will create the rexxj.{cmd|sh} and setenv2bsf4oorexx.{cmd|sh}
-        testbsf4oorexx.rex    ... test script for portable BSF4ooRexx
-        testuno.rex           ... test script for portable BSF4ooRexx OOo/AO and LO support
+        testbsf4oorexx.rex    ... test script for portable BSF4ooRexx850
+        testuno.rex           ... test script for portable BSF4ooRexx850 OOo/AO and LO support
 
-To create portable BSF4ooRexx versions:
+To create portable BSF4ooRexx850 versions:
 
-        - unzip the BSF4ooRexx installation package in your working directory, a subdirectory
+        - unzip the BSF4ooRexx850 installation package in your working directory, a subdirectory
           named "bsf4ooRexx" will get created
 
         - run "path-to\createPortableB4R op_sys bitness machine" in your working directory

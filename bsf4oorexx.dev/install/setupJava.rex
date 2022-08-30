@@ -2,16 +2,16 @@
 /*
    author:  Rony G. Flatscher
    date:    2010-08-23
-   version: 1.04
+   version: 1.05
    name:    setupJava.rex
    purpose: BSF4ooRexx must be able to dynamically load 'libjvm.so';
             Linux systems may have plenty of alternative Javas installed and
             therefore 'libjvm.so' seems not to be linked into the usual lib
             directories;
             for the purpose of BSF4ooRexx the current active Java's 'libjvm.so'
-            gets linked to '/opt/BSF4ooRexx';
+            gets linked to '/opt/BSF4ooRexx850';
             this utility also allows the user to change the default Java to use,
-            which also causes its 'libjvm.so' to be linked int '/opt/BSF4ooRexx'
+            which also causes its 'libjvm.so' to be linked int '/opt/BSF4ooRexx850'
             instead
 
    usage:   rexx setupJava.rex
@@ -20,11 +20,12 @@
 
    changed:
             2011-01-03, ---rgf, - fixed bug in parsing the output of a "ls -al", thanks to Uli Zinngrebe for reporting on 2010-12-27!
-            2011-03-27, ---rgf, - link libjvm.so only symbollically to /opt/BSF4ooRexx in
+            2011-03-27, ---rgf, - link libjvm.so only symbollically to /opt/BSF4ooRexx850 in
                                   order for Java to find its home
             2012-02-25, ---rgf, - Unix: remove "-n" flag from "ldconfig"
                                 - Unix: removed target lib-determination, not needed here
             2020-08-17, ---rgf, - tidying up a little bit
+            2022-08-29, ---rgf, - changed BSF4ooRexx to BSF4ooRexx850
 
    remark:  supercedes the previously available version (total rewrite)
 
@@ -141,12 +142,12 @@ do
     exit -41
 end
 
-cmd="sudo ln -fsv" path2lib "/opt/BSF4ooRexx/libjvm.so"
+cmd="sudo ln -fsv" path2lib "/opt/BSF4ooRexx850/libjvm.so"
 say thisName": linking ["cmd"]..."
 cmd
 
--- cmd="sudo ldconfig -n /opt/BSF4ooRexx"    --
-cmd="sudo ldconfig /opt/BSF4ooRexx"    --
+-- cmd="sudo ldconfig -n /opt/BSF4ooRexx850"    --
+cmd="sudo ldconfig /opt/BSF4ooRexx850"    --
 say thisName": updating cache to shared libraries ["cmd"]..."
 cmd
 say thisName": done."

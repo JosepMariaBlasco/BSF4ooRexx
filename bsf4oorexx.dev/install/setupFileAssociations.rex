@@ -4,7 +4,7 @@
    Purpose: creates files to set up and remove file associations
    Author:  Rony G. Flatscher
    Date:    2010-07-26/27/30/31, 2010-08-20
-   Version: 1.02
+   Version: 1.03
    Changes:
             2010-07-26, ---rgf, plain
             2010-12-08, ---rgf, changing application/x-rexx* -> text/x-rexx*
@@ -24,6 +24,7 @@
                                   - on Unix add "cmd.eChownUserGroup", new routine "determineGroupName(defGroup)"
             2021-07-14, rgf   - on Unix: new routine "determineHomeDir()", new "cmd.eHomeDir"
             2021-07-17, rgf   - little cleanup of code
+            2022-08-29, rgf   - changed info text from BSF4ooRexx to BSF4ooRexx850 to indicate new version in effect
 
    last svn check-in: $Revision: 640 $ $Author: rony $ $Date: 2010-04-17 22:25:38 +0200 (Sat, 17 Apr 2010) $
 
@@ -32,7 +33,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2010-2021 Rony G. Flatscher
+       Copyright (C) 2010-2022 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -190,8 +191,8 @@ updateRexxAssociation: procedure
   ifs~~say("Windows Registry Editor Version 5.00")~~say
   ufs~~say("Windows Registry Editor Version 5.00")~~say
 
-  ifs~~say("; Created by ""setupFileAssociations.rex"" (from BSF4ooRexx) on:" dir~runtime)~~say
-  ufs~~say("; Created by ""setupFileAssociations.rex"" (from BSF4ooRexx) on:" dir~runtime)~~say
+  ifs~~say("; Created by ""setupFileAssociations.rex"" (from BSF4ooRexx850) on:" dir~runtime)~~say
+  ufs~~say("; Created by ""setupFileAssociations.rex"" (from BSF4ooRexx850) on:" dir~runtime)~~say
 
    -- add file-extension entries: do not change "HKCR\.REX" definitions
   bCreatedREXentry=.false     -- set to true, if .REX entry had to be created
@@ -384,8 +385,8 @@ createNewAssociations: procedure
      ifs~~say("Windows Registry Editor Version 5.00")~~say
      ufs~~say("Windows Registry Editor Version 5.00")~~say
 
-     ifs~~say("; Created by ""setupFileAssociations.rex"" (from BSF4ooRexx) on:" dir~runtime)~~say
-     ufs~~say("; Created by ""setupFileAssociations.rex"" (from BSF4ooRexx) on:" dir~runtime)~~say
+     ifs~~say("; Created by ""setupFileAssociations.rex"" (from BSF4ooRexx850) on:" dir~runtime)~~say
+     ufs~~say("; Created by ""setupFileAssociations.rex"" (from BSF4ooRexx850) on:" dir~runtime)~~say
 
      typeName=dir~entry(regfile".Name")
      mimetype=dir~entry(regfile".MimeType")
@@ -577,8 +578,8 @@ createTypeNameEntry: procedure
      ifs~~say(cmd.eShHashBang)~~say~~say(cmd.eXdgPathProlog)~~say
      ufs~~say(cmd.eShHashBang)~~say~~say(cmd.eXdgPathProlog)~~say
 
-     ifs~~say("# Created by ""setupFileAssociations.rex"" (from BSF4ooRexx) on:" dir~runtime)~~say
-     ufs~~say("# Created by ""setupFileAssociations.rex"" (from BSF4ooRexx) on:" dir~runtime)~~say
+     ifs~~say("# Created by ""setupFileAssociations.rex"" (from BSF4ooRexx850) on:" dir~runtime)~~say
+     ufs~~say("# Created by ""setupFileAssociations.rex"" (from BSF4ooRexx850) on:" dir~runtime)~~say
 
          --------------------- define mime types
      ifs~~say~~say("# install mimetypes")~~say
@@ -616,8 +617,8 @@ createTypeNameEntry: procedure
   ifs~~say(cmd.eShHashBang)~~say~~say(cmd.eXdgPathProlog)~~say
   ufs~~say(cmd.eShHashBang)~~say~~say(cmd.eXdgPathProlog)~~say
 
-  ifs~~say("# Created by ""setupFileAssociations.rex"" (from BSF4ooRexx) on:" dir~runtime)~~say
-  ufs~~say("# Created by ""setupFileAssociations.rex"" (from BSF4ooRexx) on:" dir~runtime)~~say
+  ifs~~say("# Created by ""setupFileAssociations.rex"" (from BSF4ooRexx850) on:" dir~runtime)~~say
+  ufs~~say("# Created by ""setupFileAssociations.rex"" (from BSF4ooRexx850) on:" dir~runtime)~~say
 
   call linuxXdgIcons cmd., ifs, ufs   -- add icons to system  -- rgf, 2011-03-25
   call linuxXdgMenu  cmd., ifs, ufs   -- setup menu
@@ -649,8 +650,8 @@ createTypeNameEntry: procedure
   ifs~say; ufs~say
 
       --------------------- desktop files for BSF4ooRexx merged menu
-  ifs~say("# installing desktop files used in merged BSF4ooRexx menu")
-  ufs~say("# uninstalling desktop files used in merged BSF4ooRexx menu")
+  ifs~say("# installing desktop files used in merged BSF4ooRexx850 menu")
+  ufs~say("# uninstalling desktop files used in merged BSF4ooRexx850 menu")
 
   dirFileBSF4ooRexx  =cmd.ePath2resources"menu/bsf4oorexx_menu.directory"
   dirFileInstallation=cmd.ePath2resources"menu/bsf4oorexx_submenu_installation.directory"

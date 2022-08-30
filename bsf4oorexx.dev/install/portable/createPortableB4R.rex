@@ -17,6 +17,7 @@
    Hints:   creates temporary directory "_portable_", takes BSF4ooRexx version from
             bsf4oorexx/BSF.CLS (needle: .bsf4rexx~version="641.20220131" -- set version (date distribution got created)),
             ignores directories 'clr', 'Templates', 'utilities', 'install' for portable version
+   Changes: 2022-08-30, rgf, changed "BSF4ooRexx" to "BSF4ooRexx850"
    license:
     ------------------------ Apache Version 2.0 license -------------------------
        Copyright (C) 2022 Rony G. Flatscher
@@ -78,7 +79,7 @@ end
 select case op_sys   -- operating system this script executes
    when 'W' then  -- Windows
             do
-               tgtLibName="BSF4ooRexx.dll"
+               tgtLibName="BSF4ooRexx850.dll"
                if bitness=32 then
                do
                   srcLibName=tgtLibName"-32-x86"
@@ -93,7 +94,7 @@ select case op_sys   -- operating system this script executes
 
    when 'D' then  -- Apple
             do
-              tgtLibName="libBSF4ooRexx.dylib"
+              tgtLibName="libBSF4ooRexx850.dylib"
               select case machine
                  when "arm"      then
                      do
@@ -113,7 +114,7 @@ select case op_sys   -- operating system this script executes
 
    otherwise   -- Linux
    do
-       tgtLibName="libBSF4ooRexx.so"
+       tgtLibName="libBSF4ooRexx850.so"
        select case bitness
            when 32 then
                   if machine="arm" then
@@ -505,7 +506,7 @@ call createZipArchive tgtTmpDirName, tgtDirName"-portable"unoHint".zip", cmd.eMo
 /* ========================================================================== */
 ::resource readme_main
 -----------------------------------------------------------------------------------------
-"Portable BSF4ooRexx"
+"Portable BSF4ooRexx850"
 -----------------------------------------------------------------------------------------
 
 Run the script
@@ -516,32 +517,32 @@ Run the script
             any BSF4-ooRexx program
 
         ... will create the script "@SETENV2B4R@" which can then be
-            used to set the shell's environment to make BSF4ooRexx available
+            used to set the shell's environment to make BSF4ooRexx850 available
 
 
 =========================================================================================
-Portable Zip Archive ("Stick") Version for BSF4ooRexx (ooRexx)
+Portable Zip Archive ("Stick") Version for BSF4ooRexx850 (ooRexx)
 =========================================================================================
 
-BSF4ooRexx ("bean scripting framework" for "open object Rexx") is an ooRexx-Java
+BSF4ooRexx850 ("bean scripting framework" for "open object Rexx") is an ooRexx-Java
 bridge.  It camouflages Java as the message based, caseless, dynamically typed
 ooRexx, making it easy for Rexx programmers to exploit any Java class library on
 any operating system.
 
-"BSF4ooRexx" is an open-source project governed by the non-profit special
+"BSF4ooRexx850" is an open-source project governed by the non-profit special
 interest group "Rexx Language Association" (RexxLA).  Like ooRexx it is an easy
 to learn, dynamically typed, caseless and powerful ooRexx-Java bridge.
-BSF4ooRexx implements the message paradigm for interacting with Java classes and
+BSF4ooRexx850 implements the message paradigm for interacting with Java classes and
 Java objects that makes it as easy to interact with Java as it is with ooRexx.
 
-This version allows you to test and use BSF4ooRexx without a need to install it
-and to carry along with additional BSF4ooRexx versions for different operating
+This version allows you to test and use BSF4ooRexx850 without a need to install it
+and to carry along with additional BSF4ooRexx850 versions for different operating
 systems e.g.  on a single (USB) "stick", hence "portable".
 
 Links:
 
    RexxLA Homepage: http://www.rexxla.org
-   BSF4ooRexx Project:  https://sourceforge.net/projects/bsf4oorexx/
+   BSF4ooRexx850 Project:  https://sourceforge.net/projects/bsf4oorexx/
 
 
 -----------------------------------------------------------------------------------------
@@ -558,7 +559,7 @@ using ooRexx 5 or newer.
 Running "setupbsf4oorexx.rex" from the archive's unzipped directory will
 generate the scripts "@REXXJ@" (sets environment and runs BSF4-ooRexx
 programs via Java) and "@SETENV2B4R@" (set process/shell environment
-to allow BSF4ooRexx to be used).
+to allow BSF4ooRexx850 to be used).
 
 If the location of the script's home directory has been moved simply rerun
 "setupbsf4oorexx.rex" from the new location.
@@ -568,7 +569,7 @@ If the location of the script's home directory has been moved simply rerun
 Purpose of "@REXXJ@"
 -----------------------------------------------------------------------------------------
 
-   This script will set up a local environment to this directory's BSF4ooRexx
+   This script will set up a local environment to this directory's BSF4ooRexx850
    directories in the current process and expects a Rexx program with arguments, e.g.
 
        @REXXJ@ testbsf4oorexx.rex
@@ -577,7 +578,7 @@ Purpose of "@REXXJ@"
 
 
 -----------------------------------------------------------------------------------------
-Purpose of "@SETENV2B4R@" (Set Environment to portable BSF4ooRexx Environment)
+Purpose of "@SETENV2B4R@" (Set Environment to portable BSF4ooRexx850 Environment)
 -----------------------------------------------------------------------------------------
 
    This script allows to set up the environment to this directory's Rexx interpreter
@@ -586,7 +587,7 @@ Purpose of "@SETENV2B4R@" (Set Environment to portable BSF4ooRexx Environment)
        @UNIX_SOURCE@@SETENV2B4R@
 
    Upon return from the process the shell's environment is changed such that this
-   portable BSF4ooRexx gets used. One can then run BSF4-ooRexx programs via "rexx",
+   portable BSF4ooRexx850 gets used. One can then run BSF4-ooRexx programs via "rexx",
    e.g.
 
        rexx testbsf4oorexx.rex

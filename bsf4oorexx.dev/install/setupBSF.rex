@@ -5,8 +5,9 @@
             without any knowledge about Java installation issues)
    Author:  Rony G. Flatscher
    Date:    2006-01-07
-   Version: 1.39
+   Version: 1.40
    Changed:
+            2022-08-29, - changed BSF4ooRexx to BSF4ooRexx850
             2021-11-16, - Linux arm32 name was wrong ("libBSF4ooRexx.so-32-arm" instead of "libBSF4ooRexx.so-32-arm32")
 
             2021-08-29, - make sure on Unix that "/usr/local/bin" and "/usr/local/lib"
@@ -246,7 +247,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2006-2021 Rony G. Flatscher
+       Copyright (C) 2006-2022 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -488,7 +489,7 @@ cmd.eSupportInfos=qc("Support: Internet newsgroup <news:comp.lang.rexx> or via <
 
 -- cmd.eIsUnix=.true -- for debugging only
 -- 2010-03-19: create a unique needle (e.g. to allow deleting lines with sed from profiles later)
-cmd.eInstallationNeedle="BSF4ooRexxNeedle"   -- .dateTime~new~string
+cmd.eInstallationNeedle="BSF4ooRexx850Needle"   -- .dateTime~new~string
 cmd.eHintString="created:" q(cmd.eDateTimeEdited) "by user" q(j.["USER.NAME"]) -- q(j.user.name)
 
 if cmd.eIsUnix then
@@ -610,8 +611,8 @@ do
    cmd.eSetExecutable    ="chmod 755"     /* set executable for all (user, group, other)  */
    if cmd.eIsMacOSX then
    do
-      cmd.eDLL="libBSF4ooRexx.dylib"   /* define name of dynamic link library    */
-      cmd.eDLLAllBaseNames="libBSF4ooRexx*.dylib"  -- pattern to delete
+      cmd.eDLL="libBSF4ooRexx850.dylib"   /* define name of dynamic link library    */
+      cmd.eDLLAllBaseNames="libBSF4ooRexx850*.dylib"  -- pattern to delete
       cmd.eLibDir="/usr/local/lib"  -- new target library dir since 2015 (ElCapitan on MacOSX forces this)
       if cmd.eBinDir="" then
          cmd.eBinDir="/usr/local/bin"  /* directory where executables reside     */
@@ -620,18 +621,18 @@ do
       if cmd.eBitness=64 then
       do
           if j.os.arch='arm' | j.os.arch='arm64' | j.os.arch='aarch64' then
-              cmd.eDll.sourcePath="lib/libBSF4ooRexx.dylib-64-arm64"
+              cmd.eDll.sourcePath="lib/libBSF4ooRexx850.dylib-64-arm64"
           else if j.os.arch='x86_64' then
-              cmd.eDll.sourcePath="lib/libBSF4ooRexx.dylib-64-x86_64"
+              cmd.eDll.sourcePath="lib/libBSF4ooRexx850.dylib-64-x86_64"
           else -- default to universal which includes arm64 and x86_64
-              cmd.eDll.sourcePath="lib/libBSF4ooRexx.dylib-universal"
+              cmd.eDll.sourcePath="lib/libBSF4ooRexx850.dylib-universal"
       end
       else cmd.eDll.sourcePath="lib/panic-unknown-bitness-"cmd.eBitness
    end
    else
    do
-      cmd.eDLL="libBSF4ooRexx.so"      /* define name of dynamic link library    */
-      cmd.eDLLAllBaseNames="libBSF4ooRexx*.so"     -- pattern to delete
+      cmd.eDLL="libBSF4ooRexx850.so"      /* define name of dynamic link library    */
+      cmd.eDLLAllBaseNames="libBSF4ooRexx850*.so"     -- pattern to delete
       cmd.eLibDir="/usr/local/lib"        -- target library dir
       if cmd.eBinDir="" then
          cmd.eBinDir="/usr/local/bin"        /* directory where executables reside     */
@@ -639,25 +640,25 @@ do
       select      -- determine location and name of library to use
          when cmd.eBitness=32   then
          do
-            if j.os.arch='arm'  then cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-32-arm32"
-                                else cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-32-x86"
+            if j.os.arch='arm'  then cmd.eDll.sourcePath="lib/libBSF4ooRexx850.so-32-arm32"
+                                else cmd.eDll.sourcePath="lib/libBSF4ooRexx850.so-32-x86"
          end
          when cmd.eBitness=64    then
          do
-            if j.os.arch='s390x'    then cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-64-s390x"
+            if j.os.arch='s390x'    then cmd.eDll.sourcePath="lib/libBSF4ooRexx850.so-64-s390x"
             else if j.os.arch='arm' | j.os.arch='aarch64' | j.os.arch='arm64' then    -- Linux
                                     do
-                                       if sysFileExists("lib/libBSF4ooRexx.so-64-aarch64") then
-                                          cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-64-aarch64"
+                                       if sysFileExists("lib/libBSF4ooRexx850.so-64-aarch64") then
+                                          cmd.eDll.sourcePath="lib/libBSF4ooRexx850.so-64-aarch64"
                                        else
-                                          cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-64-arm64"
+                                          cmd.eDll.sourcePath="lib/libBSF4ooRexx850.so-64-arm64"
                                     end
                                     else -- Intel/AMD
-                                       cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-64-amd64"
+                                       cmd.eDll.sourcePath="lib/libBSF4ooRexx850.so-64-amd64"
          end
 
          when j.os.arch~caselessAbbrev('aix') then
-                                     cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-64-aix"
+                                     cmd.eDll.sourcePath="lib/libBSF4ooRexx850.so-64-aix"
 
          otherwise                   cmd.eDll.sourcePath="lib/panic-unknown-bitness-"cmd.eBitness"-arch-"j.os.arch
       end
@@ -705,11 +706,11 @@ do
 
    cmd.eTestScriptName   = "rexxj.cmd" /* "testBSF4Rexx.cmd"            */
    cmd.eSetEnvironmentScriptName="setEnvironment4BSF.cmd"
-   cmd.eDLL="BSF4ooRexx.dll"     /* define name of dynamic link library    */
+   cmd.eDLL="BSF4ooRexx850.dll"     /* define name of dynamic link library    */
 
    select
-      when cmd.eBitness=32 then cmd.eDll.sourcePath="lib\BSF4ooRexx.dll-32-x86"
-      when cmd.eBitness=64 then cmd.eDll.sourcePath="lib\BSF4ooRexx.dll-64-amd64"
+      when cmd.eBitness=32 then cmd.eDll.sourcePath="lib\BSF4ooRexx850.dll-32-x86"
+      when cmd.eBitness=64 then cmd.eDll.sourcePath="lib\BSF4ooRexx850.dll-64-amd64"
       otherwise                 cmd.eDll.sourcePath="lib\panic-unknown-bitness-"cmd.eBitness
    end
 
@@ -834,13 +835,13 @@ createInstallScript: procedure expose j. cmd. path.
 
   /* call lineout fn, cmd.eLeadIn */
   call lineout fn, cmd.eEcho qe(cmd.eHintString)
-  call lineout fn, cmd.eEcho qe("installing ""BSF4ooRexx""...")
+  call lineout fn, cmd.eEcho qe("installing ""BSF4ooRexx850""...")
   call lineout fn, ""
 
      /* uninstall: */
   /* call lineout ui, cmd.eLeadIn */
   call lineout ui, cmd.eEcho qe(cmd.eHintString)
-  call lineout ui, cmd.eEcho qe("uninstalling ""BSF4ooRexx""...")
+  call lineout ui, cmd.eEcho qe("uninstalling ""BSF4ooRexx850""...")
   call lineout ui, ""
 
   if cmd.eIsUnix=1 then
@@ -870,7 +871,7 @@ createInstallScript: procedure expose j. cmd. path.
            call lineout fn, cmd.eEcho qc(cmd.eAdd2setEnvironment.i) appendTo
         end
 
-        call lineout ui, cmd.eEcho qe("removing BSF4ooRexx entries from" tmpTgt "...")
+        call lineout ui, cmd.eEcho qe("removing BSF4ooRexx850 entries from" tmpTgt "...")
         call lineout ui, cmd.e_sed_delete_profile tmpTgt
 
         if bWriteProlog then
@@ -978,7 +979,7 @@ createInstallScript: procedure expose j. cmd. path.
      if cmd.bCreateLinkInB4RHome?=.true then -- rgf, 20170109
      do
         tmpPath2libjvm=cmd.ePath2JavaDLL || j.file.separator || tmpJvmLibName -- "libjvm.so"
-        tmpTgt="/opt/BSF4ooRexx/"tmpJvmLibName
+        tmpTgt="/opt/BSF4ooRexx850/"tmpJvmLibName
         -- on Linux this needs to be a symbolic link, such that the JVM can find its Java home
         tmpCmd=cmd.eSymbolicLink tmpPath2libjvm tmpTgt
 
@@ -990,8 +991,8 @@ createInstallScript: procedure expose j. cmd. path.
      end
 
       -- copying Rexx scripts to cmd.eBinDir (/usr/local/bin)
-     call lineout fn, cmd.eEcho qc("adding BSF4ooRexx scripts to" cmd.eBinDir "...")
-     call lineout ui, cmd.eEcho qc("removing BSF4ooRexx scripts from" cmd.eBinDir "...")
+     call lineout fn, cmd.eEcho qc("adding BSF4ooRexx850 scripts to" cmd.eBinDir "...")
+     call lineout ui, cmd.eEcho qc("removing BSF4ooRexx850 scripts from" cmd.eBinDir "...")
 
      files2userBin=.array~of("../BSF.CLS", "../BSF_OnTheFly.cls", "../rexxj.sh", "../rexxj2.sh", "../rgf_util2.rex", "../rexxj2.sh", "rexxpaws.rex")
      do binFile over files2userBin
@@ -1028,7 +1029,7 @@ createInstallScript: procedure expose j. cmd. path.
             cmdLDconfig="ldconfig"
             -- only work on existing lib directories
          tmpCmd=cmdLDconfig
-         do libDir over .array~of("/usr/local/lib", "/usr/local/lib32",  "/usr/local/lib64", "/opt/BSF4ooRexx", "/usr/lib", "/usr/lib32", "/usr/lib64")
+         do libDir over .array~of("/usr/local/lib", "/usr/local/lib32",  "/usr/local/lib64", "/opt/BSF4ooRexx850", "/usr/lib", "/usr/lib32", "/usr/lib64")
             if sysFileExists(libDir) then tmpCmd = tmpCmd libDir  -- lib directory exists, add it
          end
 
@@ -1110,8 +1111,8 @@ createInstallScript: procedure expose j. cmd. path.
       tmpStr2=cmd "/remove" arg
          -- inform user
 
-      call lineout fn, cmd.eEcho qc("add BSF4ooRexx-paths to environment variable 'Path' via registry ...")
-      call lineout ui, cmd.eEcho qc("remove BSF4ooRexx-paths from environment variable 'Path' via registry ...")
+      call lineout fn, cmd.eEcho qc("add BSF4ooRexx850-paths to environment variable 'Path' via registry ...")
+      call lineout ui, cmd.eEcho qc("remove BSF4ooRexx850-paths from environment variable 'Path' via registry ...")
 
          -- carry out operation
       call lineout fn, tmpStr1
@@ -1142,8 +1143,8 @@ createInstallScript: procedure expose j. cmd. path.
          tmpStr1=cmd "/add"    arg
          tmpStr2=cmd "/remove" arg
             -- inform user
-         call lineout fn, cmd.eEcho qc("add BSF4ooRexx-jars to environment variable 'CLASSPATH' via registry ...")
-         call lineout ui, cmd.eEcho qc("remove BSF4ooRexx-jars from environment variable 'CLASSPATH' via registry ...")
+         call lineout fn, cmd.eEcho qc("add BSF4ooRexx850-jars to environment variable 'CLASSPATH' via registry ...")
+         call lineout ui, cmd.eEcho qc("remove BSF4ooRexx850-jars from environment variable 'CLASSPATH' via registry ...")
 
             -- carry out operation
          call lineout fn, tmpStr1
@@ -1242,17 +1243,17 @@ createInstallScript4javaExtension: procedure expose j. cmd. path.
 
   /* call lineout fn, cmd.eLeadIn */
   call lineout fn, cmd.eEcho qe(cmd.eHintString)
-  call lineout fn, cmd.eEcho qe("installing optional Java extension ""BSF4ooRexx""...")
+  call lineout fn, cmd.eEcho qe("installing optional Java extension ""BSF4ooRexx850""...")
   call lineout fn, ""
 
      /* uninstall: */
   call lineout ui, cmd.eEcho qe(cmd.eHintString)
-  call lineout ui, cmd.eEcho qe("uninstalling optional Java extension ""BSF4ooRexx""...")
+  call lineout ui, cmd.eEcho qe("uninstalling optional Java extension ""BSF4ooRexx850""...")
   call lineout ui, ""
 
   tgtDir=getDir(j.java.ext.dirs, 1) /* since Java 6: 1st directory "jre/lib/ext", 2nd directory: system-wide */
-  call lineout fn, cmd.eEcho qe("adding the BSF4ooRexx jar file(s) to the Java extension directory" q(tgtDir) "...")
-  call lineout ui, cmd.eEcho qe("deleting the BSF4ooRexx jar file(s) from the Java extension directory" q(tgtDir) "...")
+  call lineout fn, cmd.eEcho qe("adding the BSF4ooRexx850 jar file(s) to the Java extension directory" q(tgtDir) "...")
+  call lineout ui, cmd.eEcho qe("deleting the BSF4ooRexx850 jar file(s) from the Java extension directory" q(tgtDir) "...")
 
   do i=1 to cmd.eJarBaseNames.0    /* iterate over all found jar-files    */
      call lineout fn, cmd.eCopy   qw(cmd.eJarBaseNames.i) qw(tgtDir)
@@ -1281,7 +1282,7 @@ createInstallScript4javaExtension: procedure expose j. cmd. path.
   end
 
   tgtDir=cmd.eLibDir
-  call lineout fn, cmd.eEcho qe("adding the BSF4ooRexx dynamic link library file to the lib directory" q(tgtDir) "...")
+  call lineout fn, cmd.eEcho qe("adding the BSF4ooRexx850 dynamic link library file to the lib directory" q(tgtDir) "...")
   call lineout fn, cmd.eCopy qw(cmd.eDLL) qw(tgtDir)
   call lineout fn, ""
      /* uninstall: */
@@ -1355,7 +1356,7 @@ create_REXXJ_Script: procedure expose j. cmd. path.
      call lineout fn, cmd.eLineComment "Rexx version used to run this script:" qe(cmd.eRexxVersion)", located in:" qe(.rexxInfo~executable)
 
   call lineout fn, cmd.eLineComment "Java version used to run this script:" qe(j.java.version)", located in:" qe(j.java.home)
-  call lineout fn, cmd.eLineComment "script to run ""BSF4ooRexx"" programs without prior installation ..."
+  call lineout fn, cmd.eLineComment "script to run ""BSF4ooRexx850"" programs without prior installation ..."
   call lineout fn, ""
 
   if cmd.eIsUnix=.false then
@@ -1555,7 +1556,7 @@ createEnvironmentScript: procedure expose j. cmd. path.
 
   call stream fn, "c", "open replace"
   call lineout fn, cmd.eLineComment "created:" qe(cmd.eHintString)
-  call lineout fn, cmd.eLineComment "run this script before invoking a BSF4ooRexx program that loads Java on its own."
+  call lineout fn, cmd.eLineComment "run this script before invoking a BSF4ooRexx850 program that loads Java on its own."
   call lineout fn, ""
 
   call lineout fn, cmd.eSetBSF4OOREXX_HOME
@@ -1834,7 +1835,7 @@ info:                            /* tell user what has happened   */
   say
   say "the following scripts have been created:"
   say
-  say " " pp(cmd.eTestScriptName)": allows to run ""BSF4ooRexx"" programs without installation, e.g. to test the setup/installation:"
+  say " " pp(cmd.eTestScriptName)": allows to run ""BSF4ooRexx850"" programs without installation, e.g. to test the setup/installation:"
   say
   if cmd.eIsUnix=0 then
   do
@@ -1850,7 +1851,7 @@ info:                            /* tell user what has happened   */
   say
   say
   -- say " " pp(cmd.eInstallScriptName)": install" q("BSF4ooRexx") "and set environment variables permanently"
-  say " " pp(cmd.eInstallScriptName)": run to install" q("BSF4ooRexx")
+  say " " pp(cmd.eInstallScriptName)": run to install" q("BSF4ooRexx850")
   say
   if cmd.eIsUnix=0 then
      say "       to install as Administrator run:" cmd.eInstallScriptName.RunAsAdmin
@@ -1859,7 +1860,7 @@ info:                            /* tell user what has happened   */
   say
   say
 
-  say " " pp(cmd.eUninstallScriptName)": run to uninstall" q("BSF4ooRexx")
+  say " " pp(cmd.eUninstallScriptName)": run to uninstall" q("BSF4ooRexx850")
   say
   if cmd.eIsUnix=0 then
      say "       to uninstall as Administrator run:" cmd.eUnInstallScriptName.RunAsAdmin
@@ -1869,7 +1870,7 @@ info:                            /* tell user what has happened   */
 
   say
   say " " pp(cmd.eSetEnvironmentScriptName)": helper script for setting up the environment"
-  say "              for running BSF4ooRexx rograms"
+  say "              for running BSF4ooRexx850 rograms"
   say
 
   say "Good luck! :-)  [You may also want to take a look at these generated scripts.]"
@@ -1880,7 +1881,7 @@ info:                            /* tell user what has happened   */
 /* give user feedback and show usage of this script */
 usage:
   say
-  say "This program creates scripts to test, install and uninstall ""BSF4ooRexx""."
+  say "This program creates scripts to test, install and uninstall ""BSF4ooRexx850""."
   say
   say "Usage:     rexx setupBSF [fully-qualified-file-name-of-java.exe [dir-to-copy-scripts-to]]"
   say "  (dir-to-copy-scripts-to MUST exist)"
@@ -1897,7 +1898,7 @@ usage:
      say "           - will use /usr/bin/java"
      say "             if no java binary is found, then execute ""rexx setupJava.rex"", which"
      say "             will create the necessary symbolic links to an installed Java."
-     say "             (will also link 'libjvm.so' to '/opt/BSF4ooRexx')"
+     say "             (will also link 'libjvm.so' to '/opt/BSF4ooRexx850')"
   end
   say
 
@@ -1905,13 +1906,13 @@ usage:
   do
      say "           rexx setupBSF E:\jdk1.6\jre\bin\java.exe D:\windows\system32"
      say "           - will use ""java.exe"" from the given first argument"
-     say "           - will copy the BSF4ooRexx-support-files to the Windows system directory"
+     say "           - will copy the BSF4ooRexx850-support-files to the Windows system directory"
   end
   else
   do
      say "           rexx setupBSF /usr/lib/jvm/java-6-openjdk/jre/bin /usr/local/bin"
      say "           - will use the binary ""java"" from the given first argument"
-     say "           - will copy the BSF4ooRexx-support-files to /usr/local/bin"
+     say "           - will copy the BSF4ooRexx850-support-files to /usr/local/bin"
   end
 
   exit -1
@@ -2381,7 +2382,7 @@ syntax:
       end
 
       -- rgf, 2017-02-03: as the libBSF4ooRexx files changed (bitness and architecture appended) make sure they get ther x-bit set
-      tmpStr = tmpStr '-o -iname "libBSF4ooRexx*"'
+      tmpStr = tmpStr '-o -iname "libBSF4ooRexx850*"'
       cmd = chunk1 "\(" tmpStr "\)" chunk2   -- build command
       say "setupBSF.rex: line #" pp(.line) cmd  -- show command (for logging)
       cmd                                    -- let the shell run the command

@@ -2,7 +2,7 @@
 /*
    author:  Rony G. Flatscher
    date:    2010-08-05,14,18
-   version: 1.11
+   version: 1.12
    name:    setupAllAndRun.rex
    purpose: installer to install or reinstall the BSF4ooRexx package
 
@@ -83,13 +83,14 @@
             2021-07-13, rgf   - on Unix add "cmd.eChownUserGroup", new routine "determineGroupName(defGroup)"
             2021-07-14, rgf   - on Unix: new routine "determineHomeDir()", new "cmd.eHomeDir"
             2021-07-17, rgf   - little cleanup of code
+            2022-08-29, rgf   - changing BSF4ooRexx to BSF4ooRexx850
 
    remark:  ---
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2010-2021 Rony G. Flatscher
+       Copyright (C) 2010-2022 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -218,7 +219,7 @@ do
 end
 
 
-cmd.eInstallDirName="BSF4ooRexx"             -- name of the directory to copy to
+cmd.eInstallDirName="BSF4ooRexx850"             -- name of the directory to copy to
 cmd.eSetupBSF="setupBSF.rex"
 cmd.eSetupOOo="setupOOo.rex"
 
@@ -254,7 +255,8 @@ do
 
    cmd.eChownUserGroup = cmd.eRealUserName":"determineGroupName(cmd.eRealUserName)
 
-   cmd.eOriginalDirectory=directory(real)  -- original directory from where this script go started
+--   cmd.eOriginalDirectory=directory(real)  -- original directory from where this script go started
+   cmd.eOriginalDirectory=cmd.eThisLocation     -- 2022-08-29: "real" not functional, hence using cmd.eThisLocation instead
    cmd.eHomeDir=determineHomeDir(cmd.eRealUserName, cmd.eIsMacOSX)
 
    cmd.eOpSys="U"
@@ -454,7 +456,7 @@ do
 
          if cmd.eBInteractive=.true then
          do
-            say cmd.eThisName": fatal error (could not install BSF4ooRexx) about to exit program, please hit enter to continue ..."
+            say cmd.eThisName": fatal error (could not install BSF4ooRexx850) about to exit program, please hit enter to continue ..."
             parse pull input
          end
          say strHintToExit
@@ -462,7 +464,7 @@ do
       end
       else
       do
-         hint=cmd.eThisName": BSF4ooRexx could be installed successfully."
+         hint=cmd.eThisName": BSF4ooRexx850 could be installed successfully."
       end
    end
 
@@ -493,18 +495,18 @@ do
       end
    end
 
-   title="BSF4ooRexx - Install"
-   msg="Install was carried out (this dialog uses BSF4ooRexx already). "
+   title="BSF4ooRexx850 - Install"
+   msg="Install was carried out (this dialog uses BSF4ooRexx850 already). "
 
    if hint<>"" then msg=msg lf lf || hint
 
    if cmd.eOpSys<>"W", \cmd.eIsMacOSX then   -- neither under Windows, nor Mac
    do
       msg=msg lf -
-              lf"Please logoff/logon to make sure that the BSF4ooRexx application menu gets rebuilt." -
+              lf"Please logoff/logon to make sure that the BSF4ooRexx850 application menu gets rebuilt." -
               lf -
-              lf"(Otherwise look for the BSF4ooRexx menu options in the 'Applications' menu 'Other' and"             -
-              lf"run the BSF4ooRexx programs by right-clicking and picking the appropriate launcher.)"
+              lf"(Otherwise look for the BSF4ooRexx850 menu options in the 'Applications' menu 'Other' and"             -
+              lf"run the BSF4ooRexx850 programs by right-clicking and picking the appropriate launcher.)"
    end
 
    msg=msg lf lf"Logfile for this run can be found at:" "["cmd.eLogFileName"]"
@@ -538,13 +540,13 @@ do
    do
       if cmd.eSwitch="R" then -- attention: remove (delete) from system is chosen!
       do
-         say "This will uninstall and remove (delete!) ""BSF4ooRexx"" from your system."
+         say "This will uninstall and remove (delete!) ""BSF4ooRexx850"" from your system."
          say "Do you wish to uninstall and delete ? (yes/NO=default)"
          parse upper pull answer .     -- get user's answer
          bProceed=(answer~left(1)="Y")
          if bProceed=.false then -- do not uninstall !
          do
-            say cmd.eThisName": you do not want to uninstall and delete ""BSF4ooRexx"", hit enter to return ..."
+            say cmd.eThisName": you do not want to uninstall and delete ""BSF4ooRexx850"", hit enter to return ..."
             parse pull answer
 
             if cmd.eBLogFile=.true then cmd.eLogFile~~say("User did not want to uninstall.")~~close
@@ -647,7 +649,7 @@ do
    do
       if cmd.eBInteractive=.true | cmd.eBLogFile=.true then
       do
-         hint=cmd.eThisName": error while reinstalling BSF4ooRexx: res=["res"]."
+         hint=cmd.eThisName": error while reinstalling BSF4ooRexx850: res=["res"]."
          say hint
          cmd.eLogFile~close
          if cmd.eBInteractive=.true then
@@ -661,7 +663,7 @@ do
    end
    else
    do
-      hint=cmd.eThisName": BSF4ooRexx could be reinstalled successfully."
+      hint=cmd.eThisName": BSF4ooRexx850 could be reinstalled successfully."
    end
 
    res=createAndRunInstallationScripts(cmd., "reinstall", cmd.eSetupOOo, cmd.eInstallScriptNameOOo, -34, -35)
@@ -690,16 +692,16 @@ do
       hint=hint || cmd.eThisName": OpenOffice support could be (re-)installed successfully."
    end
 
-   title="BSF4ooRexx - Reinstall"
-   msg="Reinstall was carried out (this dialog uses BSF4ooRexx)."
+   title="BSF4ooRexx850 - Reinstall"
+   msg="Reinstall was carried out (this dialog uses BSF4ooRexx850)."
 
    if cmd.eOpSys<>"W", \cmd.eIsMacOSX then   -- neither under Windows, nor Mac
    do
       msg=msg lf -
-              lf"Please logoff/logon to make sure that the BSF4ooRexx application menu gets rebuilt." -
+              lf"Please logoff/logon to make sure that the BSF4ooRexx850 application menu gets rebuilt." -
               lf -
-              lf"(Otherwise look for the BSF4ooRexx menu options in the 'Applications' menu 'Other' and"             -
-              lf"run the BSF4ooRexx programs by right-clicking and picking the appropriate launcher.)"
+              lf"(Otherwise look for the BSF4ooRexx850 menu options in the 'Applications' menu 'Other' and"             -
+              lf"run the BSF4ooRexx850 programs by right-clicking and picking the appropriate launcher.)"
    end
 
    if hint<>"" then msg=msg lf lf || hint
@@ -938,7 +940,7 @@ exit 0
       end
 
       -- rgf, 2017-02-03: as the libBSF4ooRexx files changed (bitness and architecture appended) make sure they get ther x-bit set
-      tmpStr = tmpStr '-o -iname "libBSF4ooRexx*"'
+      tmpStr = tmpStr '-o -iname "libBSF4ooRexx850*"'
 
       cmd = chunk1 "\(" tmpStr "\)" chunk2   -- build command
       strTmp="setupAllAndRun.rex: line # [".line"]" cmd
@@ -1018,7 +1020,7 @@ any:                 -- something went wrong while executing the program
   expose fileName stream cmd.
   use strict arg cmd.
 
-  filename="BSF4ooRexx_" || .dateTime~new~string~changeStr(":","-") || ".log"      -- logfile name
+  filename="BSF4ooRexx850_" || .dateTime~new~string~changeStr(":","-") || ".log"      -- logfile name
 
   if cmd.eOpSys="W" then
      fileName=value("USERPROFILE",,"ENVIRONMENT")"\"fileName
@@ -1035,7 +1037,9 @@ any:                 -- something went wrong while executing the program
 
      cmd.eChownUserGroup = cmd.eRealUserName":"determineGroupName(cmd.eRealUserName)
 
-     cmd.eOriginalDirectory=directory(real)  -- original directory from where this script go started
+     -- cmd.eOriginalDirectory=directory(real)  -- original directory from where this script go started
+     cmd.eOriginalDirectory=cmd.eThisLocation     -- 2022-08-29: "real" not functional, hence using cmd.eThisLocation instead
+
      cmd.eHomeDir=determineHomeDir(cmd.eRealUserName, cmd.eIsMacOSX)
 
      -- if Unix user is root, then we place the logfile into "/tmp"

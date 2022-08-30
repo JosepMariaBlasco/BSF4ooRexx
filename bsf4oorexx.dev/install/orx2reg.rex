@@ -4,7 +4,7 @@
 
    date:       2008-05-12, rgf
 
-   version:    1.0.3
+   version:    1.0.4
 
    authors:    Rony G. Flatscher
 
@@ -37,6 +37,7 @@
             2011-03-20, ---rgf: - added possibility to define an icon to a shortcut
                                 - added menu-entry "ooRexxTry.rxj"
             2011-06-19, ---rgf: add the new icons from Graham Wilson for reinstall and uninstall
+            2022-08-29, ---rgf: change BSF4ooRexx to BSF4ooRexx850
 
 
 
@@ -394,7 +395,7 @@ syntax: return .nil
 
   if menuFolder="" then return   -- folder is not defined for this Windows system
 
-  menuFolder=menuFolder"\BSF4ooRexx"
+  menuFolder=menuFolder"\BSF4ooRexx850"
   menuFolderInstallation=menuFolder"\Installation"
 
   if SysFileExists(path2ShortCut) then
@@ -413,7 +414,7 @@ syntax: return .nil
      -- REINSTALL
      reinstallScript=subLocation"\reinstall.cmd"
      iconLocation=location"\images\windows\bsf4rexx-reinstall.ico, 0"
-     call createMenu menuFolderInstallation, "Reinstall BSF4ooRexx.lnk", reinstallScript, "Reinstalls BSF4ooRexx.", subLocation, .nil, iconLocation
+     call createMenu menuFolderInstallation, "Reinstall BSF4ooRexx850.lnk", reinstallScript, "Reinstalls BSF4ooRexx850.", subLocation, .nil, iconLocation
      -- call createMenu menuFolderInstallation, "Reinstall BSF4ooRexx.lnk", reinstallScript, "Reinstalls BSF4ooRexx.", subLocation
 
 --     reinstallScript=subLocation"\reinstall_runas_Administrator.cmd"
@@ -422,7 +423,7 @@ syntax: return .nil
      -- UNINSTALL
      rmDir=qualify(location"..")    -- determine root of this installation directory
      args=""
-     if rmDir~right(10)="BSF4ooRexx" then -- make sure we are deleting the BSF4ooRexx directory !
+     if rmDir~right(10)="BSF4ooRexx850" then -- make sure we are deleting the BSF4ooRexx directory !
      do
          -- if testFile does not exist, uninstalling took place, but because of the tempDir the
          -- path ./BSF4ooRexx/install/windows may not have been successfully removed, hence:
@@ -445,7 +446,7 @@ syntax: return .nil
 
      uninstallScript=subLocation"\uninstall.cmd"
      iconLocation=location"\images\windows\bsf4rexx-uninstall.ico, 0"
-     call createMenu menuFolderInstallation, "Uninstall BSF4ooRexx.lnk", uninstallScript, "Uninstalls BSF4ooRexx and removes it from the system.", subLocation, args, iconLocation
+     call createMenu menuFolderInstallation, "Uninstall BSF4ooRexx850.lnk", uninstallScript, "Uninstalls BSF4ooRexx850 and removes it from the system.", subLocation, args, iconLocation
      -- call createMenu menuFolderInstallation, "Uninstall BSF4ooRexx.lnk", uninstallScript, "Uninstalls BSF4ooRexx and removes it from the system.", subLocation, args
 
 --     uninstallScript=subLocation"\uninstall_runas_Administrator.cmd"
@@ -455,16 +456,16 @@ syntax: return .nil
      -- LINKS TO FOLDERS/URL
 --     webSite="http://wi.wu.ac.at/rgf/rexx/bsf4oorexx/current/"
      webSite="http://sourceforge.net/projects/bsf4oorexx/files/"
-     call createMenu menuFolderInstallation, "BSF4ooRexx Download Page.lnk", webSite, "Opens the ""BSF4ooRexx"" download page on the Internet."
+     call createMenu menuFolderInstallation, "BSF4ooRexx850 Download Page.lnk", webSite, "Opens the ""BSF4ooRexx850"" download page on the Internet."
 
      InformationFolder=qualify(location"..\information") -- Folder that has additional infos, including ReleaseNotes.txt
-     call createMenu menuFolder, "Information (ReleaseNotes, introductions to ooRexx, BSF4ooRexx overview).lnk", InformationFolder, "Opens the BSF4ooRexx ""information"" folder."
+     call createMenu menuFolder, "Information (ReleaseNotes, introductions to ooRexx, BSF4ooRexx850 overview).lnk", InformationFolder, "Opens the BSF4ooRexx850 ""information"" folder."
 
      InformationFolder=qualify(location"..\samples") -- Folder that has additional infos, including ReleaseNotes.txt
-     call createMenu menuFolder, "Samples (simple to comprehensive BSF4ooRexx examples).lnk", InformationFolder, "Opens the BSF4ooRexx ""samples"" folder."
+     call createMenu menuFolder, "Samples (simple to comprehensive BSF4ooRexx850 examples).lnk", InformationFolder, "Opens the BSF4ooRexx850 ""samples"" folder."
 
      UtilitiesFolder=qualify(location"..\utilities") -- Folder that has additional infos, including ReleaseNotes.txt
-     call createMenu menuFolder, "Utilities (some platform-independent utility scripts).lnk", UtilitiesFolder, "Opens the BSF4ooRexx ""utilities"" folder."
+     call createMenu menuFolder, "Utilities (some platform-independent utility scripts).lnk", UtilitiesFolder, "Opens the BSF4ooRexx850 ""utilities"" folder."
 
       /* create menu entry for "ooRexxTry.rxj" */
      linkName   ="GUI RexxTry Program (ooRexxTry.rxj).lnk"

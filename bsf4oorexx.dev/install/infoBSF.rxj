@@ -5,11 +5,11 @@
    tests the BSF4Rexx installation, queries all version information;
    can be invoked directly or via Java, e.g. "rexxj infoBSF.rxj"
            2011-02-09, give architecture information (bitness, arch-name), extension path(s)
-
+           2022-08-30, renamed library name from "BSF4ooRexx" to "BSF4ooRexx850"
    license:
 
    ------------------------ Apache Version 2.0 license -------------------------
-      Copyright 2006-2011 Rony G. Flatscher
+      Copyright 2006-2022 Rony G. Flatscher
 
       Licensed under the Apache License, Version 2.0 (the "License");
       you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@
 
 if rxFuncQuery("BSF") = 1 then   /* BSF() support not loaded yet ? */
 do
-   call rxFuncAdd "BsfLoadFuncs", "BSF4ooRexx", "BsfLoadFuncs"
+   call rxFuncAdd "BsfLoadFuncs", "BSF4ooRexx850", "BsfLoadFuncs"
    call BsfLoadFuncs
    call BsfLoadJava
 end
