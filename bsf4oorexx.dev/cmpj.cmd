@@ -77,6 +77,7 @@ copy %javaSrc%\RexxCommandHandler.java        %path2engine%
 copy %javaSrc%\RexxRedirectingCommandHandler.java       %path2engine%
 copy %javaSrc%\AbstractRedirectingCommandHandler.java   %path2engine%
 copy %javaSrc%\AbstractDirectCommandHandler.java        %path2engine%
+copy %javaSrc%\AbstractExitHandler.java       %path2engine%
 copy %javaSrc%\RexxConfiguration.java         %path2engine%
 
 @rem 2009-07-31
@@ -141,6 +142,7 @@ javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxRedirectingCommandHandler.j
 
 javac %javacDefines% %javaBaseLine%    %javaSrc%\AbstractRedirectingCommandHandler.java    && copy %javaSrc%\AbstractRedirectingCommandHandler*         %path2engine%
 javac %javacDefines% %javaBaseLine%    %javaSrc%\AbstractDirectCommandHandler.java         && copy %javaSrc%\AbstractDirectCommandHandler*         %path2engine%
+javac %javacDefines% %javaBaseLine%    %javaSrc%\AbstractExitHandler.java       && copy %javaSrc%\AbstractExitHandler*        %path2engine%
 
 javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxConfiguration.java         && copy %javaSrc%\RexxConfiguration*          %path2engine%
 
