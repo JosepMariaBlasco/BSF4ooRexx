@@ -33,7 +33,7 @@ package org.rexxla.bsf.engines.rexx;   // belongs to that fine package ;) ...
  *
  *
  * @author Rony G. Flatscher
- * @version 850.0
+ * @version 850.20220901
  * @since 2022-08-22
  */
 
@@ -45,6 +45,11 @@ package org.rexxla.bsf.engines.rexx;   // belongs to that fine package ;) ...
                               - turning all static methods into default methods
                                 such that Rexx[Redirecting]CommandHandler, RexxExitHandler
                                 get direct access to them
+            2022-09-01, rgf - add methods to ease creation of an empty Array (createArrayObject()),
+                              a Directory (createDirectoryObject()),
+                              a Stem (createStemObject()) or a StringTable
+                              (createStringTableObject()), in case a handler needs them in order
+                              to add information and use the collection object in setContextVariable()
 */
 
 // public abstract class RexxHandler
@@ -52,7 +57,7 @@ public interface RexxHandler
 {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change. */
-    final static public String version = "850.20220822";
+    final static public String version = "850.20220901";
 
 
     /** Raises a condition in the current Rexx thread, pass-through method to the Rexx API, which
@@ -196,6 +201,50 @@ public interface RexxHandler
     {
         Object [] arrSlot=(Object[]) slot;
         ((RexxAndJava) arrSlot[0]).jniDropContextVariable(arrSlot, variableName);
+    }
+
+    /** Returns a newly created ooRexx <code>Array</code> collection object.
+     *
+     * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
+     * @return the newly created ooRexx collection object
+     */
+    default Object createArrayObject(Object slot)
+    {
+        Object [] arrSlot=(Object[]) slot;
+        return ((RexxAndJava) arrSlot[0]).jniCreateCollectionObject(arrSlot, 0);
+    }
+
+    /** Returns a newly created ooRexx <code>Directory</code> collection object.
+     *
+     * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
+     * @return the newly created ooRexx collection object
+     */
+    default Object createDirectoryObject(Object slot)
+    {
+        Object [] arrSlot=(Object[]) slot;
+        return ((RexxAndJava) arrSlot[0]).jniCreateCollectionObject(arrSlot, 1);
+    }
+
+    /** Returns a newly created ooRexx <code>Stem</code> collection object.
+     *
+     * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
+     * @return the newly created ooRexx collection object
+     */
+    default Object createStemObject(Object slot)
+    {
+        Object [] arrSlot=(Object[]) slot;
+        return ((RexxAndJava) arrSlot[0]).jniCreateCollectionObject(arrSlot, 2);
+    }
+
+    /** Returns a newly created ooRexx <code>StringTable</code> collection object.
+     *
+     * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
+     * @return the newly created ooRexx collection object
+     */
+    default Object createStringTableObject(Object slot)
+    {
+        Object [] arrSlot=(Object[]) slot;
+        return ((RexxAndJava) arrSlot[0]).jniCreateCollectionObject(arrSlot, 3);
     }
 
 

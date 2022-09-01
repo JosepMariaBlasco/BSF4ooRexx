@@ -40,8 +40,7 @@
 #/*----------------------------------------------------------------------------*/
 
 
-# This is a Visual C++, nMake compatible make file for the myData example.
-#
+# This is a Visual C++, nMake compatible make file
 #
 # The compiler needs to be able to find the ooRexx native API headers and
 # libraries. If REXX_HOME is set on the system, the correct directory will be

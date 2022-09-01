@@ -363,6 +363,14 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRCH_1Writ
 
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniCreateCollectionObject
+ * Signature: ([Ljava/lang/Object;I)Ljava/lang/Object;
+ */
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniCreateCollectionObject
+  (JNIEnv *, jobject, jobjectArray, jint);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
  * Method:    jniInitialize4Rexx
  * Signature: ()I
  */

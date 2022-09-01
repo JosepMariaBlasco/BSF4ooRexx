@@ -113,7 +113,8 @@ REXX_LIBS = rexx.lib rexxapi.lib
 
 WARNINGFLAGS = /W3       /D_CRT_SECURE_NO_DEPRECATE /D_CRT_NONSTDC_NO_DEPRECATE
 
-DEF_FILE = /def:BSF4ooRexx-32.def
+# 20220829, not needed anymore?
+# DEF_FILE = /def:BSF4ooRexx-32.def
 
 !IF DEFINED(RELEASE)
 # Set the compile and link flags for a release build

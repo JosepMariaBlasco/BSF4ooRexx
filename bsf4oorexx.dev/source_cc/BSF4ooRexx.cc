@@ -37,6 +37,13 @@ remarks:
 inline jint impl_jniRexxHaltInterpreterInstance (JNIEnv *env, jobject jobj, jstring j_rii_ID)
 
 
+     // kind: 0=Array, 1=Directory, 2=Stem, 3=StringTable
+    2022-09-01, rgf: - added ... _jniCreateCollectionObject() to create and return:
+                       kind: 0=Array, 1=Directory, 2=Stem, 3=StringTable
+
+    2022-08-30, rgf: - report BsfCommandHandler()
+    2022-08-29, rgf: - change to "/opt/BSF4ooRexx850" as well
+
     2022-08-19, rgf: - new: JNI functions Read() and Write() for redirecting command handlers;
                        these functions employ RexxIORedirectorContext for ReadInput(),
                        ReadInputBuffer(), WriteOutput(), WriteOutputBuffer(), WriteError(),
@@ -1093,21 +1100,21 @@ thread_id_t  RgfGetTID();
 
 #if defined (BSF4REXX_32_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20220824 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220901 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20220824 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220901 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #elif defined (BSF4REXX_64_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20220824 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220901 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20220824 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220901 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #else
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20220824 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220901 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20220824 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220901 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #endif
 
@@ -4105,6 +4112,7 @@ CSTRING ApiFncTable[]=      // if invoked via Rexx, these are the functions we r
 {
     "BSF"                         ,
 //    "BsfAttachToTID"              , // ---rgf, 2003-08-06, 2014-05-15: do not report anymore (auto-attach implemented)
+    "BsfCommandHandler"           ,  // rgf, 2022-08
     "BsfContextVariables"         ,  // rgf, 2015-06-07
     "BsfCreateRexxProxy"          , // ---rgf, 2009-09-12
 //    "BsfDetach"                   , // ---rgf, 2008-07-26, 2014-05-15: do not report anymore (auto-attach implemented)
@@ -4137,6 +4145,7 @@ CSTRING ApiFncTable4Java[]=      // if invoked via Java, these are the functions
 {
     "BSF"                         ,
 //    "BsfAttachToTID"              , // ---rgf, 2003-08-06, 2014-05-15: do not report anymore (auto-attach implemented)
+    "BsfCommandHandler"           ,  // rgf, 2022-08
     "BsfContextVariables"         ,  // rgf, 2015-06-07
     "BsfCreateRexxProxy"          , // ---rgf, 2009-09-12
 //    "BsfDetach"                   , // ---rgf, 2008-07-26, 2014-05-15: do not report anymore (auto-attach implemented)
@@ -5245,7 +5254,7 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
        //                  honor JAVA_HOME environment variable, if set
 
         #ifdef __APPLE__
-           hVM=dlopen("/opt/BSF4ooRexx/libjvm.dylib", RTLD_LAZY | RTLD_GLOBAL ); // try link to JVM (it may not exist)
+           hVM=dlopen("/opt/BSF4ooRexx850/libjvm.dylib", RTLD_LAZY | RTLD_GLOBAL ); // try link to JVM (it may not exist)
 // fprintf(stderr, "APPLE: hVM=[%p] /opt/BSF4ooRexx/libjvm.dylib ...\n", hVM);
 
            // 2021-07-18, rgf: honor JAVA_HOME
@@ -5282,7 +5291,7 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
 
         #else  // ohter Unixes, e.g. Linux
 
-           hVM=dlopen("/opt/BSF4ooRexx/libjvm.so", RTLD_LAZY | RTLD_GLOBAL );
+           hVM=dlopen("/opt/BSF4ooRexx850/libjvm.so", RTLD_LAZY | RTLD_GLOBAL );
            // 2021-07-18, rgf: honor JAVA_HOME
            if (hVM==NULL)   // not found, now look for environemnet variable JAVA_HOME
            {
@@ -5480,7 +5489,7 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
     if ( bJLPdefined==FALSE )    // "java.library.path" not given in Rexx arguments
     {
         // create option for setting "java.class.path" to CLASSPATH
-        char strJLP[] = "/opt/BSF4ooRexx:/usr/lib:/usr/lib64:/usr/local/lib:/usr/local/lib64:.";
+        char strJLP[] = "/opt/BSF4ooRexx850:/usr/lib:/usr/lib64:/usr/local/lib:/usr/local/lib64:.";
         size_t bufLen=strlen(strJLP)+needleLength+2;
         options[m].optionString = (char *) malloc(bufLen+1);    // get needed memory
         snprintf( options[m].optionString, bufLen+1, "%s%s", jvlpNeedle, strJLP);
@@ -7808,7 +7817,7 @@ RexxRoutine3(RexxObjectPtr, BsfCommandHandler, CSTRING, option, OPTIONAL_CSTRING
     {
 
 #if defined (DEBUG_COMMAND_HANDLER)
-        fprintf(stderr, "BSF4ooRexx.cc %d %s: option 'Add'\n", __LINE__, __FUNCTION__);fflush(stderr);
+        fprintf(stderr, "%s %d %s: option 'Add'\n", DLLNAME, __LINE__, __FUNCTION__);fflush(stderr);
 #endif
 
         if (argumentOmitted(2) || strlen(name)==0)
@@ -7862,7 +7871,7 @@ RexxRoutine3(RexxObjectPtr, BsfCommandHandler, CSTRING, option, OPTIONAL_CSTRING
     else if (option[0]=='L' || option[0]=='l')  // List
     {
 #if defined (DEBUG_COMMAND_HANDLER)
-        fprintf(stderr, "BSF4ooRexx.cc %d %s: option 'List'\n", __LINE__, __FUNCTION__);fflush(stderr);
+        fprintf(stderr, "%s %d %s: option 'List'\n", DLLNAME, __LINE__, __FUNCTION__);fflush(stderr);
 #endif
 
         mode=1;
@@ -7870,7 +7879,7 @@ RexxRoutine3(RexxObjectPtr, BsfCommandHandler, CSTRING, option, OPTIONAL_CSTRING
     else    // unknown option
     {
 #if defined (DEBUG_COMMAND_HANDLER)
-        fprintf(stderr, "BSF4ooRexx.cc %d %s: unknown option '%s'\n", __LINE__, __FUNCTION__, option);fflush(stderr);
+        fprintf(stderr, "%s %d %s: unknown option '%s'\n", DLLNAME, __LINE__, __FUNCTION__, option);fflush(stderr);
 #endif
 
         snprintf( msg, 256, "%.16s/routine/BsfCommandHandler(), error 7: supplied option (argument 1) \"%s\" unknown, must be one of \"Add\" or \"List\"", DLLNAME);
@@ -10578,7 +10587,7 @@ inline jint impl_jniUnregisterRexxObject (JNIEnv *env, jobject jobj, jstring obj
 
 if (result==-1)
 {
-    fprintf(stderr, "*** UNEXPECTED, UNEXPECTED, UNEXPECTED: while removing obj_ID=[%s], Rexx object could not be found in BSF4ooRexx registry! UNEXPECTED, UNEXPECTED, UNEXPECTED ***\n",
+    fprintf(stderr, "*** UNEXPECTED, UNEXPECTED, UNEXPECTED: while removing obj_ID=[%s], Rexx object could not be found in BSF4ooRexx850 registry! UNEXPECTED, UNEXPECTED, UNEXPECTED ***\n",
                      c_obj_ID);
     fflush(stderr);
 }
@@ -12671,6 +12680,51 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetCon
     return jobj;    // return Rexx condition object as a (Java) RexxProxy
 }
 
+
+
+// ----------------------------------------------------------------------------------------------
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniCreateCollectionObject
+ * Signature: ([Ljava/lang/Object;I)Ljava/lang/Object;
+
+     // kind: 0=Array, 1=Directory, 2=Stem, 3=StringTable
+ */
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniCreateCollectionObject
+  (JNIEnv *env, jobject rajo, jobjectArray j_slot, jint kind)
+{
+#if defined (DEBUG_JNI)
+    fprintf(stderr, "==> ==> 1/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniCreateCollectionObject <== <==\n");
+#endif
+
+        // get RexxExitContext from opaque slot argument
+    RexxExitContext  *context=(RexxExitContext *) rgfUnwrapPointer(env, (jstring) env->GetObjectArrayElement(j_slot, (jint) 2));
+    RexxObjectPtr rop=NULL;
+    switch (kind)       // create appropriate collection object
+    {
+        case 0:  rop = context->NewArray      (0); break;   // initially a size of 0
+        case 1:  rop = context->NewDirectory  () ; break;
+        case 2:  rop = context->NewStem       ("jni/java_created_stem"); break;
+        case 3:
+        default:
+                 rop = context->NewStringTable() ;
+    }
+
+
+#if defined (DEBUG_JNI)
+    fprintf(stderr, "==> ==> 2/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniCreateCollectionObject rop=[%p] <== <==\n",rop);
+#endif
+
+    // STRUCT_ATTACH_PARAM param={env,rajo,riid,bDetach,error};
+    STRUCT_ATTACH_PARAM param={env, rajo, 0, false, 0};
+    jobject jobj=RgfRexxObject2JavaObject(&param,context->threadContext,rop);
+
+#if defined (DEBUG_JNI)
+    fprintf(stderr, "==> ==> 3/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniCreateCollectionObject <== <==\n");
+#endif
+
+    return jobj;    // return Rexx condition object as a (Java) RexxProxy
+}
 
 
 
