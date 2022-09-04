@@ -5,13 +5,13 @@
    2008-09-09, rgf, changed "registerBean" and "registerBeanStrict" to their synonyms
                     "new" and "newStrict" which better describe the semantics of
                     these subfunctions
-
    2010-02-10, rgf, fixed library name
+   2022-08-30, rgf, changed "BSF4ooRexx" to "BSF4ooRexx850"
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2003-2010 Rony G. Flatscher
+       Copyright (C) 2003-2022 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@
 
 if rxFuncQuery("BSF") then  /* no bsf4rexx support available yet, hence load Java */
 do
-   call rxFuncAdd "BsfLoadFuncs", "BSF4ooRexx", "BsfLoadFuncs"
+   call rxFuncAdd "BsfLoadFuncs", "BSF4ooRexx850", "BsfLoadFuncs"
    call BsfLoadFuncs    /* load all BSF-functions                    */
    call BsfLoadJava     /* load the JVM and set up BSF4Rexx-support  */
 end

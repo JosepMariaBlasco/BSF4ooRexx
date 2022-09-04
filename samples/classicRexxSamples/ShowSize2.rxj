@@ -31,6 +31,7 @@
                              "new" and "newStrict" which better describe the semantics of
                              these subfunctions
             2010-02-16, rgf, adapted library name to "BSF4ooRexx"
+            2022-08-30, rgf, changed "BSF4ooRexx" to "BSF4ooRexx850"
 
    Author:   Rony G. Flatscher, University of Essen, WU Wien University,
              derived from Peter Kalender's proof-of-concept work for the "Essener Ski Seminar",
@@ -39,7 +40,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2001-2010 Rony G. Flatscher
+       Copyright (C) 2001-2022 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -57,7 +58,7 @@
 
 if rxFuncQuery("BSF") then  /* no bsf4rexx support available yet, hence load Java */
 do
-   call rxFuncAdd "BsfLoadFuncs", "BSF4ooRexx", "BsfLoadFuncs"
+   call rxFuncAdd "BsfLoadFuncs", "BSF4ooRexx850", "BsfLoadFuncs"
    call BsfLoadFuncs    /* load all BSF-functions                    */
    call BsfLoadJava     /* load the JVM and set up BSF4Rexx-support  */
 end

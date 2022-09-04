@@ -21,8 +21,10 @@ the static method where the extensionmap is defined:
                     BSF4ooRexx does not anymore consult the BSFManager declared
                     beans automatically anymore
 
+   2022-08-30, rgf, changed "BSF4ooRexx" to "BSF4ooRexx850"
+
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2001-2018 Rony G. Flatscher
+       Copyright (C) 2001-2022 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -40,7 +42,7 @@ the static method where the extensionmap is defined:
 
 if rxFuncQuery("BSF") then  /* no bsf4rexx support available yet, hence load Java */
 do
-   call rxFuncAdd "BsfLoadFuncs", "BSF4ooRexx", "BsfLoadFuncs"
+   call rxFuncAdd "BsfLoadFuncs", "BSF4ooRexx850", "BsfLoadFuncs"
    call BsfLoadFuncs    /* load all BSF-functions                    */
    call BsfLoadJava     /* load the JVM and set up BSF4Rexx-support  */
 end

@@ -28,7 +28,7 @@
             2009-08-26 Walter Pachl added the new states (Slovenia, Malta, Cyprus, Slovakia)
                                     added help and corrected vertical position of output fields
             2010-02-16, rgf, adapted library name to "BSF4ooRexx"
-
+            2022-08-30, rgf, changed "BSF4ooRexx" to "BSF4ooRexx850"
 
    Author:   Rony G. Flatscher, University of Augsburg, WU Wien University,
              (cf. "http://nestroy.wi-inf.uni-essen.de/Lv/seminare/ws0001/index-e.html");
@@ -48,7 +48,7 @@ End
 
 if rxFuncQuery("BSF") then  /* no bsf4rexx support available yet, hence load Java */
 do
-   call rxFuncAdd "BsfLoadFuncs", "BSF4ooRexx", "BsfLoadFuncs"
+   call rxFuncAdd "BsfLoadFuncs", "BSF4ooRexx850", "BsfLoadFuncs"
    call BsfLoadFuncs    /* load all BSF-functions                    */
    call BsfLoadJava     /* load the JVM and set up BSF4Rexx-support  */
 end
@@ -300,7 +300,7 @@ setup_java_awt_gui : procedure expose euro.
    license(s): choice of
 
     ------------------------ Apache Version 2.0 license (AL2.0)-------------------------
-       Copyright (C) 2001-2010 Rony G. Flatscher
+       Copyright (C) 2001-2022 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -318,7 +318,7 @@ setup_java_awt_gui : procedure expose euro.
     or
 
     ------------------------ GNU Lesser Public License 3.0 (LGPL3.0) ----------------------
-       Copyright (C) 2001-2010 Rony G. Flatscher
+       Copyright (C) 2001-2022 Rony G. Flatscher
 
        Licensed under the GNU Lesser Pubilc License, 3.0 (the "License");
        you may not use this file except in compliance with the License.
