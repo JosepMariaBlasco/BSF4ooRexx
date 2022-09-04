@@ -37,7 +37,7 @@ remarks:
 inline jint impl_jniRexxHaltInterpreterInstance (JNIEnv *env, jobject jobj, jstring j_rii_ID)
 
 
-     // kind: 0=Array, 1=Directory, 2=Stem, 3=StringTable
+    2022-09-02, rgf: - added stemName string argument to ... _jniCreateCollectionObject()
     2022-09-01, rgf: - added ... _jniCreateCollectionObject() to create and return:
                        kind: 0=Array, 1=Directory, 2=Stem, 3=StringTable
 
@@ -1100,21 +1100,21 @@ thread_id_t  RgfGetTID();
 
 #if defined (BSF4REXX_32_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20220901 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220902 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20220901 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220902 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #elif defined (BSF4REXX_64_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20220901 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220902 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20220901 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220902 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #else
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20220901 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220902 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20220901 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220902 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #endif
 
@@ -12686,12 +12686,11 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetCon
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
  * Method:    jniCreateCollectionObject
- * Signature: ([Ljava/lang/Object;I)Ljava/lang/Object;
-
-     // kind: 0=Array, 1=Directory, 2=Stem, 3=StringTable
+ * Signature: ([Ljava/lang/Object;ILjava/lang/String;)Ljava/lang/Object;
+              // kind: 0=Array, 1=Directory, 2=Stem, 3=StringTable
  */
 JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniCreateCollectionObject
-  (JNIEnv *env, jobject rajo, jobjectArray j_slot, jint kind)
+  (JNIEnv *env, jobject rajo, jobjectArray j_slot, jint j_kind, jstring j_someString)
 {
 #if defined (DEBUG_JNI)
     fprintf(stderr, "==> ==> 1/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniCreateCollectionObject <== <==\n");
@@ -12700,14 +12699,34 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniCreate
         // get RexxExitContext from opaque slot argument
     RexxExitContext  *context=(RexxExitContext *) rgfUnwrapPointer(env, (jstring) env->GetObjectArrayElement(j_slot, (jint) 2));
     RexxObjectPtr rop=NULL;
-    switch (kind)       // create appropriate collection object
+    switch (j_kind)     // create appropriate collection object
     {
-        case 0:  rop = context->NewArray      (0); break;   // initially a size of 0
-        case 1:  rop = context->NewDirectory  () ; break;
-        case 2:  rop = context->NewStem       ("jni/java_created_stem"); break;
-        case 3:
-        default:
-                 rop = context->NewStringTable() ;
+    case 0: rop = context->NewArray      (0); break;   // initially a size of 0
+
+    case 1: rop = context->NewDirectory  () ; break;
+
+    case 2:
+        {
+            if (j_someString==NULL)     // no stem base name given?
+            {
+                rop = context->NewStem("STEM_CREATED_VIA_JAVA");
+            }
+            else
+            {
+                RexxStringObject rso_someString= (j_someString==NULL ? NULL :
+                            (RexxStringObject) JNU_GetStringNativeCharsReturningRexxStringObject(env, j_someString, context->threadContext));
+
+                char * c_someString=(char *) JNU_GetStringNativeChars(env, j_someString);   // convert to native string
+                rop=context->NewStem(c_someString); // use supplied string as stem base name
+                free(c_someString);
+            }
+        }
+        break;
+
+    case 3:
+
+    default:
+            rop = context->NewStringTable() ;
     }
 
 

@@ -40,7 +40,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 850, 2022-09-01
+  * @version 850, 2022-09-02
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -53,6 +53,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
 
  /*
+     2022-09-02, rgf  - added argument string to jniCreateCollectionObject ()
      2022-09-01, rgf  - new protected native Object  jniCreateCollectionObject (Object[] slot, int kind)
                         to ease handler code, if it wants to set a context variable with information
                         in one of the following Rexx collections, kind: 0=Array, 1=Directory,
@@ -624,7 +625,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "850.20220901";
+    static final public String version = "850.20220902";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -1376,7 +1377,7 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
 
      // rgf, 2022-09-01 ---- add support for RexxHandler to get a new array, directory, stem, stringtable object
      // kind: 0=Array, 1=Directory, 2=Stem, 3=StringTable
-     protected native Object  jniCreateCollectionObject  (Object[] slot, int kind);
+     protected native Object  jniCreateCollectionObject  (Object[] slot, int kind, String someString);
 
 
     /**  rgf, 2003-01-15, used for allowing the BSF4ooRexx-DLL to get at *env, *obj and then to mid etc.
