@@ -9,14 +9,16 @@
 
    Usage:   just invoke it, use rxqueue to pipe success message into calling program
 
-   Version: 1.00
+   Version: 1.01
+
+   Changes: 2022-09-19, rgf   - changed "BSF4ooRexx" to "BSF4ooRexx850"
 
    Last svn check-in: $Revision: 912 $ $Author: Administrator $ $Date: 2010-08-23 16:49:55 +0200 (Mon, 23 Aug 2010) $
 
    License:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2017 Rony G. Flatscher
+       Copyright (C) 2017-2022 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -35,11 +37,11 @@
    -- ".java.lang.System is the Rexx proxy class for "java.lang.System", if everything worked out
 if .java.lang.System~isA(.class) then
 do
-   say "==> CONGRATULATIONS! Installation of 'BSF4ooRexx' was successful! :) <=="
+   say "==> CONGRATULATIONS! Installation of 'BSF4ooRexx850' was successful! :) <=="
    return
 end
 
-say "==> INSTALLATION OF 'BSF4ooRexx' WAS *NOT* SUCCESSFUL! :( <=="
+say "==> INSTALLATION OF 'BSF4ooRexx850' WAS *NOT* SUCCESSFUL! :( <=="
 
 
 ::requires "BSF.CLS" -- create and setup ooRexx-Java bridge

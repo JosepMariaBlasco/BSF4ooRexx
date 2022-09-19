@@ -68,7 +68,8 @@ end
 
 -- build argument to be passed to Rexx
 if args~upper="UNINSTALL" then     -- add commands to delete directory tree
-   args ="..\setupAllAndRun.rex" args "&& cd ..\..\.. && rd /s /q bsf4oorexx"
+   args ="..\setupAllAndRun.rex" args "&& cd ..\..\.. && rd /s /q bsf4oorexx850"
 else
    args ="..\setupAllAndRun.rex" args
 call elevate.rex args
+

@@ -1,14 +1,14 @@
 
 -------------------------------------- 2022-08-23 ----------------------------------
--  ranches/850/bsf4oorexx.dev/bin/BSF.CLS
-   ranches/850/bsf4oorexx.dev/source_cc/BSF4ooRexx.cc
-   ranches/850/bsf4oorexx.dev/source_cc/lib/BSF4ooRexx.dll-64-amd64
-   ranches/850/bsf4oorexx.dev/source_java/RexxHandler.class
-   ranches/850/bsf4oorexx.dev/source_java/RexxHandler.java
-   ranches/850/bsf4oorexx.dev/source_java/RexxRedirectingCommandHandler.java
-   ranches/850/bsf4oorexx.dev/testUnits/bsf4rexx/rgf/H_850/05_redirectingHandler.testGroup
-   ranches/850/bsf4oorexx.dev/testUnits/bsf4rexx/rgf/H_850/RedirectingHandler2.class
-   ranches/850/bsf4oorexx.dev/testUnits/bsf4rexx/rgf/H_850/RedirectingHandler2.java
+-  Branches/850/bsf4oorexx.dev/bin/BSF.CLS
+   Branches/850/bsf4oorexx.dev/source_cc/BSF4ooRexx.cc
+   Branches/850/bsf4oorexx.dev/source_cc/lib/BSF4ooRexx.dll-64-amd64
+   Branches/850/bsf4oorexx.dev/source_java/RexxHandler.class
+   Branches/850/bsf4oorexx.dev/source_java/RexxHandler.java
+   Branches/850/bsf4oorexx.dev/source_java/RexxRedirectingCommandHandler.java
+   Branches/850/bsf4oorexx.dev/testUnits/bsf4rexx/rgf/H_850/05_redirectingHandler.testGroup
+   Branches/850/bsf4oorexx.dev/testUnits/bsf4rexx/rgf/H_850/RedirectingHandler2.class
+   Branches/850/bsf4oorexx.dev/testUnits/bsf4rexx/rgf/H_850/RedirectingHandler2.java
    branches/850/bsf4oorexx.dev/testUnits/bsf4rexx/rgf/H_850/01_sendMailScoped.testGroup (new)
    branches/850/bsf4oorexx.dev/testUnits/bsf4rexx/rgf/H_850/06_redirectingHandler_preconfigured.testGroup (new)
 

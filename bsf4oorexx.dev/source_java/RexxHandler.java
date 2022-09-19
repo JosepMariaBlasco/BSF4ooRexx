@@ -61,12 +61,12 @@ public interface RexxHandler
 {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change. */
-    final static public String version = "850.20220902";
+    final static public String version = "850.20220906";
 
 
     /** Raises a condition in the current Rexx thread, pass-through method to the Rexx API, which
      *  should be called immediately before returning to Rexx.
-     *  Cf. the ooRexx 4.1 documentation in <code>rexxpg.pdf</code>, <em>9.14.126. RaiseCondition</em>.
+     *  Cf. the ooRexx documentation in <code>rexxapi.pdf</code>, <em>9.14.126. RaiseCondition</em>.
      *
      * @param slot opaque argument supplied to the handler methods by the Rexx native
      *             code interface

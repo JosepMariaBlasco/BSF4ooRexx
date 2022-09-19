@@ -84,6 +84,7 @@
             2021-07-14, rgf   - on Unix: new routine "determineHomeDir()", new "cmd.eHomeDir"
             2021-07-17, rgf   - little cleanup of code
             2022-08-29, rgf   - changing BSF4ooRexx to BSF4ooRexx850
+            2022-08-19, rgf   - corrected "queue()" to "queue()>0"
 
    remark:  ---
 
@@ -980,7 +981,7 @@ any:                 -- something went wrong while executing the program
   testScript="wasInstallationSuccessful.rxj"
 
   signal on any
-  do while queued()  -- make sure the external Rexx queue is empty (it should)
+  do while queued()>0   -- make sure the external Rexx queue is empty (it should)
      parse pull .
   end
 
@@ -992,7 +993,7 @@ any:                 -- something went wrong while executing the program
   cmd cmd.eRedirect2LogFile               -- let the shell run the command
 
   text=""
-  do while queued()
+  do while queued()>0
      parse pull text
      if cmd.eBLogFile=.true then cmd.eLogFile~say(text)
      say text
