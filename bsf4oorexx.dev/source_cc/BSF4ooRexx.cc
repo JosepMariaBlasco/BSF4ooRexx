@@ -37,6 +37,7 @@ remarks:
 inline jint impl_jniRexxHaltInterpreterInstance (JNIEnv *env, jobject jobj, jstring j_rii_ID)
 
 
+    2022-09-20, rgf: - BsfCommandHandler(): make "List" argument optional
     2022-09-02, rgf: - added stemName string argument to ... _jniCreateCollectionObject()
     2022-09-01, rgf: - added ... _jniCreateCollectionObject() to create and return:
                        kind: 0=Array, 1=Directory, 2=Stem, 3=StringTable
@@ -1100,21 +1101,21 @@ thread_id_t  RgfGetTID();
 
 #if defined (BSF4REXX_32_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20220902 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220920 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20220902 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220920 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #elif defined (BSF4REXX_64_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20220902 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220920 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20220902 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220920 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #else
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20220902 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220920 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20220902 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20220920 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #endif
 
@@ -7786,7 +7787,7 @@ RexxRoutine1(RexxObjectPtr, BsfTestPing, OPTIONAL_size_t,  repetitions)
 
 
 // ---------------------------------------------------------------------------------------
-//  rgf, 2022-08-20, BsfCommandHandler( Add, environmentName, jhandler | List)
+//  rgf, 2022-08-20, BsfCommandHandler( Add, environmentName, jhandler | [List])
 //                   makes ooRexx 5.0 ability to dynamically load environment command handlers
 //                   that are implemented in Java (and ooRexx using BSF4ooRexx! :) )
 //              "Add", "environmentName", jhandler
@@ -7795,7 +7796,8 @@ RexxRoutine1(RexxObjectPtr, BsfTestPing, OPTIONAL_size_t,  repetitions)
 //                                   RexxCommandHandler or RexxRedirectingCommandHandler
 //                      ... does not return anything, can be invoked multiple times for
 //                          the same environmentName (replaces any existing one)
-//              "List" ... returns an ooRexx array of Java command handlers
+//              "List" or no argument ... returns an ooRexx array of Java command handlers
+//
 RexxRoutine3(RexxObjectPtr, BsfCommandHandler, CSTRING, option, OPTIONAL_CSTRING, name, OPTIONAL_RexxObjectPtr, javaHandler)
 {
 #if defined (DEBUG_COMMAND_HANDLER)
@@ -7813,7 +7815,15 @@ RexxRoutine3(RexxObjectPtr, BsfCommandHandler, CSTRING, option, OPTIONAL_CSTRING
     logical_t flag=false, isRedirectable=false;
     char msg[256];
 
-    if (option[0]=='A' || option[0]=='a')       // Add
+    if (argumentOmitted(1) ||option[0]=='L' || option[0]=='l' ) // List option
+    {
+#if defined (DEBUG_COMMAND_HANDLER)
+        fprintf(stderr, "%s %d %s: option 'List'\n", DLLNAME, __LINE__, __FUNCTION__);fflush(stderr);
+#endif
+
+        mode=1;     // LIST
+    }
+    else if (option[0]=='A' || option[0]=='a')       // Add
     {
 
 #if defined (DEBUG_COMMAND_HANDLER)
@@ -7866,15 +7876,7 @@ RexxRoutine3(RexxObjectPtr, BsfCommandHandler, CSTRING, option, OPTIONAL_CSTRING
         }
 
         // register with ooRexx only after we have registered the javaHandler with BSF4ooRexx
-        mode=0;
-    }
-    else if (option[0]=='L' || option[0]=='l')  // List
-    {
-#if defined (DEBUG_COMMAND_HANDLER)
-        fprintf(stderr, "%s %d %s: option 'List'\n", DLLNAME, __LINE__, __FUNCTION__);fflush(stderr);
-#endif
-
-        mode=1;
+        mode=0;     // ADD
     }
     else    // unknown option
     {
@@ -7882,7 +7884,7 @@ RexxRoutine3(RexxObjectPtr, BsfCommandHandler, CSTRING, option, OPTIONAL_CSTRING
         fprintf(stderr, "%s %d %s: unknown option '%s'\n", DLLNAME, __LINE__, __FUNCTION__, option);fflush(stderr);
 #endif
 
-        snprintf( msg, 256, "%.16s/routine/BsfCommandHandler(), error 7: supplied option (argument 1) \"%s\" unknown, must be one of \"Add\" or \"List\"", DLLNAME);
+        snprintf( msg, 256, "%.16s/routine/BsfCommandHandler(), error 7: supplied option (argument 1) \"%s\" unknown, must be one of \"Add\" or \"List\"", DLLNAME, option);
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
         return NULLOBJECT;
     }
