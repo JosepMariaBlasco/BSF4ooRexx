@@ -25,6 +25,9 @@
                           after this script ends as the script cannot do it; remove
                           wait option as it is not needed
 
+            - 2022-09-20, rgf: use "rexx.exe" explicitly in command to not let default
+                          file association use a different program than rexx.exe
+
    Info-URLs:  <http://technet.microsoft.com/en-us/magazine/2007.06.utilityspotlight.aspx>
                <http://technet.microsoft.com/en-us/magazine/2008.06.elevation.aspx>
                <http://forums.techarena.in/vista-administration/977482.htm>
@@ -40,7 +43,7 @@
    License:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2014-2015 Rony G. Flatscher
+       Copyright (C) 2014-2022 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -68,8 +71,8 @@ end
 
 -- build argument to be passed to Rexx
 if args~upper="UNINSTALL" then     -- add commands to delete directory tree
-   args ="..\setupAllAndRun.rex" args "&& cd ..\..\.. && rd /s /q bsf4oorexx850"
+   args ="rexx.exe ..\setupAllAndRun.rex" args "&& cd ..\..\.. && rd /s /q bsf4oorexx850"
 else
-   args ="..\setupAllAndRun.rex" args
+   args ="rexx.exe ..\setupAllAndRun.rex" args
 call elevate.rex args
 
