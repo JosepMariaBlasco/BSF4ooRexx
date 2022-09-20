@@ -168,5 +168,6 @@ mostlyclean:
 
 clean:
         attrib -h $(BLD_PATH)\* 1>nul 2>&1
-	$(del_cmd) $(BLD_PATH)\*.dll $(BLD_PATH)\*.obj $(BLD_PATH)\*.ilk $(BLD_PATH)\*.pdb $(BLD_PATH)\*.lib $(BLD_PATH)\*.exp $(BLD_PATH)\*.suo $(BLD_PATH)\*.cod $(BLD_PATH)\*.res $(BLD_PATH)\*.sln $(BLD_PATH)\*.map 1>nul 2>&1
+#	$(del_cmd) $(BLD_PATH)\*.dll $(BLD_PATH)\*.obj $(BLD_PATH)\*.ilk $(BLD_PATH)\*.pdb $(BLD_PATH)\*.lib $(BLD_PATH)\*.exp $(BLD_PATH)\*.suo $(BLD_PATH)\*.cod $(BLD_PATH)\*.res $(BLD_PATH)\*.sln $(BLD_PATH)\*.map 1>nul 2>&1
+	$(del_cmd) $(BLD_PATH)\*.dll *.dll $(BLD_PATH)\*.obj $(BLD_PATH)\*.ilk $(BLD_PATH)\*.pdb *.pdb $(BLD_PATH)\*.lib $(BLD_PATH)\*.exp $(BLD_PATH)\*.suo $(BLD_PATH)\*.cod *.cod $(BLD_PATH)\*.res $(BLD_PATH)\*.sln $(BLD_PATH)\*.map 1>nul 2>&1
 

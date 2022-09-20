@@ -92,9 +92,9 @@ TGT_LIB_DIR     = .\lib
 
 
 BSF_SRC	        = BSF4ooRexx.cc
-BSF_OBJ_ORX     = $(BLD_PATH)\BSF4ooRexx-32-x86.obj
-BSF_ORX_TARGET  = $(BLD_PATH)\BSF4ooRexx.dll-32-x86
-BSF4REXX	= $(BLD_PATH)\BSF4ooRexx.dll
+BSF_OBJ_ORX     = $(BLD_PATH)\BSF4ooRexx850-32-x86.obj
+BSF_ORX_TARGET  = $(BLD_PATH)\BSF4ooRexx850.dll-32-x86
+BSF4REXX	= $(BLD_PATH)\BSF4ooRexx850.dll
 
 
 # <--- rgf
@@ -106,9 +106,9 @@ LIB = $(LIB);$(REXX_HOME)\api
 !ENDIF
 
 # fallback: the directory the 32-bit ooRexx API files are located locally (e.g. if REXX_HOME points to 64-bit ooRexx or is not available at all)
-REXX_API_DIR = .\rexxapi.win\32
-INCLUDE = $(INCLUDE);$(REXX_API_DIR)
-LIB = $(LIB);$(REXX_API_DIR)
+REXX_API_DIR = .\rexxapi.win\win32\api
+INCLUDE = $(REXX_API_DIR);$(INCLUDE)
+LIB = $(REXX_API_DIR);$(LIB)
 REXX_LIBS = rexx.lib rexxapi.lib
 
 WARNINGFLAGS = /W3       /D_CRT_SECURE_NO_DEPRECATE /D_CRT_NONSTDC_NO_DEPRECATE
@@ -167,5 +167,5 @@ mostlyclean:
 
 clean:
         attrib -h $(BLD_PATH)\* 1>nul 2>&1
-	$(del_cmd) $(BLD_PATH)\*.dll $(BLD_PATH)\*.obj $(BLD_PATH)\*.ilk $(BLD_PATH)\*.pdb $(BLD_PATH)\*.lib $(BLD_PATH)\*.exp $(BLD_PATH)\*.suo $(BLD_PATH)\*.cod $(BLD_PATH)\*.res $(BLD_PATH)\*.sln $(BLD_PATH)\*.map 1>nul 2>&1
+	$(del_cmd) $(BLD_PATH)\*.dll *.dll $(BLD_PATH)\*.obj $(BLD_PATH)\*.ilk $(BLD_PATH)\*.pdb *.pdb $(BLD_PATH)\*.lib $(BLD_PATH)\*.exp $(BLD_PATH)\*.suo $(BLD_PATH)\*.cod *.cod $(BLD_PATH)\*.res $(BLD_PATH)\*.sln $(BLD_PATH)\*.map 1>nul 2>&1
 
