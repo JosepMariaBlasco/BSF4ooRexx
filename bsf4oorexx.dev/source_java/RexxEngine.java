@@ -284,7 +284,7 @@ public class RexxEngine extends BSFEngineImpl {
     /** Allows to set the string indicating which major ooRexx version and compilation date fixed
      *  the Terminate() problem.
      *
-     * @param a string consisting of the major ooRexx version, a white space and a compilation date
+     * @param newValue a string consisting of the major ooRexx version, a white space and a compilation date
      */
     static public void setTerminateFixed(String newValue)
     {
@@ -298,7 +298,7 @@ public class RexxEngine extends BSFEngineImpl {
      *  or on a separate thread. ooRexx 5 with <a href="https://sourceforge.net/p/oorexx/feature-requests/806/">RFE 806</a>.
      *  fixed a memory leak for the price of abmysal performance (appr. a slow down of 50x).
      *
-     *  @param new value
+     *  @param newValue
      */
     static public void setTerminateOnSeparateThreadDefault(boolean newValue)
     {
@@ -325,7 +325,7 @@ public class RexxEngine extends BSFEngineImpl {
      *  or on a separate thread. ooRexx 5 with <a href="https://sourceforge.net/p/oorexx/feature-requests/806/">RFE 806</a>.
      *  fixed a memory leak for the price of abmysal performance (appr. a slow down of 50x).
      *
-     *  @param new value
+     *  @param newValue
      */
     public void setTerminateOnSeparateThread(boolean newValue)
     {
@@ -354,7 +354,7 @@ public class RexxEngine extends BSFEngineImpl {
      *  or on a separate thread. ooRexx 5 with <a href="https://sourceforge.net/p/oorexx/feature-requests/806/">RFE 806</a>.
      *  fixed a memory leak for the price of abmysal performance (appr. a slow down of 50x).
      *
-     *  @param new value
+     *  @param newValue
      */
     static public void setResetLocalBeforeTerminateDefault(boolean newValue)
     {
@@ -381,7 +381,7 @@ public class RexxEngine extends BSFEngineImpl {
      *  or on a separate thread. ooRexx 5 with <a href="https://sourceforge.net/p/oorexx/feature-requests/806/">RFE 806</a>.
      *  fixed a memory leak for the price of abmysal performance (appr. a slow down of 50x).
      *
-     *  @param new value
+     *  @param newValue
      */
     public void setResetLocalBeforeTerminate(boolean newValue)
     {
@@ -1700,7 +1700,7 @@ if (bDebug)
 
 
 
-    /** Saves the supplied bean in {@link engineDeclaredBeans} which will be looked up
+    /** Saves the supplied bean in {@link #engineDeclaredBeans} which will be looked up
      *  by RexxAndJava.lookupBean() if a bean with the supplied name is not present
      *  in RexxAndJava's registry.
       *
@@ -1719,12 +1719,10 @@ if (bDebug) System.err.println("RexxEngine.declareBean(): name=["+bean.name+"], 
         hasDeclaredBeans=true;      // indicate we have a bean to lookup
     }
 
-    /** Removes the supplied bean from {@link engineDeclaredBeans}.
-     *
+    /** Removes the supplied bean from {@link #engineDeclaredBeans}.
       *
       * @param bean the bean to be declared for the already started language.
       */
-
     public void undeclareBean(BSFDeclaredBean bean)
                        throws BSFException
     {

@@ -385,7 +385,6 @@ if ( bean != null && bean instanceof String && rexxArgs[1] != null && bean.equal
      * @param rajo the {@link RexxAndJava} object invoking this method
      * @param strBsfSubFunctionName the subfunction name which invokes this method
      * @param className the fully qualified Java class name
-     * @param bRegister if true register class object in registry
      *
      * @return the loaded Java class object
      *

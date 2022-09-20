@@ -117,8 +117,6 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
      *  (will output the string as is without appending anything).
      *  This field is set to <code>true</code> by default causing the <code>SAY</code>
      *  keyword statement to be used.
-     *
-     * {@link #available()}
     */
     public static boolean bSay4Output=true; // default: use SAY
 

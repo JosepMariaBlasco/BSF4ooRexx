@@ -13,11 +13,11 @@ import java.io.*;       // exception handling
  *
  *  <p>
  *  To make sure that
- *  upon return from the static method {@link #createInterface4Rexx()} the reference
+ *  upon return from the static method {@link Java4Rexx#createInterface4Rexx()} the reference
  *  to the Rexx engine object received via {@link RexxEngine#getRexxInterface()
  *  RexxEngine.getRexxInterface()}, a
  *  global reference is created via JNI while executing the method
- *  {@link RexxAndJava#jniInitialize4Rexx() RexxAndJava.jniInitialize4Rexx()}, which
+ *  {@link RexxAndJava#jniInitialize4Rexx() RexxAndJava#jniInitialize4Rexx()}, which
  *  calls into the BSF4ooRexx library.
  *
  *
@@ -116,7 +116,7 @@ if (bDebug) System.err.println("///\\\\\\ Java4Rexx.createInterface4Rexx() ///\\
 
   }
 
-  /** After {@link createInterfaceRexx} runs, the root Rexx interpreter instance (RII) will be
+  /** After {@link #createInterface4Rexx()} runs, the root Rexx interpreter instance (RII) will be
    *  saved in the native code. This static method allows the native code to initialize the rii_ID fields
    *  in RexxEngine and its RexxAndJava peer instance to be set.
    *

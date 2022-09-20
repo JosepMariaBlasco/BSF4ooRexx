@@ -91,7 +91,7 @@ public class RexxAnalyzeRegistry
 
     private static AnalyzedCategory analyzedData = null;
 
-    /** Returns the analyzed data, runs {@link updateAnalyzeData}
+    /** Returns the analyzed data, runs {@link #updateAnalyzeData()}
      *  to analyze the latest version of the BSF registry.
      *
      * @return the AnalyzedCategory object
@@ -102,7 +102,7 @@ public class RexxAnalyzeRegistry
         return analyzedData;
     }
 
-    /** Returns the analyzed data as a string, runs {@link updateAnalyzeData}
+    /** Returns the analyzed data as a string, runs {@link #updateAnalyzeData()}
      *  to analyze the latest version of the BSF registry.
      *
      * @return the analyzed data as a string
@@ -416,7 +416,7 @@ public class RexxAnalyzeRegistry
     /** Calculates and returns the size of the supplied category data. Sizes can only
      *  be calculated for primitive types and strings.
      *
-     * @param  category data
+     * @param  jo category data
      * @return size of the supplied category data
     */
     static long calcSize(Object jo)

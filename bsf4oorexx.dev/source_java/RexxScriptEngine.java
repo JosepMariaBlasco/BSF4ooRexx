@@ -1636,8 +1636,8 @@ if (bDebug==true) {exc.printStackTrace();}
     /** Utility method to read all characters of a <code>Reader</code> using a <code>BufferedReader</code>
      *  if necessary.
      *
-     * @param r - The <code>Reader</code> object to read from.
-     * @return a <code>String</code> representing built from the characters or null, if the
+     * @param reader the <code>Reader</code> object to read from
+     * @return a <code>String</code> built from the characters or null, if the
      *         supplied <code>Reader</code> was <code>null</code>
      *
      * @throws ScriptException if {@link IOException} occurs with the supplied Reader object
