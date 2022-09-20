@@ -125,7 +125,7 @@ public class RexxCleanupRef extends PhantomReference
      */
     private static boolean bDebugRII=false; // true; // false; // show terminating RII (Rexx interpreter instance)
 
-    /** Returns the current setting of {@link debugRII} which controls debug output
+    /** Returns the current setting of the private boolean field <cdoe>bDebugRII</code> which controls debug output
      *  in the context of terminating a Rexx interpreter instance (RII).
      * @return returns current setting (if <code>true</code> then showing debug message when terminating Rexx interpreter instance)
      */
@@ -281,7 +281,6 @@ public class RexxCleanupRef extends PhantomReference
      *
      * @param newValue number of unfinalized RexxEngines that will cause an out of bound
      *        System.gc() to be triggered (to reclaim unused BSF4ooRexx resources)
-     * @return current threshold value that triggers System.gc()
      */
     public static void setGcThreshold(int newValue)
     {

@@ -7,8 +7,15 @@ rem             linked to from https://stackoverflow.com/questions/22528767/how-
 rem             Oracle javado7 tutorial: https://www.oracle.com/technetwork/articles/javase/index-137868.html
 rem             https://docs.oracle.com/javase/6/docs/technotes/tools/windows/javadoc.html#@link
 
-set docs_bsf4rexx_dir=./docs.bsf4oorexx
-set docs_apache_dir=./docs.apache.bsf
+rem set docs_bsf4rexx_dir=./docs.bsf4oorexx
+rem set docs_apache_dir=./docs.apache.bsf
+
+
+set DIR_DOCS_APACHE_BSF=docs.apache.bsf
+set DIR_DOCS_BSF4OOREXX=docs.bsf4oorexx
+
+rem set docs_bsf4rexx_dir=docs.bsf4oorexx
+rem set docs_apache_dir=docs.apache.bsf
 
 
 set javadoc_scope=-package
@@ -22,16 +29,16 @@ set doc_release_version=v850
 
 :set_doc_date
 if not "%doc_date%"=="" goto continue
-set doc_date=20220810
+set doc_date=20220920
 
 :continue
 set docs_header=-header "%doc_date%, rgf"
 
-rd /s /q %docs_apache_dir%
-javadoc  -Xdoclint:none %javadoc_scope% -d %docs_apache_dir% -use -version -author %docs_header% -subpackages org.apache
+rd /s /q %DIR_DOCS_APACHE_BSF%
+javadoc  -Xdoclint:none %javadoc_scope% -d %DIR_DOCS_APACHE_BSF% -use -version -author %docs_header% -subpackages org.apache
 
 
-rd /s /q %docs_bsf4rexx_dir%
+rd /s /q %DIR_DOCS_BSF4OOREXX%
 set wtitle="BSF4ooRexx %doc_release_version% with Add-ons, %doc_date%, Rony G. Flatscher"
-javadoc  -Xdoclint:none %javadoc_scope% -d %docs_bsf4rexx_dir% -windowtitle %wtitle% -use -version -author %docs_header% -subpackages org.oorexx -subpackages org.rexxla -subpackages com.sun.star.script.framework.provider.oorexx
+javadoc  -Xdoclint:none %javadoc_scope% -d %DIR_DOCS_BSF4OOREXX% -windowtitle %wtitle% -use -version -author %docs_header% -subpackages org.oorexx -subpackages org.rexxla -subpackages com.sun.star.script.framework.provider.oorexx
 

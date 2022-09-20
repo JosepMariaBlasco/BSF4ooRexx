@@ -36,9 +36,9 @@ set CLASSPATH=%CLASSPATH%;%ooo_classes%\unoil.jar;%ooo_classes%\ridl.jar;%ooo_cl
 @echo adding javax.servlet.jsp and javax.servlet.http to CLASSPATH
 set CLASSPATH=%CLASSPATH%;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet.jsp.jar;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet-3.0.0.v201112011016.jar
 
-set releaseDate=20220919
-set runDate=20220919
-set doc_date=20220919
+set releaseDate=20220920
+set runDate=20220920
+set doc_date=20220920
 
 @rem values to use for creating the BSF jarfile
 @rem set bsfDate=20090910
@@ -184,16 +184,21 @@ dir *.jar
 @rem -----------------------------------------------------------------------------------
 @echo creating Javadocs ...
 @echo [use at least Java 1.5 (5.0) and make OOo class files available via classpath!]
+set DIR_DOCS_APACHE_BSF=docs.apache.bsf
+set DIR_DOCS_BSF4OOREXX=docs.bsf4oorexx
+set ZIP_DOCS_APACHE_BSF=docs_apache_bsf.zip
+set ZIP_DOCS_BSF4OOREXX=docs_bsf4oorexx.zip
 call make-docs-apache.cmd 2>javadoc_errors.txt
 @echo deleting old zip-archives for Javadocs ...
-del docs_apache_bsf.zip docs_bsf4oorexx.zip
+del docs_apache.bsf.zip docs_bsf4oorexx.zip
 
 @echo creating zip-archives for Javadocs
-zip -9r docs_apache_bsf docs.apache.bsf/*
-zip -9r docs_apache_bsf ApacheLicense2.0.txt
+copy ApacheLicense2.0.txt %DIR_DOCS_APACHE_BSF%
+zip -9r %ZIP_DOCS_APACHE_BSF% %DIR_DOCS_APACHE_BSF%/*
+rem zip -9r %ZIP_DOCS_APACHE_BSF% ApacheLicense2.0.txt
 
-zip -9r docs_bsf4oorexx docs.bsf4oorexx/*
-zip -9r docs_bsf4oorexx ApacheLicense2.0.txt
+copy ApacheLicense2.0.txt %DIR_DOCS_BSF4OOREXX%
+zip -9r %ZIP_DOCS_BSF4OOREXX% %DIR_DOCS_BSF4OOREXX%/*
 @echo finished.
 @rem pause
 
@@ -233,6 +238,11 @@ md bsf4oorexx\Templates
 md bsf4oorexx\clr
 copy %path2dev%\oorexx.net\bin                     bsf4oorexx\clr
 xcopy %path2dev%\oorexx.net\samples                bsf4oorexx\samples\ /s
+
+@rem --------- rgf, 20220920, xcopy doc dirs directly to target information directory
+xcopy %DIR_DOCS_APACHE_BSF%                        bsf4oorexx\information\%DIR_DOCS_APACHE_BSF%\ /S
+xcopy %DIR_DOCS_BSF4OOREXX%                        bsf4oorexx\information\%DIR_DOCS_BSF4OOREXX%\ /S
+
 xcopy %path2dev%\oorexx.net\docs                   bsf4oorexx\information\ /s
 @echo pause just for debugging .NET/CLR support so far
 
