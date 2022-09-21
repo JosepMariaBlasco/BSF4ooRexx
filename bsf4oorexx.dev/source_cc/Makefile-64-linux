@@ -1,18 +1,19 @@
 # make -f Makefile-64-linux rebuild
 #-------------------------------------------------------------------------
-# Makefile-64-linux: makefile to build libBSF4ooRexx.so-64-amd64
+# Makefile-64-linux: makefile to build libBSF4ooRexx850.so-64-amd64
 #
-# ooRexx 4.x, 2005-06-07, 2009-09-08, 2017-01-08
+# ooRexx 5.x, 2005-06-07, 2009-09-08, 2017-01-08, 2022-09-21
 #
 # make -f Makefile-64-linux [ all | clean | clean_dll | rebuild |  b4r_debug ]
 #-------------------------------------------------------------------------
 
 # changes:
 # 	20210823, rgf: define RPATH at link time to look up: $ORIGIN:$ORIGIN/../lib:/usr/local/lib64:/usr/lib64:/usr/local/lib:/usr/lib:/opt/ooRexx/lib
+#       20220921, rgf: use JAVA_HOME, rename to *BSF4ooRexx850*
 #
 
 # ------------------------ Apache Version 2.0 license -------------------------
-#    Copyright (C) 2001-2021 Rony G. Flatscher
+#    Copyright (C) 2001-2022 Rony G. Flatscher
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -44,7 +45,8 @@ TGT_LIB_DIR     = ./lib
 # JDK_BASE = /usr/lib/jvm/java-6-openjdk-amd64
 
 # 2015-07-27, 2018-10-02
-JDK_BASE = /usr/lib/jvm/java-6-oracle
+# JDK_BASE = /usr/lib/jvm/java-6-oracle
+JDK_BASE = $(JAVA_HOME)
 
 # 2016-10-15, rgf
 # JDK_BASE = /usr/lib/jvm/java-6-openjdk
@@ -99,10 +101,10 @@ RPATH           = -rpath,$$'ORIGIN':$$'ORIGIN'/../lib:/usr/local/lib64:/usr/lib6
 # the following works as well on Linux, it seems that the above version creates the same RPATH definition
 # RPATH=-rpath,$$'ORIGIN',-rpath,$$'ORIGIN'/../lib,-rpath,/usr/local/lib64,-rpath,/usr/lib64,-rpath,/usr/local/lib,-rpath,/usr/lib,-rpath,/opt/ooRexx/lib
 
-BSF_SONAME            = libBSF4ooRexx.so
-BSF_SONAME_DEBUG      = libBSF4ooRexx-debug.so
-BSF_OBJ_ORX           = $(BLD_PATH)/BSF4ooRexx-$(BITNESS)-$(ARCH).o
-BSF_OBJ_ORX_DEBUG     = $(BLD_PATH)/BSF4ooRexx-$(BITNESS)-$(ARCH)-debug.o
+BSF_SONAME            = libBSF4ooRexx850.so
+BSF_SONAME_DEBUG      = libBSF4ooRexx850-debug.so
+BSF_OBJ_ORX           = $(BLD_PATH)/BSF4ooRexx850-$(BITNESS)-$(ARCH).o
+BSF_OBJ_ORX_DEBUG     = $(BLD_PATH)/BSF4ooRexx850-$(BITNESS)-$(ARCH)-debug.o
 BSF_ORX_TARGET        = $(BLD_PATH)/$(BSF_SONAME)-$(BITNESS)-$(ARCH)
 BSF_ORX_TARGET_DEBUG  = $(BLD_PATH)/$(BSF_SONAME)-$(BITNESS)-$(ARCH)-debug
 BSF4REXX	      = $(BLD_PATH)/$(BSF_SONAME)
@@ -117,10 +119,10 @@ BSF4REXX_DEBUG        = $(BLD_PATH)/$(BSF_SONAME_DEBUG)
 #---------------------------------------------------------- Generate library
 
 orexx :         $(BSF_ORX_TARGET)
-b4r_debug :	${BSF_ORX_TARGET_DEBUG}	
+b4r_debug :	${BSF_ORX_TARGET_DEBUG}
 #---------------------------------------------------------- END section
 
-# ------------------------------ debug version 
+# ------------------------------ debug version
 $(BSF_ORX_TARGET_DEBUG) : $(BSF_SRC)
 	echo
 	echo Building $@ ...
@@ -134,7 +136,7 @@ $(BSF_ORX_TARGET_DEBUG) : $(BSF_SRC)
 	$(copy_cmd) $(BSF_ORX_TARGET_DEBUG) $(BSF4REXX)
 
 
-#------------------------------- release version 
+#------------------------------- release version
 $(BSF_ORX_TARGET) : $(BSF_SRC)
 	echo
 	echo Building $@ ...

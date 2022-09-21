@@ -8,27 +8,26 @@
 #
 #         target 10.9, add to g++ "-std=c++11" (or "-std=gnu++11"); (and before Maverick: "-stdlib=libc++"; to force gnu without c++-11 support use: "-stdlib=libstdc++")
 #
-# rgf, 2021-08-21: adding -rpath when librexx.4.dylib gets sought 
+# rgf, 2021-08-21: adding -rpath when librexx.4.dylib gets sought
 # rgf, 2021-09-22: usage of RPATH was wrong, if multiple paths then one needs to supply multiple -rpath switches (one for each directory)
-#                  using: @loader_path -> @loader_path/../lib -> /usr/local/lib-> /opt/oorexx/lib  -> /Library/Frameworks/ooRexx.framework/Libraries 
-
-# 
+#                  using: @loader_path -> @loader_path/../lib -> /usr/local/lib-> /opt/oorexx/lib  -> /Library/Frameworks/ooRexx.framework/Libraries
+# rgf, 20220921:   use JAVA_HOME, rename to *BSF4ooRexx850*
+#
 
 # to support earlier versions of MacOSX export MACOSX_DEPLOYMENT_TARGET=min_version
 # before compiling (cf. "man g++"), e.g.:
 #
 #  MacOSX 10.9, "Mavericks", released: 2013-10-22
-#
 #                  export MACOSX_DEPLOYMENT_TARGET=10.9
-#
 #  MacOSX 10.6, "Snow Leopard", released: 2009-08-28
-#
 #                  export MACOSX_DEPLOYMENT_TARGET=10.6
+#  MacOSX 10.11, "El Capitan", released: 2014
+#                  export MACOSX_DEPLOYMENT_TARGET=10.11
 
 
 #/*----------------------------------------------------------------------------*/
 #/*                                                                            */
-#/* Copyright (c) 2008-2021 Rexx Language Association. All rights reserved.    */
+#/* Copyright (c) 2008-2022 Rexx Language Association. All rights reserved.    */
 #/*                                                                            */
 #/* This program and the accompanying materials are made available under       */
 #/* the terms of the Common Public License v1.0 which accompanies this         */
@@ -79,19 +78,19 @@ BLD_PATH = ./tmp
 TGT_LIB_DIR     = ./lib
 
 # 32-bit target names
-BSF_OBJ_ORX_32     = $(BLD_PATH)/BSF4ooRexx-32-x86.o
-BSF_ORX_TARGET_32  = $(BLD_PATH)/libBSF4ooRexx.dylib-32-x86
+BSF_OBJ_ORX_32     = $(BLD_PATH)/BSF4ooRexx850-32-x86.o
+BSF_ORX_TARGET_32  = $(BLD_PATH)/libBSF4ooRexx850.dylib-32-x86
 
 # 64-bit target names
-BSF_OBJ_ORX_64     = $(BLD_PATH)/BSF4ooRexx-64-x86_64.o
-BSF_ORX_TARGET_64  = $(BLD_PATH)/libBSF4ooRexx.dylib-64-x86_64
+BSF_OBJ_ORX_64     = $(BLD_PATH)/BSF4ooRexx850-64-x86_64.o
+BSF_ORX_TARGET_64  = $(BLD_PATH)/libBSF4ooRexx850.dylib-64-x86_64
 
-BSF_OBJ_ORX_ARM64    = $(BLD_PATH)/BSF4ooRexx-64-arm64.o
-BSF_ORX_TARGET_ARM64 = $(BLD_PATH)/libBSF4ooRexx.dylib-64-arm64
+BSF_OBJ_ORX_ARM64    = $(BLD_PATH)/BSF4ooRexx850-64-arm64.o
+BSF_ORX_TARGET_ARM64 = $(BLD_PATH)/libBSF4ooRexx850.dylib-64-arm64
 
 # neutral target name
-BSF4REXX   	   = $(BLD_PATH)/libBSF4ooRexx.dylib
-LIB_INSTALL_NAME   = /usr/local/lib/libBSF4ooRexx.dylib
+BSF4REXX   	   = $(BLD_PATH)/libBSF4ooRexx850.dylib
+LIB_INSTALL_NAME   = /usr/local/lib/libBSF4ooRexx850.dylib
 
 # rgf, 2014-03-30, 2014-03-31
 # INC_PATH = -I. -I/System/Library/Frameworks/JavaVM.framework/headers
@@ -100,7 +99,8 @@ LIB_INSTALL_NAME   = /usr/local/lib/libBSF4ooRexx.dylib
 
 # INC_PATH = -I/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/include -I .
 
-JDK_HOME = /Library/Java/JavaVirtualMachines/bellsoft-jdk8u302-full.jdk
+# JDK_HOME = /Library/Java/JavaVirtualMachines/bellsoft-jdk8u302-full.jdk
+JDK_HOME = $(JAVA_HOME)
 
 
 INC_PATH = -I ${JDK_HOME}/include -I ${JDK_HOME}/include/darwin -I .
@@ -127,8 +127,8 @@ OOREXX_FRAMEWORK = /Library/Frameworks/ooRexx.framework/Versions/Current/
 # make install will install to:
 OOREXX_APP_INSTALL = /Users/rony/Applications/ooRexx5
 
-ORX_LIBS_32 = $(ORX_LIBPATH_32)/librexx.dylib $(ORX_LIBPATH_32)/librexxapi.dylib
-ORX_LIBS_64 = $(ORX_LIBPATH_64)/librexx.dylib $(ORX_LIBPATH_64)/librexxapi.dylib
+ORX_LIBS_32 = $(ORX_LIBPATH_32)/librexx850.dylib $(ORX_LIBPATH_32)/librexxapi.dylib
+ORX_LIBS_64 = $(ORX_LIBPATH_64)/librexx850.dylib $(ORX_LIBPATH_64)/librexxapi.dylib
 
 # ORX_LIBS_64 = -L/usr/local/lib -L${OOREXX_FRAMEWORK}/Libraries -L${OOREXX_APP_INSTALL}999/lib -lrexx -lrexxapi
 
@@ -138,13 +138,13 @@ ORX_LIBS_64 = -L${OOREXX_APP_INSTALL}/lib   -lrexx -lrexxapi
 INC_PATH_ALL = $(INC_PATH) -I$(OOREXX_APP_INSTALL)/include
 INC_PATH_ALL_ARM64 = $(INC_PATH_ARM64) -I$(OOREXX_APP_INSTALL)/include
 
-#rpath for searching librexx[api].4.dylib, get infos: otool -l tmp/libBSF4ooRexx.dylib
+#rpath for searching librexx[api].4.dylib, get infos: otool -l tmp/libBSF4ooRexx850.dylib
 # RPATH = '$$ORIGIN:$$ORIGIN/../lib:/usr/local/lib:/Library/Frameworks/ooRexx.framework/Libraries:/opt/ooRexx/lib'
 # on MacOS: advice to use $loader_path
 # RPATH = @loader_path:@loader_path/../lib:/usr/local/lib:/Library/Frameworks/ooRexx.framework/Libraries:/opt/oorexx/lib
 # ALL_RPATH =-rpath @loader_path -rpath @loader_path/../lib -rpath /usr/local/lib -rpath /Library/Frameworks/ooRexx.framework/Libraries -rpath /opt/oorexx/lib
 # on Linux the fallback directory is /opt/ooRexx/lib (note the capital "R"), therefore we use the same case on MacOS as well
-ALL_RPATH =-rpath @loader_path -rpath @loader_path/../lib -rpath /usr/local/lib -rpath /opt/ooRexx/lib -rpath /Library/Frameworks/ooRexx.framework/Libraries 
+ALL_RPATH =-rpath @loader_path -rpath @loader_path/../lib -rpath /usr/local/lib -rpath /opt/ooRexx/lib -rpath /Library/Frameworks/ooRexx.framework/Libraries
 
 
 # INC_PATH_ALL = $(INC_PATH) -I/System/Library/Frameworks/ooRexx.framework/Versions/Current/Headers $(ORX5_INCPATH_64)
@@ -208,7 +208,7 @@ clean:
 ppc_outdated: BSF4ooRexx.cc
 	g++ -c $(CFLAGS) $(INC_PATH) -I/opt/ooRexx-x86_64/include -I/opt/ooRexx-ppc/include -m32 -arch ppc -DUSE_OREXX -DUNIX -DBSF4REXX_32_BIT -oBSF4ooRexx-mac-ppc.o BSF4ooRexx.cc
 
-	g++ -dynamiclib $(LFLAGS) -o libBSF4ooRexx-ppc.dylib BSF4ooRexx-mac-ppc.o /opt/ooRexx-ppc/lib/ooRexx/librexx.dylib /opt/ooRexx-ppc/lib/ooRexx/librexxapi.dylib -framework JavaVM -arch ppc
+	g++ -dynamiclib $(LFLAGS) -o libBSF4ooRexx850-ppc.dylib BSF4ooRexx850-mac-ppc.o /opt/ooRexx-ppc/lib/ooRexx/librexx850.dylib /opt/ooRexx-ppc/lib/ooRexx/librexxapi850.dylib -framework JavaVM -arch ppc
 # -------------------------------------------------------- outdated, needs 32-bit ooRexx installed currently
 x86_outdated: BSF4ooRexx.cc
 	g++ -c $(CFLAGS) $(INC_PATH_ALL) -m32 -arch i386 -DUSE_OREXX -DUNIX -DBSF4REXX_32_BIT -o$(BSF_OBJ_ORX_32) BSF4ooRexx.cc
