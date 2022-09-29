@@ -19,6 +19,11 @@
           .BSF in .environment;
 
    date:
+         2022-09-29, ---rgf, - new routine i2x(idValue[,deliString]): converts the identityHash number
+                               returned by .Object's identityHash method into a hexadecimal string;
+                               on 64-bit systems the hexadecimal string gets the deliString inserted
+                               after the eight hexadecimal character for better legibility; uses
+                               ooRexx 5 .rexxInfo class
 
          2022-08-11, ---rgf, - version now reflects 850
 
@@ -917,7 +922,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="850.20220920" -- set version (date distribution got created)
+      .bsf4rexx~version="850.20220929" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -6300,3 +6305,28 @@ syntax:
   end
   mb~append("\"~copies(39), " ... end of Java exception chain." , .endOfLine)
   return mb~string
+
+
+/** This routine creates a hexadecimal value from the identityHash number returned by .Object's
+    identityHash method taking the bitness of the ooRexx interpreter into account.
+    If running on a 64-bit interpreter the hexadeciimal value will be 16 characters
+    long, if running on a 32-bit interpreter it will be 8 characters long.
+
+    @param argVal the identityHash number returned by .Object's identityHash method
+    @param deliString on 64-bit systems: optional delimiter string for grouping eight hex digit
+                characters, defaults to underscore (_)
+    @return hexadecimal value
+    @since  2022-09-29
+    @author Rony G. Flatscher
+*/
+::routine i2x public       -- "pointer" to hexadecimal string: vonvert identityHash value to hexadecimal string
+  use strict arg argVal, deliString=("_")
+
+  iDigits=.rexxinfo~internalDigits  -- get number of internal digits
+  numeric digits iDigits
+  val=argVal~d2x(iDigits)  -- convert to a hexadecimal string
+  len=(iDigits=9)~?(8,16)  -- determine length of hexadecimal value
+  hexval = val~right(len)  -- extract the hex digits representing 32 or 64 bit value
+  if iDigits=18, deliString<>"" then   -- insert delimiter into hexadecimal string
+     hexVal=hexVal~insert(deliString,8)
+  return hexVal
