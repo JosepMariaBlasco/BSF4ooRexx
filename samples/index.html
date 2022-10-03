@@ -156,6 +156,56 @@ example is to be expected:
         the external Rexx function BsfRawData() to turn a Rexx string into
         a Java byte array and a Java byte array into a Rexx string.
 
+    <dt><a href="1-120_JDOR_bw.rxj">1-120_JDOR_bw.rxj</a>
+    <dd>Demonstrates how to use JDOR commands to draw a cross, a string (text) and
+        superimpose a filled rectangle on it using a single (black) color.
+
+    <dt><a href="1-120_JDOR_color_text.rxj">1-120_JDOR_color_text.rxj</a>
+    <dd>Demonstrates how to use JDOR commands to draw a cross, a string (text) and
+        superimpose a filled rectangle on it using different colors.
+
+    <dt><a href="1-130_JDOR_rotate.rxj">1-130_JDOR_rotate.rxj</a>
+    <dd>Demonstrates how to use JDOR commands to draw rectangles
+        employing translation (moving the origin 0,0 around) and
+        rotation.
+
+    <dt><a href="1-140_JDOR_images.rxj">1-140_JDOR_images.rxj</a>
+    <dd>Demonstrates the use of the JDOR commands loadImage and drawImage.
+
+    <dt><a href="1-140_JDOR_images_reversed.rxj">1-140_JDOR_images_reversed.rxj</a>
+    <dd>Demonstrate the use of the scale JDOR command to reverse the y-axis,
+        causing the co-ordinates and images to be reversed.
+
+    <dt><a href="1-150_JDOR_string_circle.rxj">1-150_JDOR_string_circle.rxj</a>
+    <dd>Demonstrates the use of the rotate JDOR command to draw strings in a circle.
+
+    <dt><a href="1-160_JDOR_getState.rxj">1-160_JDOR_getState.rxj</a>
+    <dd>Demonstrates the use of the getState JDOR command and interacting
+        with return values via the RC Rexx variable.
+
+    <dt><a href="1-170_JDOR_lineHeight.rxj">1-170_JDOR_lineHeight.rxj</a>
+    <dd>Demonstrates the use of the JDOR command font to fetch and query the size
+        of it in order to calculate the necessary line height to draw multiple
+        strings with the same line height.
+
+    <dt><a href="1-180_JDOR_sandGlass.rxj">1-180_JDOR_sandGlass.rxj</a>
+    <dd>Demonstrates the use of JDOR for drawing a sand glass using different
+        colors and strokes.
+
+    <dt><a href="1-180_JDOR_sandGlass_log.rxj">1-180_JDOR_sandGlass_log.rxj</a>
+    <dd>Demonstrates the use of <em>output redirection</em> saved to a file
+        named <em>&quot;1-180_JDOR_sandGlass_commands.log&quot;</em> (a text file) in
+        order to create a log (recording) of all JDOR commands in canonized form.
+
+    <dt><a href="1-180_JDOR_sandGlass_replay_log.rxj">1-180_JDOR_sandGlass_replay_log.rxj</a>
+    <dd>Demonstrates the use of <em>input redirection</em> from a file
+        named <em>&quot;1-180_JDOR_sandGlass_commands.log&quot;</em> (a text file
+        created by <em>&quot;1-180_JDOR_sandGlass_log.rxj&quot;</em> above).
+
+    <dt><a href="1-200_listFonts.rxj">1-200_listFonts.rxj</a>
+    <dd>Lists all font families installed on the system.
+
+
     <dt><a href="2-010_demoJavaArrays.rxj">2-010_demoJavaArrays.rxj</a>
     <dd>Demonstrate how to create and use Java array objects.
 
@@ -212,6 +262,12 @@ example is to be expected:
 
     <dt><a href="2-100_functionsPerFile.rxj">2-100_functionsPerFile.rxj</a>
     <dd>Lists which BSF4ooRexx functions are used in which script in a folder.
+
+    <dt><a href="2-110_JDOR_listShowPrintFonts.rxj">2-110_JDOR_listShowPrintFonts.rxj</a>
+    <dd>Demonstrates the use of the JDOR commands to create visual samples
+        of all font families installed which can optionally printed.
+        Each page with the font samples gets stored as a gif bitmap.
+
 
     <dt><a href="3-010_clock.rxj">3-010_clock.rxj</a>
     <dd>Creates and updates a graphical clock using a <code>JPanel</code>.
@@ -272,6 +328,10 @@ example is to be expected:
         The resulting bitmap gets saved in the user's home directory under the
         name <code>3-100_create_bitmap.png</code> and shown using the appropraite
         operating system's command.
+
+    <dt><a href="3-100_create_bitmap_JDOR_commands.rxj">3-100_create_bitmap_JDOR_commands.rxj</a>
+    <dd>Demonstrate the new JDOR Rexx command handler to achieve the same
+        graphic as the one in <em>&quot;3-100_create_bitmap_JDOR.rxj&quot;</em> above.
 
 
     <dt><a href="4-010_demo-j8-lambda.rxj">4-010_demo-j8-lambda.rxj</a>

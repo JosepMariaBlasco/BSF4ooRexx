@@ -1,0 +1,133 @@
+#!/usr/bin/env rexx
+/*
+   Name:    "2-110_listShowPrintFonts.rxj"
+   Invoke:  "rexx 2-110_listShowPrintFonts.rxj"
+            "rexxj 2-110_listShowPrintFonts.rxj" (Windows)
+            "rexxj.sh 2-110_listShowPrintFonts.rxj" (Unix)
+
+   Purpose:  Demonstrates the use of the JDOR commands to create visual samples
+             of all font families installed which can optionally printed.
+             Each page with the font samples gets stored as a gif bitmap.
+
+   font to fetch and query the size
+             of it in order to calculate the necessary line height to draw multiple
+             strings with the same line height
+
+   Date:    2022-10-03
+
+   Author:  Rony G. Flatscher, WU Vienna
+
+   Changes: --
+
+   last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
+                (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2022 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+parse arg bPrint  -- if user supplies 1 then print
+if bPrint="" then -- no argument supplied, ask the user in a GUI
+do
+   title      = "Print Font Families Dialog"
+   message    = "Do you wish to print the fonts?"
+   optionType = "YesNoCancel" -- 0=Yes, 1=No, 2=Cancel, -1=dialog closed by user
+   res=.bsf.dialog~dialogBox(message, title, "question", optionType)
+   if res=2 then exit   -- cancel was pressed
+   bPrint=(res=0)       -- if Yes, then set to .true, otherwise .false (do not print)
+end
+else bPrint=(bPrint=.true) -- if '1' supplied on the command line, then print
+
+clzGE=bsf.loadClass("java.awt.GraphicsEnvironment")   /* load the Java class */
+localGE=clzGE~getLocalGraphicsEnvironment             /* invoke the static method "getLocalGraphicsEnvironment" */
+allFontFamilies=localGE~getAvailableFontFamilyNames   /* invoke the method "getAvailableFontFamilyNames" */
+nrItems=allFontFamilies~items    -- get number of entries (Java array can be used as if it was an ooRexx array! */
+   -- set values for creating images with the font samples
+-- there are 72 pixels per inch
+width  = 800      -- two columns: first column font name, second column font sample
+-- there are 72 pixels per inch
+height = trunc(12.5*72+10)    -- plus additional 10 px margin
+lineHeight=15                 -- line height (includes padding)
+lines  =  trunc(height/lineHeight)  -- calc number of lines
+xCol1 = 10                    -- first column at 10px (margin)
+xCol2 = xCol1+250             -- second column 250px to the right of first column
+fileName="2-110_JDOR_FontSample_"   -- base name for
+fileType="gif"                -- save as gif bitmap
+
+   -- we use the new JDOR Rexx command handler (cf. 2022 International Rexx Symposium)
+call addJdorHandler     -- load and add the Java Rexx command handler, using default name: JDOR
+address jdor            -- set default environment to JDOR
+
+-- winUpdate .false        -- do not update Frame (JDOR command)
+do i=1 to nrItems       -- iterate over all font names in the array
+   if i//lines=1 then   -- arrived at another group of 50
+   do
+      pageNr=i%lines    -- calc current pageNr (0-based)
+      currLine=1        -- reset currLine
+      if i>1 then
+      do
+         -- winUpdate .true-- update Frame (JDOR command)
+         tmpFileName = fileName || (pageNr+1)"."fileType
+         say "saving sample to:" pp(tmpFileName)
+         "saveImage" tmpFileName    -- write current image (JDOR command)
+         if bPrint then
+         do
+            printScale 0.75         -- reduce printout by 25% (JDOR command)
+            printImage              -- print current image (JDOR command)
+         end
+         say
+      end
+      "reset"                       -- reset JDOR  (JDOR command)
+      new width height TYPE_INT_RGB -- create new image, plain RGB (can be saved as bmp, gif, jpg, png) (JDOR command)
+      winShow                       -- will show the image (fun to look at)  (JDOR command)
+      background light_gray         -- make background light_gray (JDOR command)
+      clearRect width height        -- this will use the current background color for clearing (JDOR command)
+      fontSize 12                   -- set font size to 12 pixels (JDOR command)
+      font mono "Monospaced"        -- load the system's 'Monotype' font, save it as 'mono' (JDOR command)
+      -- winUpdate .false              -- do not update Frame (JDOR command)
+   end
+   fontName=allFontFamilies[i]      -- get current font family name (Rexx)
+   y=currLine*lineHeight            -- calculate y (Rexx)
+   goto xCol1 y                     -- goto x y (JDOR command)
+   say i~right(3)":" fontName       -- show fontName on command line (Rexx)
+   font mono                        -- use already loaded monotype font (JDOR command)
+   drawString i~right(3,'.')":" fontName  -- write font family name (JDOR command)
+   goto xCol2 y                     -- goto x y  (JDOR command)
+   font "font"i fontName            -- load and use font family font (JDOR command)
+   drawString "Hello world, this is ooRexx using the JDOR command handler ..." -- (JDOR command)
+   currLine+=1                      -- increase line (Rexx)
+end
+if i>1 then
+do
+   tmpFileName = fileName || (pageNr+1)"."fileType
+   say "saving sample to:" pp(tmpFileName)
+   "saveImage" tmpFileName -- (JDOR command)
+   -- winUpdate .true      -- allow update of Frame again, show current image (JDOR command)
+   if bPrint then
+   do
+      printScale 0.75   -- reduce printout by 25% (JDOR command)
+      printImage        -- print current image (JDOR command)
+   end
+end
+
+say
+say "you have a total of" pp(nrItems) "fonts installed on your system!"
+
+"sleep" 3 + .009        -- let us look at the last image for three plus 9/1000 more seconds ;) (JDOR command)
+
+::requires "jdor.cls"   -- makes routine addJdorHandler([environmentName]) available
