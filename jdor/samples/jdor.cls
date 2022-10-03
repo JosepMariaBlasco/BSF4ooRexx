@@ -37,15 +37,6 @@
 ::routine addJdorHandler   public
    use strict arg environmentName="JDOR"
 
-   call BsfCommandHandler "add", environmentName, getJDH()
+   call BsfCommandHandler "add", environmentName, .bsf~new("org.oorexx.handlers.jdor.JavaDrawingHandler")
 
 ::requires "BSF.CLS"    -- get ooRexx-Java bridge
-
-::routine getJDH        -- tries to load (planned) fully qualified name, fallback: unqualified
-  signal on syntax name s1
-  return .bsf~new("org.oorexx.handlers.jdor.JavaDrawingHandler")
-s1:
-  signal on syntax name s2
-  return .bsf~new("JavaDrawingHandler")
-s2:
-  return .nil           -- indicate that we were not able to create an instance of JDH
