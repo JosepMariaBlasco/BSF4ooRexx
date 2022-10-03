@@ -30,6 +30,8 @@ set path2jsr223=%path2root%\org\rexxla\bsf\engines\rexx
 
 set path2rexxlaBsf=%path2root%\org\rexxla\bsf
 
+set path2jdor=%path2root%\org\oorexx\handlers\jdor
+
 rem rgf, 20140927: make sure that the extension jar is not picked up (if bsf4oorexx-jar got installed there)
 set javacDefines=-Djava.ext.dirs=""
 set target=-target 8
@@ -164,6 +166,16 @@ javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxCleanupRef.java            
 
 @rem 2022-04-21: needs Java 1.8 due to using Arrays.stream()
 javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxAnalyzeRegistry.java       && copy %javaSrc%\RexxAnalyzeRegistry*        %path2engine%
+
+
+@rem 2022-10-03: adding JDOR command handler
+@rem directory where "org" resides:                 %path2root%
+@rem directory where the class files get placed to: %path2jdor%
+javac %javacDefines% %javaBaseLine%  %javaSrc%\JavaDrawingHandler.java
+javac %javacDefines% %javaBaseLine%  -d %path2root% %javaSrc%\JavaDrawingHandler.java
+copy %javaSrc%\JavaDrawingHandler.java %path2jdor%
+
+
 
 endlocal
 
