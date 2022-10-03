@@ -6,7 +6,7 @@
             "rexxj.sh 1-160_JDOR_getState.rxj" (Unix)
 
    Purpose:  Demonstrates the use of the getState command and interacting
-             with return values via the RC Rexx variable
+             with return values via the RC Rexx variable.
 
    Date:    2022-10-03
 

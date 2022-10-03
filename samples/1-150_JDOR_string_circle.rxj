@@ -5,7 +5,7 @@
             "rexxj 1-150_JDOR_string_circle.rxj" (Windows)
             "rexxj.sh 1-150_JDOR_string_circle.rxj" (Unix)
 
-   Purpose:  Demonstrates the use of the rotate command to draw strings in a circle
+   Purpose:  Demonstrates the use of the rotate command to draw strings in a circle.
 
    Date:    2022-10-03
 

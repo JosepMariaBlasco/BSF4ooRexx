@@ -7,7 +7,7 @@
 
    Purpose:  Demonstrates how to use JDOR commands to draw rectangles
              employing translation (moving the origin 0,0 around) and
-             rotation
+             rotation.
 
    Date:    2022-10-03
 

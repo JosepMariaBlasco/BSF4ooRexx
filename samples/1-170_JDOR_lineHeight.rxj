@@ -7,7 +7,7 @@
 
    Purpose:  Demonstrates the use of the command font to fetch and query the size
              of it in order to calculate the necessary line height to draw multiple
-             strings with the same line height
+             strings with the same line height.
 
    Date:    2022-10-03
 
