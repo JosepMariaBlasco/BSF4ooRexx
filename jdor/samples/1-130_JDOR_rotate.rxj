@@ -1,0 +1,67 @@
+#!/usr/bin/env rexx
+/*
+   Name:    "1-130_JDOR_rotate.rxj"
+   Invoke:  "rexx 1-130_JDOR_rotate.rxj"
+            "rexxj 1-130_JDOR_rotate.rxj" (Windows)
+            "rexxj.sh 1-130_JDOR_rotate.rxj" (Unix)
+
+   Purpose:  Demonstrates how to use JDOR commands to draw rectangles
+             employing translation (moving the origin 0,0 around) and
+             rotation.
+
+   Date:    2022-10-03
+
+   Author:  Rony G. Flatscher, WU Vienna
+
+   Changes: --
+
+   last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
+                (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2022 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+call addJdorHandler     -- load and add the Java Rexx command handler, using default name: JDOR
+address jdor            -- set default environment to JDOR
+new 500 500             -- create new bitmap
+winShow                 -- show frame
+   -- draw two lines forming a big X
+goto 100  150           -- currX=100, currY=150
+      -- define and set color, register it with the name "saddlebrown50"
+color saddlebrown50 139 69 19 127   -- R,G,B,alpha=127 (50 % transparency)
+fillRect 50 50          -- first fill
+color blue              -- set color to blue (predefined)
+drawRect 50 50          -- draw border
+color red               -- set color to red (predefined)
+drawOval 50 50          -- draw border
+   -- draw a rectangle at the center of the bitmap
+translate 260 250       -- move origin 0,0 to (260,250)
+goto 0 0                -- x=0, y=0 (effectively: x=0+260, y=0+250)
+rotate 45               -- rotate by 45 degrees (clock wise starting out from 3 o'clock)
+color saddlebrown50     -- use registered color named saddlebrown50 [R,G,B,alpha=127 (50 % transparency)]
+fillRect 50 75          -- fill 50% transparency
+fillOval 50 75          -- fill (add) 50 % transparency
+color blue              -- set color to blue (predefined)
+drawRect 50 75          -- draw border in blue
+color red               -- set color to red (predefined)
+drawOval 50 75          -- draw border in red
+sleep 5                 -- sleep for five seconds
+-- say "press enter to end.";parse pull
+
+::requires "jdor.cls"   -- makes routine addJdorHandler([environmentName]) available

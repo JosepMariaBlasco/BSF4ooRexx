@@ -1,0 +1,71 @@
+#!/usr/bin/env rexx
+/*
+   Name:    "1-180_JDOR_sandGlass_log.rxj"
+   Invoke:  "rexx 1-180_JDOR_sandGlass_log.rxj"
+            "rexxj 1-180_JDOR_sandGlass_log.rxj" (Windows)
+            "rexxj.sh 1-180_JDOR_sandGlass_log.rxj" (Unix)
+
+   Purpose:  Demonstrates the use of output redirection saved to a file
+             named "1-180_JDOR_sandGlass_commands.log" (a text file) in
+             order to create a log (recording) of all JDOR commands in
+             canonized form.
+
+   Date:    2022-10-03
+
+   Author:  Rony G. Flatscher, WU Vienna
+
+   Changes: --
+
+   last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
+                (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2022 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+call addJdorHandler     -- load and add the Java Rexx command handler, using default name: JDOR
+
+s=.stream~new("1-180_JDOR_sandGlass_commands.log")~~open("replace")
+address jdor with output using (s)  -- redirect output: commands will be logged in canonized form
+"stroke st15 15"              -- define and set stroke (15 pixels wide)
+"stroke st05  5"              -- define and set stroke (5 pixels wide)
+"stroke st01  1"              -- define and set stroke (1 pixel wide)
+"color saddlebrown50 139  69 19 127"   -- R,G,B,alpha=127 (~50 % transparency)
+"color green20         0 255  0 50"    -- R,G,B,alpha= 50 (~20 % transparency)
+strokes=st01, st05, st15               -- define Rexx array of defined strokes
+colors =black, saddlebrown50, green20  -- define Rexx array of defined colors
+width =500
+height=500
+"NEW" width height            -- create new bitmap
+"winshow"                     -- show frame
+do i=1 to 3
+  m=50+(i-1)*50               -- increase margin
+  w = width-m
+  h = height-m
+  "color"  colors[i]          -- set defined color
+  "STROKE" strokes[i]         -- set defined stroke
+  "PoS"  m m; "DRAWLINE" w m  -- sets the x and y position
+  "GOTO" w m; "drawline" m h  -- GOTO is a synonym for POS
+  "pos"  m h; "DRAWLINE" w h  -- sets the x and y position
+  "GOTO" w h; "drawline" m m  -- GOTO is a synonym for POS
+end
+s~close
+saveImage  "1-180_JDOR_sandGlass.png"  -- "png" allows for ARGB (RGB colors with alpha (transparency9)
+sleep 3                       -- sleep for three seconds
+
+::requires "jdor.cls"   -- makes routine addJdorHandler([environmentName]) available

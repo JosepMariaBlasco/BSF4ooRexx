@@ -1,0 +1,66 @@
+#!/usr/bin/env rexx
+/*
+   Name:    "1-180_JDOR_sandGlass.rxj"
+   Invoke:  "rexx 1-180_JDOR_sandGlass.rxj"
+            "rexxj 1-180_JDOR_sandGlass.rxj" (Windows)
+            "rexxj.sh 1-180_JDOR_sandGlass.rxj" (Unix)
+
+   Purpose:  Demonstrates the use of JDOR for drawing a sand glass using different
+             colors and strokes.
+
+   Date:    2022-10-03
+
+   Author:  Rony G. Flatscher, WU Vienna
+
+   Changes: --
+
+   last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
+                (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2022 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+call addJdorHandler     -- load and add the Java Rexx command handler, using default name: JDOR
+address jdor            -- set default environment to JDOR
+stroke st5 5            -- define stroke of 5 pts
+stroke st3 3            -- define stroke of 3 pts
+stroke st1 1            -- define stroke of 1 pt
+color saddlebrown50 139  69 19 127   -- R,G,B,alpha=127 (~50 % transparency)
+color green20         0 255  0 50    -- R,G,B,alpha=127 (~20 % transparency)
+strokes=st1, st3, st5                 -- Rexx array of stroke nick names
+colors =black, saddlebrown50, green20 -- Rexx array of color nick names
+width=500
+height=500
+new width height        -- create new bitmap
+winShow                 -- show frame
+do i=1 to 3
+  m=50+(i-1)*50         -- margin
+  w = width-m
+  h = height-m
+  color  colors[i]
+  stroke strokes[i]
+  goto m m; drawLine w m
+  goto w m; drawLine m h
+  goto m h; drawLine w h
+  goto w h; drawLine m m
+end
+sleep 3                 -- sleep for three seconds
+-- say 'hit enter to continue...'; parse pull .
+
+::requires "jdor.cls"   -- makes routine addJdorHandler([environmentName]) available
