@@ -63,7 +63,7 @@ width  = 800      -- two columns: first column font name, second column font sam
 -- there are 72 pixels per inch
 height = trunc(12.5*72+10)    -- plus additional 10 px margin
 lineHeight=15                 -- line height (includes padding)
-lines  =  trunc(height/lineHeight)  -- calc number of lines
+lines  =  trunc(height/lineHeight) - 2  -- calc number of lines per page (allow for footer)
 xCol1 = 10                    -- first column at 10px (margin)
 xCol2 = xCol1+250             -- second column 250px to the right of first column
 fileName="2-110_JDOR_FontSample_"   -- base name for
@@ -81,8 +81,12 @@ do i=1 to nrItems       -- iterate over all font names in the array
       currLine=1        -- reset currLine
       if i>1 then
       do
+         tmpFileName = fileName || pageNr"."fileType  -- define file name
+         y=(lines+2)*lineHeight              -- calc footer position
+         fontSize 10; font dialog "Dialog"   -- set font and font size
+         goto xCol1 y; drawString "page" pageNr "(".dateTime~new")"  -- write footer part 1
+         goto xCol2 y; drawString tmpFileName      -- write footer part 2
          -- winUpdate .true-- update Frame (JDOR command)
-         tmpFileName = fileName || (pageNr+1)"."fileType
          say "saving sample to:" pp(tmpFileName)
          "saveImage" tmpFileName    -- write current image (JDOR command)
          if bPrint then
@@ -114,8 +118,12 @@ do i=1 to nrItems       -- iterate over all font names in the array
 end
 if i>1 then
 do
-   tmpFileName = fileName || (pageNr+1)"."fileType
-   say "saving sample to:" pp(tmpFileName)
+   tmpFileName = fileName || pageNr"."fileType  -- define file name
+   y=(lines+2)*lineHeight              -- calc footer position
+   fontSize 10; font dialog "Dialog"   -- set font and font size
+   goto xCol1 y; drawString "page" pageNr "(".dateTime~new")"  -- write footer part 1
+   goto xCol2 y; drawString tmpFileName      -- write footer part 2
+   say "saving sample to:" pp(tmpFileName)   -- show user file name
    "saveImage" tmpFileName -- (JDOR command)
    -- winUpdate .true      -- allow update of Frame again, show current image (JDOR command)
    if bPrint then
