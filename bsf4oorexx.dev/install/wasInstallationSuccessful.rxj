@@ -9,9 +9,11 @@
 
    Usage:   just invoke it, use rxqueue to pipe success message into calling program
 
-   Version: 1.01
+   Version: 1.02
 
    Changes: 2022-09-19, rgf   - changed "BSF4ooRexx" to "BSF4ooRexx850"
+            2022-10-05, rgf   - changed logic to allow intercepting error if BSF.CLS
+                                cannot be found
 
    Last svn check-in: $Revision: 912 $ $Author: Administrator $ $Date: 2010-08-23 16:49:55 +0200 (Mon, 23 Aug 2010) $
 
@@ -34,6 +36,8 @@
     -----------------------------------------------------------------------------
 */
 
+signal on error
+call "BSF.CLS"    -- create and setup ooRexx-Java bridge, imports fundamental Java classes
    -- ".java.lang.System is the Rexx proxy class for "java.lang.System", if everything worked out
 if .java.lang.System~isA(.class) then
 do
@@ -41,7 +45,6 @@ do
    return
 end
 
+error:
 say "==> INSTALLATION OF 'BSF4ooRexx850' WAS *NOT* SUCCESSFUL! :( <=="
 
-
-::requires "BSF.CLS" -- create and setup ooRexx-Java bridge

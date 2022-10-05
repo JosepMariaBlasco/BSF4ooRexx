@@ -4,7 +4,7 @@
 <Menu>
     <Name>Applications</Name>
         <Menu>
-            <Name>BSF4ooRexx</Name>
+            <Name>BSF4ooRexx850</Name>
             <Directory>bsf4oorexx_menu.directory</Directory>
 
             <Menu>

@@ -36,9 +36,9 @@ set CLASSPATH=%CLASSPATH%;%ooo_classes%\unoil.jar;%ooo_classes%\ridl.jar;%ooo_cl
 @echo adding javax.servlet.jsp and javax.servlet.http to CLASSPATH
 set CLASSPATH=%CLASSPATH%;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet.jsp.jar;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet-3.0.0.v201112011016.jar
 
-set releaseDate=20220920
-set runDate=20220920
-set doc_date=20220920
+set releaseDate=20221005
+set runDate=20221005
+set doc_date=20221005
 
 @rem values to use for creating the BSF jarfile
 @rem set bsfDate=20090910
@@ -210,6 +210,8 @@ rd /s /q bsf4oorexx
 
 @echo creating install directory and populating it ...
 md bsf4oorexx
+@rem new 20221004
+md bsf4oorexx\lib
 md bsf4oorexx\install
 md bsf4oorexx\install\linux
 md bsf4oorexx\install\linux\resources
@@ -249,7 +251,7 @@ xcopy %path2dev%\oorexx.net\docs                   bsf4oorexx\information\ /s
 copy *LICENS*.txt                                  bsf4oorexx\
 copy NOTICE.txt                                    bsf4oorexx\
 @rem copy bsf-*.jar                                bsf4oorexx\
-copy %bsfJarNameBin%                               bsf4oorexx\
+copy %bsfJarNameBin%                               bsf4oorexx\lib\
 copy ScriptProviderForooRexx.oxt                   bsf4oorexx\install\
 @rem copy ScriptProviderForooRexx.jar                   bsf4oorexx\install\
 copy %path2dev%\bin\add*.r*                        bsf4oorexx\

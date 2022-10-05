@@ -5,8 +5,14 @@
             without any knowledge about Java installation issues)
    Author:  Rony G. Flatscher
    Date:    2006-01-07
-   Version: 1.40
+   Version: 1.41
    Changed:
+            2022-10-05, - corrected creation of rexxj.{sh|cmd} to point to new $BSF4OOREXX_HOME/lib directory
+
+            2022-10-04, - changed CLASSPATH to BSF4OOREXX_HOME/lib/_* as all BSF4ooRexx jars
+                          will be copied there; has also the benefit to allow users to add
+                          jar-files for their apps and have BSF4ooRexx find the classes therein
+
             2022-08-29, - changed BSF4ooRexx to BSF4ooRexx850
             2021-11-16, - Linux arm32 name was wrong ("libBSF4ooRexx.so-32-arm" instead of "libBSF4ooRexx.so-32-arm32")
 
@@ -381,9 +387,11 @@ cmd.eIsMacOSX=(s="D" | s="M")    -- determine whether running on "MACOSX" replac
 
 -- cmd.eIsUnix=.true -- for debugging only !!
 
+/* -- rgf, 20221004: no extension library supported by newer Java !
       /* DLL/SO-extension library usually named "i386" on Intel, and "solaris" for Sun's Java   */
 cmd.eExt.dir.bin=j.java.home || j.file.separator || "lib" || j.file.separator || ,
                                 iif(pos("86", j.os.arch)>0, "i386", j.os.arch)
+-- */
 
 cmd.eSuperDir = qualify(directory() || j.file.separator || "..")  -- get path to super directory
 cmd.eSuperDir2=cmd.eSuperDir || j.file.separator   -- supply a trailing separator
@@ -408,25 +416,32 @@ do
    --    cmd.eSetooRexxLibHome=iif(cmd.eIsUnix=1, "", "set ") || "OOREXX_LIB_HOME=".rexxInfo~libraryPath
 end
 
-
-
    -- 2013-07-14, ---rgf: ooRexx 4.1.3 introduced an error if using a compound symbol ending in a dot
+-- rgf, 20221004: replace individual jars with lib/ *
+cmd.eJarBaseNames.0=0
+/* --
 call SysFileTree cmd.eSuperDir2||"bsf*.jar", "files.", "FO" /* query for the jars we need */
 cmd.eJarBaseNames.0=files.0
 do i=1 to files.0             -- now assign elements from files. to cmd.eJarBaseNames.
    cmd.eJarBaseNames.i=files.i
 end
+-- */
 
 if cmd.eIsUnix=1 then
    cmd.eSetCP="export CLASSPATH="
 else
    cmd.eSetCP="set CLASSPATH="
 
+-- rgf, 20221004: replace individual jars with lib/ *
+/* --
 do i=1 to cmd.eJarBaseNames.0    /* iterate over all found jar-files    */
    cmd.eSetCP=cmd.eSetCP || iif(i=1, "", j.path.separator) || -
                             iif(cmd.eIsUnix=1, "$BSF4OOREXX_HOME", "%BSF4OOREXX_HOME%") || -
                             j.file.separator || filespec("Name", cmd.eJarBaseNames.i)
 end
+-- */
+-- watch out for Rexx comment, hence concatenating asterisk
+cmd.eSetCP=cmd.eSetCP || iif(cmd.eIsUnix=1, ":$BSF4OOREXX_HOME/lib/" || "*", ";%BSF4OOREXX_HOME%\lib\*")
 
 -- 2016-08-15, rgf: define .NET/CLR
 if cmd.eIsUnix<>1 then
@@ -436,11 +451,13 @@ do
    cmd.eCLR.eAssemblies=.array~of("jni4net.n-0.8.8.0.dll", "oorexx.net.dll")  -- assemblies to put into/remove from GAC
    cmd.eCLR.eJars      =.array~of("jni4net.j-0.8.8.0.jar", "oorexx.net.jar")  -- assemblies to put into/remove from GAC
 
+/* -- rgf, 20221004: no need to list jar files individually anymore
    do jar over cmd.eCLR.eJars -- cmd.eSetCP will be used for setting environment variables in scripts
       cmd.eSetCP=cmd.eSetCP || iif(i=1, "", j.path.separator) || -
                                iif(cmd.eIsUnix=1, "$BSF4OOREXX_HOME", "%BSF4OOREXX_HOME%") || -
                                j.file.separator || jar
    end
+-- */
 end
 
   /* get and set the commons-logging jar-file name: */
@@ -779,9 +796,15 @@ end
 
 if cmd.eCLRDir<>"" then -- .NET/CLR (common language runtime) support be put into eBinDir?
 do
-say   cmd.eCopy cmd.eCLRDir ".." ">" cmd.eNullDevice -- copy clr files
+-- rgf, 20221004: copy jar-files to BSF4OOREXX_HOME/lib/ * !
+   tmpCmd=cmd.eCopy cmd.eCLRDir||j.file.separator||"*.jar" ".."||j.file.separator||"lib" ">" cmd.eNullDevice
+say   tmpCmd
+   tmpCmd
+
+say   cmd.eCopy cmd.eCLRDir ".." ">" cmd.eNullDevice -- copy clr files, PATH will point to ".."
    cmd.eCopy cmd.eCLRDir ".." ">" cmd.eNullDevice  -- copy clr files
 
+/* -- rgf, 20221004: CLASSPATH will show to "BSF4OOREXX_HOME/lib/ *" so no need to put explicitly on CLASSPATH anymore
    -- now determine CLR-related jars
    oldMax=cmd.eJarBaseNames.0
    do jarFname over cmd.eClr.eJars
@@ -790,6 +813,7 @@ say   cmd.eCopy cmd.eCLRDir ".." ">" cmd.eNullDevice -- copy clr files
       cmd.eJarBaseNames.oldMax=fullPath   -- add jar file
       cmd.eJarBaseNames.0=oldMax          -- adjust number of elements
    end
+-- */
 end
 
 /*
@@ -1122,7 +1146,7 @@ createInstallScript: procedure expose j. cmd. path.
       call lineout fn, ""
 
          -- add bsf-jars to CLASSPATH
-      tmpArgs=""
+      tmpArgs=";"cmd.eSuperdir"\lib\*"    -- rgf, 20221004 instead of ""
       do i=1 to cmd.eJarBaseNames.0
          if tmpArgs<>"" then tmpArgs=tmpArgs || j.path.separator
          tmpArgs=tmpArgs || cmd.eJarBaseNames.i
@@ -1369,10 +1393,10 @@ create_REXXJ_Script: procedure expose j. cmd. path.
   call lineout fn, cmd.eSetBSF4OOREXX_HOME  /* set BSF4OOREXX_HOME */
   call lineout fn, ""
 
-  call lineout fn, cmd.eLineComment "get fully qualified path for BSF4OOREXX_HOME's bsf4ooRexx*bin.jar"
+  call lineout fn, cmd.eLineComment "get fully qualified path for BSF4OOREXX_HOME/lib"
   if cmd.eIsUnix=1 then                /* find bsf4ooRexx*bin.jar */
   do
-     call lineout fn, "TMP_BSF4OOREXX_JAR=`ls -d $BSF4OOREXX_HOME/bsf4ooRexx*bin.jar`"
+     call lineout fn, "TMP_BSF4OOREXX_JAR=$BSF4OOREXX_HOME/lib/*" -- jar files go there since 850
   end
   else   -- Windows
   do
@@ -1381,7 +1405,7 @@ create_REXXJ_Script: procedure expose j. cmd. path.
      call lineout fn, 'for /f "usebackq tokens=*" %%a in (`cd`) do set CURR_DIR=%%a'
      call lineout fn, "cd /d %BSF4OOREXX_HOME%"      -- also change drive letter
 
-     call lineout fn, "for /F ""delims="" %%I in ('""dir /B %BSF4OOREXX_HOME%\bsf4ooRexx*bin.jar 2>null""') do set TMP_BSF4OOREXX_JAR=%%~fI"
+     call lineout fn, "for /F ""delims="" %%I in ('""dir /B %BSF4OOREXX_HOME%\lib 2>null""') do set TMP_BSF4OOREXX_JAR=%%~fI"
      call lineout fn, "cd /d %CURR_DIR%"           -- also change drive letter
   end
   call lineout fn, ""
