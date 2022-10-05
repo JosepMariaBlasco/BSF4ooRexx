@@ -9,8 +9,9 @@
    operating system (Windows, MacOS, Linux) where Java, ooRexx and BSF4ooRexx is
    available.
 
-   author: Rony G. Flatscher
-   date:   2022-09-05/2022-10-03
+   author:  Rony G. Flatscher
+   date:    2022-09-05/2022-10-05
+   version: 002.20221005
    license: Apache license 2.0
 
    license:
@@ -31,6 +32,13 @@
        limitations under the License.
     -----------------------------------------------------------------------------
 
+*/
+
+/*  changes:
+        2022-10-05: - corrected Frame's currX and currY values
+                    - corrected return value for IMAGE_SIZE as num+' '+num would add the
+                      numbers with the value of the single blank value to num+" "+num to
+                      return a string
 */
 
 /*  Sample program in ooRexx (temporarily):
@@ -161,7 +169,9 @@ class JavaDrawingFrame extends JFrame
         add(sf);
         setTitle("JavaDrawingFrame");
         // needs to be followed by pack() to take effect immediately
-        getContentPane().setPreferredSize(new Dimension(bufImage.getWidth(),bufImage.getHeight()));
+        currWidth=bufImage.getWidth();
+        currHeight=bufImage.getHeight();
+        getContentPane().setPreferredSize(new Dimension(currWidth,currHeight));
         pack();
 
         setLocationRelativeTo(null);
@@ -214,7 +224,7 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     /* static definitions           */
 
     // default image sizes
-    static final public String version = "001.20221002";
+    static final public String version = "002.20221005";
     static final private int prefWidth  = 500;
     static final private int prefHeight = 500;
     static       private int prefImageType = BufferedImage.TYPE_INT_ARGB; // default with alpha (only png supported)
@@ -1045,7 +1055,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         }
                         if (isOR)
                         {
-                           writeOutput(slot, canonical+' '+strResult);  // write canonical form
+                           writeOutput(slot, canonical+" "+strResult);  // write canonical form
                         }
                         return strResult;
                     }
@@ -1223,7 +1233,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             writeOutput(slot, canonical);
                         }
-                        return tmpImg.getWidth()+' '+tmpImg.getHeight();
+                        return tmpImg.getWidth()+" "+tmpImg.getHeight();
                     }
 
                     // create a RexxStringTable, fill it with current settings, stacks, maps and return it;
