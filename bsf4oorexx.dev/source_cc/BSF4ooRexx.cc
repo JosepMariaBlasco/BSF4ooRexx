@@ -5678,19 +5678,41 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
         // turn supplied argument to CString for comparison with needle value
         CSTRING cTmpStrObj=context->CString(tmpStrObject);     // turn to ASCII-Z string
 
-        // determine whether java.class.path is supplied via this Rexx argument, setting/overriding CLASSPATH
-        bCPdefined= (bCPdefined || (strncmp(cTmpStrObj, needle, needleLength)==0));
+        // 2022-10-16: determine whether java.class.path is supplied via this Rexx argument, setting/overriding CLASSPATH
+        bool tmpBCPdefined = (strncmp(cTmpStrObj, needle, needleLength)==0);
+        // bCPdefined= (bCPdefined || (strncmp(cTmpStrObj, needle, needleLength)==0));
+        bCPdefined= (bCPdefined || tmpBCPdefined);
 
 #if defined( UNIX )     // java.library.path
         bJLPdefined= (bJLPdefined || (strncmp(cTmpStrObj, jvlpNeedle, jvlpNeedleLength)==0));
 #endif
 
         // create and save supplied option
-        size_t tmpLength=strlen(cTmpStrObj)+2;
-        char *ch = (char *) malloc(tmpLength+1);   // copy Rexx argument
-        memset(ch, 0, tmpLength+1);	    // make sure that initialized to 0x00
+        char *ch;
 
-        strncpy(ch, cTmpStrObj, tmpLength);
+        if (tmpBCPdefined)  // if current argument is the classpath argument, make sure we resolve any asterisk wildcard
+        {
+            // 2022-10-16: resolve potential asterisk (*) wildcard paths (introduced with Java 1.6/6)
+            char *resolvedCP=resolveCLASSPATH((char *)cTmpStrObj);
+            size_t tmpLength=strlen(resolvedCP)+2;
+            ch = (char *) malloc(tmpLength+1);   // copy Rexx argument
+            memset(ch, 0, tmpLength+1);	    // make sure that initialized to 0x00
+            strncpy(ch, resolvedCP, tmpLength);
+            free (resolvedCP);
+        }
+        else    // any other argument
+        {
+            size_t tmpLength=strlen(cTmpStrObj)+2;
+            ch = (char *) malloc(tmpLength+1);   // copy Rexx argument
+            memset(ch, 0, tmpLength+1);	    // make sure that initialized to 0x00
+            strncpy(ch, cTmpStrObj, tmpLength);
+        }
+
+        // size_t tmpLength=strlen(cTmpStrObj)+2;
+        // char *ch = (char *) malloc(tmpLength+1);   // copy Rexx argument
+        // memset(ch, 0, tmpLength+1);	    // make sure that initialized to 0x00
+        // strncpy(ch, cTmpStrObj, tmpLength);
+
         options[m].optionString = ch;      //
         options[m].extraInfo    = NULL;    // Florian's Schuld! :) (2004-05-06)
         m++;                   // increase counter to reflect number of available options
