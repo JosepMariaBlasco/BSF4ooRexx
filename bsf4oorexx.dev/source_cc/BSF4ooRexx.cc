@@ -5724,16 +5724,10 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
         // create option for setting "java.class.path" to CLASSPATH
         char *resolvedCP=resolveCLASSPATH(cp_env);  // resolve potential asterisk (*) wildcard paths (introduced with Java 1.6/6)
 
-fprintf(stderr, "%s # %d: cp_env    =[%s]\n\tresolvedCP=[%s]\n",
-           __FUNCTION__, __LINE__, cp_env, resolvedCP);
-
         size_t bufLen=strlen(resolvedCP)+needleLength+2;
 
         options[m].optionString = (char *) malloc(bufLen+1);    // get needed memory
-//        snprintf( options[m].optionString, bufLen+1, "%s%s", needle, cp_env);
         snprintf( options[m].optionString, bufLen+1, "%s%s", needle, resolvedCP);
-fprintf(stderr, "%s # %d: m=[%d] options[%d].optionString=[%s]\n", __FUNCTION__, __LINE__, m, m, options[m].optionString);
-
         free(resolvedCP);          //
 
         options[m].extraInfo=NULL;
