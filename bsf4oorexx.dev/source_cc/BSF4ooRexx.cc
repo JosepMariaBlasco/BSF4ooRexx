@@ -36,6 +36,11 @@ remarks:
 
 inline jint impl_jniRexxHaltInterpreterInstance (JNIEnv *env, jobject jobj, jstring j_rii_ID)
 
+    2022-10-16, rgf: - resolve asterisk (*) wildcard character in CLASSPATH/java.class.path,
+                       needed if Java gets loaded by Rexx as the JVM does not resolve it
+                       (the Java launchers resolve the asterisk wildcard since Java 1.6/6
+                       with ".jar" and ".JAR" files in the denoted subdirectory)
+
 
     2022-09-20, rgf: - BsfCommandHandler(): make "List" argument optional
     2022-09-02, rgf: - added stemName string argument to ... _jniCreateCollectionObject()
@@ -1046,6 +1051,7 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 #ifdef UNIX
    #include <dlfcn.h>       // use the dynamic link (dl*) functions
+   #include <dirent.h>      // 2022-10-16, rgf: needed for resolving CLASSPATH wildcards
 
       // under Linux and MacOSX not defined, ---rgf, 2003-04-05, 2017-08-18
     #ifndef FALSE
@@ -1101,21 +1107,21 @@ thread_id_t  RgfGetTID();
 
 #if defined (BSF4REXX_32_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20220920 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20221016 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20220920 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20221016 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #elif defined (BSF4REXX_64_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20220920 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20221016 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20220920 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20221016 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #else
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20220920 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20221016 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20220920 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20221016 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #endif
 
@@ -5121,6 +5127,222 @@ setenv(firstThreadEnvVariable, "1", 1);
          "-D<name>=<value>", "-verbose[:{class|gc|jni|X-non-standard-name}[,...]]
     */
 
+    /* 2022-10-16, ---rgf: now that BSF4ooRexx allows for using the asterisk
+         wildcard character in CLASSPATH, we need to resolve it in case Rexx
+         loads Java;
+    */
+
+#ifdef WINDOWS
+    // dir has a trailing "*", e.g. "c:\some\*"
+    /** Query a directory for "jar" files.
+    *   @param dir a directory path with a trailing asterisk (*)
+    *   @param tgtBuffer buffer to put found jar files
+    *   @param offset offset in tgtBuffer to copy data to
+    *   @return current offset
+    */
+    static size_t resolveAsteriskJarFiles(char *dir, char *tgtBuffer, size_t offset)
+    {
+        WIN32_FIND_DATA data;
+
+            // remove trailing asterisk (*)
+        size_t pureDirLength = strlen(dir)-1;
+        char *pureDir = (char *) malloc(pureDirLength+2);
+        memcpy(pureDir, dir, pureDirLength);
+        pureDir[pureDirLength]=0;
+
+        // char *queryBuffer = (char *) malloc(MAX_PATH+2);
+        char *queryBuffer = (char *) malloc(MAX_PATH+2);
+        memset(queryBuffer,0,MAX_PATH+2);
+
+        // strncpy(buffer, dir, strlen(dir));
+        strcat(queryBuffer, dir);
+        strcat(queryBuffer, ".jar");        // add ".jar" to asterisk: will find any spelling of ".jar" on Windows
+
+        HANDLE hFind = FindFirstFile((char *) queryBuffer, &data);      // query directory
+
+        if ( hFind != INVALID_HANDLE_VALUE ) {
+            do {
+                if (offset!=0 && tgtBuffer[offset-1]!=';')          // append semi-colon (path separator) ?
+                {
+                    strcat(tgtBuffer,";");                          // append path separator
+                    offset++;
+                }
+                strncpy(tgtBuffer+offset, pureDir, pureDirLength);  // add path
+                offset+=pureDirLength;                              // update offset
+                size_t fnLength=strlen(data.cFileName);                // add filename
+                strncpy(tgtBuffer+offset, data.cFileName, fnLength);// update offset
+                offset+=fnLength;
+            } while (FindNextFile(hFind, &data));
+            FindClose(hFind);
+        }
+
+        free(pureDir);
+        free(queryBuffer);
+        return offset;
+    }
+
+    /** Processes received classpath and resolves asterisk (*) wildcard paths.
+     * @param classpath the CLASSPATH string to process
+     * @return a buffer with the resolved CLASSPATH string, must be freed by receiver
+     */
+    char * resolveCLASSPATH(char *classpath)
+    {
+        // 2022-10-15, rgf: cf. <https://devblogs.microsoft.com/oldnewthing/20100203-00/?p=15083>
+        //                  Windows: CMD -> 8 K command line limit / env registry -> 2 K limit
+        //                           total env block -> 32 K limit
+        int  TMP_MAX_ENV_LENGTH = 8192;  //  8 KB, should suffice on all systems for Java startup/classpath string
+        char * tgtBuffer = (char*) malloc(TMP_MAX_ENV_LENGTH+1);  // must be freed by caller
+        size_t offset=0;
+        memset(tgtBuffer, 0, TMP_MAX_ENV_LENGTH);
+
+        size_t cpLength= strlen(classpath);
+        size_t begin=0;
+        size_t end=0;
+        for (size_t i=0; i<cpLength; i++)
+        {
+            if (  classpath[i] == '*' ||
+                  classpath[i] == ';' ||
+                  classpath[i]==0     ||
+                  ( (i+1)==cpLength ) // fallback (to match Unix version)
+                )
+            {
+                end=i;
+                size_t   dirLength=end-begin+1;
+                char  *dir =(char *) malloc(dirLength+1);
+                memset(dir, 0, dirLength+1);
+                strncpy(dir, classpath+begin, dirLength);
+
+                if (classpath[i]=='*')
+                {
+                    offset = resolveAsteriskJarFiles( dir, tgtBuffer, offset);
+                    i++;    // skip over '*'
+                    tgtBuffer[offset]=classpath[i];
+                }
+                else    // copy entire path
+                {
+                    strncpy(tgtBuffer+offset, dir, dirLength);
+                    offset+=dirLength;
+                }
+                begin=end+1;    // next begin
+                end=begin;
+            }
+        }
+        return tgtBuffer;
+    }
+
+
+#else   // Unix (tested on Linux and Darwin)
+    // dir has a trailing "*", e.g. "c:\some\*"
+    /** Query a directory for "jar" files.
+    *   @param dir a directory path with a trailing asterisk (*)
+    *   @param tgtBuffer buffer to put found jar files
+    *   @param offset offset in tgtBuffer to copy data to
+    *   @return current offset
+    */
+    static int resolveAsteriskJarFiles(char *dir, char *tgtBuffer, int offset)
+    {
+            // remove trailing asterisk (*)
+        int pureDirLength = strlen(dir)-1;
+        char *pureDir = (char *) malloc(pureDirLength+2); // without asterisk (*)
+        memcpy(pureDir, dir, pureDirLength);
+        pureDir[pureDirLength]=0;
+
+        DIR *xdi;
+        struct dirent *xdir;
+        xdi = opendir(pureDir);     // specify the directory name
+        if (xdi)
+        {
+            while ((xdir = readdir(xdi)) != NULL)
+            {
+                char *fn = xdir->d_name;
+                if (xdir->d_type != DT_REG && xdir->d_type != DT_LNK)
+                {
+                    continue;
+                }
+
+                int  fnLength=strlen(fn);
+                int  lastDot=-1;
+                for (int i=0;i<fnLength; i++)   // find position of last dot
+                {
+                    if (*(fn+i)=='.')
+                    {
+                        lastDot=i;
+                    }
+                }
+
+                // no valid extension found? (".jar" or ".JAR")
+    	        if (  lastDot==-1 || ((lastDot+4)!=fnLength) ||
+                    ( (strcmp(fn+lastDot+1,"jar")!=0) && (strcmp(fn+lastDot+1,"JAR")!=0)) )
+                {
+                    continue;
+                }
+
+                // found a valid jar/JAR file entry
+                if (offset!=0 && tgtBuffer[offset-1]!=':')          // append semi-colon (path separator) ?
+                {
+                    strcat(tgtBuffer,":");                          // append path separator
+                    offset++;
+                }
+                strncpy(tgtBuffer+offset, pureDir, pureDirLength);  // add path
+                offset+=pureDirLength;                              // update offset
+                strncpy(tgtBuffer+offset, fn, fnLength);// update offset
+                offset+=fnLength;
+            }
+            closedir(xdi);
+        }
+        free (pureDir);
+        return offset;
+    }
+
+
+    char * resolveCLASSPATH(char *classpath)
+    {
+        // 2022-10-15, rgf: cf. <https://devblogs.microsoft.com/oldnewthing/20100203-00/?p=15083>
+        //                  Windows: CMD -> 8 K command line limit / env registry -> 2 K limit
+        //                           total env block -> 32 K limit
+        //                  Unix: could be larger, but a classpath of 8 KB should be enough for the foreseeable future
+        int  TMP_MAX_ENV_LENGTH = 8192;  //  8 KB, should suffice on all systems for Java startup/classpath string
+        char * tgtBuffer = (char*) malloc(TMP_MAX_ENV_LENGTH+1);  // must be freed by caller
+        int offset=0;
+        memset(tgtBuffer, 0, TMP_MAX_ENV_LENGTH);
+
+        int cpLength= strlen(classpath);
+        int   begin=0, end=-1;
+        for (int i=0; i<cpLength; i++)
+        {
+            if (  classpath[i] == '*' ||
+                  classpath[i] == ':' ||
+                  classpath[i] == 0   ||
+                  ( (i+1)==cpLength )		// fallback
+    	        )
+            {
+                end=i;
+                int   dirLength=end-begin+1;
+                char  *dir =(char *) malloc(dirLength+1);
+                memset(dir, 0, dirLength+1);
+                strncpy(dir, classpath+begin, dirLength);
+
+                if (classpath[i]=='*')
+                {
+                    offset = resolveAsteriskJarFiles(dir, tgtBuffer, offset);
+                    i++;    // skip over '*'
+                    tgtBuffer[offset]=classpath[i];
+                }
+                else    // copy entire path
+                {
+                    strncpy(tgtBuffer+offset, dir, dirLength);
+                    offset+=dirLength;
+                }
+                begin=end+1;    // next begin
+                end=begin;
+            }
+        }
+        return tgtBuffer;
+    }
+
+
+#endif
+
     /*********************************************************************/
     /* load Java                                                         */
     /*                                                                   */
@@ -5478,9 +5700,19 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
         (cp_env!= NULL))            // CLASSPATH environment variable set
     {
         // create option for setting "java.class.path" to CLASSPATH
-        size_t bufLen=strlen(cp_env)+needleLength+2;
+        char *resolvedCP=resolveCLASSPATH(cp_env);  // resolve potential asterisk (*) wildcard paths (introduced with Java 1.6/6)
+
+fprintf(stderr, "%s # %d: cp_env    =[%s]\n\tresolvedCP=[%s]\n",
+           __FUNCTION__, __LINE__, cp_env, resolvedCP);
+
+        size_t bufLen=strlen(resolvedCP)+needleLength+2;
+
         options[m].optionString = (char *) malloc(bufLen+1);    // get needed memory
-        snprintf( options[m].optionString, bufLen+1, "%s%s", needle, cp_env);
+//        snprintf( options[m].optionString, bufLen+1, "%s%s", needle, cp_env);
+        snprintf( options[m].optionString, bufLen+1, "%s%s", needle, resolvedCP);
+fprintf(stderr, "%s # %d: m=[%d] options[%d].optionString=[%s]\n", __FUNCTION__, __LINE__, m, m, options[m].optionString);
+
+        free(resolvedCP);          //
 
         options[m].extraInfo=NULL;
         m++;                        // increase counter to reflect number of available options
@@ -5489,7 +5721,7 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
 #if defined( UNIX )     // java.library.path
     if ( bJLPdefined==FALSE )    // "java.library.path" not given in Rexx arguments
     {
-        // create option for setting "java.class.path" to CLASSPATH
+        // create option for setting "java.library.path" to typical library paths on Unix
         char strJLP[] = "/opt/BSF4ooRexx850:/usr/lib:/usr/lib64:/usr/local/lib:/usr/local/lib64:.";
         size_t bufLen=strlen(strJLP)+needleLength+2;
         options[m].optionString = (char *) malloc(bufLen+1);    // get needed memory
