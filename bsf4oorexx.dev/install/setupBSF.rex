@@ -7,6 +7,10 @@
    Date:    2006-01-07
    Version: 1.41
    Changed:
+            2022-10-16, - copy BSF4ooRexx850/clr's dll and jar files into BSF4ooRexx850/lib
+                        - leave BSF4ooRexx850/clr's gacutilrgf.exe in BSF4ooRexx850/clr and use it from there
+                        - copy BSF4ooRexx850/clr's CLR.CLS to BSF4ooRexx850 (BSF4ooRexx850 directory is on PATH)
+
             2022-10-05, - corrected creation of rexxj.{sh|cmd} to point to new $BSF4OOREXX_HOME/lib directory
 
             2022-10-04, - changed CLASSPATH to BSF4OOREXX_HOME/lib/_* as all BSF4ooRexx jars
@@ -797,12 +801,18 @@ end
 if cmd.eCLRDir<>"" then -- .NET/CLR (common language runtime) support be put into eBinDir?
 do
 -- rgf, 20221004: copy jar-files to BSF4OOREXX_HOME/lib/ * !
-   tmpCmd=cmd.eCopy cmd.eCLRDir||j.file.separator||"*.jar" ".."||j.file.separator||"lib" ">" cmd.eNullDevice
+   tmpCmd=cmd.eCopy cmd.eCLRDir"\*.jar" "..\lib" ">" cmd.eNullDevice
 say   tmpCmd
    tmpCmd
 
-say   cmd.eCopy cmd.eCLRDir ".." ">" cmd.eNullDevice -- copy clr files, PATH will point to ".."
-   cmd.eCopy cmd.eCLRDir ".." ">" cmd.eNullDevice  -- copy clr files
+-- rgf, 20221016: also the CLR dll go to ../lib
+   tmpCmd=cmd.eCopy cmd.eCLRDir"\*.dll" "..\lib" ">" cmd.eNullDevice
+say   tmpCmd
+   tmpCmd
+
+   tmpCmd=cmd.eCopy cmd.eCLRDir"\CLR.CLS" ".." ">" cmd.eNullDevice
+say   tmpCmd
+   tmpCmd
 
 /* -- rgf, 20221004: CLASSPATH will show to "BSF4OOREXX_HOME/lib/ *" so no need to put explicitly on CLASSPATH anymore
    -- now determine CLR-related jars
@@ -1098,8 +1108,9 @@ createInstallScript: procedure expose j. cmd. path.
           call lineout fn, cmd.eEcho qc("Installing .Net/CLR assemblies into GAC (global assembly cache) ...")
           call lineout ui, cmd.eEcho qc("Uninstalling .Net/CLR assemblies from GAC (global assembly cache) ...")
 
-          tmpSuper=".." || j.file.separator
-          tmpGacUtil=enquote(qualify(tmpSuper || cmd.eCLR.GacUtilRgf))
+          -- tmpSuper=".." || j.file.separator
+          tmpSuper="..\lib\"  -- 2022-10-16: new target for CLR
+          tmpGacUtil=enquote(qualify(tmpSuper"\..\clr\" || cmd.eCLR.GacUtilRgf))
 
           do assembly over cmd.eCLR.eAssemblies
              parse var assembly displayName ".dll"
