@@ -20,17 +20,17 @@ color blue              -- set color to blue (preregistered with nickname "BLUE"
 drawRect len len        -- draw the frame with the blue color
    -- draw a string (text) at the lower half of the bitmap
 color somePurple 127 46 111   -- define a custom RGB color, store it with nickname "SOMEPURPLE"
-say "--> rc="pp(rc)     -- show result from command (the Java oclor object)
+say "--> rc="pp(rc)     -- show result from command (the Java color object)
 say "    rc~toString:" pp(rc~toString) -- shows the RGB intensities of the color
 newY=height-40
-         -- define an array of three strings
 lineHeight = 15         -- default font size is 12px, add 3 px space
+                        -- define an array of three strings
 text=("Hello, Rexx world ...", "... from JDOR ...", "(Rexx command handler)") -- array of 3 strings
 do counter c i=0 to 30 by lineHeight   -- iterate over array of strings
    goto 50 (newY+i)     -- set position
    drawString text[c]   -- draw the string
 end
-   -- save the current image
+                        -- save the current image
 saveImage "jdor_doc_sample.png"  -- save image to file "jdor_doc_sample.png"
 sleep 3.123             -- sleep for 3.123 seconds
 

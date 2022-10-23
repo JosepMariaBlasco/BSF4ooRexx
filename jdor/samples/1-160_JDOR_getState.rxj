@@ -8,7 +8,7 @@
    Purpose:  Demonstrates the use of the getState command and interacting
              with return values via the RC Rexx variable.
 
-   Date:    2022-10-03
+   Date:    2022-10-04
 
    Author:  Rony G. Flatscher, WU Vienna
 
@@ -56,7 +56,7 @@ drawRect 50 50          -- draw frame
 
 -- get current state
 say "a) var(""currState""):" pp(var("currState"))  -- does not exist, returns: 0
-"getState currState"    -- quote, result should be saved to variable 'currState'
+getState "currState"    -- quote, result should be saved to variable 'currState'
 say "b) var(""currState""):" pp(var("currState"))  -- now exists, returns: 1
 say "currState:" pp(currState) "currState~items:" pp(currState~items)
 do counter c idx over currState~allIndexes~sort

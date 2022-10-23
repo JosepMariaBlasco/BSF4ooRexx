@@ -134,17 +134,17 @@ for creating the most challenging graphics (images) from Rexx.
     drawRect len len        -- draw the frame with the blue color
        -- draw a string (text) at the lower half of the bitmap
     color somePurple 127 46 111   -- define a custom RGB color, store it with nickname "SOMEPURPLE"
-    say "--> rc="pp(rc)     -- show result from command (the Java oclor object)
+    say "--> rc="pp(rc)     -- show result from command (the Java color object)
     say "    rc~toString:" pp(rc~toString) -- shows the RGB intensities of the color
     newY=height-40
-             -- define an array of three strings
     lineHeight = 15         -- default font size is 12px, add 3 px space
+                            -- define an array of three strings
     text=("Hello, Rexx world ...", "... from JDOR ...", "(Rexx command handler)") -- array of 3 strings
     do counter c i=0 to 30 by lineHeight   -- iterate over array of strings
        goto 50 (newY+i)     -- set position
        drawString text[c]   -- draw the string
     end
-       -- save the current image
+                            -- save the current image
     saveImage "jdor_doc_sample.png"  -- save image to file "jdor_doc_sample.png"
     sleep 3.123             -- sleep for 3.123 seconds
 
@@ -158,7 +158,7 @@ for creating the most challenging graphics (images) from Rexx.
     --> rc=[java.awt.Color@4fe3c938]
         rc~toString: [java.awt.Color[r=127,g=46,b=111]]
     </pre>
-    and create and save the following image (bitmap) using as filename &quot;<code>jdor_doc_sample.png</code>&quot;:
+    and create and save the following image (bitmap) using as filename &quot;<em>jdor_doc_sample.png</em>&quot;:
     <p>
     <center><img  src="jdor_doc_sample.png" border="1px"></center>
 
@@ -168,10 +168,10 @@ for creating the most challenging graphics (images) from Rexx.
 
 <p>
 The <em>JDOR</em> Rexx command handler makes <em>Java2D</em> functionality available
-to Rexx programmers. The commands are formed after the methods in the <code>java.awt.Graphics</code>
-and <code>java.awt.Graphics2D</code> Java classes. The only difference are the <code>x</code> and
-<code>y</code> co-ordinates which many methods have as their first two arguments: the Rexx programmer
-defines these co-ordinates with the <code>GOTO x y</code> command and therefore are left out from
+to Rexx programmers. The commands are formed after the methods in the <em>java.awt.Graphics</em>
+and <em>java.awt.Graphics2D</em> Java classes. The only difference are the <em>x</em> and
+<em>y</em> co-ordinates which many methods have as their first two arguments: the Rexx programmer
+defines these co-ordinates with the <em>GOTO x y</em> command and therefore are left out from
 the arguments of the Rexx commands matching the Java method names.
 
 
@@ -194,25 +194,27 @@ the arguments of the Rexx commands matching the Java method names.
 <dl>
 
     <dt>AffineTransform</dt>
-    <dd>The Java class <code>java.awt.geom.AffineTransform</code> allows to define and maintain
+    <dd>The Java class <em>java.awt.geom.AffineTransform</em> allows to define and maintain
         <em>rotate(...)</em>, <em>scale(...)</em>, <em>shear(...)</em>,
         <em>translate(...)</em> operations which all can be applied at once with the
         <em>java.awt.Graphics2D</em>'s <em>transform(anAffineTransform)</em> method.
-        One benefit is that <em>GC</em> is not permanently changed to these trnasformation
+        One benefit is that <em>GC</em> (graphic configuration, see below) is not permanently changed to these transformation
         values.
 
         <p>Currently there is no JDOR command to support this directly, however the same effect can
-        be achieved with the <em>pushGC</em> command, followed by any transforms
-        (<em>rotate(...)</em>, <em>scale(...)</em>, <em>shear(...)</em>, <em>translate(...)</em>)
-         and the <em>popGC</em> command which will reinstate the previous pushed <em>GC</em>.
-
+        be achieved with the <em><a href="#cmdPushGC">pushGC</a></em> command, followed by any transform
+        commands
+        (<em><a href="#cmdRotate">rotate(...)</a></em>,
+        <em><a href="#cmdScale">scale(...)</a></em>,
+        <em><a href="#cmdShear">shear(...)</a></em>,
+        <em><a href="#cmdTranslate">translate(...)</a></em>)
+         and the <em><a href="#cmdPopGC">popGC</a></em> command which will reinstate the previous pushed <em>GC</em>.
         <p>
-        Alternatively, the Rexx programmer can fetch the <em>GC</em> object (cf. <em>GC</em> command)
+
+        Alternatively, the Rexx programmer can fetch the <em>GC</em> object (cf. <em><a href="#cmdGC">GC</a></em> command)
         and interact with it directly and use the <em>transform(...)</em> method directly supplying
-        an instance of <code>java.awt.geom.AffineTransform</code>.
-
-    </dd><br>
-
+        an instance of <em>java.awt.geom.AffineTransform</em>.
+    </dd>
 
     <dt>coordinate system<dt>
     <dd>The 0-based, two dimensional coordinate system to address each pixel of an image of
@@ -220,22 +222,24 @@ the arguments of the Rexx commands matching the Java method names.
         <em>y=0</em>, the <em>origin</em> denotes the pixel in the upper left hand corner.
         Increasing <em>x</em> move along to the <em>right</em> (along the <em>x-axis</em>),
         increasing <em>y</em> along to the bottom (along the <em>y-axis</em>).
-    </dd><br>
+    </dd>
 
     <dt>currX currY</dt>
     <dd><em>currX</em> and <em>currY</em> denote the current position of the starting
     (upper left hand) point used when clearing, drawing or filling. It can be set with
-    the <em>goto x y</em> command (alias name for this command is <em>pos x y</em>).
+    the <a href="#cmdGoto"><em>goto x y</em></a> command (alias names for this command are
+    <a href="#cmdGoto"><em>location&nbsp;x&nbsp;y</em></a> and
+    <a href="#cmdGoto"><em>pos&nbsp;x&nbsp;y</em></a>).
     The JDOR command handler will insert <em>currX</em> and <em>currY</em> whenever a
     <em>x</em> and <em>y</em> position must be supplied to a Java2D method.
-    </dd><br>
+    </dd>
 
     <dt>clip</dt>
-    <dd>A rectangular area of which gets affected by drawings and fills. Any pixels
-        outside of a defined clip (clipping area) do not change.</dd><br>
+    <dd>A rectangular area which gets affected by drawings and fills. Any pixels
+        outside the defined <a href="#cmdClip">clip</a> (clipping area) do not change.</dd>
 
     <dt id="dtDashArray">dashArray</dt>
-    <dd>The command <em>stroke</em> allows for an argument <em>dashArray</em> that
+    <dd>The command <em><a href="#cmdStroke">stroke</a></em> allows for an argument <em>dashArray</em> that
         represents an array of float values.
         There are two possibilities to supply this array to the command:
         <ul>
@@ -247,60 +251,66 @@ the arguments of the Rexx commands matching the Java method names.
                 <br><em>dashArray=bsf.createJavaArrayOf(&quot;float.class&quot;, 1, 3, 1, 3)</em>
                 and then submitting the quoted name of the Rexx variable, e.g. <em>&quot;dashArray&quot;</em>,
                 as array argument; the command handler will then fetch the array from the Rexx variable
-                (after fetching the Rexx variable by name from the command context)
+                (after fetching the Rexx variable by name from the command context).
         </ul>
-    </dd><br>
+    </dd>
 
-
-    <dt>GC</dt>
+    <dt id="dtGC">GC</dt>
     <dd>A <em>graphical configuration</em>, an instance of the Java class
         <em>java.awt.Graphics</em> or <em>java.awt.Graphics2D</em>
-        which allows for interacting (drawing, transforming, etc.) with an image(a bitmap).
-        </dd><br>
+        which allows for interacting (drawing, transforming, etc.) with an image (a bitmap)
+        and maintains its state (e.g. current origin, current rotation, current color, ...).
+        The command <a href="#cmdGC"><em>GC</em></a> allows for retrieving the current <em>GC</em>.
+        </dd>
 
     <dt>image type</dt>
     <dd>The image type defines the basic properties of an image which also determines
         in which format an image can be stored in the file system. The supported types
-        are defined as constants in the Java class <em>java.awt.image.BufferedImage</em>.
+        are defined as constants in the Java class <em>java.awt.image.BufferedImage</em>
+        and are listed in the command <em><a href="#cmdNew">new</a></em>, subsection arguments.
     </dd>
 
 
     <dt>pixel</dt>
-    <dd>picture element, usually the size of 1/72 of an inch</dd><br>
+    <dd>picture element, usually the size of 1/72 of an inch</dd>
 
     <dt>RGB color</dt>
     <dd>A color mix of the colors <em>red</em>, <em>green</em> and <em>blue</em> each defined
         with an intensity between <em>0</em> and <em>255</em>.
-    </dd><br>
+    </dd>
 
     <dt>RGBA color</dt>
     <dd>A color mix of the colors <em>red</em>, <em>green</em>, <em>blue</em> and
         <em>alpha</em> (transparency/opaqueness) each defined with an intensity between
         <em>0</em> and <em>255</em>. <em>Note:</em> an <em>alpha</em> intensity
-        of <em>0</em> means &quot;no transparency&quot;, and an intensitiy of <em>255</em>
-        &quot;complete transparency&quot;.
-    </dd><br>
+        of <em>0</em> means &quot;complete transparency&quot;, and an intensitiy of
+        <em>255</em> means &quot;no transparency&quot;.
+
+    </dd>
 
     <dt>rotate</dt>
-    <dd>A positive or negative value in degrees (0-360) to rotate the image. <em>Note:</em> the
+    <dd>A positive or negative value in degrees (0-360) to <em><a href="#cmdRotate">rotate</a></em> the image. <em>Note:</em> the
         Java method rotate(angle) expects the value to be in radians, whereas this command expects
         degrees! The rotate command will convert the degree value (easier for humans) to radians
         before invoking the Java method (cf. <a href="https://en.wikipedia.org/wiki/Gradian">Wikipedia Gradian</a>
         article).
-    </dd><br>
+    </dd>
 
     <dt>scale</dt>
-    <dd>A positive or negative value used to multiply the <em>width</em> and <em>height</em> values.
-    </dd><br>
+    <dd>A positive or negative value used to multiply the <em>width</em> and <em>height</em> values,
+        cf. the command <em><a href="#cmdScale">scale</a></em>.
+    </dd>
 
     <dt>shear</dt>
-    <dd>A positive or negative value used to slant a drawing, also known as skewing.
-    </dd><br>
+    <dd>A positive or negative value used to slant a drawing, also known as skewing,
+        cf. the command <em><a href="#cmdShear">shear</a></em>.
+    </dd>
 
     <dt>translate</dt>
     <dd>Moving the origin to a different position, such that the effective <em>x</em> and <em>y</em>
-        coordinates get calculated relative to the new origin.
-    </dd><br>
+        coordinates get calculated relative to the new origin,
+        cf. the command <em><a href="#cmdTranslate">translate</a></em>.
+    </dd>
 
     <dt id="dtPointsArray">xPoints-array, yPoints-array</dt>
     <dd>The commands
@@ -323,7 +333,7 @@ the arguments of the Rexx commands matching the Java method names.
                 as array argument; the command handler will then fetch the array from the Rexx variable
                 (after fetching the Rexx variable by name from the command context)
         </ul>
-    </dd><br>
+    </dd>
 
 </dl>
 
@@ -352,6 +362,10 @@ command handler.  If commands or arguments are unqouted then they get uppercased
 between them will be reduced to a single white space according to the Rexx rules before supplying
 the resulting command with arguments to the Rexx command handler.
 
+<p><em>Hint:</em> in general any command that allows for querying and setting a value will return the
+current value and in the case of setting it to a new value will return the old (previously current)
+value.
+
 <p>
     <table>
         <tr>
@@ -365,16 +379,20 @@ the resulting command with arguments to the Rexx command handler.
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
-    <td class="command"> &quot;background&quot;
-    <td colspan="3"> Queries or sets the background color to a registered color and returns
-        it via the Rexx variable <code>RC</code>.
+    <td class="command" id="cmdBackground"> &quot;background&quot;
+    <td colspan="3"> Queries or sets the background color to a registered color.
+
+        <br>Querying the current value (no argument supplied) will return it, setting
+        (changing) the value to a new value will return the old (previously set) value
+        via the Rexx variable <em>RC</em>.
+
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
         methods: <em>getBackground()</em>, <em>setBackground(...)</em>.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> colorNickName
-    <td> The name of a registered color (cf. <em>color</em> command) to
+    <td> The name of a registered color (cf. <em><a href="#cmdColor">color</a></em> command) to
         which the background color should be set to.
 
 
@@ -383,8 +401,8 @@ the resulting command with arguments to the Rexx command handler.
     <td class="cmdNr">
     <td class="command"> &quot;clearRect&quot;
     <td colspan="2"> Clears a rectangle of the supplied <em>width</em> and <em>height</em>
-        at the current <em>x</em> and <em>y</em> position (cf. <em>goto</em> command),
-        using the <em>background</em> (cf. <em>background</em> command) color.
+        at the current <em>x</em> and <em>y</em> position (cf. <em><a href="#cmdGoto">goto</a></em> command),
+        using the <em>background</em> (cf. <em><a href="#cmdBackground">background</a></em> command) color.
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
         method <em>clearRect(...)</em>.
 
@@ -396,10 +414,11 @@ the resulting command with arguments to the Rexx command handler.
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
-    <td class="command">  &quot;clip&quot;
+    <td class="command" id="cmdClip">  &quot;clip&quot;
     <td colspan="2"> Queries or sets a clipping area of an image. Returns a
         blank delimited string with the <em>x</em>, <em>y</em>,
-        <em>width</em> and <em>height</em> values of the clipping rectangle (area)
+        <em>width</em> and <em>height</em> values of the previously defined clipping rectangle (area)
+        or <em>.nil</em> if no such area was defined
         via the Rexx variable <em>RC</em>. If a clipping area exists already,
         then the intersection with it will be the new clipping area.
 
@@ -425,14 +444,18 @@ the resulting command with arguments to the Rexx command handler.
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
-    <td class="command">  &quot;color&quot;
-    <td colspan="2"> Query, get and set, define and set the color. With no arguments
-        returns the current Java color which can be referred to via the Rexx variable
-        <em>RC</em> upon return from this command.
+    <td class="command" id="cmdColor">  &quot;color&quot;
+    <td colspan="2"> Query, get and set, define and set the color.
+        <br>Querying the current value (no argument supplied) will return it, setting
+        (changing) the value to a new value will return the old (previously set) value
+        via the Rexx variable <em>RC</em>.
+
         <br>Supplying only the <em>colorNickName</em> argument will load the color from the
-            internal register and use it.
-        <br>Supplying in addition the intensity values for the colors <em>red</em>, <em>green</em>, <em>blue</em>,
-            and optionally <em>alpha</em>, a <em>java.awt.Color</em> of that type gets created, registered with
+            internal register and assign it to the <a href="#cmdGC"><em>GC</em></a> to be used for drawing from now on.
+
+        <br>Supplying in addition the intensity values for the colors <em>red</em>, <em>green</em>,
+            <em>blue</em>, and optionally <em>alpha</em> (between <em>0</em>=fully transparent to
+            <em>255</em>=fully opaque), a <em>java.awt.Color</em> of that type gets created, registered with
             the supplied <em>colorNickName</em> and then used for setting the new color.
 
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
@@ -451,8 +474,8 @@ the resulting command with arguments to the Rexx command handler.
     <td class="argument"> colorNickName r g b [alpha]
     <td> This command creates a color using an intensity beteween <em>0</em> and
          <em>255</em> for each of the colors <em>red</em>, <em>green</em>, <em>blue</em>
-         and optionally for <em>alpha</em> (transparency/opaqueness). This color will be
-         used from now on and gets stored in the color registry using the supplied
+         and optionally for <em>alpha</em> (between <em>0</em>=fully transparent to <em>255</em>=fully opaque).
+         This color will be used from now on and gets stored in the color registry using the supplied
          <em>colorNickName</em> in uppercase and returned via the Rexx variable <em>RC</em>.
 
 
@@ -463,6 +486,10 @@ the resulting command with arguments to the Rexx command handler.
     <td colspan="2"> Queries or creates and sets the composite value (an instance of the
         Java class <em>java.awt.AlphaComposite</em>).
 
+        <br>Querying the current value (no argument supplied) will return it, setting
+        (changing) the value to a new value will return the old (previously set) value
+        via the Rexx variable <em>RC</em>.
+
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
         methods <em>getComposite()</em>, <em>setComposite(...)</em>, and the Java class
         <em>java.awt.AlphaComposite</em> with its constant fields and the method
@@ -471,11 +498,20 @@ the resulting command with arguments to the Rexx command handler.
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> rule [alpha]
-    <td> <em>rule</em> is a number or a constant name (<em>CLEAR</em>,
-         <em>DST</em>, <em>DST_ATOP</em>, <em>DST_IN</em>, <em>DST_OUT</em>,
-         <em>DST_OVER</em>, <em>SRC</em>, <em>SRC_ATOP</em>, <em>SRC_IN</em>,
-         <em>SRC_OUT</em>, <em>SRC_OVER</em>, <em>XOR</em>);
-         <br><em>alpha</em> is an optional value between <em>0.0</em> and <em>1.0</em>.
+    <td> <em>rule</em>: is a number or a constant name, i.e. one of
+         <em>CLEAR</em>   (<em>1</em>),
+         <em>DST</em>      (<em>9</em>),
+         <em>DST_ATOP</em> (<em>11</em>),
+         <em>DST_IN</em>   (<em>6</em>),
+         <em>DST_OUT</em>  (<em>8</em>),
+         <em>DST_OVER</em> (<em>4</em>),
+         <em>SRC</em>      (<em>2</em>),
+         <em>SRC_ATOP</em> (<em>10</em>),
+         <em>SRC_IN</em>   (<em>5</em>),
+         <em>SRC_OUT</em>  (<em>7</em>),
+         <em>SRC_OVER</em> (<em>3</em>),
+         <em>XOR</em>       (<em>12</em>).
+         <br><em>alpha</em>: is an optional value between <em>0.0</em> and <em>1.0</em>.
 
 
     <!-- -------------------------------------------------------- -->
@@ -491,8 +527,8 @@ the resulting command with arguments to the Rexx command handler.
     <td>
     <td class="argument"> width height raised
     <td> <em>width</em> and <em>height</em> in pixel of the rectangle,
-         <em>raised</em> is either set to <em>.true</em> for raised or to <em>.false</em>
-         for sunken).
+         <em>raised</em> needs to be either set to <em>.true</em> for raised or to <em>.false</em>
+         for sunken appearance.
 
 
     <!-- -------------------------------------------------------- -->
@@ -507,7 +543,7 @@ the resulting command with arguments to the Rexx command handler.
     <td>
     <td class="argument"> width height startAngle arcAngle
     <td> <em>width</em> and <em>height</em> in pixel of the rectangle,
-         <em>startAngle</em> in degrees (0 is the 3 o'clock position), <em>arcAngle</em>
+         <em>startAngle</em> in degrees (<em>0</em> is the 3 o'clock position), <em>arcAngle</em>
          angular extend in degrees relative to <em>startAngle</em>.
 
 
@@ -516,8 +552,9 @@ the resulting command with arguments to the Rexx command handler.
     <td class="cmdNr">
     <td class="command">  &quot;drawImage&quot;
     <td colspan="2"> Draws an image which got previously loaded from the filesystem
-        with the command <em>loadImage</em> and stored internally with a <em>nickName</em>
-        in the internal image registry.
+        with the command <em><a href="#cmdLoadImage">loadImage</a></em> and stored internally
+        with an <em>nickName</em> in the internal image registry, or an image that got
+        pushed with a <em>nickName</em> in the command <em><a href="#cmdPushImage">pushImage</a></em>
 
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
         method <em>drawImage(...)</em>.
@@ -554,6 +591,47 @@ the resulting command with arguments to the Rexx command handler.
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
+    <td class="command">  &quot;drawImageFromVar&quot;
+    <td colspan="2"> Draws an image (an instance of <em>java.awt.Image</em>) referred
+        to by a Rexx variable.
+        <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
+        method <em>drawImageFromVar(...)</em>.
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> rexxVariableName [bkgColor]
+    <td> <em>rexxVariableName</em> denotes the name of a Rexx variable that refers to an image
+        (hint: enquote the Rexx variable name).
+         Draws as much of the image as possible.
+
+         <br>Optional <em>bkgColor</em> is the <em>colorNickName</em> of a previously stored color.
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> rexxVariableName width height [bkgColor]
+    <td> <em>rexxVariableName</em> denotes the name of a Rexx variable that refers to an image
+        (hint: enquote the Rexx variable name).
+         Draws as much of the image as possible scaled to the
+         <em>width</em> and <em>height</em> in pixel.
+
+         <br>Optional <em>bkgColor</em> is the <em>colorNickName</em> of a previously stored color.
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> rexxVariableName width height srcX1 srcY1 srcX2 srcY2 [bkgColor]
+    <td> <em>rexxVariableName</em> denotes the name of a Rexx variable that refers to an image
+        (hint: enquote the Rexx variable name).
+         Draws as much of the image as possible scaled to the
+         <em>width</em> and <em>height</em> in pixel, using from the image the rectangle
+         with the first corner with the coordinate <em>srcX1</em> and <em>srcY1</em> and
+         the second corner with the coordinate <em>srcX2</em> and <em>srcY2</em>.
+
+         <br>Optional <em>bkgColor</em> is the <em>colorNickName</em> of a previously stored color.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
     <td class="command">  &quot;drawLine&quot;
     <td colspan="2"> Draws a line.
 
@@ -563,7 +641,7 @@ the resulting command with arguments to the Rexx command handler.
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> toX toY
-    <td> <em>toX</em> and <em>toY</em>, denoting the endpoint of the line.
+    <td> <em>toX</em> and <em>toY</em>, denoting the endpoint of the line (starting from <em>currX</em> and <em>currY</em>).
 
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
@@ -587,8 +665,9 @@ the resulting command with arguments to the Rexx command handler.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command" id="cmdDrawPolygon">  &quot;drawPolygon&quot;
-    <td colspan="2"> Draws a polygon using <em>nPoints</em> coordinates from the <em>xPoints-array<em> array
-        and </em>yPoints-array</em>. The polygon gets closed by drawing a line from the first and last point.
+    <td colspan="2"> Draws a polygon using <em>nPoints</em> coordinates from
+        <a href="#dtPointsArray"><em>xPoints-array</em></a>
+        and <a href="#dtPointsArray"><em>yPoints-array</em></a>. The polygon gets closed by drawing a line from the first and last point.
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
         method <em>drawPolygon(...).
 
@@ -598,8 +677,8 @@ the resulting command with arguments to the Rexx command handler.
     <td> Draws a polygon consisting of <em>nPoints</em> taken from the
          <a href="#dtPointsArray"><em>xPoints-array</em></a> and
          <a href="#dtPointsArray"><em>yPoints-array</em></a>.
-         If the endpoint is not
-         the same coordinate, the polygon gets closed by drawing a line from the
+         If the endpoint is not the same coordinate as the first point,
+         the polygon gets closed by drawing a line from the
          first to the last point.
 
 
@@ -607,16 +686,15 @@ the resulting command with arguments to the Rexx command handler.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command" id="cmdDrawPolyline">  &quot;drawPolyline&quot;
-    <td colspan="2"> Draws a polyline using <em>nPoints</em> coordinates from the
-         <em>xPoints-array</em> and
-         <em>yPoints-array</em>.
+    <td colspan="2"> Draws a polyline using <em>nPoints</em> coordinates from
+         <a href="#dtPointsArray"><em>xPoints-array</em></a> and <a href="#dtPointsArray"><em>yPoints-array</em></a>.
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
         method <em>drawPolyline(...).
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> xPoints-array yPoints-array nPoints
-    <td> Draws a polyline consisting of <em>nPoints</em> taken from the
+    <td> Draws a polyline consisting of <em>nPoints</em> taken from
          <a href="#dtPointsArray"><em>xPoints-array</em></a> and
          <a href="#dtPointsArray"><em>yPoints-array</em></a>.
 
@@ -661,7 +739,10 @@ the resulting command with arguments to the Rexx command handler.
     <td class="cmdNr">
     <td class="command">  &quot;drawString&quot;
     <td colspan="2"> Draws a string (text).
-
+        <br><em>Note:</em> In order to preserve leading blanks in a string, only the
+        first (delimiting) blank after the command <em>drawString</em> will be consumed, all
+        following characters - including leading whitespace - are regarded to constitute
+        the string to be drawn.
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
         method <em>drawString(...)</em>.
 
@@ -686,7 +767,7 @@ the resulting command with arguments to the Rexx command handler.
     <td class="argument"> width height raised
     <td> <em>width</em> and <em>height</em> in pixel of the rectangle,
          <em>raised</em> is either set to <em>.true</em> for raised or to <em>.false</em>
-         for sunken).
+         for sunken appearance.
 
 
     <!-- -------------------------------------------------------- -->
@@ -701,8 +782,8 @@ the resulting command with arguments to the Rexx command handler.
     <td>
     <td class="argument"> width height startAngle arcAngle
     <td> <em>width</em> and <em>height</em> in pixel of the rectangle,
-         <em>startAngle</em> in degrees (0 is the 3 o'clock position), <em>arcAngle</em>
-         angular extend in degrees relative to <em>startAngle</em>.
+         <em>startAngle</em> in degrees (<em>0</em> is the 3 o'clock position), <em>arcAngle</em>
+         angular extent in degrees relative to <em>startAngle</em>.
 
 
 
@@ -728,8 +809,8 @@ the resulting command with arguments to the Rexx command handler.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command" id="cmdFillPolygon">  &quot;fillPolygon&quot;
-    <td colspan="2"> Fills a polygon using <em>nPoints</em> coordinates from the <em>xPoints-array<em> array
-        and </em>yPoints-array</em>.
+    <td colspan="2"> Fills a polygon using <em>nPoints</em> coordinates from <a href="#dtPointsArray"><em>xPoints-array</em></a>
+        and <a href="#dtPointsArray"><em>yPoints-array</em></a>.
         <br><em>Note:</em> The definition list above documents how these arrays can be supplied to the command
         handler.
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
@@ -741,8 +822,8 @@ the resulting command with arguments to the Rexx command handler.
     <td> Fills a polygon consisting of <em>nPoints</em> taken from the
          <a href="#dtPointsArray"><em>xPoints-array</em></a> and
          <a href="#dtPointsArray"><em>yPoints-array</em></a>.
-         If the endpoint is not
-         the same coordinate, the polygon gets closed by filling a line from the
+         If the endpoint is not the same coordinate as the first poing,
+         the polygon gets closed by filling a line from the
          first to the last point.
 
     <!-- -------------------------------------------------------- -->
@@ -756,7 +837,7 @@ the resulting command with arguments to the Rexx command handler.
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> width height
-    <td> Fills an oval in a rectangle of <em>width</em> and
+    <td> Fills a rectangle of <em>width</em> and
          <em>height</em> pixels. If <em>width</em> and
          <em>height</em> are of the same length the rectangle will be a square.
 
@@ -784,15 +865,21 @@ the resulting command with arguments to the Rexx command handler.
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
-    <td class="command">  &quot;font&quot;
-    <td colspan="2"> Query, get and set, define and set the font. With no arguments
-        returns the current Java font which can be referred to via the Rexx variable
-        <em>RC</em> upon return from this command.
+    <td class="command" id="cmdFont">  &quot;font&quot;
+    <td colspan="2"> Query, get and set, define and set the <a href="#cmdGC"><em>GC</em></a>'s font.
+
+        <br>Querying the current value (no argument supplied) will return it, setting
+        (changing) the value to a new value will return the old (previously set) value
+        via the Rexx variable <em>RC</em>.
+
         <br>Supplying only the <em>fontNickName</em> argument will load the font from the
             internal register and use it until it gets changed again.
-        <br>Supplying in addition the <em>fotnName</em>, a <em>java.awt.Font</em>
+
+        <br>Supplying in addition the <em>fontName</em>, a <em>java.awt.Font</em>
             gets loaded from the system, registered with the supplied <em>fontNickName</em>
-            and then used for setting the new font.
+            and then used for setting the new font. The font size is taken from
+            <a href="#cmdFontSize"><em>fontSize</em></a>
+            and the style from <a href="#cmdFontStyle"><em>fontStyle</em></a>.
 
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
         methods <em>getFont()</em>, <em>setFont(...)</em>, as well as the Java class
@@ -822,26 +909,34 @@ the resulting command with arguments to the Rexx command handler.
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
-    <td class="command">  &quot;fontSize&quot;
-    <td colspan="2"> Queries or sets the font size to be used when loading new fonts.
-        With no arguments returns the current font size which can be referred to via
-        the Rexx variable <em>RC</em> upon return from this command.
+    <td class="command" id="cmdFontSize">  &quot;fontSize&quot;
+    <td colspan="2"> Queries or sets the font size to be used when loading a new
+        <a href="#cmdFont"><em>font</em></a>.
+
+        <br>Querying the current value (no argument supplied) will return it, setting
+        (changing) the value to a new value will return the old (previously set) value
+        via the Rexx variable <em>RC</em>.
+
         <br>Cf. the Java documentation for the Java class <em>Font</em> and the
         constructors as well as the method <em>getSize()</em>.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> size
-    <td> <em>size</em> that gets used when loading a new font, defaults to <em>12</em>.
+    <td> <em>size</em> (an integer value) that gets used when loading a new font, defaults to <em>12</em>.
 
 
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
-    <td class="command">  &quot;fontStyle&quot;
-    <td colspan="2"> Queries or sets the font style to be used when loading new fonts.
-        With no arguments returns the current font size which can be referred to via
-        the Rexx variable <em>RC</em> upon return from this command.
+    <td class="command" id="cmdFontStyle">  &quot;fontStyle&quot;
+    <td colspan="2"> Queries or sets the font style to be used when loading a new
+        <a href="#cmdFont"><em>font</em></a>.
+
+        <br>Querying the current value (no argument supplied) will return it, setting
+        (changing) the value to a new value will return the old (previously set) value
+        via the Rexx variable <em>RC</em>.
+
         <br>Cf. the Java documentation for the Java class <em>Font</em> and the
         constructors as well as the method <em>getStyle()</em>.
 
@@ -858,11 +953,11 @@ the resulting command with arguments to the Rexx command handler.
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
-    <td class="command">  &quot;GC&quot;
-    <td colspan="2"> Queries the <em>GC</em> object (an instance of the class
-        <em>Graphics[2D]</em>) and returns it via the Rexx variable <em>RC</em>
-        upon return from this command. One can then use all <em>Graphics[2D]</em> methods
-        from an ooRexx program directly.
+    <td class="command" id="cmdGC">  &quot;GC&quot;
+    <td colspan="2"> Queries the <em><a href="#dtGC">GC</a></em> (graphical configuration) object (an
+        instance of the class <em>Graphics[2D]</em>) and returns it via the Rexx
+        variable <em>RC</em> upon return from this command. One can then use all
+        <em>Graphics[2D]</em> methods from an ooRexx program directly.
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em>.
 
     <!-- -------------------------------------------------------- -->
@@ -910,18 +1005,21 @@ the resulting command with arguments to the Rexx command handler.
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> rexxVariableName
-    <td> <em>rexxVariableName</em> the Rexx variable name to store the ooRexx
-         <em>StringTable</em> object in the command context additionally.
+    <td> optional <em>rexxVariableName</em> the Rexx variable name to store the ooRexx
+         <em>StringTable</em> object in the command context in addition.
 
 
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
-    <td class="command">  &quot;goto&quot; <br> &quot;pos&quot;
+    <td class="command" id="cmdGoto">  &quot;goto&quot; <br> &quot;location&quot; <br> &quot;pos&quot;
     <td colspan="2"> Queries or sets <em>currX</em> and <em>currX</em> in the current image.
-        If no argument returns the blank delimited values of <em>currX</em> and <em>currX</em>
-        via the Rexx variable <em>RC</em> upon return from this command.
-        <br>The command name <em>pos</em> is an alias, a synonym for this command.
+
+        <br>Querying the current value (no argument supplied) will return it, setting
+        (changing) the value to a new value will return the old (previously set) value
+        via the Rexx variable <em>RC</em>.
+
+        <br>The command names <em>location</em> and <em>pos</em> are aliases, synonyms for this command.
 
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
@@ -935,9 +1033,11 @@ the resulting command with arguments to the Rexx command handler.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command">  &quot;gradientPaint&quot;
-    <td colspan="2"> Query, get and set, define and set the gradientPaint. With no arguments
-        returns the current Java <em>gradientPaint</em> which can be referred to via the Rexx variable
-        <em>RC</em> upon return from this command.
+    <td colspan="2"> Get and set, define and set a gradientPaint (used for filling).
+
+        This command returns the old (previously set) <a href="#cmdPaint"><em>paint</em></a> value
+        via the Rexx variable <em>RC</em>.
+
         <br>Supplying only the <em>gradientPaintNickName</em> argument will load the <em>gradientPaint</em>
             from the internal register and use it.
         <br>Supplying additional arguments will cause a new gradient paint to be created,
@@ -958,7 +1058,7 @@ the resulting command with arguments to the Rexx command handler.
     <td>
     <td class="argument"> gradientPaintNickName x1 y1 colorName1 x2 y2 colorName2 [cyclic]
     <td> This command creates a gradient paint from point <em>x1</em>,<em>y1</em> with
-         color <em>colroName1</em> to <em>x2</em>,<em>y2</em> with color <em>colroName2</em>.
+         color <em>colorName1</em> to <em>x2</em>,<em>y2</em> with color <em>colorName2</em>.
          The optional <em>cyclic</em> arguments determines whether the gradient patterns should
          cycle repeatedly between the two colors. This gradientPaint will be used from now on
          and gets stored in the gradientPaint registry using the supplied
@@ -974,20 +1074,18 @@ the resulting command with arguments to the Rexx command handler.
     <td colspan="2"> Queries an <em>image</em> object (an instance of the class
         <em>java.awt.image.BufferedImage</em>) and returns it via the Rexx variable
         <em>RC</em> upon return from this command.
-        With no argument returns the current image which can be referred
-             to via the Rexx variable <em>RC</em> upon return from this command.
-        Supplying the <em>imageNickName</em> argument will load and return
-            the image from the internal register.
+           With no argument returns the current image which can be referred
+           to via the Rexx variable <em>RC</em> upon return from this command.
+           Supplying the optional <em>imageNickName</em> argument will load and return
+           the image from the internal image register.
         <br> One can then use all <em>BufferedImage</em> methods from an ooRexx program directly.
         Cf. the Java documentation for the Java class <em>BufferedImage</em>.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> imageNickName
-    <td> <em>imageNickName</em> gets uppercased and is used to look up the internal
-         image registry for the denoted image and gets
-         returned via the Rexx variable <em>RC</em>.
-
+    <td> optional <em>imageNickName</em> gets uppercased and is used to look up the internal
+         image registry for the denoted image and gets returned via the Rexx variable <em>RC</em>.
 
 
     <!-- -------------------------------------------------------- -->
@@ -997,13 +1095,13 @@ the resulting command with arguments to the Rexx command handler.
     <td colspan="2"> Query the image size (dimension). With no arguments returns the current image's
         <em>width</em> and <em>height</em> which can be referred to via the Rexx variable
         <em>RC</em> upon return from this command.
-        <br>Supplying the <em>imageNickName</em> argument will return the size of the image
+        <br>Supplying the optional <em>imageNickName</em> argument will return the size of the image
             from the internal register.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> imageNickName
-    <td> <em>imageNickName</em> gets uppercased and is used to look up the internal
+    <td> optional <em>imageNickName</em> gets uppercased and is used to look up the internal
          image registry, get its size which is returned via the Rexx variable <em>RC</em>.
 
 
@@ -1014,13 +1112,13 @@ the resulting command with arguments to the Rexx command handler.
     <td class="command">  &quot;imageType&quot;
     <td colspan="2"> Query the image type. With no arguments returns the current image's
         type which can be referred to via the Rexx variable <em>RC</em> upon return from this command.
-        <br>Supplying the <em>imageNickName</em> argument will return the type of the image
+        <br>Supplying the optional <em>imageNickName</em> argument will return the type of the image
             from the internal register.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> imageNickName
-    <td> <em>imageNickName</em> gets uppercased and is used to look up the internal
+    <td> optional <em>imageNickName</em> gets uppercased and is used to look up the internal
          image registry, get its type which is returned via the Rexx variable <em>RC</em>.
 
 
@@ -1028,7 +1126,7 @@ the resulting command with arguments to the Rexx command handler.
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
-    <td class="command">  &quot;loadImage&quot;
+    <td class="command" id="cmdLoadImage">  &quot;loadImage&quot;
     <td colspan="2"> Loads an image from <em>fileName</em>, stores it with the uppercased
         <em>imageNickName</em> in the internal image registry and returns the image's
         size (dimension), i.e. <em>width</em> and <em>height</em> via the Rexx variable <em>RC</em>.
@@ -1047,9 +1145,10 @@ the resulting command with arguments to the Rexx command handler.
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
-    <td class="command">  &quot;new&quot;
+    <td class="command" id="cmdNew">  &quot;new&quot;
     <td colspan="2"> Creates a new image. By default the <em>width</em> and the <em>height</em> are
-        set to <em>500</em> and the type to <em>2</em> (<em>BufferedImage.TYPE_INT_ARGB</em>).
+        set to <em>500</em> and the <em>type</em> to the current value of
+        <a href="#cmdPreferredImageType"><em>preferredImageType</em></a>.
 
         <br>Cf. the Java documentation for the Java class <em>java.awt.image.BufferedImage</em> and
         and its constants.
@@ -1059,7 +1158,67 @@ the resulting command with arguments to the Rexx command handler.
     <td class="argument"> width height [type]
     <td> The size is given in <em>width</em> and <em>height</em> pixels. The optional <em>type</em>
          allows to override the image type.
-         <br><em>type</em> may have one of the following values:
+         <br>The optional <em>type</em>, if omitted gets set to current value of
+         <a href="#cmdPreferredImageType"><em>preferredImageType</em></a> (defaults
+         to <em>2</em> a.k.a. <em>BufferedImage.TYPE_INT_ARGB</em>).
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPaint">  &quot;paint&quot;
+    <td colspan="2"> Queries or sets current paint (used for filling).
+
+        <br>Querying the current value (no argument supplied) will return it, setting
+        (changing) the value to a new value will return the old (previously set) value
+        via the Rexx variable <em>RC</em>.
+
+        <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
+        methods <em>getPaint()</em>, <em>setPaint(...)</em>.
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> nickName
+    <td> <em>nickName</em> in uppercase will be used to look up a gradientPaint and if not found
+        a color in the respective internal registries in this order.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPopGC">  &quot;popGC&quot;
+    <td colspan="2"> Disposes the current <a href="#dtGC"><em>GC</em></a> and replaces it by popping
+        a <em>GC</em> from the stack, thereby resetting all the graphical
+        configuration changes to that state and returns the popped (now current) <a href="#dtGC"><em>GC</em></a>
+        via the Rexx variable <em>RC</em>.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command">  &quot;popImage&quot;
+    <td colspan="2"> Pops the <em>image</em> from the stack and uses it to draw
+        on to the current image.
+        Returns the popped image via the Rexx variable <em>RC</em> upon return from this
+        command.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPreferredImageType">  &quot;preferredImageType&quot;
+    <td colspan="2"> Queries or sets the preferred image type used for creating new images
+    (cf. <a href="#cmdNew">new</a> command).
+        Returns the image type via the Rexx variable <em>RC</em> upon return from this command.
+
+        <br>Cf. the Java documentation for the Java class <em>java.awt.image.BufferedImage</em> and
+        and its constants.
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> type
+    <td> denotes the new preferred image type and may have one
+         of the following values:
 
             <em>TYPE_3BYTE_BGR</em> (<em>5</em>),
             <em>TYPE_4BYTE_ABGR</em> (<em>6</em>),
@@ -1076,60 +1235,6 @@ the resulting command with arguments to the Rexx command handler.
             <em>TYPE_USHORT_565_RGB</em> (<em>8</em>) and
             <em>TYPE_USHORT_GRAY</em> (<em>11</em>).
 
-
-    <!-- -------------------------------------------------------- -->
-    <tr class="CommandRowColumn"><!-- table row -->
-    <td class="cmdNr">
-    <td class="command">  &quot;paint&quot;
-    <td colspan="2"> Queries or sets current paint. With no argument returns the
-        current <em>paint</em> value which can be referred to via the Rexx variable
-        <em>RC</em> upon return from this command.
-
-        <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
-        methods <em>getPaint()</em>, <em>setPaint(...)</em>.
-
-    <tr class="ArgumentRowColor"><td><!-- table row -->
-    <td>
-    <td class="argument"> nickName
-    <td> <em>nickName</em> in uppercase will be used to look up a gradientPaint and if not found
-        a color in the respective internal registries in this order.
-
-
-    <!-- -------------------------------------------------------- -->
-    <tr class="CommandRowColumn"><!-- table row -->
-    <td class="cmdNr">
-    <td class="command">  &quot;popGC&quot;
-    <td colspan="2"> Disposes the current <em>GC</em> and replaces it by popping
-        a <em>GC</em> from the stack, thereby resetting all the graphical
-        configuration changes to that state and returns it
-        via the Rexx variable <em>RC</em>.
-
-
-    <!-- -------------------------------------------------------- -->
-    <tr class="CommandRowColumn"><!-- table row -->
-    <td class="cmdNr">
-    <td class="command">  &quot;popImage&quot;
-    <td colspan="2"> Pops the <em>image</em> from the stack and replaces
-        the current image.
-
-
-    <!-- -------------------------------------------------------- -->
-    <tr class="CommandRowColumn"><!-- table row -->
-    <td class="cmdNr">
-    <td class="command">  &quot;preferredImageType&quot;
-    <td colspan="2"> Queries or sets the preferred image type used for creating new images.
-        Returns the image type via the Rexx variable <em>RC</em> upon return from this command.
-
-        <br>Cf. the Java documentation for the Java class <em>java.awt.image.BufferedImage</em> and
-        and its constants.
-
-    <tr class="ArgumentRowColor"><td><!-- table row -->
-    <td>
-    <td class="argument"> type
-    <td> <em>type</em> denotes the new preferred image type
-
-
-
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
@@ -1140,7 +1245,7 @@ the resulting command with arguments to the Rexx command handler.
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> imageNickName
-    <td> <em>imageNickName</em> is uppercased and used to look up the image from the internal
+    <td> optional <em>imageNickName</em> is uppercased and used to look up the image from the internal
         registry that should get printed.
 
 
@@ -1148,9 +1253,13 @@ the resulting command with arguments to the Rexx command handler.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command">  &quot;printPos&quot;
-    <td colspan="2"> Sets the left upper hand corner on the page where the image should
+    <td colspan="2"> Queries or sets the left upper hand corner on the page where the image should
         be drawn to. This command has no effect if <em>printScaleToPage</em> was set to
-        <em>.true</em> (<em>0</em>).
+        <em>.true</em> (<em>1</em>).
+
+        <br>Querying the current value (no argument supplied) will return it, setting
+        (changing) the value to a new value will return the old (previously set) value
+        via the Rexx variable <em>RC</em>.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
@@ -1165,6 +1274,10 @@ the resulting command with arguments to the Rexx command handler.
     <td class="command">  &quot;printScale&quot;
     <td colspan="2"> Sets the scale factor for the print page <em>x</em> and <em>y</em> axis.
 
+        <br>Querying the current value (no argument supplied) will return it, setting
+        (changing) the value to a new value will return the old (previously set) value
+        via the Rexx variable <em>RC</em>.
+
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> scaleX [scaleY]
@@ -1176,14 +1289,20 @@ the resulting command with arguments to the Rexx command handler.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command">  &quot;printScaleToPage&quot;
-    <td colspan="2"> Queries or sets the value. If set to <em>.true</em>, the image
+    <td colspan="2"> Queries or sets the value.
+
+        <br>Querying the current value (no argument supplied) will return it, setting
+        (changing) the value to a new value will return the old (previously set) value
+        via the Rexx variable <em>RC</em>.
+
+        If set to <em>.true</em>, the image
         will be scaled to the printable image area such, that the entire image gets
         printed proportionally. Returns the setting via the Rexx variable <em>RC</em>.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> booleanValue
-    <td> <em>booleanValue</em> can be one of
+    <td> optional <em>booleanValue</em> can be one of
          <em>1</em>,
          <em>&quot;.true&quot;</em>,
          <em>&quot;true&quot;</em>,
@@ -1195,11 +1314,13 @@ the resulting command with arguments to the Rexx command handler.
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
-    <td class="command">  &quot;pushGC&quot;
-    <td colspan="2"> Push the current <em>GC</em> on the stack, thereby
-        saving all current settings and transformations. Creates a copy of
-        the current <em>GC</em> and uses it from then on.
-        The new <em>GC</em> gets returned via the Rexx variable <em>RC</em>.
+    <td class="command" id="cmdPushGC">  &quot;pushGC&quot;
+    <td colspan="2"> Push the current <a href="#dtGC"><em>GC</em></a>  (graphical configuration) on the stack, thereby
+        saving the current configuration (settings and transformations). This command will then
+        create a copy of the current <a href="#dtGC"><em>GC</em></a> which will get used from then on.
+
+        The pushed <a href="#dtGC"><em>GC</em></a> will get returned
+        via the Rexx variable <em>RC</em>.
 
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
         method <em>create()</em>.
@@ -1208,7 +1329,7 @@ the resulting command with arguments to the Rexx command handler.
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
-    <td class="command">  &quot;pushImage&quot;
+    <td class="command" id="cmdPushImage">  &quot;pushImage&quot;
     <td colspan="2"> Pushes a copy of the current <em>image</em> to the stack and
         optionally stores it with an <em>imageNickName</em> in the internal registry for
         later references by <em>imageNickName</em>. The image copy gets returned via the
@@ -1217,14 +1338,14 @@ the resulting command with arguments to the Rexx command handler.
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> imageNickName
-    <td> Optional, <em>imageNickName</em> will be uppercased and used to store the image
+    <td> optional <em>imageNickName</em> will be uppercased and used to store the image
         in the internal image registry.
 
 
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
-    <td class="command">  &quot;reset&quot; <br> &quot;clear&quot;
+    <td class="command" id="cmdReset">  &quot;reset&quot; <br> &quot;clear&quot;
     <td colspan="2"> Resets the following runtime values:
         <ul>
             <li><em>colors</em>: the <em>java.util.HashMap</em> gets emptied except for the constant colors
@@ -1250,17 +1371,18 @@ the resulting command with arguments to the Rexx command handler.
 
         The command name <em>clear</em> is an alias, a synonym for this command.
 
-    <tr class="ArgumentRowColor"><td><!-- table row -->
-    <td>
-    <td class="argument"> xyz
-    <td> <em>xyz</em> position on the x-axis.
-
 
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
-    <td class="command">  &quot;rotate&quot;
-    <td colspan="2"> Queries or rotates the image.
+    <td class="command" id="cmdRotate">  &quot;rotate&quot;
+    <td colspan="2"> Queries the runtime variable <em>currAngle</em> (if no arguments are
+                     supplied) or rotates the image such that new drawings are rotated in effect.
+
+        This command returns the value of the runtime variable <em>currAngle</em>
+        (which accumulates rotation theta values, but may not be correct after
+        <a href="#cmdPopGC">popGC</em></a> or <a href="#cmdReset">reset</em></a> commands)
+        via the Rexx variable <em>RC</em>.
 
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
         method <em>rotate(...)</em>. Note: this command converts the supplied degrees (<em>0</em>
@@ -1282,7 +1404,8 @@ the resulting command with arguments to the Rexx command handler.
     <td class="command">  &quot;saveImage&quot;
     <td colspan="2"> Saves the current image to a file.
         If the saving of the image was successful <em>1</em> (<em>.true</em>) gets returned via the
-        Rexx variable <em>RC</em>, otherwise <em>0</em> (<em>.false</em>) .
+        Rexx variable <em>RC</em>, otherwise <em>-16</em> gets returned indicating an error has occurred
+        (use output or error redirection to get further information in case of an error).
 
         <br>Cf. the Java documentation for the Java class <em>javax.imageio.ImageIO</em> and the
         method <em>write(...)</em>.
@@ -1297,7 +1420,7 @@ the resulting command with arguments to the Rexx command handler.
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
-    <td class="command">  &quot;scale&quot;
+    <td class="command" id="cmdScale">  &quot;scale&quot;
     <td colspan="2"> Sets the scale factor for the <em>y</em> and <em>y</em> axis.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
@@ -1320,7 +1443,7 @@ the resulting command with arguments to the Rexx command handler.
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
-    <td class="command">  &quot;shear&quot;
+    <td class="command" id="cmdShear">  &quot;shear&quot;
     <td colspan="2"> Sets the shear (skew) factor for the <em>y</em> and <em>y</em> axis.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
@@ -1348,9 +1471,12 @@ the resulting command with arguments to the Rexx command handler.
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
-    <td class="command">  &quot;stroke&quot;
-    <td colspan="2"> Queries, defines and sets strokes. With no arguments the currently
-        set <em>BasicStroke</em> object gets returned via the Rexx variable <em>RC</em>.
+    <td class="command" id="cmdStroke">  &quot;stroke&quot;
+    <td colspan="2"> Queries, defines and sets strokes.
+
+        <br>Querying the current value (no argument supplied) will return it, setting
+        (changing) the value to a new value will return the old (previously set) value
+        via the Rexx variable <em>RC</em>.
 
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
         methods <em>getStroke()</em>, <em>setStroke(...)</em> and the Java class <em>java.awt.BasicStroke</em>
@@ -1401,7 +1527,7 @@ the resulting command with arguments to the Rexx command handler.
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
-    <td class="command">  &quot;translate&quot;
+    <td class="command" id="cmdTranslate">  &quot;translate&quot;
     <td colspan="2"> Moves the origin <em>&quot;(0,0)&quot;</em> from the upper left hand
         corner by adding <em>x</em> pixels to <em>currX</em> and  <em>y</em> pixels to <em>currY</em>.
 
@@ -1416,7 +1542,13 @@ the resulting command with arguments to the Rexx command handler.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command">  &quot;winAlwaysOnTop&quot;
-    <td colspan="2"> Queries or sets the value. If set to <em>.true</em>, the frame (window)
+    <td colspan="2"> Queries or sets the value.
+
+        <br>Querying the current value (no argument supplied) will return it, setting
+        (changing) the value to a new value will return the old (previously set) value
+        via the Rexx variable <em>RC</em>.
+
+        If set to <em>.true</em>, the frame (window)
         that displays the image will be always on top of other windows.
         If no argument is supplied the current setting will be returned
         via the Rexx variable <em>RC</em>.
@@ -1427,7 +1559,7 @@ the resulting command with arguments to the Rexx command handler.
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> booleanValue
-    <td> <em>booleanValue</em> can be one of
+    <td> optional <em>booleanValue</em> can be one of
          <em>1</em>,
          <em>&quot;.true&quot;</em>,
          <em>&quot;true&quot;</em>,
@@ -1460,7 +1592,13 @@ the resulting command with arguments to the Rexx command handler.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command">  &quot;winFrame&quot;
-    <td colspan="2"> Queries or sets the value. If set to <em>.true</em>, the frame (window)
+    <td colspan="2"> Queries or sets the value.
+
+        <br>Querying the current value (no argument supplied) will return it, setting
+        (changing) the value to a new value will return the old (previously set) value
+        via the Rexx variable <em>RC</em>.
+
+        If set to <em>.false</em>, the frame (window)
         that displays the image will not have a frame and a title.
         If no argument is supplied the current setting will be returned
         via the Rexx variable <em>RC</em>.
@@ -1471,7 +1609,7 @@ the resulting command with arguments to the Rexx command handler.
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> booleanValue
-    <td> <em>booleanValue</em> can be one of
+    <td> optional <em>booleanValue</em> can be one of
          <em>1</em>,
          <em>&quot;.true&quot;</em>,
          <em>&quot;true&quot;</em>,
@@ -1494,7 +1632,12 @@ the resulting command with arguments to the Rexx command handler.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command">  &quot;winLocation&quot;<br> &quot;winMoveTo&quot;
-    <td colspan="2"> Queries or changes the location of the frame (window) that shows the current image.
+    <td colspan="2"> Queries or sets the location of the frame (window) that shows the current image.
+
+        <br>Querying the current value (no argument supplied) will return it, setting
+        (changing) the value to a new value will return the old (previously set) value
+        via the Rexx variable <em>RC</em>.
+
         <br>The command name <em>winMoveTo</em> is an alias, a synonym for this command.
 
         <br>Cf. the Java documentation for the Java class <em>java.awt.Window</em> and the
@@ -1536,6 +1679,11 @@ the resulting command with arguments to the Rexx command handler.
     <td class="command">  &quot;winSize&quot;
     <td colspan="2"> Queries or sets the size of the frame (window) that displays
         the current image.
+
+        <br>Querying the current value (no argument supplied) will return it, setting
+        (changing) the value to a new value will return the old (previously set) value
+        via the Rexx variable <em>RC</em>.
+
         <br>If no argument is supplied this command returns the blank delimited
         values for the current frame's (window)
         <em>width</em> and <em>height</em> in pixels via the Rexx variable <em>RC</em>
@@ -1544,7 +1692,7 @@ the resulting command with arguments to the Rexx command handler.
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> width height
-    <td> The new size is given in <em>width</em> and <em>height</em> pixels.
+    <td> optional, if supplied the new size is given in <em>width</em> and <em>height</em> pixels.
 
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
@@ -1552,9 +1700,15 @@ the resulting command with arguments to the Rexx command handler.
     <td class="command">  &quot;winTitle&quot;
     <td colspan="2"> Queries or sets the title of the frame (window) that displays
         the current image.
-        <br>If no argument is supplied this command returns the current title
-        for the current frame's (window) via the Rexx variable <em>RC</em>
-        upon return from this command.
+
+        <br>Querying the current value (no argument supplied) will return it, setting
+        (changing) the value to a new value will return the old (previously set) value
+        via the Rexx variable <em>RC</em>.
+
+        <br><em>Note:</em> In order to preserve leading blanks in the title, only the
+        first (delimiting) blank after the command <em>winTitle</em> will be consumed, all
+        following characters - including leading whitespace - are regarded to constitute
+        the title to be used.
 
         <br>Cf. the Java documentation for the Java class <em>java.awt.Frame</em> and the
         methods <em>getTitle()</em>, <em>setTitle(...)</em>.
@@ -1562,7 +1716,7 @@ the resulting command with arguments to the Rexx command handler.
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> title
-    <td> The new <em>title</em> for the frame (window).
+    <td> optional, the new <em>title</em> for the frame (window).
 
 
     <!-- -------------------------------------------------------- -->
@@ -1595,13 +1749,15 @@ the resulting command with arguments to the Rexx command handler.
     <td colspan="2"> Queries or sets the value. If set to <em>.true</em>, the frame (window)
         that displays the current image will be updated each time a change occurs in the
         current image, otherwise the frame (window) does not get visually updated.
-        If no argument is supplied the current setting will be returned
+
+        <br>Querying the current value (no argument supplied) will return it, setting
+        (changing) the value to a new value will return the old (previously set) value
         via the Rexx variable <em>RC</em>.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> booleanValue
-    <td> <em>booleanValue</em> can be one of
+    <td> optional <em>booleanValue</em> can be one of
          <em>1</em>,
          <em>&quot;.true&quot;</em>,
          <em>&quot;true&quot;</em>,
@@ -1616,7 +1772,10 @@ the resulting command with arguments to the Rexx command handler.
     <td class="command">  &quot;winVisible&quot;
     <td colspan="2"> Queries or sets the value. If set to <em>.true</em>, the frame (window)
         that displays the current image will be shown, otherwise it will be hided.
-        If no argument is supplied the current setting will be returned
+
+
+        <br>Querying the current value (no argument supplied) will return it, setting
+        (changing) the value to a new value will return the old (previously set) value
         via the Rexx variable <em>RC</em>.
 
         <br>Cf. the Java documentation for the Java class <em>java.awt.Window</em> and the
@@ -1625,7 +1784,7 @@ the resulting command with arguments to the Rexx command handler.
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> booleanValue
-    <td> <em>booleanValue</em> can be one of
+    <td> optional <em>booleanValue</em> can be one of
          <em>1</em>,
          <em>&quot;.true&quot;</em>,
          <em>&quot;true&quot;</em>,
@@ -1659,7 +1818,9 @@ the resulting command with arguments to the Rexx command handler.
 <center>
    <hr width="75%">
     <small>
-       JDOC synopsis of commands, version: 100.20221003
+       JDOC synopsis of commands, version: 100.20221023
+       <br>Acknowledgement: the author wishes to thank DI Walter Pachl
+       <br>for his help in testing and proof reading
     </small>
 </center>
 </p>

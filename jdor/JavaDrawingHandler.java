@@ -9,8 +9,9 @@
    operating system (Windows, MacOS, Linux) where Java, ooRexx and BSF4ooRexx is
    available.
 
-   author: Rony G. Flatscher
-   date:   2022-09-05/2022-10-03
+   author:  Rony G. Flatscher
+   date:    2022-09-05/2022-10-05
+   version: 003.20221020
    license: Apache license 2.0
 
    license:
@@ -31,6 +32,27 @@
        limitations under the License.
     -----------------------------------------------------------------------------
 
+*/
+
+/*  changes:
+        2022-10-05: - corrected Frame's currX and currY values
+                    - corrected return value for IMAGE_SIZE as num+' '+num would add the
+                      numbers with the value of the single blank value to num+" "+num to
+                      return a string
+
+        2022-10-20: - corrected drawString argument: make sure to preserve leading blanks
+                      by just skipping a single blank after the command, taking the remainder
+                      as the whole string
+
+        2022-10-21: - corrected WIN_LOCATION: now honors no arguments
+                    - new command "drawImageFromVar": allow an image referred to by a Rexx
+                      variable to be drawn (to ease drawing images on different JDOR handler
+                      instances)
+        2022-10-22: - fold DRAW_IMAGE_FROM_VAR into DRAW_IMAGE
+                    - corrected LOAD_IMAGE to return dimension instead of image (cf. documentation)
+                    - change logic for queryable and setable commands: if setting new
+                      value, return previous value
+        2022-10-23: - reworkd some WIN_* commands to not automatically create and show JFrame
 */
 
 /*  Sample program in ooRexx (temporarily):
@@ -103,6 +125,7 @@ import java.awt.event.WindowEvent;
 
 import javax.swing.SwingUtilities;
 
+import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import javax.imageio.ImageIO;   // for loading/saving
@@ -161,7 +184,9 @@ class JavaDrawingFrame extends JFrame
         add(sf);
         setTitle("JavaDrawingFrame");
         // needs to be followed by pack() to take effect immediately
-        getContentPane().setPreferredSize(new Dimension(bufImage.getWidth(),bufImage.getHeight()));
+        currWidth=bufImage.getWidth();
+        currHeight=bufImage.getHeight();
+        getContentPane().setPreferredSize(new Dimension(currWidth,currHeight));
         pack();
 
         setLocationRelativeTo(null);
@@ -214,7 +239,7 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     /* static definitions           */
 
     // default image sizes
-    static final public String version = "001.20221002";
+    static final public String version = "005.20221022";
     static final private int prefWidth  = 500;
     static final private int prefHeight = 500;
     static       private int prefImageType = BufferedImage.TYPE_INT_ARGB; // default with alpha (only png supported)
@@ -323,6 +348,8 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     /* current values      */
     int currX = 0;
     int currY = 0;
+// TODO: if popGC reset currAngle to that one; needs to also push currAngle;
+//       not necessary in the first incarnation
     double currAngle = 0;   // if rotate gets used, keeps current angle (in radians)
 
     int currFontStyle = 0;   // PLAIN by default
@@ -484,6 +511,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
         }
 
         String  canonical = cmd.mixedCase;;
+        Object  resultValue = null;
 
         // process commands; jd may be null !
         try
@@ -503,7 +531,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         }
                         if (currVisible)    // already visible, nothing to do
                         {
-                            return "1";
+                            return null;
                         }
                         if (jd==null)   // implies creation of JavaDrawingFrame and make it visible
                         {
@@ -530,7 +558,6 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         }
                         jd.setVisible(false);
                         currVisible=false;
-
                         break;
                     }
 
@@ -540,22 +567,24 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             throw new IllegalArgumentException("this command does not accept any arguments, received "+(arrCommand.length-1)+" instead");
                         }
-                        if (jd!=null)
-                        {
-                            jd.dispatchEvent(new WindowEvent(jd, WindowEvent.WINDOW_CLOSING));
-                            jd=null;
-                        }
-                        currVisible=false;
                         if (isOR)
                         {
                             writeOutput(slot, canonical);
                         }
+                        if (jd==null)       // nothing to do
+                        {
+                            return null;
+                        }
+
+                        jd.dispatchEvent(new WindowEvent(jd, WindowEvent.WINDOW_CLOSING));
+                        jd=null;
+                        currVisible=false;
                     }
                     break;
 
                 case WIN_LOCATION:  // synonym WINMOVETO   "winLocation [x y]" get or set JFrame location on screen
                     {
-                        if (arrCommand.length!=3)
+                        if (arrCommand.length!=1 && arrCommand.length!=3)
                         {
                             throw new IllegalArgumentException("this command needs no or exactly 2 arguments, received "+(arrCommand.length-1)+" instead");
                         }
@@ -568,6 +597,8 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
 
                         int newX = jd.getX();
                         int newY = jd.getY();
+
+                        resultValue = newX+" "+newY;  // query current value (to be returned if change occurs)
 
                         if (arrCommand.length==3)
                         {
@@ -583,7 +614,8 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         }
                         if (arrCommand.length==1)
                         {
-                            return newX+" "+newY;
+                            // return newX+" "+newY;
+                            return resultValue;
                         }
                         break;
                     }
@@ -595,6 +627,14 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             throw new IllegalArgumentException("this command needs no or exactly 1 argument, received "+(arrCommand.length-1)+" instead");
                         }
+                        if (jd!=null)
+                        {
+                            resultValue = (jd.isAlwaysOnTop() ? "1" : "0");   // query current value (to be returned if change occurs)
+                        }
+                        else
+                        {
+                            resultValue = "0";      // false, does not exist
+                        }
                     }
                 case WIN_TO_BACK:                   // "winToBack" put window into the back
                 case WIN_TO_FRONT:                  // "winToFront" put window into the front
@@ -604,14 +644,19 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             throw new IllegalArgumentException("this command expects no arguments, received "+(arrCommand.length-1)+" instead");
                         }
-                        if (jd==null)   // implies creation of JavaDrawingFrame and make it visible
+                        if (jd==null)   // implies creation of JavaDrawingFrame
                         {
                             jd = new JavaDrawingFrame(bufImage);
-                            jd.setVisible(true);    // make sure frame is visible
-                            currVisible=true;
+                            if (cmd!=Command.WIN_ALWAYS_ON_TOP_SUPPORTED)
+                            {
+                                jd.setVisible(true);    // make sure frame is visible
+                                currVisible=true;
+                            }
+                            else
+                            {
+                                currVisible=false;
+                            }
                         }
-
-                        boolean retBoolValue=true;
 
                         switch (cmd)
                         {
@@ -620,6 +665,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                     if (arrCommand.length!=1)
                                     {
                                         String newValue = arrCommand[1];
+                                        boolean retBoolValue;
 
                                         if (checkBooleanValue(newValue))   // a valid BSF4ooRexx850 boolean value?
                                         {
@@ -633,10 +679,6 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                         canonical=canonical+" "+newValue;
                                         jd.setAlwaysOnTop(retBoolValue);    // set value
                                     }
-                                    else
-                                    {
-                                        retBoolValue=jd.isAlwaysOnTop();
-                                    }
                                     break;
                                 }
 
@@ -649,7 +691,8 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 break;
 
                             case WIN_ALWAYS_ON_TOP_SUPPORTED:   // "winAlwaysOnTopSupported" get value
-                                retBoolValue=jd.isAlwaysOnTopSupported();
+                                // retBoolValue=jd.isAlwaysOnTopSupported();
+                                resultValue = (jd.isAlwaysOnTopSupported() ? "1" : "0");   // query current value (to be returned if change occurs)
                                 break;
                         }
 
@@ -658,7 +701,8 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                            writeOutput(slot, canonical);  // write canonical form
                         }
 
-                        return retBoolValue ? "1" : "0";
+                        // return retBoolValue ? "1" : "0";
+                        return resultValue;
                     }
 
 
@@ -670,17 +714,20 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             jd.setVisible(true);    // make sure frame is visible
                             currVisible=true;
                         }
+                        resultValue = jd.getTitle();    // query current value (to be returned if change occurs)
                         if (arrCommand.length==1)   // return current setting (via RC)
                         {
                             if (isOR)
                             {
                                 writeOutput(slot,canonical);
                             }
-                            return jd.getTitle();
+                            return resultValue;
                         }
 
-                        int [] pos = (int []) alWordBoundaries.get(1);  // String
-                        String newTitle = command.substring(pos[0]);    // extract String (may contain blanks)
+                            // to fetch leading blanks we skip over first blank (unlike for other commands where we ignore all blanks after the command)
+                        int [] pos = (int []) alWordBoundaries.get(0);
+                        String newTitle = command.substring(pos[1]+1); // extract String: skip over first trailing blank
+
                         if (isOR)
                         {
                             writeOutput(slot,canonical+" "+newTitle);
@@ -696,9 +743,12 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         if (jd==null)   // implies creation of JavaDrawingFrame and make it visible
                         {
                             jd = new JavaDrawingFrame(bufImage);
-                            jd.setVisible(true);    // make sure frame is visible
-                            currVisible = true;
+                            // jd.setVisible(true);    // make sure frame is visible
+                            // currVisible = true;
+                            currVisible = false;
                         }
+
+                        resultValue = jd.currFrameVisible ? "1" : "0";  // query current value (to be returned if change occurs)
 
                         if (arrCommand.length==1)   // return current setting (via RC)
                         {
@@ -706,7 +756,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             {
                                 writeOutput(slot,canonical);
                             }
-                            return (jd.currFrameVisible ? "1" : "0");
+                            return resultValue;
                         }
 
                         if (arrCommand.length!=2)
@@ -750,13 +800,15 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
 
                 case WIN_VISIBLE:     // winVisible [.true|.false]: query or set whether frame is visible
                     {
+                        resultValue = currVisible ? "1" : "0";  // query current value (to be returned if change occurs)
+
                         if (arrCommand.length==1)   // return current setting (via RC)
                         {
                             if (isOR)
                             {
                                 writeOutput(slot,canonical);
                             }
-                            return (currVisible ? "1" : "0");
+                            return resultValue;
                         }
 
                         if (arrCommand.length!=2)
@@ -777,19 +829,30 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                                   + "\"0\", \"1\", \"false\", \"true\", \".false\", \".true\"");
                         }
 
-                        if (currVisible==newBooleanValue)   // already at the same state, ignore command
+                        if (currVisible==newBooleanValue)   // already at the same state, ignore command, but return "old" value
                         {
-                            return null;
+                            return resultValue;
                         }
 
                         // no exception, so args o.k.
-                        if (isOR)
+                        if (isOR && arrCommand.length==2)
                         {
                             writeOutput(slot,canonical+" "+(newBooleanValue ? "1" : "0"));
                         }
-                        currVisible = newBooleanValue;
-                        jd.setVisible(newBooleanValue);
 
+                        if (jd==null)
+                        {
+                            jd = new JavaDrawingFrame(bufImage);
+                            if (newBooleanValue)
+                            {
+                                jd.setVisible(true);    // make frame is visible
+                            }
+                        }
+                        else if (currVisible!=newBooleanValue)
+                        {
+                            jd.setVisible(newBooleanValue);
+                        }
+                        currVisible = newBooleanValue;
                         break;
                     }
 
@@ -837,12 +900,21 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         if (jd==null)   // implies creation of JavaDrawingFrame and make it visible
                         {
                             jd = new JavaDrawingFrame(bufImage);
-                            jd.setVisible(true);
-                            currVisible=true;
+                            if (currVisible)
+                            {
+                                jd.setVisible(true);
+                            }
                         }
+
+                        resultValue = jd.currWidth+" "+jd.currHeight;  // query current value (to be returned if change occurs)
+
                         if (arrCommand.length==1)   // return current setting (via RC)
                         {
-                            return jd.currWidth+" "+jd.currHeight;
+                            if (isOR)
+                            {
+                                writeOutput(slot, canonical);
+                            }
+                            return resultValue;
                         }
                         if (arrCommand.length!=3)
                         {
@@ -875,15 +947,17 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         throw new IllegalArgumentException("this command does not expect any arguments, received "+(arrCommand.length-1)+" instead");
                     }
 
-                case PRINT_SCALE_TO_PAGE: //         ( "printScaleToPage"         ) ,    //   "printScaleToPage [.true|.false]": get or set
+                case PRINT_SCALE_TO_PAGE: // "printScaleToPage [.true|.false]": query/get or set
                     {
+                        resultValue = (printScaleToPage ? "1" : "0");  // query current value (to be returned if change occurs)
+
                         if (arrCommand.length==1)   // return current setting (via RC)
                         {
                             if (isOR)
                             {
                                 writeOutput(slot,canonical);
                             }
-                            return (printScaleToPage ? "1" : "0");
+                            return resultValue;
                         }
 
                         if (arrCommand.length!=2)
@@ -901,15 +975,18 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             throw new IllegalArgumentException("the supplied \"printScaleToPage\" argument \""+newValue+"\" is not a valid BSF4ooRexx850 boolean value, valid values (in any case) are: "
                                                   + "\"0\", \"1\", \"false\", \"true\", \".false\", \".true\"");
                         }
-                        return printScaleToPage ? "1" : "0";
+                        // return printScaleToPage ? "1" : "0";
+                        return resultValue;
                     }
 
-                case PRINT_SCALE:   // "printScale [scaleX [scaleY]": get or set scaleX (if no scaleY use scaleX)
+                case PRINT_SCALE:   // "printScale [scaleX [scaleY]": query/get or set scaleX (if no scaleY use scaleX)
                     {
                         if (arrCommand.length>3)
                         {
                             throw new IllegalArgumentException("this command needs no or 1 or 2 arguments, received "+(arrCommand.length-1)+" instead");
                         }
+
+                        resultValue = printScaleX+" "+printScaleY;  // query current value (to be returned if change occurs)
 
                         if (arrCommand.length>1)
                         {
@@ -933,7 +1010,8 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             writeOutput(slot,canonical);
                         }
 
-                        return printScaleX+" "+printScaleY;
+                        //return printScaleX+" "+printScaleY;
+                        return resultValue;
                     }
 
                 case PRINT_POS: // "printPos [X [Y]]: get or set position of left upperhand corner
@@ -942,6 +1020,9 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             throw new IllegalArgumentException("this command expects no, 1 or 2 arguments, received "+(arrCommand.length-1)+" instead");
                         }
+
+                        resultValue = printPosX+" "+printPosY;  // query current value (to be returned if change occurs)
+
                         int newX = Integer.parseInt(arrCommand[1]);
                         int newY = newX;            // default to newX
                         if (arrCommand.length==3)
@@ -951,16 +1032,16 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             // no exception, so args o.k.
                         printPosX = newX;
                         printPosY = newY;
-                        String res = currX+" "+currY;
                         if (isOR)
                         {
-                            canonical=canonical+" "+res;
+                            canonical=canonical+" "+newX+" "+newY;
                         }
                         if (isOR)
                         {
                             writeOutput(slot, canonical);
                         }
-                        return res;
+                        // return res;
+                        return resultValue;
                     }
 
                 case PRINT_IMAGE:       // "printImage [nickName]"
@@ -1045,9 +1126,10 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         }
                         if (isOR)
                         {
-                           writeOutput(slot, canonical+' '+strResult);  // write canonical form
+                           writeOutput(slot, canonical+" "+strResult);  // write canonical form
                         }
-                        return strResult;
+                        // return strResult;
+                        return null;        // returns null, i.e. RC="0" -> command executed alright
                     }
 
                 case NEW:       // "new [width height [type]]" creates a new BufferedImage
@@ -1130,12 +1212,14 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                     }
                     break;
 
-                case PREFERRED_IMAGE_TYPE:      // "preferredImageType [type]": integer or constant name
+                case PREFERRED_IMAGE_TYPE:      // "preferredImageType [type]": query or set: integer or constant name
                     {
                         if (arrCommand.length>2)
                         {
                             throw new IllegalArgumentException("this command needs either no or exactly 1 argument (preferred image type), received "+(arrCommand.length-1)+" instead");
                         }
+                        resultValue = ""+prefImageType;  // query current value (to be returned if change occurs)
+
                         if (arrCommand.length==2)
                         {
                             int    type;
@@ -1167,7 +1251,8 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             writeOutput(slot, canonical);
                         }
-                        return "" + prefImageType;
+                        // return "" + prefImageType;
+                        return resultValue;
                     }
 
                 case IMAGE_TYPE:      // "imageType [nickName]"
@@ -1223,7 +1308,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             writeOutput(slot, canonical);
                         }
-                        return tmpImg.getWidth()+' '+tmpImg.getHeight();
+                        return tmpImg.getWidth()+" "+tmpImg.getHeight();
                     }
 
                     // create a RexxStringTable, fill it with current settings, stacks, maps and return it;
@@ -1301,13 +1386,16 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         }
                         Color color=null;
                         int red, green, blue, alpha;
+
+                        resultValue = bufGC.getColor();  // query current value (to be returned if change occurs)
+
                         if (arrCommand.length==1)
                         {
                             if (isOR)
                             {
                                 writeOutput(slot, canonical);
                             }
-                            return bufGC.getColor();
+                            return resultValue;
                         }
 
                         String colorNickName = arrCommand[1];   // get color name
@@ -1332,7 +1420,8 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 writeOutput(slot, canonical);
                             }
                             bufGC.setColor(color);
-                            return color;
+                            // return color;
+                            return resultValue;     // return previous color
                         }
 
                         red   = Integer.parseInt(arrCommand[2]);
@@ -1361,16 +1450,19 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             writeOutput(slot, canonical);
                         }
-                        return color;
+                        // return color;
+                        return resultValue;     // return previous color
                     }
 
-                case GRADIENT_PAINT:         // "gradientPaint paintNickName [x1 y1 colorName1 x2 y2 colorName2 [cyclic]]" sets or defines and sets gradientPaint
+                case GRADIENT_PAINT:         // "gradientPaint paintNickName [x1 y1 colorName1 x2 y2 colorName2 [cyclic]]": sets or defines and sets gradientPaint
                     {
                         int argNum = arrCommand.length;
                         if (argNum!=2 && argNum!=8 && argNum!=9)
                         {
-                            throw new IllegalArgumentException("this command needs either 7 or 8 arguments, received "+(argNum-1)+" instead");
+                            throw new IllegalArgumentException("this command needs either one, 7 or 8 arguments, received "+(argNum-1)+" instead");
                         }
+
+                        resultValue = bufGC.getPaint();  // query current value (to be returned if change occurs)
 
                         String paintNickName = arrCommand[1];   // get nick name
                         GradientPaint gradientPaint=null;
@@ -1396,7 +1488,8 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 writeOutput(slot, canonical);
                             }
                             bufGC.setPaint(gradientPaint);
-                            return gradientPaint;
+                            // return gradientPaint;
+                            return resultValue;
                         }
 
                         Color color1=null, color2=null;
@@ -1466,7 +1559,8 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             writeOutput(slot, canonical);
                         }
-                        return gradientPaint;
+                        // return gradientPaint;
+                        return resultValue;
                     }
 
                 case SET_PAINT_MODE:    // "setPaintMode", cf. Graphics#setPaintMode
@@ -1486,13 +1580,15 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
 // 2022-09-23: nice gradient samples: <http://www.java2s.com/Code/Java/2D-Graphics-GUI/GradientPaintdemo.htm>
                 case PAINT:         // "paint [colorNickName|gradientPaintNickName]" query or set paint to a color or a gradientPaint
                     {
+                        resultValue = bufGC.getPaint();  // query current value (to be returned if change occurs)
+
                         if (arrCommand.length==1)   // return current setting (via RC)
                         {
                             if (isOR)
                             {
                                 writeOutput(slot, canonical);
                             }
-                            return bufGC.getPaint();
+                            return resultValue;
                         }
                         if (arrCommand.length==2)
                         {
@@ -1518,20 +1614,23 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 writeOutput(slot, canonical);
                             }
                             bufGC.setPaint(paint);
-                            return paint;
+                            // return paint;
+                            return resultValue;
                         }
                         throw new IllegalArgumentException("this command needs either no or exactly 1 argument, received "+(arrCommand.length-1)+" instead");
                     }
 
                 case BACKGROUND:     // "background  [colorNickName]" query current background color or set
                     {
+                        resultValue = bufGC.getBackground();  // query current value (to be returned if change occurs)
+
                         if (arrCommand.length==1)   // return current setting (via RC)
                         {
                             if (isOR)
                             {
                                 writeOutput(slot, canonical);
                             }
-                            return bufGC.getBackground();
+                            return resultValue;
                         }
                         if (arrCommand.length==2)
                         {
@@ -1552,7 +1651,8 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 writeOutput(slot, canonical);
                             }
                             bufGC.setBackground(color);
-                            return color;
+                            // return color;
+                            return resultValue;
                         }
                         throw new IllegalArgumentException("this command needs either no or exactly 1 argument, received "+(arrCommand.length-1)+" instead");
                     }
@@ -1583,20 +1683,22 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         return null;
                     }
 
-                case COMPOSITE:     // "composite [rule [alpha]]": get current or get and set new
+                case COMPOSITE:     // "composite [rule [alpha]]": query current or get and set new
                     {
                         int argNum=arrCommand.length;
                         if (argNum>3)
                         {
                             throw new IllegalArgumentException("this command needs either no, one (rule) or two (rule alpha) arguments, received "+(argNum-1)+" instead");
                         }
+                        resultValue = bufGC.getComposite();    // query current value (to be returned if change occurs)
+
                         if (argNum==1)
                         {
                             if (isOR)
                             {
                                 writeOutput(slot, canonical);
                             }
-                            return bufGC.getComposite();
+                            return resultValue;
                         }
 
                         String ruleName   = arrCommand[1].toUpperCase();   // get name
@@ -1643,7 +1745,8 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             writeOutput(slot, canonical);
                         }
                         bufGC.setComposite(ac);
-                        return ac;
+                        // return ac;
+                        return resultValue;
                     }
 
 // 2022-09-29 -->
@@ -1685,33 +1788,33 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         return null;
                     }
 
-                case CLIP:          //  "clip [x y w h]" -> get (getClipBounds()) or clipRect(x y w h): returns .nil if no clip set
+                case CLIP:          // query or set "clip [x y w h]" -> get (getClipBounds()) or clipRect(x y w h): returns .nil if no clip set
                     {
                         if (arrCommand.length!=1 && arrCommand.length!=5)
                         {
                             throw new IllegalArgumentException("this command expects no or exactly 4 arguments, received "+(arrCommand.length-1)+" instead");
                         }
-                        Object res=null;
-                        if (arrCommand.length==1)
+
+                        resultValue=null;
+
+                        Rectangle r = bufGC.getClipBounds();
+                        if (r!=null)
                         {
-                            Rectangle r = bufGC.getClipBounds();
-                            if (r!=null)
-                            {
-                                res = r.x+" "+r.y+" "+r.width+" "+r.height;
-                            }
-                            else    // indicate no clip
-                            {
-                                res = getNil(slot);
-                            }
+                            resultValue = r.x+" "+r.y+" "+r.width+" "+r.height;
                         }
-                        else
+                        else    // indicate no clip
+                        {
+                            resultValue = getNil(slot);
+                        }
+
+                        if (arrCommand.length>1)    // clip area supplied
                         {
                             int newX      = Integer.parseInt(arrCommand[1]);
                             int newY      = Integer.parseInt(arrCommand[2]);
                             int newWidth  = Integer.parseInt(arrCommand[3]);
                             int newHeight = Integer.parseInt(arrCommand[4]);
-                            res = newX+" "+newY+" "+newWidth+" "+newHeight;
-                            canonical = canonical+" "+res;
+                            resultValue = newX+" "+newY+" "+newWidth+" "+newHeight;
+                            canonical = canonical+" "+resultValue;
                             bufGC.clipRect(newX, newY, newWidth, newHeight);
                         }
                             // no exception, so args o.k.
@@ -1719,7 +1822,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             writeOutput(slot, canonical);
                         }
-                        return res;
+                        return resultValue;
                     }
 // <---
 
@@ -1792,13 +1895,16 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             throw new IllegalArgumentException("this command needs either no, 2 (strokeNickName width), 4 (strokeNickName width cap join), 4 or 6 arguments (strokeNickName width cap join miterlimit arrDashes dashPhase), received "+(argNum-1)+" instead");
                         }
+
+                        resultValue = bufGC.getStroke();  // query current value (to be returned if change occurs)
+
                         if (argNum==1)
                         {
                             if (isOR)
                             {
                                 writeOutput(slot, canonical);
                             }
-                            return bufGC.getStroke();
+                            return resultValue;
                         }
 
                         String strokeNickName = arrCommand[1];   // get name
@@ -1824,7 +1930,8 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 writeOutput(slot, canonical);
                             }
                             bufGC.setStroke(stroke);
-                            return stroke;
+                            // return stroke;
+                            return resultValue;
                         }
 
                         int width, cap, join; // , miterlimit;
@@ -1926,7 +2033,8 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             writeOutput(slot, canonical);
                         }
-                        return stroke;
+                        // return stroke;
+                        return resultValue;
                     }
 
                 case FONT_STYLE:    // "fontStyle [0=PLAIN | 1=BOLD | 2=ITALIC | 3=BOLD+ITALIC]
@@ -1935,6 +2043,8 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             throw new IllegalArgumentException("this command needs either no or exactly 1 argument (fontStyle), received "+(arrCommand.length-1)+" instead");
                         }
+
+                        resultValue = "" + currFontStyle;   // query current value (to be returned if change occurs)
 
                         if (arrCommand.length==2)
                         {
@@ -1954,7 +2064,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             writeOutput(slot, canonical);
                         }
-                        return "" + currFontStyle;
+                        return resultValue;
                     }
 
                 case FONT_SIZE:     // "fontSize [size]"
@@ -1963,6 +2073,9 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             throw new IllegalArgumentException("this command needs either no or exactly 1 argument (fontSize), received "+(arrCommand.length-1)+" instead");
                         }
+
+                        resultValue = "" + currFontSize;   // query current value (to be returned if change occurs)
+
                         if (arrCommand.length==2)
                         {
                             int newFontSize = Integer.parseInt(arrCommand[1]);
@@ -1981,18 +2094,20 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             writeOutput(slot, canonical);
                         }
-                        return "" + currFontSize;
+                        return resultValue;
                     }
 
                 case FONT:          // "font   [fontNickName [name]" query or set font;  uses currFontStyle, currFontSize; "Dialog", "DialogInput", "Serif", "SansSerif", "Monospaced"
                     {
+                        resultValue = bufGC.getFont();   // query current value (to be returned if change occurs)
+
                         if (arrCommand.length==1)
                         {
                             if (isOR)
                             {
                                 writeOutput(slot, canonical);
                             }
-                            return bufGC.getFont();
+                            return resultValue;
                         }
                         Font font=null;
                         String fontNickName = arrCommand[1];   // get font name
@@ -2017,7 +2132,8 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             {
                                 writeOutput(slot, canonical);
                             }
-                            return font;
+                            // return font;
+                            return resultValue;
                         }
 
                         // o.k. Font name may contain blanks so use start of third word and all what remains
@@ -2038,7 +2154,8 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             writeOutput(slot, canonical);
                         }
-                        return font;
+                        // return font;
+                        return resultValue;
                     }
 
                 case RESET:     // "reset" synonym: "clear", clears everything, resets
@@ -2057,12 +2174,13 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
 
                     // ----------------------
 
-                case POS:       // return current coordinates or goto x, y co-ordinate
+                case POS:       // query current coordinates or goto x, y co-ordinate
                     {
                         if (arrCommand.length>3)
                         {
                             throw new IllegalArgumentException("this command needs no, 1 or 2 arguments, received "+(arrCommand.length-1)+" instead");
                         }
+                        resultValue = currX+" "+currY;   // query current value (to be returned if change occurs)
                         if (arrCommand.length>1)
                         {
                             int newX = Integer.parseInt(arrCommand[1]);
@@ -2083,7 +2201,8 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             writeOutput(slot, canonical);
                         }
-                        return currX+" "+currY;
+                        // return currX+" "+currY;
+                        return resultValue;
                     }
 
                 case DRAW_LINE:     // "drawLine toX toY"
@@ -2113,8 +2232,9 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             throw new IllegalArgumentException("this command needs 1 argument (the string to be drawn)");
                         }
                             // no exception, so args o.k.
-                        int [] pos = (int []) al.get(1);
-                        String str = command.substring(pos[0]); // extract String
+                            // to fetch leading blanks we skip over first blank (unlike for other commands where we ignore all blanks after the command)
+                        int [] pos = (int []) al.get(0);
+                        String str = command.substring(pos[1]+1); // extract String: skip over first trailing blank
                         if (isOR)
                         {
                             writeOutput(slot,canonical+" "+str);
@@ -2283,7 +2403,8 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             writeOutput(slot, canonical+" "+nickName+" "+fileName);
                         }
-                        return img;
+                        // return img;
+                        return img.getWidth()+" "+img.getHeight();
                     }
 
                 case GET_IMAGE:    // "getImage [nickName]" returns image or nickName-stored image
@@ -2292,6 +2413,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             throw new IllegalArgumentException("this command needs either no or exactly 1 argument (image's nickname for lookup), received "+(arrCommand.length-1)+" instead");
                         }
+
                         if (arrCommand.length==1)
                         {
                             if (isOR)
@@ -2366,13 +2488,16 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                     {
                         ArrayList<int[]> al = alWordBoundaries;
                         int argNum = al.size();
+
+                        resultValue = ""+currAngle;   // query current value (to be returned if change occurs)
+
                         if (argNum==1)    // query currAngle
                         {
                             if (isOR)
                             {
                                 writeOutput(slot, canonical);
                             }
-                            return ""+currAngle;
+                            return resultValue;
                         }
 
                         if (argNum!=2 && argNum!=4)
@@ -2407,9 +2532,13 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             writeOutput(slot, canonical+" "+theta);
                         }
-                        return ""+theta;
+                        // return ""+theta;
+                        return resultValue;
                     }
 
+
+                    // rgf, 2022-10-21: command to allow drawing an image referred to by a rexx Variable
+                case DRAW_IMAGE_FROM_REXX_VAR:   // "drawImageFromVar rexxVarName [bkgColor] | rexxVarName width height [bkgColor] | rexxVarName width height srcX1 srcY1 srcX2 srcY2 [bkgColor]"
                 case DRAW_IMAGE:   // "drawImage nickName [bkgColor] | nickName width height [bkgColor] | nickName width height srcX1 srcY1 srcX2 srcY2 [bkgColor]"
                     {
                         int argNum = arrCommand.length;
@@ -2422,11 +2551,26 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             canonical=canonical+" "+name;
                         }
-                        BufferedImage img = hmImages.get(name.toUpperCase());
-                        if (img==null)
+
+                           // get Image
+                        Image img = null;
+                        if (cmd==Command.DRAW_IMAGE)   // fetch from the image registry
                         {
-                            throw new IllegalArgumentException("image with the name \""+name+"\" not found, you must first use \"loadImage "+name+" filename\"");
+                            img = hmImages.get(name.toUpperCase());
+                            if (img==null)
+                            {
+                                throw new IllegalArgumentException("image with the name \""+name+"\" not found, you must first use \"loadImage "+name+" filename\" or \"pushImage "+name+"\"");
+                            }
                         }
+                        else                            // fetch from the denoted Rexx variable
+                        {
+                            img = (Image) getContextVariable(slot, name);
+                            if (img==null)
+                            {
+                                throw new IllegalArgumentException("Rexx variable named \""+name+"\" does not refer to an image");
+                            }
+                        }
+
                         int width=0, height=0, srcX1=0, srcY1=0, srcX2=0, srcY2=0;
                         String colorNickName=null;
                         Color bkgColor=null;
@@ -2541,102 +2685,115 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             writeOutput(slot, canonical+" "+newX+" "+newY);
                         }
-                        return newX+" "+newY;
+                        // return newX+" "+newY;
+                        return null;        // RC="0", command executed alright
                     }
 
                 case PUSH_GC:   // pushes current GC, does a create() & assigns the new one as current
                 case POP_GC:    // pops and & assigns as current
-                    if (arrCommand.length!=1)
                     {
-                        throw new IllegalArgumentException("this command does not expect arguments, received "+(arrCommand.length-1)+" argument(s)");
-                    }
-                    if (cmd==Command.PUSH_GC)
-                    {
-                        Graphics2D tmpG2D = bufGC;
-                        adGCStack.push(bufGC);
-                        bufGC=(Graphics2D) bufGC.create();  // work on an independent copy from now on
-                        if (isOR)
+                        if (arrCommand.length!=1)
                         {
-                            writeOutput(slot, canonical);
+                            throw new IllegalArgumentException("this command does not expect arguments, received "+(arrCommand.length-1)+" argument(s)");
                         }
-                        return tmpG2D;
-                    }
-                    else
-                    {
-                        Graphics2D d2d=null;
-                        if (adGCStack.size()>0)
+
+                        resultValue = bufGC;   // query current value (to be returned if change occurs)
+
+                        if (cmd==Command.PUSH_GC)
                         {
-                            d2d=adGCStack.pop();
-                        }
-                        if (d2d==null)
-                        {
-                            String errMsg="did not return a GC (stack empty)";
+                            Graphics2D tmpG2D = bufGC;
+                            adGCStack.push(bufGC);
+                            bufGC=(Graphics2D) bufGC.create();  // work on an independent copy from now on
                             if (isOR)
                             {
-                                writeOutput(slot, "-- ERROR (stack empty): ["+command+"]");
+                                writeOutput(slot, canonical);
                             }
-                            return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-13", errMsg );
+                            // return tmpG2D;
                         }
-                        bufGC.dispose();        // dispose current GC
-                        bufGC=d2d;              // replace with previous GC
-                        if (isOR)
+                        else    // POP_GC
                         {
-                            writeOutput(slot, canonical);
+                            Graphics2D d2d=null;
+                            if (adGCStack.size()>0)
+                            {
+                                d2d=adGCStack.pop();
+                            }
+                            if (d2d==null)
+                            {
+                                String errMsg="did not return a GC (stack empty)";
+                                if (isOR)
+                                {
+                                    writeOutput(slot, "-- ERROR (stack empty): ["+command+"]");
+                                }
+                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-13", errMsg );
+                            }
+                            bufGC.dispose();        // dispose current GC
+                            bufGC=d2d;              // replace with previous GC
+                            if (isOR)
+                            {
+                                writeOutput(slot, canonical);
+                            }
+                            // return bufGC;
+                            resultValue=bufGC;  // old one is disposed, so cannot use that anymore
                         }
-                        return bufGC;
+                        return resultValue;
                     }
 
                     // PUSH_IMAGE: "pushImage [nickName]" push current image displayed, if nickName store it in image HashMap as well
                 case PUSH_IMAGE:   // pushes current one, does a create() & assigns the new one as current
                 case POP_IMAGE:    // pops and & assigns as current
+                    {
+                        if ( cmd==Command.POP_IMAGE && arrCommand.length!=1 )
+                        {
+                            throw new IllegalArgumentException("this command does not expect arguments, received "+(arrCommand.length-1)+" argument(s)");
+                        }
+                        else if ( cmd==Command.PUSH_IMAGE && arrCommand.length>2 )
+                        {
+                            throw new IllegalArgumentException("this command expects 1 argument at the most (nickName), received "+(arrCommand.length-1)+" argument(s)");
+                        }
 
-                    if ( cmd==Command.POP_IMAGE && arrCommand.length!=1 )
-                    {
-                        throw new IllegalArgumentException("this command does not expect arguments, received "+(arrCommand.length-1)+" argument(s)");
-                    }
-                    else if ( cmd==Command.PUSH_IMAGE && arrCommand.length>2 )
-                    {
-                        throw new IllegalArgumentException("this command expects 1 argument at the most (nickName), received "+(arrCommand.length-1)+" argument(s)");
-                    }
 
-                    if (cmd==Command.PUSH_IMAGE)
-                    {
-                        BufferedImage img = copyImage(bufImage);
-                        adImageStack.push(img); // save current image
-                        if (arrCommand.length>1)    // nickName supplied, store image in HashMap
+                        if (cmd==Command.PUSH_IMAGE)
                         {
-                            String nickName = arrCommand[1];
-                            hmImages.put(nickName.toUpperCase(),img);   // save in HashMap
-                        }
-                        if (isOR)
-                        {
-                            writeOutput(slot, canonical);
-                        }
-                        return img;
-                    }
-                    else
-                    {
-                        BufferedImage img=null;
-                        if (adImageStack.size()>0)
-                        {
-                            img=adImageStack.pop();   // get image from stack
-                        }
-                        if (img==null)                          // nothing left on stack?
-                        {
-                            String errMsg="did not return an image (stack empty)";
+                            BufferedImage img = copyImage(bufImage);
+                            adImageStack.push(img); // save current image
+                            if (arrCommand.length>1)    // nickName supplied, store image in HashMap
+                            {
+                                String nickName = arrCommand[1];
+                                hmImages.put(nickName.toUpperCase(),img);   // save in HashMap
+                            }
                             if (isOR)
                             {
-                                writeOutput(slot, "-- ERROR (stack empty): ["+command+"]");
+                                writeOutput(slot, canonical);
                             }
-                            return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-14", errMsg );
+                            return img;     // return pushed (copy) image
+                            // return resultValue;
                         }
-                        bufGC.drawImage(img,0,0,null);
-                        if (isOR)
+                        else    // POP_IMAGE
                         {
-                            writeOutput(slot, canonical);
+                            BufferedImage img=null;
+                            if (adImageStack.size()>0)
+                            {
+                                img=adImageStack.pop();   // get image from stack
+                            }
+                            if (img==null)                          // nothing left on stack?
+                            {
+                                String errMsg="did not return an image (empty stack)";
+                                if (isOR)
+                                {
+                                    writeOutput(slot, "-- ERROR (empty stack): ["+command+"]");
+                                }
+                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-14", errMsg );
+                            }
+                            bufGC.drawImage(img,0,0,null);
+                            if (isOR)
+                            {
+                                writeOutput(slot, canonical);
+                            }
+                            resultValue = img;     // return popped img, not the draw result
+                            break;  // update UI if shown
                         }
-                        break;  // update UI if shown
                     }
+
 
                 default:        // unknown/unhandled command, raise failure condition (should never arrive here)
                     if (isOR)
@@ -2660,7 +2817,8 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
         {
             jd.sf.repaint();  // trigger a paintComponent() invocation
         }
-        return null;
+        // return null;
+        return resultValue;
     }
 
     private enum ConditionType
@@ -3112,6 +3270,9 @@ enum Command {
     DRAW_3D_RECT                ( "draw3DRect"               ) ,    //   "draw3DRect width height raised" - 20220906
     DRAW_ARC                    ( "drawArc"                  ) ,    //   "drawArc  width height startAngle arcAngle"
     DRAW_IMAGE                  ( "drawImage"                ) ,    //   "drawImage nickName [bkgColor] | nickName width height [bkgColor] | nickName width height srcX1 srcY1 srcX2 srcY2 [bkgColor]"
+
+    DRAW_IMAGE_FROM_REXX_VAR    ( "drawImageFromVar"         ) ,    // "drawImageFromVar rexxVarName [bkgColor] | rexxVarName width height [bkgColor] | rexxVarName width height srcX1 srcY1 srcX2 srcY2 [bkgColor]"
+
     DRAW_LINE                   ( "drawLine"                 ) ,    //   "drawLine toX toY"
     DRAW_OVAL                   ( "drawOval"                 ) ,    //   "drawOval width height"
     DRAW_POLYGON                ( "drawPolygon"              ) ,    //   "drawPolygon  []xPoints []yPoints nPoints
@@ -3205,6 +3366,7 @@ enum Command {
          // add synonyms         new name      enum type
          upperCase2Command.put( "CLEAR"      , RESET     ) ;
          upperCase2Command.put( "GOTO"       , POS       ) ;
+         upperCase2Command.put( "LOCATION"   , POS       ) ;    // 2022-10-23: new alias
          upperCase2Command.put( "WINMOVETO"  , WIN_LOCATION ) ;
     }
 
