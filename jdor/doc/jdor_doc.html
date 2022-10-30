@@ -288,18 +288,20 @@ title to the definition list
 
     <dt id="dtAffineTransform">AffineTransform</dt>
     <dd>The Java class <em>java.awt.geom.AffineTransform</em>
-        allows to define and maintain the <em>scale(...)</em>, <em>shear(...)</em>, <em>translate(...)</em>
+        allows to define and maintain the <em>translate</em>, <em>scale</em>, <em>shear</em>
         factors in a matrix. <em>java.awt.Graphics2D</em> methods use it to calculate the effective <em>x</em>
         and <em>y</em> values.
         <br>The commands
-        <em><a href="#cmdScale">scale(...)</a></em>,
-        <em><a href="#cmdShear">shear(...)</a></em>
-        <em><a href="#cmdTranslate">translate(...)</a></em> will cause the respective factors
+        <em><a href="#cmdTranslate">translate</a></em>,
+        <em><a href="#cmdScale">scale</a></em>,
+        <em><a href="#cmdShear">shear</a></em>
+        will cause the respective factors
         to be changed accordingly in the <em>Graphics2D</em>'s maintained <em>AffineTransform</em>.
 
         <br>The <em><a href="#cmdTransform">transform</a></em> command allows to interact with
-        the <em>Graphics2D</em>'s <em>AffineTransform</em> to query, change or reset the
-        transform factors.
+        the <em>Graphics2D</em>'s <em>AffineTransform</em> to query, set or reset the
+        six transform factors <em>translateX</em>, <em>translateY</em>,
+        <em>scaleX</em>, <em>scaleY</em>, <em>shearX</em>, <em>shearY</em> directly.
     </dd>
 
     <dt>coordinate system</dt>
@@ -1010,7 +1012,6 @@ value.
 
         <br>Supplying only the <em>fontNickName</em> argument will load the font from the
             internal register and use it until it gets changed again.
-
         <br>Supplying in addition the <em>fontName</em>, a <em>java.awt.Font</em>
             gets loaded from the system, registered with the supplied <em>fontNickName</em>
             and then used for setting the new font. The font size is taken from
@@ -1025,8 +1026,17 @@ value.
     <td>
     <td class="argument"> fontNickName
     <td> <em>fontNickName</em> gets uppercased and is used to look up the internal
-         font registry for the denoted font which should be used from now on and gets
-         returned via the Rexx variable <em>RC</em>.
+         font registry for the denoted font which should be used from now on.
+         <br>
+         <em>Note:</em> if
+            <em>fontNickName</em> is one of the operating system independent font names
+            <em>&quot;Dialog&quot;</em>,
+            <em>&quot;DialogInput&quot;</em>,
+            <em>&quot;Serif&quot;</em>,
+            <em>&quot;SansSerif&quot;</em>,
+            <em>&quot;Monospaced&quot;</em>, then a font of this kind gets created using
+            the currently set <a href="#cmdFontSize"><em>fontSize</em></a>
+            and <a href="#cmdFontStyle"><em>fontStyle</em></a> instead.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
@@ -1706,8 +1716,14 @@ value.
         The command returns six blank delimited decimal numbers in the order: <em>translateX</em>,
         <em>translateY</em>, <em>scaleX</em>, <em>scaleY</em>, <em>shearX</em>, <em>shearY</em>
         at the time of invocation.
+        </em>The <em>AffineTransform</em> defines a matrix that gets used to
+        calculate the effective <em>x</em> and <em>y</em> values for the target device according
+        to this formula:
 
-        <br>Cf. the Java documentation for the Java classes <em>java.awt.geom.AffineTransform</em>,
+        <p><code>&nbsp;&nbsp;&nbsp;  x' = scaleX*x + shearX*y + translateX </code>
+        <br><code>&nbsp;&nbsp;&nbsp; y' = scaleY*y + shearY*x + translateY </code>
+
+        <p>Cf. the Java documentation for the Java classes <em>java.awt.geom.AffineTransform</em>,
         <em>java.awt.Graphics2D</em> and the methods <em>getTransform()</em>, <em>setTransform(...)</em>.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
@@ -1989,7 +2005,7 @@ value.
 <center>
    <hr width="75%">
     <small>
-       JDOC synopsis of commands, version: 100.20221029
+       JDOC synopsis of commands, version: 100.20221030
        <br>Acknowledgement: the author wishes to thank DI Walter Pachl
        <br>for his help in testing and proof reading
     </small>

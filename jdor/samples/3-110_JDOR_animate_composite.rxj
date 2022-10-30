@@ -1,0 +1,118 @@
+#!/usr/bin/env rexx
+/*
+   Name:    "3-110_animate_composite.rxj"
+   Invoke:  "rexx 3-110_animate_composite.rxj"
+            "rexxj 3-110_animate_composite.rxj" (Windows)
+            "rexxj.sh 3-110_animate_composite.rxj" (Unix)
+
+   Purpose: Demonstrates the usage of the "composite" command to realize
+            fade-in animation effects as well as moving out bitmaps (images)
+            over the bottom edge, over the left edge and diagonally to the
+            upper right hand corner. The window (frame) to demonstrate the
+            animation effects gets positioned without a frame to the lower
+            right hand of the screen.
+
+   Date:    2022-10-30
+
+   Author:  Rony G. Flatscher, WU Vienna
+
+   last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
+                (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2022 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+/* Cf. e.g. <https://docs.oracle.com/javase/tutorial/2d/advanced/compositing.html> */
+
+jdor=.bsf~new("org.oorexx.handlers.jdor.JavaDrawingHandler")
+call BsfCommandHandler "add", "JDOR", jdor
+
+-- address jdor            -- set default environment to JDOR
+address jdor with error using (.error) -- set default environment to JDOR
+
+w=400                   -- width
+h=400                   -- height
+center=w/2 h/2          -- center of image
+new w h                 -- create new bitmap
+
+winFrame .false         -- hide frame
+winScreenSize           -- get current screen size
+parse var rc width height  -- parse dimension
+winMoveTo (width-w) (height-h)   -- move to screen's lower right hand corner
+winShow                 -- show frame
+winAlwaysOnTop .true    -- show it always on top of all other windows
+
+b4r_x = 110             -- position of bsf4oorexx logo
+   -- define filenames, locations and sizes of three bitmaps
+locations=.array~of( "bsf4oorexx_256.png" b4r_x b4r_x                 50 , -
+                     "oorexx4ooo_256.png" (w-b4r_x)  (w-b4r_x)        50, -
+                     "oorexx_256.png" trunc((w-75)/2) trunc((h-75)/2) 75)
+say "fade in ..."
+do loc over locations   -- load and draw bitmaps
+   say "processing:" pp(loc)
+   parse var loc name x y size
+   loadImage name name  -- load image from file use filename as nick name
+   moveTo x y           -- move to desired location
+   composite src_over 0.01 -- composite set to transparent (alpha to 0.01)
+   do i=1 to 100        -- repeatedly drawing adds current alpha to existing picture (fade in)
+      drawImage name size size   -- draw image with desired size
+      sleep 0.01        -- sleep causes animation effect
+   end
+   composite src_over      -- reset composite (defaulting alpha to 1.0)
+   drawImage name size size   -- draw image with alpha 1.0
+end
+
+say "Moving out ..."
+do counter c loc over locations
+   parse var loc name x y size
+   say "#" c": moving out - name:" name "x:" x "y:" y "size:" size
+   moveTo x y
+   loop
+      winUpdate .false     -- do not update window (frame)
+      composite clear      -- use CLEAR composite (to remove image)
+      drawImage name size size   -- draw image with given size, clears it
+      composite src_over   -- re-establish writing src over destination
+      select case c        -- determine how we move out
+         when 1 then y=y+1 -- bsf4oorexx_256.png: move down
+         when 2 then x=x-1 -- oorexx4ooo_256.png: move left
+         otherwise         -- oorexx_256.png: move diagonally right and up
+             x=x+1
+             y=y-1
+      end
+      moveTo x y           -- go to next position
+      drawImage name size size   -- draw at new position
+      winUpdate .true      -- do not update window (frame)
+
+      if x>w | (x+size)<0 then leave
+      if y>w | (y+size)<0 then leave
+      sleep 0.01           -- sleep causes animation effect
+   end
+end
+
+moveTo 25 200
+color blue
+fontSize 18
+font "Serif"
+drawString "Wer are done, goodbye! (press enter to end ...)"
+
+say "press enter to end ..."
+parse pull
+
+::requires "BSF.CLS" -- get ooRexx-Java bridge
+

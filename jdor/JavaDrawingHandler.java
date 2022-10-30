@@ -71,6 +71,9 @@
         2022-10-30: - add public instance fields "bUseNames4canonical" (true -> replace ints with
                       constant names, else int value) and "bUseInt4numbers" (true -> use int value,
                       else number as supplied)
+                    - "font": fixed bug if using one of the operating system independent (logical)
+                              fonts named "Dialog", "DialogInput", "Serif", "SansSerif", "Monospaced":
+                              now honors also fontSize and fontStyle
 */
 
 /*  Sample program in ooRexx (temporarily):
@@ -2240,17 +2243,28 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             canonical = canonical + " " + fontNickName;
                         }
-                        if (arrCommand.length==2)
+
+
+                        // Dialog", "DialogInput", "Serif", "SansSerif", "Monospaced"
+                        if (arrCommand.length==2 )
                         {
                             font = hmFonts.get(fontNickName.toUpperCase());
                             if (font==null)
                             {
-                                String errMsg="font with the supplied nickname \""+fontNickName+"\" is not registered";
-                                if (isOR)
+                                // maybe one of the five operating system independent fonts?
+                                if ("Dialog DialogInput Serif SansSerif Monospaced".indexOf(fontNickName)>=0)
                                 {
-                                    writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
+                                    font = new Font(fontNickName, currFontStyle, currFontSize);
                                 }
-                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-10", errMsg );
+                                if (font==null)
+                                {
+                                    String errMsg="font with the supplied nickname \""+fontNickName+"\" is not registered";
+                                    if (isOR)
+                                    {
+                                        writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
+                                    }
+                                    return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-10", errMsg );
+                                }
                             }
                             bufGC.setFont(font);
                             if (isOR)
