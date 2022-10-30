@@ -16,7 +16,7 @@
     =============================================================================
 
     Synopsis like documentation of the JDOR Rexx command handler commands.
-    2022-10-02, rgf
+    2022-10-26, rgf
 -->
 
 
@@ -25,19 +25,58 @@
 <title>JDOR Synopsis</title>
     <style>
     /* --- definition list----------------------- */
+    dl {
+          width: 90%;
+          display: inline-table;
+          break-before: avoid-page;
+          break-inside: always;
+          padding: 0;
+          margin: 5
+       }
+
     dt {
-        font-weight: bold;
-        font-style: italic;
-    }
+          border-top: 1px dotted SaddleBrown;
+          float: left;
+          width: 20%;
+          font-weight: bold;
+          font-style: italic;
+          background: WhiteSmoke;
+          padding: 0;
+          margin: 0;
+       }
 
-    dl,
-    dd {
-        font-size: .9rem;
-    }
+    dt::after {
+          content: ':';
+      }
+
+    dt.heading {
+          border-top: 0;
+          float: left;
+          width: 100%;
+          background: none;
+          font-size: 120%;
+          font-style: normal;
+          font-weight: bold;
+       }
+
+    dt.heading::after {
+          content: '';
+      }
+
 
     dd {
-        margin-bottom: 1px;
-    }
+          border-top: 1px dotted SaddleBrown;
+          float: left;
+          width: 80%;
+          background: WhiteSmoke;
+          padding: 0;
+          margin: 0;
+       }
+
+    dd:not(:last-of-type) {
+          padding-bottom: 0.5em;
+       }
+
 
     /* --- table -------------------------------- */
     table {
@@ -89,11 +128,11 @@
        counter-increment: command-count;
     }
 
-    tr.ArgumentRowColor:nth-child(even) {
+
+    tr.ArgumentRowColor {
         background-color: LightYellow;
     }
 
-    /* also highlight :nth-child colored rows on hover */
     tr.ArgumentRowColor:hover {
        background-color: PaleGoldenRod;
     }
@@ -121,12 +160,12 @@ for creating the most challenging graphics (images) from Rexx.
        -- draw two lines forming a big X
     drawLine width height   -- from currX=0, currY=0
     color red               -- set the color to red (preregistered with nickname "RED")
-    goto width 0            -- currX=220, currY=0
+    moveTo width 0          -- currX=220, currY=0
     say "--> rc="pp(rc)     -- RC refers to the previous command's result: "220 0" (currX=220, currY=0)
     drawLine 0 height       -- from currX=250, currY=0
        -- draw a rectangle at the center of the bitmap
     len = 50                -- drawing a rectangle with each side being 50 px (a square)
-    goto (width-len)/2 (height-len)/2   -- go to the center minus half of the square's side lengths
+    moveTo (width-len)/2 (height-len)/2 -- go to the center minus half of the square's side lengths
     color green             -- set color to green (preregistered with nickname "GREEN")
     fillRect len len        -- fill the square with the green color
     stroke str3 3           -- set line stroke to 3 points width, store it with nickname "STR3"
@@ -141,7 +180,7 @@ for creating the most challenging graphics (images) from Rexx.
                             -- define an array of three strings
     text=("Hello, Rexx world ...", "... from JDOR ...", "(Rexx command handler)") -- array of 3 strings
     do counter c i=0 to 30 by lineHeight   -- iterate over array of strings
-       goto 50 (newY+i)     -- set position
+       moveTo 50 (newY+i)   -- set position
        drawString text[c]   -- draw the string
     end
                             -- save the current image
@@ -169,18 +208,62 @@ for creating the most challenging graphics (images) from Rexx.
 <p>
 The <em>JDOR</em> Rexx command handler makes <em>Java2D</em> functionality available
 to Rexx programmers. The commands are formed after the methods in the <em>java.awt.Graphics</em>
-and <em>java.awt.Graphics2D</em> Java classes. The only difference are the <em>x</em> and
-<em>y</em> co-ordinates which many methods have as their first two arguments: the Rexx programmer
-defines these co-ordinates with the <em>GOTO x y</em> command and therefore are left out from
-the arguments of the Rexx commands matching the Java method names.
+and <em>java.awt.Graphics2D</em> Java classes. The only difference is that the <em>x</em> and
+<em>y</em> co-ordinates used by many methods as their first two arguments are handled
+differently.
+The Rexx programmer defines these co-ordinates with the <a href="#cmdMoveTo"><em>moveTo x y</em></a> command
+preceding command and they are therefore omitted from
+the Rexx commands matching the Java method names.
+
+<p>Many methods in the classes <em>Graphis[2D]</em> expect arguments to be integers.
+To ease programming argument values that may be calculated (e.g. <em>x</em> or <em>y</em>
+positions, <em>width</em>, <em>height</em>, ...) and yield decimal numbers
+will get rounded to integer values by <em>JDOR</em>.
+
+<p><em>Hint:</em> using the redirection option of the Rexx <em>ADDRESS</em> keyword instruction
+       (i.e., its <em>WITH</em> subkeyword with the redirection definitions) has the following effects:
+<ul>
+    <li>redirecting <em>INPUT</em>: all commands are taken and processed from the redirected
+        input.
+        <br><em>Note:</em> you need to supply at least one command (e.g. a comment command like
+        <code><em>"-- some comment"</code></em>) to the command handler
+        such that it gets invoked and becomes able to note that input is redirected, such
+        that it takes the commands from the redirected input.
+
+    <li>redirecting <em>OUTPUT</em>: all processed commands will be put into the output target
+        in canonical form, thereby standardizing the names and arguments of the commands. The
+        output can be regarded as a saved macro that can be replayed by redirecting the
+        <em>INPUT</em> in another <em>JDOR</em> program to it.
+
+        <br>In the case that an error or failure is caused by a command it will be put into
+        a comment with information about the error or failure (in this case supplying more
+        detailed information, like the exact location).
+
+    <li>redirecting <em>ERROR</em>: all commands causing an error or failure condition will
+        supplied together with the kind of error or failure. In the case of a failure more
+        detailed information gets supplied, like the exact location.
+        <br><em>Hint</em>: while developing or changing <em>JDOR</em> programs one can get
+        the detailed error and failure information by redirecting like this:
+
+        <pre>ADDRESS JDOR WITH using error (.error) /* activate error redirection */ </pre>
+
+        In addition ooRexx
+        will communicate the result of executing a command by setting the environment
+        symbol <em>.RS</em> (value <em>0</em> indicates successful completion, <em>-1</em>
+        indicates a failure and <em>1</em> indicates an error).
+        <br>Once all errors and failures got fixed, the production code may then remove
+        error redirection by changing the above redirection statetement to:
+        <pre>ADDRESS&nbsp;JDOR /* all unqualified commands should go to this handler */ </pre>
+</ul>
 
 
-<p>For the Rexx programmers the following <em>JDOR</em> related materials may be helpful:
+
+<p>To Rexx programmers the following <em>JDOR</em> related materials may be helpful:
 <ul>
     <li><a href="https://www.rexxla.org/presentations/2022/202209_JDOR_command_handler.pdf">Introducing
     the JDOR Rexx Command Handler for Easy Creation of Bitmaps and Bitmap Manipulations on Windows,
-    Mac and Linux</a> presented at the <a href="https://www.rexxla.org/events/schedule.rsp?year=2022">33rd I
-    nternational Rexx Symposium 2022</a> (<a href="https://www.rexxla.org/">The Rexx Language Assocation</a>)
+    Mac and Linux</a> presented at the <a href="https://www.rexxla.org/events/schedule.rsp?year=2022">33rd
+    International Rexx Symposium 2022</a> (<a href="https://www.rexxla.org/">The Rexx Language Assocation</a>)
 </ul>
 
 <p>For the newcomer the following <em>Java 2D</em> related tutorial may be helpful (as of 2022-09-29):
@@ -190,47 +273,70 @@ the arguments of the Rexx commands matching the Java method names.
 
 <p><hr><p>
 
+
+<!--
 <h3>Some (Informally Defined) Terms</h3>
+unfortunately, Firefox would do a page break when printing such that the terms
+start on the next page, no matter how much space is available; hence moving the
+title to the definition list
+-->
+
+
 <dl>
 
-    <dt>AffineTransform</dt>
-    <dd>The Java class <em>java.awt.geom.AffineTransform</em> allows to define and maintain
-        <em>rotate(...)</em>, <em>scale(...)</em>, <em>shear(...)</em>,
-        <em>translate(...)</em> operations which all can be applied at once with the
-        <em>java.awt.Graphics2D</em>'s <em>transform(anAffineTransform)</em> method.
-        One benefit is that <em>GC</em> (graphic configuration, see below) is not permanently changed to these transformation
-        values.
+    <dt class="heading">Some Terms and their Informal Definition<br>&nbsp;</dt>
 
-        <p>Currently there is no JDOR command to support this directly, however the same effect can
-        be achieved with the <em><a href="#cmdPushGC">pushGC</a></em> command, followed by any transform
-        commands
-        (<em><a href="#cmdRotate">rotate(...)</a></em>,
+    <dt id="dtAffineTransform">AffineTransform</dt>
+    <dd>The Java class <em>java.awt.geom.AffineTransform</em>
+        allows to define and maintain the <em>scale(...)</em>, <em>shear(...)</em>, <em>translate(...)</em>
+        factors in a matrix. <em>java.awt.Graphics2D</em> methods use it to calculate the effective <em>x</em>
+        and <em>y</em> values.
+        <br>The commands
         <em><a href="#cmdScale">scale(...)</a></em>,
-        <em><a href="#cmdShear">shear(...)</a></em>,
-        <em><a href="#cmdTranslate">translate(...)</a></em>)
-         and the <em><a href="#cmdPopGC">popGC</a></em> command which will reinstate the previous pushed <em>GC</em>.
-        <p>
+        <em><a href="#cmdShear">shear(...)</a></em>
+        <em><a href="#cmdTranslate">translate(...)</a></em> will cause the respective factors
+        to be changed accordingly in the <em>Graphics2D</em>'s maintained <em>AffineTransform</em>.
 
-        Alternatively, the Rexx programmer can fetch the <em>GC</em> object (cf. <em><a href="#cmdGC">GC</a></em> command)
-        and interact with it directly and use the <em>transform(...)</em> method directly supplying
-        an instance of <em>java.awt.geom.AffineTransform</em>.
+        <br>The <em><a href="#cmdTransform">transform</a></em> command allows to interact with
+        the <em>Graphics2D</em>'s <em>AffineTransform</em> to query, change or reset the
+        transform factors.
     </dd>
 
-    <dt>coordinate system<dt>
+    <dt>coordinate system</dt>
     <dd>The 0-based, two dimensional coordinate system to address each pixel of an image of
-        width</em> and height</em> in size. The location (coordinate) <em>x=0</em> and
-        <em>y=0</em>, the <em>origin</em> denotes the pixel in the upper left hand corner.
-        Increasing <em>x</em> move along to the <em>right</em> (along the <em>x-axis</em>),
-        increasing <em>y</em> along to the bottom (along the <em>y-axis</em>).
+         <em>width</em> and <em>height</em> in size. The location (coordinate) <em>x=0</em> and
+        <em>y=0</em> as the <em>origin</em> denotes the pixel in the upper left hand corner.
+        Increasing <em>x</em> moves along to the <em>right</em> (along the <em>x-axis</em>),
+        increasing <em>y</em> moves along to the bottom (along the <em>y-axis</em>).
     </dd>
 
-    <dt>currX currY</dt>
+    <dt>&quot;comment command&quot;</dt>
+    <dd>Sometimes it is desired to turn a command (maybe temporarily) into a comment, such that it
+        does not get executed. <em>JDOR</em> treats all commands as comments that start with
+        any of the following characters:
+        <code>-</code> (dash),
+        <code>;</code> (semi colon),
+        <code>/</code> (slash),
+        <code>&quot;</code> (double quote),
+        <code>'</code> (single quote),
+        <code>.</code> (dot),
+        <code>:</code> (colon),
+        <code>!</code> (exclamation mark),
+        <code>?</code> (question mark),
+        <code>_</code> (underscore). Therefore it is sufficient to prefix a command with one
+        of these characters in order to turn it into &quot;comment command&quot;.
+        <br>If the output is redirected comment commands will be passed on to it.
+    </dd>
+
+    <dt>currX, currY</dt>
     <dd><em>currX</em> and <em>currY</em> denote the current position of the starting
     (upper left hand) point used when clearing, drawing or filling. It can be set with
-    the <a href="#cmdGoto"><em>goto x y</em></a> command (alias names for this command are
-    <a href="#cmdGoto"><em>location&nbsp;x&nbsp;y</em></a> and
-    <a href="#cmdGoto"><em>pos&nbsp;x&nbsp;y</em></a>).
-    The JDOR command handler will insert <em>currX</em> and <em>currY</em> whenever a
+    the <a href="#cmdMoveTo"><em>goto x y</em></a> command (alias names for this command are
+    <a href="#cmdMoveTo"><em>location&nbsp;x&nbsp;y</em></a>,
+    <a href="#cmdMoveTo"><em>moveTo&nbsp;x&nbsp;y</em></a>,
+    <a href="#cmdMoveTo"><em>pos&nbsp;x&nbsp;y</em></a> and
+    <a href="#cmdMoveTo"><em>position&nbsp;x&nbsp;y</em></a>).
+    The JDOR command handler will insert <em>currX</em> and <em>currY</em> whenever an
     <em>x</em> and <em>y</em> position must be supplied to a Java2D method.
     </dd>
 
@@ -243,28 +349,28 @@ the arguments of the Rexx commands matching the Java method names.
         represents an array of float values.
         There are two possibilities to supply this array to the command:
         <ul>
-            <li>either as a string consisting of a comma separated list of numbers in parantheses
+            <li>either as a string consisting of a comma separated list of numbers in parentheses
                 (must be quoted to form a valid Rexx string and must not contain whitespace)
                 e.g.: <em>&quot;(1,3,1,3)&quot;</em>
 
             <li>or passing a Rexx variable that refers to the appropriate Java array e.g.:
                 <br><em>dashArray=bsf.createJavaArrayOf(&quot;float.class&quot;, 1, 3, 1, 3)</em>
-                and then submitting the quoted name of the Rexx variable, e.g. <em>&quot;dashArray&quot;</em>,
+                and then submitting the quoted name of the Rexx variable, e.g., <em>&quot;dashArray&quot;</em>,
                 as array argument; the command handler will then fetch the array from the Rexx variable
                 (after fetching the Rexx variable by name from the command context).
         </ul>
     </dd>
 
     <dt id="dtGC">GC</dt>
-    <dd>A <em>graphical configuration</em>, an instance of the Java class
+    <dd>A <em>graphic context</em>, an instance of the Java class
         <em>java.awt.Graphics</em> or <em>java.awt.Graphics2D</em>
         which allows for interacting (drawing, transforming, etc.) with an image (a bitmap)
-        and maintains its state (e.g. current origin, current rotation, current color, ...).
+        and maintains its state (i.e. current origin, current rotation, current color, ...).
         The command <a href="#cmdGC"><em>GC</em></a> allows for retrieving the current <em>GC</em>.
         </dd>
 
     <dt>image type</dt>
-    <dd>The image type defines the basic properties of an image which also determines
+    <dd>The image type defines the basic properties of an image and also determines
         in which format an image can be stored in the file system. The supported types
         are defined as constants in the Java class <em>java.awt.image.BufferedImage</em>
         and are listed in the command <em><a href="#cmdNew">new</a></em>, subsection arguments.
@@ -274,18 +380,26 @@ the arguments of the Rexx commands matching the Java method names.
     <dt>pixel</dt>
     <dd>picture element, usually the size of 1/72 of an inch</dd>
 
-    <dt>RGB color</dt>
-    <dd>A color mix of the colors <em>red</em>, <em>green</em> and <em>blue</em> each defined
-        with an intensity between <em>0</em> and <em>255</em>.
+    <dt id="dtRGB">RGB color</dt>
+    <dd>A color mix of the colors <em>red</em>, <em>green</em>, and <em>blue</em>, each defined
+        as an intensity between the integer values <em>0</em> and <em>255</em> or alternatively as a float
+        value between <em>0.0</em> (<em>0.0%</em>) and <em>1.0</em> (<em>100.0%</em>) representing
+        the percentage of the intensity (e.g. <em>0.5</em> represents <em>50.0%</em> intensity).
+        <br><em>Note:</em> if any of the supplied numbers includes the decimal dot then all the numbers
+        are taken as float values.
     </dd>
 
-    <dt>RGBA color</dt>
-    <dd>A color mix of the colors <em>red</em>, <em>green</em>, <em>blue</em> and
-        <em>alpha</em> (transparency/opaqueness) each defined with an intensity between
-        <em>0</em> and <em>255</em>. <em>Note:</em> an <em>alpha</em> intensity
-        of <em>0</em> means &quot;complete transparency&quot;, and an intensitiy of
-        <em>255</em> means &quot;no transparency&quot;.
-
+    <dt id="dtRGBA">RGBA color</dt>
+    <dd>A color mix of the colors <em>red</em>, <em>green</em>, <em>blue</em>, and <em>alpha</em>
+        each defined
+        as an intensity between the integer values <em>0</em> and <em>255</em> or alternatively as a float
+        value between <em>0.0</em> (<em>0.0%</em>) and <em>1.0</em> (<em>100.0%</em>) representing
+        the percentage of the intensity (e.g. <em>0.5</em> represents <em>50.0%</em> intensity).
+        <br><em>Note:</em> if any of the supplied numbers includes the decimal dot then all the numbers
+        are taken as float values.
+        <br><em>Note:</em> an <em>alpha</em> intensity
+        of <em>0</em> means &quot;complete transparency&quot;, and an intensity of
+        <em>255</em> (or expressed as a float value of exactly <em>1.0</em>) means &quot;no transparency&quot;.
     </dd>
 
     <dt>rotate</dt>
@@ -318,12 +432,12 @@ the arguments of the Rexx commands matching the Java method names.
        <a href="#cmdDrawPolyline"><em>drawPolyline</em></a> or
        <a href="#cmdFillPolygon"><em>fillPolygon</em></a>
 
-        expect two arrays for the <em>x y</em> coordinates of the
-        points.
+        expect two arrays for the <em>x</em> and <em>y</em> coordinates of the
+        points, respectively.
 
         There are two possibilities to supply these arrays to the JDOR command handler:
         <ul>
-            <li>either as a string consisting of a comma separated list of numbers in parantheses
+            <li>either as a string consisting of a comma separated list of numbers in parentheses
                 (must be quoted to form a valid Rexx string and must not contain whitespace)
                 e.g.: <em>&quot;(10,30,40,50,110,140)&quot;</em>
 
@@ -401,7 +515,7 @@ value.
     <td class="cmdNr">
     <td class="command"> &quot;clearRect&quot;
     <td colspan="2"> Clears a rectangle of the supplied <em>width</em> and <em>height</em>
-        at the current <em>x</em> and <em>y</em> position (cf. <em><a href="#cmdGoto">goto</a></em> command),
+        at the current <em>x</em> and <em>y</em> position (cf. <em><a href="#cmdMoveTo">goto</a></em> command),
         using the <em>background</em> (cf. <em><a href="#cmdBackground">background</a></em> command) color.
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
         method <em>clearRect(...)</em>.
@@ -409,7 +523,7 @@ value.
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> width height
-    <td> <em>width</em> and <em>height</em> in pixel of the rectangle.
+    <td> <em>width</em> and <em>height</em> in pixels of the rectangle.
 
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
@@ -451,11 +565,13 @@ value.
         via the Rexx variable <em>RC</em>.
 
         <br>Supplying only the <em>colorNickName</em> argument will load the color from the
-            internal register and assign it to the <a href="#cmdGC"><em>GC</em></a> to be used for drawing from now on.
+            internal register and assign it to the <a href="#cmdGC"><em>GC</em></a> to
+            be used for drawing from now on.
 
-        <br>Supplying in addition the intensity values for the colors <em>red</em>, <em>green</em>,
-            <em>blue</em>, and optionally <em>alpha</em> (between <em>0</em>=fully transparent to
-            <em>255</em>=fully opaque), a <em>java.awt.Color</em> of that type gets created, registered with
+        <br>Supplying in addition <em>intensity</em> (cf. <a href="#dtRGB"><em>RGB color</em></a> or
+            <a href="#dtRGBA"><em>RGBA color</em></a>)
+        for the colors <em>red</em>, <em>green</em>, <em>blue</em>,
+            and optionally <em>alpha</em>, a <em>java.awt.Color</em> of that type gets created, registered with
             the supplied <em>colorNickName</em> and then used for setting the new color.
 
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
@@ -466,17 +582,20 @@ value.
     <td>
     <td class="argument"> colorNickName
     <td> <em>colorNickName</em> gets uppercased and is used to look up the internal
-         color registry for the denoted color which should be used from now on and gets
-         returned via the Rexx variable <em>RC</em>.
+         color registry for the denoted color which should be used from now on. The
+         previously defined color gets gets returned via the Rexx variable <em>RC</em>.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> colorNickName r g b [alpha]
-    <td> This command creates a color using an intensity beteween <em>0</em> and
-         <em>255</em> for each of the colors <em>red</em>, <em>green</em>, <em>blue</em>
-         and optionally for <em>alpha</em> (between <em>0</em>=fully transparent to <em>255</em>=fully opaque).
-         This color will be used from now on and gets stored in the color registry using the supplied
-         <em>colorNickName</em> in uppercase and returned via the Rexx variable <em>RC</em>.
+    <td> This command creates a color using the supplied <em>intensities</em>
+        (cf. <a href="#dtRGB"><em>RGB color</em></a> or
+            <a href="#dtRGBA"><em>RGBA color</em></a>)
+         for each of the colors <em>red</em>, <em>green</em>, <em>blue</em>
+         and optionally for <em>alpha</em>.
+         This color will be used from now on and gets stored in the color registry using
+         the supplied <em>colorNickName</em> in uppercase. The previously defined color
+         gets returned via the Rexx variable <em>RC</em>.
 
 
     <!-- -------------------------------------------------------- -->
@@ -517,6 +636,23 @@ value.
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
+    <td class="command">  &quot;copyArea&quot;
+    <td colspan="2"> Copies an area of the image to the given distance.
+
+        <br>Cf. the Java documentation for the Java class <em>Graphics</em> and the
+        method <em>copyArea(...)</em>.
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> width height dX dY
+    <td> <em>width</em> and <em>height</em> in pixels of the image area to copy,
+         <em>dX</em> (can be negative) and <em>dY</em> (can be negative) the
+         distance in pixels where to copy to.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
     <td class="command">  &quot;draw3DRect&quot;
     <td colspan="2"> Draws a rectangle with 3D appearance (raised or sunken).
 
@@ -526,7 +662,7 @@ value.
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> width height raised
-    <td> <em>width</em> and <em>height</em> in pixel of the rectangle,
+    <td> <em>width</em> and <em>height</em> in pixels of the rectangle,
          <em>raised</em> needs to be either set to <em>.true</em> for raised or to <em>.false</em>
          for sunken appearance.
 
@@ -542,7 +678,7 @@ value.
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> width height startAngle arcAngle
-    <td> <em>width</em> and <em>height</em> in pixel of the rectangle,
+    <td> <em>width</em> and <em>height</em> in pixels of the rectangle,
          <em>startAngle</em> in degrees (<em>0</em> is the 3 o'clock position), <em>arcAngle</em>
          angular extend in degrees relative to <em>startAngle</em>.
 
@@ -572,7 +708,7 @@ value.
     <td class="argument"> nickName width height [bkgColor]
     <td> <em>nickName</em> denotes the name of an image stored in the
          internal image registry. Draws as much of the image as possible scaled to the
-         <em>width</em> and <em>height</em> in pixel.
+         <em>width</em> and <em>height</em> in pixels.
 
          <br>Optional <em>bkgColor</em> is the <em>colorNickName</em> of a previously stored color.
 
@@ -581,7 +717,7 @@ value.
     <td class="argument"> nickName width height srcX1 srcY1 srcX2 srcY2 [bkgColor]
     <td> <em>nickName</em> denotes the name of an image stored in the
          internal image registry. Draws as much of the image as possible scaled to the
-         <em>width</em> and <em>height</em> in pixel, using from the image the rectangle
+         <em>width</em> and <em>height</em> in pixels, using from the image the rectangle
          with the first corner with the coordinate <em>srcX1</em> and <em>srcY1</em> and
          the second corner with the coordinate <em>srcX2</em> and <em>srcY2</em>.
 
@@ -612,7 +748,7 @@ value.
     <td> <em>rexxVariableName</em> denotes the name of a Rexx variable that refers to an image
         (hint: enquote the Rexx variable name).
          Draws as much of the image as possible scaled to the
-         <em>width</em> and <em>height</em> in pixel.
+         <em>width</em> and <em>height</em> in pixels.
 
          <br>Optional <em>bkgColor</em> is the <em>colorNickName</em> of a previously stored color.
 
@@ -622,7 +758,7 @@ value.
     <td> <em>rexxVariableName</em> denotes the name of a Rexx variable that refers to an image
         (hint: enquote the Rexx variable name).
          Draws as much of the image as possible scaled to the
-         <em>width</em> and <em>height</em> in pixel, using from the image the rectangle
+         <em>width</em> and <em>height</em> in pixels, using from the image the rectangle
          with the first corner with the coordinate <em>srcX1</em> and <em>srcY1</em> and
          the second corner with the coordinate <em>srcX2</em> and <em>srcY2</em>.
 
@@ -765,7 +901,7 @@ value.
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> width height raised
-    <td> <em>width</em> and <em>height</em> in pixel of the rectangle,
+    <td> <em>width</em> and <em>height</em> in pixels of the rectangle,
          <em>raised</em> is either set to <em>.true</em> for raised or to <em>.false</em>
          for sunken appearance.
 
@@ -781,7 +917,7 @@ value.
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> width height startAngle arcAngle
-    <td> <em>width</em> and <em>height</em> in pixel of the rectangle,
+    <td> <em>width</em> and <em>height</em> in pixels of the rectangle,
          <em>startAngle</em> in degrees (<em>0</em> is the 3 o'clock position), <em>arcAngle</em>
          angular extent in degrees relative to <em>startAngle</em>.
 
@@ -954,7 +1090,7 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command" id="cmdGC">  &quot;GC&quot;
-    <td colspan="2"> Queries the <em><a href="#dtGC">GC</a></em> (graphical configuration) object (an
+    <td colspan="2"> Queries the <em><a href="#dtGC">GC</a></em> (graphical context) object (an
         instance of the class <em>Graphics[2D]</em>) and returns it via the Rexx
         variable <em>RC</em> upon return from this command. One can then use all
         <em>Graphics[2D]</em> methods from an ooRexx program directly.
@@ -969,7 +1105,6 @@ value.
         following entries are available:
         <ul>
             <li><em>colors</em> (a <em>java.util.HashMap</em>)
-            <li><em>currAngle</em>
             <li><em>currFontSize</em>
             <li><em>currFontStyle</em>
             <li><em>currVisible</em>
@@ -1012,14 +1147,18 @@ value.
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
-    <td class="command" id="cmdGoto">  &quot;goto&quot; <br> &quot;location&quot; <br> &quot;pos&quot;
+    <td class="command" id="cmdMoveTo">  &quot;goto&quot; <br> &quot;location&quot;
+         <br> &quot;moveTo&quot; <br> &quot;pos&quot;
+         <br> &quot;position&quot;
     <td colspan="2"> Queries or sets <em>currX</em> and <em>currX</em> in the current image.
 
         <br>Querying the current value (no argument supplied) will return it, setting
         (changing) the value to a new value will return the old (previously set) value
         via the Rexx variable <em>RC</em>.
 
-        <br>The command names <em>location</em> and <em>pos</em> are aliases, synonyms for this command.
+        <br><em>Note:</em> The command names <em>goto</em>, <em>location</em>,
+        <em>moveTo</em> (used for the canonical representation of this command when
+        output gets redirected), <em>pos</em> and <em>position</em> are aliases, synonyms.
 
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
@@ -1142,6 +1281,7 @@ value.
          <em>imageNickName</em> in the internal image registry.
 
 
+
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
@@ -1187,9 +1327,10 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command" id="cmdPopGC">  &quot;popGC&quot;
-    <td colspan="2"> Disposes the current <a href="#dtGC"><em>GC</em></a> and replaces it by popping
-        a <em>GC</em> from the stack, thereby resetting all the graphical
-        configuration changes to that state and returns the popped (now current) <a href="#dtGC"><em>GC</em></a>
+    <td colspan="2"> Disposes the current <a href="#dtGC"><em>GC</em></a>
+        (<em>Graphics[2D]</em>) object and replaces it
+        by popping a <em>GC</em> from the stack, thereby resetting all
+        changes to that state and returns the popped (now current) <a href="#dtGC"><em>GC</em></a>
         via the Rexx variable <em>RC</em>.
 
 
@@ -1315,15 +1456,16 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command" id="cmdPushGC">  &quot;pushGC&quot;
-    <td colspan="2"> Push the current <a href="#dtGC"><em>GC</em></a>  (graphical configuration) on the stack, thereby
-        saving the current configuration (settings and transformations). This command will then
-        create a copy of the current <a href="#dtGC"><em>GC</em></a> which will get used from then on.
+    <td colspan="2"> Push the current <a href="#dtGC"><em>GC</em></a>  (<em>Graphics[2D]</em>)
+       object on the stack, thereby saving its current state (settings and transformations).
+       This command will then create a copy of the current <a href="#dtGC"><em>GC</em></a> which
+       will get used from then on.
 
-        The pushed <a href="#dtGC"><em>GC</em></a> will get returned
-        via the Rexx variable <em>RC</em>.
+       The pushed <a href="#dtGC"><em>GC</em></a> (a <em>Graphics[2D]</em> object) will get returned
+       via the Rexx variable <em>RC</em>.
 
-        <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
-        method <em>create()</em>.
+       <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
+       method <em>create()</em>.
 
 
     <!-- -------------------------------------------------------- -->
@@ -1351,7 +1493,6 @@ value.
             <li><em>colors</em>: the <em>java.util.HashMap</em> gets emptied except for the constant colors
                 defined in the <em>java.awt.Color</em> class
 
-            <li><em>currAngle</em>: <em>0</em>
             <li><em>currFontSize</em>: <em>12</em>
             <li><em>currFontStyle</em>: <em>0</em>
             <li><em>currX</em>: <em>0</em>
@@ -1376,16 +1517,12 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command" id="cmdRotate">  &quot;rotate&quot;
-    <td colspan="2"> Queries the runtime variable <em>currAngle</em> (if no arguments are
-                     supplied) or rotates the image such that new drawings are rotated in effect.
-
-        This command returns the value of the runtime variable <em>currAngle</em>
-        (which accumulates rotation theta values, but may not be correct after
-        <a href="#cmdPopGC">popGC</em></a> or <a href="#cmdReset">reset</em></a> commands)
-        via the Rexx variable <em>RC</em>.
+    <td colspan="2"> Rotates the image such that new drawings are appear rotated in effect.
 
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
-        method <em>rotate(...)</em>. Note: this command converts the supplied degrees (<em>0</em>
+        method <em>rotate(...)</em>.
+
+        <br><em>Note:</em> this command converts the supplied degrees (<em>0</em>
         to <em>360</em>) to radians and supplies it to the Java method.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
@@ -1421,7 +1558,8 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command" id="cmdScale">  &quot;scale&quot;
-    <td colspan="2"> Sets the scale factor for the <em>y</em> and <em>y</em> axis.
+    <td colspan="2"> Queries or sets the scale factor for the <em>y</em> and <em>y</em> axis.
+        The command returns the scale values at the time of invocation.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
@@ -1434,17 +1572,35 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command">  &quot;setPaintMode&quot;
-    <td colspan="2"> Invokes the <em>setPaintMode</em>
+    <td colspan="2"> Invokes the <em>setPaintMode</em> method.
 
-        <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
-        method <em>setPaintMode()</em>.
+        <br>Cf. the Java documentation for the Java class <em>Graphics2D</em> and the
+        methods <em>setPaintMode()</em> and <em>setXORMode(...)</em>.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command">  &quot;setXorMode&quot;
+    <td colspan="2"> Invokes the <em>setXorMode</em> method with the supplied color.
+
+        <br>Cf. the Java documentation for the Java class <em>Graphics2D</em> and the
+        methods <em>setXORMode(...)</em> and <em>setPaintMode()</em>.
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> colorNickName
+    <td> <em>colorNickName</em> gets uppercased and is used to look up the internal
+         color registry for the denoted color which should be used from now on for
+         <em>xorMode</em> processing.
 
 
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command" id="cmdShear">  &quot;shear&quot;
-    <td colspan="2"> Sets the shear (skew) factor for the <em>y</em> and <em>y</em> axis.
+    <td colspan="2"> Queries or sets the shear (skew) factor for the <em>y</em> and <em>y</em>
+        axis. The command returns the shear values at the time of invocation.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
@@ -1490,7 +1646,8 @@ value.
     <td>
     <td class="argument"> strokeNickName
     <td> <em>strokeNickName</em> is uppercased and used to fetch the stroke from the internal stroke
-        registry, sets the graphic configuration to it and returns the stroke via the Rexx variable <em>RC</em>.
+        registry, sets the <em>Graphics[2D]</em> object to it and returns the stroke via the Rexx
+        variable <em>RC</em>.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
@@ -1528,14 +1685,45 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command" id="cmdTranslate">  &quot;translate&quot;
-    <td colspan="2"> Moves the origin <em>&quot;(0,0)&quot;</em> from the upper left hand
-        corner by adding <em>x</em> pixels to <em>currX</em> and  <em>y</em> pixels to <em>currY</em>.
+    <td colspan="2"> Query or moves the current origin (originally at
+        <em>&quot;(0,0)&quot;</em>) from the upper left hand corner by adding <em>x</em> pixels
+        to <em>currX</em> and  <em>y</em> pixels to <em>currY</em>. The command returns
+        the translate values at the time of invocation.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> x [y]
     <td> <em>x</em> and <em>y</em> to add to <em>currX</em> and <em>currY</em> respectively.
         If the argument <em>y</em> is omitted, then <em>x</em> gets used instead.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdTransform">  &quot;transform&quot;
+    <td colspan="2"> Queries, resets or changes the current
+        <em><a href="#dtAffineTransform">AffineTransform</em></a> settings.
+        The command returns six blank delimited decimal numbers in the order: <em>translateX</em>,
+        <em>translateY</em>, <em>scaleX</em>, <em>scaleY</em>, <em>shearX</em>, <em>shearY</em>
+        at the time of invocation.
+
+        <br>Cf. the Java documentation for the Java classes <em>java.awt.geom.AffineTransform</em>,
+        <em>java.awt.Graphics2D</em> and the methods <em>getTransform()</em>, <em>setTransform(...)</em>.
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> translateX translateY scaleX scaleY shearX shearY
+    <td> The arguments are taken to be decimal numbers and used to set the new values to take effect.
+         If a value for an argument consists of a dot (.) only, then that argument's value does not
+         get changed (its current value gets used instead).
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> R[ESET]
+    <td> The current transform will be reset such that <em>translateX</em>,
+        <em>translateY</em>, <em>shearX</em>, <em>shearY</em> get set to <em>0.0</em> and
+        <em>scaleX</em> and <em>scaleY</em> to <em>1.0</em>. It is only necessary to supply
+        the first letter.
 
 
     <!-- -------------------------------------------------------- -->
@@ -1794,31 +1982,14 @@ value.
 
 
 
-    <!-- -------------------------------------------------------- -->
-    <tr class="CommandRowColumn"><!-- table row -->
-    <td class="cmdNr">
-    <td class="command">  &quot;xorMode&quot;
-    <td colspan="2"> Sets the <em>xorMode</em> color.
-
-        <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
-        method <em>setXORMode(...)</em>.
-
-    <tr class="ArgumentRowColor"><td><!-- table row -->
-    <td>
-    <td class="argument"> colorNickName
-    <td> <em>colorNickName</em> gets uppercased and is used to look up the internal
-         color registry for the denoted color which should be used from now on for
-         <em>xorMode</em> processing.
-
 
     </table>
-
 
 <p>
 <center>
    <hr width="75%">
     <small>
-       JDOC synopsis of commands, version: 100.20221023
+       JDOC synopsis of commands, version: 100.20221029
        <br>Acknowledgement: the author wishes to thank DI Walter Pachl
        <br>for his help in testing and proof reading
     </small>

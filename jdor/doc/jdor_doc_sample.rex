@@ -7,12 +7,12 @@ winShow                 -- show frame on screen
    -- draw two lines forming a big X
 drawLine width height   -- from currX=0, currY=0
 color red               -- set the color to red (preregistered with nickname "RED")
-goto width 0            -- currX=220, currY=0
+moveTo width 0          -- currX=220, currY=0
 say "--> rc="pp(rc)     -- RC refers to the previous command's result: "220 0" (currX=220, currY=0)
 drawLine 0 height       -- from currX=250, currY=0
    -- draw a rectangle at the center of the bitmap
 len = 50                -- drawing a rectangle with each side being 50 px (a square)
-goto (width-len)/2 (height-len)/2   -- go to the center minus half of the square's side lengths
+moveTo (width-len)/2 (height-len)/2 -- go to the center minus half of the square's side lengths
 color green             -- set color to green (preregistered with nickname "GREEN")
 fillRect len len        -- fill the square with the green color
 stroke str3 3           -- set line stroke to 3 points width, store it with nickname "STR3"
@@ -27,7 +27,7 @@ lineHeight = 15         -- default font size is 12px, add 3 px space
                         -- define an array of three strings
 text=("Hello, Rexx world ...", "... from JDOR ...", "(Rexx command handler)") -- array of 3 strings
 do counter c i=0 to 30 by lineHeight   -- iterate over array of strings
-   goto 50 (newY+i)     -- set position
+   moveTo 50 (newY+i)   -- set position
    drawString text[c]   -- draw the string
 end
                         -- save the current image

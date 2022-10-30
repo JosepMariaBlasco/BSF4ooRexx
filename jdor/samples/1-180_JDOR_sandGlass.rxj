@@ -8,7 +8,7 @@
    Purpose:  Demonstrates the use of JDOR for drawing a sand glass using different
              colors and strokes.
 
-   Date:    2022-10-03
+   Date:    2022-10-26
 
    Author:  Rony G. Flatscher, WU Vienna
 
@@ -41,8 +41,8 @@ address jdor            -- set default environment to JDOR
 stroke st5 5            -- define stroke of 5 pts
 stroke st3 3            -- define stroke of 3 pts
 stroke st1 1            -- define stroke of 1 pt
-color saddlebrown50 139  69 19 127   -- R,G,B,alpha=127 (~50 % transparency)
-color green20         0 255  0 50    -- R,G,B,alpha=127 (~20 % transparency)
+color saddlebrown50 139 69 19 128   -- R,G,B,alpha=128 (~50 % transparency)
+color green20         0 255  0 51    -- R,G,B,alpha= 51 (~20 % transparency)
 strokes=st1, st3, st5                 -- Rexx array of stroke nick names
 colors =black, saddlebrown50, green20 -- Rexx array of color nick names
 width=500
