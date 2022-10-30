@@ -1,0 +1,137 @@
+#!/usr/bin/env rexx
+/*
+   Name:    "2-120_JDOR_shear.rxj"
+   Invoke:  "rexx 2-120_JDOR_shear.rxj"
+            "rexxj 2-120_JDOR_shear.rxj" (Windows)
+            "rexxj.sh 2-120_JDOR_shear.rxj" (Unix)
+
+   Purpose: Demonstrates the use of the JDOR commands to create arrowed axes with
+            ticks (every 0.5cm and 1.0cm) arrows and a rectangle (one by two centimeters).
+            The same drawing gets created at a different location demonstrating the effect
+            of shear. This sample can be used to compare the Rexx commands directly with
+            a Java program (http://www.java2s.com/Code/Java/2D-Graphics-GUI/TransformShear.htm)
+            that achieves the same drawing by using the <em>Java2D</em> APIs
+            directly.
+
+   Date:    2022-10-30
+
+   Author:  Rony G. Flatscher, WU Vienna
+
+   last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
+                (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2022 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+jdor=.bsf~new("org.oorexx.handlers.jdor.JavaDrawingHandler")   -- create a JDOR handler
+call BsfCommandHandler "add", "JDOR", jdor   -- add the JDOR handler to ooRexx
+
+address jdor      -- set default environment to JDOR
+-- address jdor with error using (.error) -- show error/failures in detail (for debugging)
+
+pkgLocal=.context~package~local     -- get package's local environment
+   -- add PIXEL.PER.CM entry to it, thereafter can be retrieved via the
+   -- environment symbol .PIXEL.PER.CM from any place in this package
+pkgLocal~pixel.per.cm = 72 / 2.54   -- there are 72 dots per inch, an inch is 2.54cm -> 28.3464567 pixel per cm
+
+new 450 350             -- create image
+winShow                 -- show image in a window (a JFrame)
+winTitle "Shear Sample (a Transform)"
+
+call drawFigure         -- draw figure
+
+translate  150 0        -- move current origin 150 pixels to the right
+shear    (-.5) 0        -- apply shearing
+stroke str1 1 CAP_BUTT JOIN_BEVEL 0 "(3,1)" 0   -- change line for drawing
+color blue              -- change color
+call drawFigure         -- draw the same figure as above
+
+say "Press enter to end ..."
+parse pull .
+exit
+
+drawFigure: procedure   -- moves origin, draws axes with right and down error, draws rectangle
+  lineLength  = 54
+  arrowLength = 4
+  tickSize    = 4
+
+  translate 75 75
+  call drawAxes lineLength
+  call drawArrows arrowLength, lineLength
+  call drawTickMarks .5, tickSize/2, lineLength -- half-centimeter tick marks
+  call drawTickMarks 1 , tickSize, lineLength   -- Full-centimeter tick marks
+  call drawRect 1, 1, 2, 1    -- in cm: x, y, width, height
+  return
+
+drawAxes: procedure
+  use strict arg lineLength=54
+   -- x-axis
+  moveTo   (-lineLength)   0
+  drawLine   lineLength    0
+   -- y-axis
+  moveTo     0           (-lineLength)
+  drawLine   0             lineLength
+  return
+
+drawArrows: procedure
+  use strict arg arrowLength=4, lineLength=54
+   -- arrows
+  arr_endpoint = lineLength-arrowLength   -- left and right hand y-location of arrow ends
+   -- x-axis, right arrow
+  moveTo    arr_endpoint (-arrowLength)   -- upper endpoint
+  drawLine  lineLength     0
+  moveTo    arr_endpoint   arrowLength    -- lower endpoint
+  drawLine  lineLength     0
+   -- y-axis, down arrow
+  moveTo   (-arrowLength)  arr_endpoint   -- left endpoint
+  drawLine   0             lineLength
+  moveTo     arrowLength   arr_endpoint   -- right endpoint
+  drawLine   0             lineLength
+  return
+
+drawTickMarks: procedure
+  use strict arg tickStart, tickSize=4, lineLength=54
+
+  do i = tickStart while i < lineLength/.pixel.per.cm
+     tick = i * .pixel.per.cm
+     -- x-axis
+     moveTo     tick      (-tickSize)
+     drawLine   tick        tickSize
+     moveTo   (-tick)     (-tickSize)
+     drawLine (-tick)       tickSize
+     -- y-axis
+     moveTo   (-tickSize)   tick       -- y-axis
+     drawLine   tickSize    tick
+     moveTo   (-tickSize) (-tick)
+     drawLine   tickSize  (-tick)
+  end
+  return
+
+drawRect: procedure
+  use strict arg x=1, y=1, w=2, h=1 -- arguments are cm values
+  x=x*.pixel.per.cm  -- calculate pixels
+  y=y*.pixel.per.cm  -- calculate pixels
+  w=w*.pixel.per.cm  -- calculate pixels
+  h=h*.pixel.per.cm  -- calculate pixels
+  moveTo x y
+  drawRect w h
+  return
+
+::requires "BSF.CLS" -- get ooRexx-Java bridge
+

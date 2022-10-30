@@ -1,7 +1,6 @@
 // cf. <https://zetcode.com/gfx/java2d/basicdrawing/>
+
 // TODO: B4R -> resolving constructors, if class is not public
-// TODO: define a package (e.g. org.oorexx.handler.jdor ?)
-// TODO: pushGC: also save GC related current values?
 
 /* Java classes that constitute the JDOR ("JavaDrawing ooRexx") command handler.
 
@@ -11,7 +10,7 @@
 
    author:  Rony G. Flatscher
    date:    2022-09-05/2022-10-05
-   version: 003.20221020
+   version: 003.20221030
    license: Apache license 2.0
 
    license:
@@ -48,11 +47,33 @@
                     - new command "drawImageFromVar": allow an image referred to by a Rexx
                       variable to be drawn (to ease drawing images on different JDOR handler
                       instances)
-        2022-10-22: - fold DRAW_IMAGE_FROM_VAR into DRAW_IMAGE
+        2022-10-22: - fold DRAW_IMAGE_FROM_VAR into DRAW_IMAGE implementation
                     - corrected LOAD_IMAGE to return dimension instead of image (cf. documentation)
                     - change logic for queryable and setable commands: if setting new
                       value, return previous value
-        2022-10-23: - reworkd some WIN_* commands to not automatically create and show JFrame
+        2022-10-23: - reworked some WIN_* commands to not automatically create and show JFrame
+        2022-10-26: - allow float values to define colors in addition to int values
+                    - add synonym POSITION for POS command
+        2022-10-27: - added command "copyImage"
+        2022-10-28: - translate, scale and shear now return values at time of invocation
+                    - new command "transform" to allow querying, setting and resetting Graphics2D's
+                      AffineTransform
+        2022-10-29: - "transform": uses default AffineTransform() for reset, "reset" argument can
+                                   be reduced to first letter ('r' or 'R'), setting argument values
+                                   now allows to use the Rexx anonymous variable "." (the dot) which
+                                   causes no change in the respective argument's value (its current
+                                   value gets reused)
+                    - fixed errors in areas tested for the first time (like testing caps or linend values)
+                    - added string2int(strValue): allows for supplying float and double values but
+                      return an int value rounded with Math.round() in places where floats may be
+                      produced (e.g. calculating positions, lengths, widths) but Graphics[2D] methods
+                      expect int values instead
+        2022-10-30: - add public instance fields "bUseNames4canonical" (true -> replace ints with
+                      constant names, else int value) and "bUseInt4numbers" (true -> use int value,
+                      else number as supplied)
+                    - "font": fixed bug if using one of the operating system independent (logical)
+                              fonts named "Dialog", "DialogInput", "Serif", "SansSerif", "Monospaced":
+                              now honors also fontSize and fontStyle
 */
 
 /*  Sample program in ooRexx (temporarily):
@@ -107,6 +128,7 @@ package org.oorexx.handlers.jdor;
 import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import  java.awt.geom.AffineTransform;
 import java.awt.Toolkit;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -239,7 +261,7 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     /* static definitions           */
 
     // default image sizes
-    static final public String version = "005.20221022";
+    static final public String version = "005.20221030";
     static final private int prefWidth  = 500;
     static final private int prefHeight = 500;
     static       private int prefImageType = BufferedImage.TYPE_INT_ARGB; // default with alpha (only png supported)
@@ -331,13 +353,15 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
 
     int nrCommand=0;    // in case many commands, indicates which command may have caused an error or failure condition
 
+    public boolean bUseNames4canonical=true;    // if true: use constant names instead of int values in canonical output
+    public boolean bUseInt4numbers    =true;    // if true: use int values instead of the supplied numbers in canonical output
+
     /* instance definitions         */
     JavaDrawingFrame jd = null;         // maintance a singleton or empty
     boolean bDebug=false; // true; // false; // true
 
     // we draw here and do a drawImage in the Surface paint
     BufferedImage bufImage = null;
-    // int           currImageType = prefImageType;
     Graphics2D    bufGC    = null;
 
     /* printer related values */
@@ -348,9 +372,6 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     /* current values      */
     int currX = 0;
     int currY = 0;
-// TODO: if popGC reset currAngle to that one; needs to also push currAngle;
-//       not necessary in the first incarnation
-    double currAngle = 0;   // if rotate gets used, keeps current angle (in radians)
 
     int currFontStyle = 0;   // PLAIN by default
     int currFontSize  = 12;  // by default
@@ -378,7 +399,6 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     {
         currX            =  0;
         currY            =  0;
-        currAngle        =  0;
 
         currFontStyle    =  0;  // PLAIN by default
         currFontSize     = 12;
@@ -602,10 +622,17 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
 
                         if (arrCommand.length==3)
                         {
-                            newX = Integer.parseInt(arrCommand[1]);
-                            newY = Integer.parseInt(arrCommand[2]);
+                            newX = string2int(arrCommand[1]);
+                            newY = string2int(arrCommand[2]);
                             jd.setLocation(newX, newY);
-                            canonical = canonical+" "+newX+" "+newY;
+                            if (bUseInt4numbers)
+                            {
+                                canonical = canonical+" "+newX+" "+newY;
+                            }
+                            else
+                            {
+                                canonical = canonical+" "+arrCommand[1]+" "+arrCommand[2];
+                            }
                         }
 
                         if (isOR)
@@ -921,12 +948,20 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             throw new IllegalArgumentException("this command needs no or exactly 2 arguments, received "+(arrCommand.length-1)+" instead");
                         }
 
-                        int newWidth  = Integer.parseInt(arrCommand[1]);
-                        int newHeight = Integer.parseInt(arrCommand[2]);
+                        int newWidth  = string2int(arrCommand[1]);
+                        int newHeight = string2int(arrCommand[2]);
 
                         if (isOR)
                         {
-                            writeOutput(slot, canonical+" "+newWidth+" "+newHeight);
+                            if (bUseInt4numbers)
+                            {
+                                canonical = canonical+" "+newWidth+" "+newHeight;
+                            }
+                            else
+                            {
+                                canonical = canonical+" "+arrCommand[1]+" "+arrCommand[2];
+                            }
+                            writeOutput(slot, canonical);
                         }
                             // no exception, so args o.k.
                         jd.resizeSurface(newWidth, newHeight);   // will use invokeLater()
@@ -1023,18 +1058,26 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
 
                         resultValue = printPosX+" "+printPosY;  // query current value (to be returned if change occurs)
 
-                        int newX = Integer.parseInt(arrCommand[1]);
+                        int newX = string2int(arrCommand[1]);
                         int newY = newX;            // default to newX
                         if (arrCommand.length==3)
                         {
-                            newY = Integer.parseInt(arrCommand[2]);
+                            newY = string2int(arrCommand[2]);
                         }
                             // no exception, so args o.k.
                         printPosX = newX;
                         printPosY = newY;
                         if (isOR)
                         {
-                            canonical=canonical+" "+newX+" "+newY;
+                            if (bUseInt4numbers)
+                            {
+                                canonical = canonical+" "+newX+" "+newY;
+                            }
+                            else
+                            {
+                                canonical = canonical+" "+arrCommand[1] + " " +
+                                    (arrCommand.length==3 ? arrCommand[2] : arrCommand[1]);
+                            }
                         }
                         if (isOR)
                         {
@@ -1103,33 +1146,52 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                 case SHEAR:         // "shear x [y]" set scale for x, y; if y omitted, uses x
                     {
                         int argNum=arrCommand.length;
-                        if (argNum<2 || argNum>3)
+                        if (argNum>3)
                         {
-                            throw new IllegalArgumentException("this command needs either one or 2 arguments, received "+(arrCommand.length-1)+" instead");
+                            throw new IllegalArgumentException("this command needs either no, one or 2 arguments, received "+(arrCommand.length-1)+" instead");
                         }
 
-                        double newX = Double.parseDouble(arrCommand[1]);
-                        double newY = newX;     // default to X value in case Y value is omitted
-                        if (argNum==3)          // Y value supplied, use it
-                        {
-                            newY=Double.parseDouble(arrCommand[2]);
-                        }
-                        String strResult= newX+" "+newY;
+                            // get current settings
+                        AffineTransform at=bufGC.getTransform();
+                        String strResult=null;
+                        double newX=0, newY=0;
 
                         if (cmd==Command.SCALE)
                         {
-                            bufGC.scale(newX,newY);
+                            strResult=at.getScaleX()+" "+at.getScaleY();
                         }
-                        else
+                        else // SHEAR
                         {
-                            bufGC.shear(newX,newY);
+                            strResult=at.getShearX()+" "+at.getShearY();
+                        }
+
+                        if (argNum>1)   // set value
+                        {
+                            newX = Double.parseDouble(arrCommand[1]);
+                            newY = newX;     // default to X value in case Y value is omitted
+                            if (argNum==3)          // Y value supplied, use it
+                            {
+                                newY=Double.parseDouble(arrCommand[2]);
+                            }
+
+                            if (cmd==Command.SCALE)
+                            {
+                                bufGC.scale(newX,newY);
+                            }
+                            else
+                            {
+                                bufGC.shear(newX,newY);
+                            }
                         }
                         if (isOR)
                         {
-                           writeOutput(slot, canonical+" "+strResult);  // write canonical form
+                           if (argNum>1)
+                           {
+                               canonical=canonical+" "+newX+" "+newY;
+                           }
+                           writeOutput(slot, canonical);  // write canonical form
                         }
-                        // return strResult;
-                        return null;        // returns null, i.e. RC="0" -> command executed alright
+                        return strResult;       // current/old settings
                     }
 
                 case NEW:       // "new [width height [type]]" creates a new BufferedImage
@@ -1144,11 +1206,18 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
 
                         if (arrCommand.length>2)
                         {
-                            width  = Integer.parseInt(arrCommand[1]);
-                            height = Integer.parseInt(arrCommand[2]);
+                            width  = string2int(arrCommand[1]);
+                            height = string2int(arrCommand[2]);
                             if (isOR)
                             {
-                                canonical = canonical + " " + width + " " + height;
+                                if (bUseInt4numbers)
+                                {
+                                    canonical = canonical+" "+width+" "+height;
+                                }
+                                else
+                                {
+                                    canonical = canonical+" "+arrCommand[1] + " " + arrCommand[2];
+                                }
                             }
 
                             if (arrCommand.length>3)
@@ -1158,7 +1227,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 {
                                     if (!imageTypes.containsKey(argType))
                                     {
-                                        throw new IllegalArgumentException("unknown value for \"type\" argument");
+                                        throw new IllegalArgumentException("unknown value for \"type\" argument: \""+arrCommand[3]+"\"");
                                     }
                                     type=imageTypes.get(argType);
                                 }
@@ -1167,12 +1236,13 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                     type=Integer.parseInt(arrCommand[3]);
                                     if (!imageTypes.containsValue(type))
                                     {
-                                        throw new IllegalArgumentException("unknown value for \"type\" argument");
+                                        throw new IllegalArgumentException("unknown value for \"type\" argument: \""+arrCommand[3]+"\"");
                                     }
                                 }
                                 if (isOR)
                                 {
-                                    canonical = canonical + " " + argType;
+                                    canonical = canonical + " " +
+                                        (bUseNames4canonical ? imageTypesInt2Name.get(type) : argType) ;
                                 }
                             }
                         }
@@ -1195,7 +1265,14 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 while (tmpGC != null)
                                 {
                                     tmpGC.dispose();
-                                    tmpGC = adGCStack.pop();
+                                    if (adGCStack.size()>0)
+                                    {
+                                        tmpGC = adGCStack.pop();    // pop next GC
+                                    }
+                                    else    // no more GCs on stack
+                                    {
+                                        tmpGC = null;
+                                    }
                                 }
                                 bufGC.dispose();
                                 bufGC=null;
@@ -1228,7 +1305,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             {
                                 if (!imageTypes.containsKey(newType))
                                 {
-                                    throw new IllegalArgumentException("unknown value for \"type\" argument");
+                                    throw new IllegalArgumentException("unknown value for \"type\" argument: \""+arrCommand[1]+"\"");
                                 }
                                 type=imageTypes.get(newType);
                             }
@@ -1237,12 +1314,13 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 type=Integer.parseInt(newType);
                                 if (!imageTypes.containsValue(type))
                                 {
-                                    throw new IllegalArgumentException("unknown value for \"type\" argument");
+                                    throw new IllegalArgumentException("unknown value for \"type\" argument: \""+arrCommand[1]+"\"");
                                 }
                             }
                             if (isOR)
                             {
-                                canonical = canonical + " " + arrCommand[1];  // uses supplied argument value
+                                canonical = canonical + " " +
+                                    (bUseNames4canonical ? imageTypesInt2Name.get(type) : arrCommand[1]) ;
                             }
                             prefImageType=type;
                         }
@@ -1328,7 +1406,6 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         RexxProxy rop = (RexxProxy) newStringTable(slot);   // get a StringTable
                         rop.sendMessage2("SETENTRY", "currX"      , currX);
                         rop.sendMessage2("SETENTRY", "currY"      , currY);
-                        rop.sendMessage2("SETENTRY", "currAngle"  , currAngle);
 
                         rop.sendMessage2("SETENTRY", "prefImageType"   , prefImageType );   // currently preferred image type
 
@@ -1384,8 +1461,6 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             throw new IllegalArgumentException("this command needs either no, 1, 4 or exactly 5 arguments, received "+(arrCommand.length-1)+" instead");
                         }
-                        Color color=null;
-                        int red, green, blue, alpha;
 
                         resultValue = bufGC.getColor();  // query current value (to be returned if change occurs)
 
@@ -1398,11 +1473,14 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             return resultValue;
                         }
 
+                        Color color=null;
+
                         String colorNickName = arrCommand[1];   // get color name
                         if (isOR)
                         {
                             canonical=canonical+" "+colorNickName;
                         }
+
                         if (arrCommand.length==2)
                         {
                             color = hmColors.get(colorNickName.toUpperCase());
@@ -1424,24 +1502,70 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             return resultValue;     // return previous color
                         }
 
-                        red   = Integer.parseInt(arrCommand[2]);
-                        green = Integer.parseInt(arrCommand[3]);
-                        blue  = Integer.parseInt(arrCommand[4]);
-                        if (arrCommand.length==6)
+                        int red=0, green=0, blue=0, alpha=0;
+                        float fRed=0, fGreen=0, fBlue=0, fAlpha=0;
+                        String strArguments=command.substring(alWordBoundaries.get(2)[0]);   // get all arguments
+                        boolean bFloat=(strArguments.indexOf('.')>=0);  // if dot in any of the values then use float version
+
+                        if (bFloat)
                         {
-                            alpha = Integer.parseInt(arrCommand[5]);
-                            color = new Color(red, green, blue, alpha);
+                            fRed   = Float.parseFloat(arrCommand[2]);
+                            fGreen = Float.parseFloat(arrCommand[3]);
+                            fBlue  = Float.parseFloat(arrCommand[4]);
+                        }
+                        else
+                        {
+                            red   = Integer.parseInt(arrCommand[2]);
+                            green = Integer.parseInt(arrCommand[3]);
+                            blue  = Integer.parseInt(arrCommand[4]);
+                        }
+
+                        if (arrCommand.length==6)   // alpha supplied, parse and use it
+                        {
+                            if (bFloat)
+                            {
+                                fAlpha = Float.parseFloat(arrCommand[5]);
+                                color = new Color(fRed, fGreen, fBlue, fAlpha);
+                            }
+                            else
+                            {
+                                alpha = Integer.parseInt(arrCommand[5]);
+                                color = new Color(red, green, blue, alpha);
+                            }
+
                             if (isOR)
                             {
-                                canonical = canonical + " " + red + " " + green + " " + blue + " " + alpha;
+                                if (bFloat)
+                                {
+                                    canonical = canonical + " " + fRed + " " + fGreen + " " + fBlue + " " + fAlpha;
+                                }
+                                else
+                                {
+                                    canonical = canonical + " " + red + " " + green + " " + blue + " " + alpha;
+                                }
                             }
                         }
                         else
                         {
-                            color = new Color(red, green, blue);
+                            if (bFloat)
+                            {
+                                color = new Color(fRed, fGreen, fBlue);
+                            }
+                            else
+                            {
+                                color = new Color(red, green, blue);
+                            }
+
                             if (isOR)
                             {
-                                canonical = canonical + " " + red + " " + green + " " + blue;
+                                if (bFloat)
+                                {
+                                    canonical = canonical + " " + fRed + " " + fGreen + " " + fBlue;
+                                }
+                                else
+                                {
+                                    canonical = canonical + " " + red + " " + green + " " + blue;
+                                }
                             }
                         }
                         hmColors.put(colorNickName.toUpperCase(),color);
@@ -1450,7 +1574,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             writeOutput(slot, canonical);
                         }
-                        // return color;
+
                         return resultValue;     // return previous color
                     }
 
@@ -1577,7 +1701,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         throw new IllegalArgumentException("this command needs exactly 1 argument, received "+(arrCommand.length-1)+" instead");
                     }
 
-// 2022-09-23: nice gradient samples: <http://www.java2s.com/Code/Java/2D-Graphics-GUI/GradientPaintdemo.htm>
+                // 2022-09-23: nice gradient samples: <http://www.java2s.com/Code/Java/2D-Graphics-GUI/GradientPaintdemo.htm>
                 case PAINT:         // "paint [colorNickName|gradientPaintNickName]" query or set paint to a color or a gradientPaint
                     {
                         resultValue = bufGC.getPaint();  // query current value (to be returned if change occurs)
@@ -1657,7 +1781,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         throw new IllegalArgumentException("this command needs either no or exactly 1 argument, received "+(arrCommand.length-1)+" instead");
                     }
 
-                case XOR_MODE:  // "xorMode colorNickName": set XORMode to color
+                case SET_XOR_MODE:  // "xorMode colorNickName": set XORMode to color
                     {
                         if (arrCommand.length!=2)
                         {
@@ -1703,16 +1827,12 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
 
                         String ruleName   = arrCommand[1].toUpperCase();   // get name
                         int    intRule    = -1;
-                        if (isOR)
-                        {
-                            canonical=canonical+" "+ruleName;
-                        }
 
                         if (startRexxVariableChar.indexOf(ruleName.charAt(0))>=0)    // a symbolic name?
                         {
                             if (!alphaComposites.containsKey(ruleName))
                             {
-                                throw new IllegalArgumentException("unknown value for \"rule\" argument");
+                                throw new IllegalArgumentException("unknown value for \"rule\" argument: \""+arrCommand[1]+"\"");
                             }
                             intRule=alphaComposites.get(ruleName);
                         }
@@ -1721,9 +1841,15 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             int val=Integer.parseInt(ruleName);
                             if (!alphaComposites.containsValue(val))
                             {
-                                throw new IllegalArgumentException("unknown value for \"rule\" argument");
+                                throw new IllegalArgumentException("unknown value for \"rule\" argument: \""+arrCommand[1]+"\"");
                             }
                             intRule=alphaComposites.get(ruleName);
+                        }
+
+                        if (isOR)
+                        {
+                            canonical=canonical+" "+
+                                (bUseNames4canonical ? alphaCompositesInt2Name.get(ruleName) : ruleName) ;
                         }
 
                         AlphaComposite ac = null;
@@ -1748,30 +1874,6 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         // return ac;
                         return resultValue;
                     }
-
-// 2022-09-29 -->
-/* --
-                case CLIP_NEW:      //  ?? "clipNew x y w h" -> setClip(x y w h)
-                    {
-                        if (arrCommand.length!=5)
-                        {
-                            throw new IllegalArgumentException("this command expects exactly 4 arguments, received "+(arrCommand.length-1)+" instead");
-                        }
-                        int newX      = Integer.parseInt(arrCommand[1]);
-                        int newY      = Integer.parseInt(arrCommand[2]);
-                        int newWidth  = Integer.parseInt(arrCommand[3]);
-                        int newHeight = Integer.parseInt(arrCommand[4]);
-
-                            // no exception, so args o.k.
-                        String res = newX+" "+newY+" "+newWidth+" "+newHeight;
-                        if (isOR)
-                        {
-                            writeOutput(slot, canonical+" "+res);
-                        }
-                        bufGC.setClip(newX, newY, newWidth, newHeight);
-                        return res;
-                    }
--- */
 
                 case CLIP_REMOVE:   //  "removeClip" -> setClip(null)
                     {
@@ -1809,12 +1911,22 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
 
                         if (arrCommand.length>1)    // clip area supplied
                         {
-                            int newX      = Integer.parseInt(arrCommand[1]);
-                            int newY      = Integer.parseInt(arrCommand[2]);
-                            int newWidth  = Integer.parseInt(arrCommand[3]);
-                            int newHeight = Integer.parseInt(arrCommand[4]);
+                            int newX      = string2int(arrCommand[1]);
+                            int newY      = string2int(arrCommand[2]);
+                            int newWidth  = string2int(arrCommand[3]);
+                            int newHeight = string2int(arrCommand[4]);
                             resultValue = newX+" "+newY+" "+newWidth+" "+newHeight;
-                            canonical = canonical+" "+resultValue;
+
+                            if (bUseInt4numbers)
+                            {
+                                canonical = canonical+" "+resultValue;
+                            }
+                            else
+                            {
+                                canonical = canonical+" "+arrCommand[1] + " " + arrCommand[2] +
+                                                      " "+arrCommand[3] + " " + arrCommand[4] ;
+                            }
+
                             bufGC.clipRect(newX, newY, newWidth, newHeight);
                         }
                             // no exception, so args o.k.
@@ -1824,7 +1936,6 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         }
                         return resultValue;
                     }
-// <---
 
                 case DRAW_POLYLINE: // "drawPolyline []xPoints []yPoints nPoints
                 case DRAW_POLYGON:  // "drawPolygon  []xPoints []yPoints nPoints
@@ -1861,17 +1972,11 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         String strNPoints=arrCommand[3];
                         nPoints = Integer.parseInt(strNPoints);
 
-// System.err.println("strXPoints=["+strXPoints+"] strYPoints=["+strYPoints+"] strNPoints=["+strNPoints+"]");
-// System.err.println("\txPoints: "+Arrays.deepToString(Arrays.asList(xPoints).toArray()) );
-// System.err.println("\tyPoints: "+Arrays.deepToString(Arrays.asList(yPoints).toArray()) );
-// System.err.println("\tnPoints: ["+nPoints+"]");
                         if (isOR)
                         {
                             canonical=canonical+" "+strXPoints+" "+strYPoints+" "+strNPoints;
                             writeOutput(slot, canonical);
                         }
-// System.err.println("\tcanonical: "+canonical+" "+strXPoints+" "+strYPoints+" "+strNPoints+"\n");
-// System.err.println("... cmd: "+cmd);
 
                         switch (cmd)
                         {
@@ -1936,10 +2041,17 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
 
                         int width, cap, join; // , miterlimit;
                         float miterlimit;
-                        width = Integer.parseInt(arrCommand[2]);
+                        width = string2int(arrCommand[2]);
                         if (isOR)
                         {
-                            canonical=canonical+" "+width;
+                            if (bUseInt4numbers)
+                            {
+                                canonical = canonical+" "+width;
+                            }
+                            else
+                            {
+                                canonical = canonical+" "+arrCommand[2];
+                            }
                         }
                         if (argNum==3)
                         {
@@ -1951,9 +2063,9 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             String tmpCap = arrCommand[3].toUpperCase();
                             if (startRexxVariableChar.indexOf(tmpCap.charAt(0))>=0)    // a symbolic name?
                             {
-                                if (!imageTypes.containsKey(tmpCap))
+                                if (!endCaps.containsKey(tmpCap))
                                 {
-                                    throw new IllegalArgumentException("unknown value for \"cap\" argument");
+                                    throw new IllegalArgumentException("unknown value for \"cap\" argument supplied: ["+tmpCap+"]");
                                 }
                                 cap=endCaps.get(tmpCap);
                             }
@@ -1962,7 +2074,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 cap=Integer.parseInt(tmpCap);
                                 if (!endCaps.containsValue(cap))
                                 {
-                                    throw new IllegalArgumentException("unknown value for \"cap\" argument");
+                                    throw new IllegalArgumentException("unknown value for \"cap\" argument supplied: ["+tmpCap+"]");
                                 }
                             }
 
@@ -1970,23 +2082,32 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             String tmpJoin = arrCommand[4].toUpperCase();
                             if (startRexxVariableChar.indexOf(tmpJoin.charAt(0))>=0)    // a symbolic name?
                             {
-                                if (!imageTypes.containsKey(tmpJoin))
+                                if (!lineJoins.containsKey(tmpJoin))
                                 {
-                                    throw new IllegalArgumentException("unknown value for \"join\" argument");
+                                    throw new IllegalArgumentException("unknown value for \"join\" argument supplied: ["+tmpJoin+"]");
                                 }
                                 join=lineJoins.get(tmpJoin);
                             }
                             else // verbatim int type
                             {
                                 join=Integer.parseInt(tmpJoin);
-                                if (! lineJoins.containsValue(cap))
+                                if (! lineJoins.containsValue(join))
                                 {
-                                    throw new IllegalArgumentException("unknown value for \"join\" argument");
+                                    throw new IllegalArgumentException("unknown value for \"join\" argument supplied: ["+tmpJoin+"]");
                                 }
                             }
                             if (isOR)
                             {
-                                canonical=canonical+" "+tmpCap+" "+tmpJoin;
+                                if (bUseNames4canonical)
+                                {
+                                    canonical=canonical+" "+
+                                              endCapsInt2Name.get(tmpCap)+" "+
+                                              lineJoinsInt2Name.get(tmpJoin);
+                                }
+                                else
+                                {
+                                    canonical=canonical+" "+tmpCap+" "+tmpJoin;
+                                }
                             }
                             if (argNum==5)
                             {
@@ -2078,7 +2199,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
 
                         if (arrCommand.length==2)
                         {
-                            int newFontSize = Integer.parseInt(arrCommand[1]);
+                            int newFontSize = string2int(arrCommand[1]);
                                 // no exception, so args o.k.
                             if (newFontSize<=0)
                             {
@@ -2087,7 +2208,14 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             currFontSize = newFontSize;
                             if (isOR)
                             {
-                                canonical=canonical+" "+newFontSize;
+                                if (bUseInt4numbers)
+                                {
+                                    canonical = canonical+" "+newFontSize;
+                                }
+                                else
+                                {
+                                    canonical = canonical+" "+arrCommand[1];
+                                }
                             }
                         }
                         if (isOR)
@@ -2115,17 +2243,28 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             canonical = canonical + " " + fontNickName;
                         }
-                        if (arrCommand.length==2)
+
+
+                        // Dialog", "DialogInput", "Serif", "SansSerif", "Monospaced"
+                        if (arrCommand.length==2 )
                         {
                             font = hmFonts.get(fontNickName.toUpperCase());
                             if (font==null)
                             {
-                                String errMsg="font with the supplied nickname \""+fontNickName+"\" is not registered";
-                                if (isOR)
+                                // maybe one of the five operating system independent fonts?
+                                if ("Dialog DialogInput Serif SansSerif Monospaced".indexOf(fontNickName)>=0)
                                 {
-                                    writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
+                                    font = new Font(fontNickName, currFontStyle, currFontSize);
                                 }
-                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-10", errMsg );
+                                if (font==null)
+                                {
+                                    String errMsg="font with the supplied nickname \""+fontNickName+"\" is not registered";
+                                    if (isOR)
+                                    {
+                                        writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
+                                    }
+                                    return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-10", errMsg );
+                                }
                             }
                             bufGC.setFont(font);
                             if (isOR)
@@ -2174,7 +2313,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
 
                     // ----------------------
 
-                case POS:       // query current coordinates or goto x, y co-ordinate
+                case MOVE_TO:   // query current coordinates or goto x, y co-ordinate
                     {
                         if (arrCommand.length>3)
                         {
@@ -2183,18 +2322,26 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         resultValue = currX+" "+currY;   // query current value (to be returned if change occurs)
                         if (arrCommand.length>1)
                         {
-                            int newX = Integer.parseInt(arrCommand[1]);
+                            int newX = string2int(arrCommand[1]);
                             int newY = newX;    // default to newX in case Y is not supplied
                             if (arrCommand.length==3)
                             {
-                                newY = Integer.parseInt(arrCommand[2]);
+                                newY = string2int(arrCommand[2]);
                             }
                                 // no exception, so args o.k.
                             currX = newX;
                             currY = newY;
                             if (isOR)
                             {
-                                canonical=canonical+" "+currX+" "+currY;
+                                if (bUseInt4numbers)
+                                {
+                                    canonical = canonical+" "+currX+" "+currY;
+                                }
+                                else
+                                {
+                                    canonical = canonical+" "+arrCommand[1]+" "+
+                                        (arrCommand.length==3 ? arrCommand[2] : arrCommand[1]);
+                                }
                             }
                         }
                         if (isOR)
@@ -2211,11 +2358,20 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             throw new IllegalArgumentException("this command needs exactly 2 arguments, received "+(arrCommand.length-1)+" instead");
                         }
-                        int toX = Integer.parseInt(arrCommand[1]);
-                        int toY = Integer.parseInt(arrCommand[2]);
+                        int toX = string2int(arrCommand[1]);
+                        int toY = string2int(arrCommand[2]);
+
                         if (isOR)
                         {
-                            canonical=canonical+" "+toX+" "+toY;
+                            if (bUseInt4numbers)
+                            {
+                                canonical = canonical+" "+toX+" "+toY;
+                            }
+                            else
+                            {
+                                canonical = canonical+" "+arrCommand[1]+" "+arrCommand[2];
+                            }
+
                             writeOutput(slot,canonical);
                         }
                             // no exception, so args o.k.
@@ -2250,8 +2406,8 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             throw new IllegalArgumentException("this command needs exactly 2 arguments, received "+(arrCommand.length-1)+" instead");
                         }
-                        int width  = Integer.parseInt(arrCommand[1]);
-                        int height = Integer.parseInt(arrCommand[2]);
+                        int width  = string2int(arrCommand[1]);
+                        int height = string2int(arrCommand[2]);
                             // no exception, so args o.k.
                         if (cmd==Command.DRAW_OVAL)
                         {
@@ -2263,10 +2419,51 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         }
                         if (isOR)
                         {
-                            writeOutput(slot, canonical+" "+width+" "+height);
+                            if (bUseInt4numbers)
+                            {
+                                canonical = canonical+" "+width+" "+height;
+                            }
+                            else
+                            {
+                                canonical = canonical+" "+arrCommand[1]+" "+arrCommand[2];
+                            }
+
+                            writeOutput(slot, canonical);
                         }
                     }
                     break;
+
+
+                case COPY_AREA:          //   "copyArea width height distX distY"
+                    {
+                        if (arrCommand.length!=5)
+                        {
+                            throw new IllegalArgumentException("this command needs exactly 4 arguments, received "+(arrCommand.length-1)+" instead");
+                        }
+
+                        int width  = string2int(arrCommand[1]);
+                        int height = string2int(arrCommand[2]);
+                        int dx     = string2int(arrCommand[3]);
+                        int dy     = string2int(arrCommand[4]);
+                        canonical = canonical+" "+width+" "+height+" "+dx+" "+dy;
+                        if (bUseInt4numbers)
+                        {
+                            canonical = canonical+" "+width+" "+height+" "+dx+" "+dy;
+                        }
+                        else
+                        {
+                            canonical = canonical+" "+arrCommand[1]+" "+arrCommand[2]+
+                                                  " "+arrCommand[3]+" "+arrCommand[4];
+                        }
+
+                        bufGC.copyArea(currX, currY, width, height, dx, dy);
+
+                        if (isOR)
+                        {
+                            writeOutput(slot, canonical);
+                        }
+                        break;
+                    }
 
                 case DRAW_ROUND_RECT:    // "drawRoundRect width height arcWidth arcHeight"
                 case FILL_ROUND_RECT:    // "fillRoundRect width height arcWidth arcHeight"
@@ -2283,16 +2480,30 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             throw new IllegalArgumentException("this command needs exactly 2 arguments, received "+(arrCommand.length-1)+" instead");
                         }
-                        int width  = Integer.parseInt(arrCommand[1]);
-                        int height = Integer.parseInt(arrCommand[2]);
-                        canonical = canonical+" "+width+" "+height;
+                        int width  = string2int(arrCommand[1]);
+                        int height = string2int(arrCommand[2]);
+                        if (bUseInt4numbers)
+                        {
+                            canonical = canonical+" "+width+" "+height;
+                        }
+                        else
+                        {
+                            canonical = canonical+" "+arrCommand[1]+" "+arrCommand[2];
+                        }
 
                         int arcWidth=-1, arcHeight=-1;
                         if (isRoundRect)
                         {
-                            arcWidth  = Integer.parseInt(arrCommand[3]);
-                            arcHeight = Integer.parseInt(arrCommand[4]);
-                            canonical = canonical+" "+arcWidth+" "+arcHeight;
+                            arcWidth  = string2int(arrCommand[3]);
+                            arcHeight = string2int(arrCommand[4]);
+                            if (bUseInt4numbers)
+                            {
+                                canonical = canonical+" "+arcWidth+" "+arcHeight;
+                            }
+                            else
+                            {
+                                canonical = canonical+" "+arrCommand[3]+" "+arrCommand[4];
+                            }
                         }
                             // no exception, so args o.k.
                         switch (cmd)
@@ -2327,8 +2538,8 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             throw new IllegalArgumentException("this command needs exactly 3 arguments, received "+(arrCommand.length-1)+" instead");
                         }
-                        int width  = Integer.parseInt(arrCommand[1]);
-                        int height = Integer.parseInt(arrCommand[2]);
+                        int width  = string2int(arrCommand[1]);
+                        int height = string2int(arrCommand[2]);
                         String strRaised = arrCommand[3];
                         boolean raised=false;
                         if (checkBooleanValue(strRaised))   // a valid BSF4ooRexx850 boolean value?
@@ -2351,7 +2562,15 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         }
                         if (isOR)
                         {
-                            writeOutput(slot, canonical+" "+width+" "+height+" "+raised);
+                            if (bUseInt4numbers)
+                            {
+                                canonical = canonical+" "+width+" "+height;
+                            }
+                            else
+                            {
+                                canonical = canonical+" "+arrCommand[1]+" "+arrCommand[2];
+                            }
+                            writeOutput(slot, canonical+" "+raised);
                         }
                     }
                     break;
@@ -2363,10 +2582,10 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             throw new IllegalArgumentException("this command needs exactly 4 arguments, received "+(arrCommand.length-1)+" instead");
                         }
-                        int width      = Integer.parseInt(arrCommand[1]);
-                        int height     = Integer.parseInt(arrCommand[2]);
-                        int startAngle = Integer.parseInt(arrCommand[3]);
-                        int arcAngle   = Integer.parseInt(arrCommand[4]);
+                        int width      = string2int(arrCommand[1]);
+                        int height     = string2int(arrCommand[2]);
+                        int startAngle = string2int(arrCommand[3]);
+                        int arcAngle   = string2int(arrCommand[4]);
                             // no exception, so args o.k.
                         if (cmd==Command.DRAW_ARC)
                         {
@@ -2378,7 +2597,16 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         }
                         if (isOR)
                         {
-                            writeOutput(slot, canonical+" "+width+" "+height+" "+startAngle+" "+arcAngle);
+                            if (bUseInt4numbers)
+                            {
+                                canonical = canonical+" "+width+" "+height+" "+startAngle+" "+arcAngle;
+                            }
+                            else
+                            {
+                                canonical = canonical+" "+arrCommand[1]+" "+arrCommand[2]+
+                                                      " "+arrCommand[3]+" "+arrCommand[4];
+                            }
+                            writeOutput(slot, canonical);
                         }
                     }
                     break;
@@ -2484,25 +2712,14 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         return (writeSuccess ? "1" : "0");
                     }
 
-                case ROTATE:       // "rotate [theta [x y]]" query or set rotation
+                case ROTATE:       // "rotate theta [x y]" query or set rotation
                     {
                         ArrayList<int[]> al = alWordBoundaries;
                         int argNum = al.size();
 
-                        resultValue = ""+currAngle;   // query current value (to be returned if change occurs)
-
-                        if (argNum==1)    // query currAngle
-                        {
-                            if (isOR)
-                            {
-                                writeOutput(slot, canonical);
-                            }
-                            return resultValue;
-                        }
-
                         if (argNum!=2 && argNum!=4)
                         {
-                            throw new IllegalArgumentException("this command needs no, one or exactly three arguments, received "+(arrCommand.length-1)+" instead");
+                            throw new IllegalArgumentException("this command needs exactly one or three arguments, received "+(arrCommand.length-1)+" instead");
                         }
                         double theta = 0, radiansTheta = 0;
                         if (argNum>1) // at least theta given
@@ -2512,7 +2729,6 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             {
                                 canonical=canonical+" "+theta;
                             }
-                            currAngle = (currAngle + theta) % 360;
                             radiansTheta = Math.toRadians(theta);  // turn degree to radians
                             if (radiansTheta!=0)
                             {
@@ -2522,17 +2738,25 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 }
                                 else    // if 3 arguments, fetch arg 2 (x) and 3 (y)
                                 {
-                                    int x = Integer.parseInt(arrCommand[2]);
-                                    int y = Integer.parseInt(arrCommand[3]);
+                                    int x = string2int(arrCommand[2]);
+                                    int y = string2int(arrCommand[3]);
+                                    if (bUseInt4numbers)
+                                    {
+                                        canonical = canonical+" "+x+" "+y;
+                                    }
+                                    else
+                                    {
+                                        canonical = canonical+" "+arrCommand[2]+" "+arrCommand[3];
+                                    }
+
                                     bufGC.rotate(radiansTheta, x, y);
                                 }
                             }
                         }
                         if (isOR)
                         {
-                            writeOutput(slot, canonical+" "+theta);
+                            writeOutput(slot, canonical);
                         }
-                        // return ""+theta;
                         return resultValue;
                     }
 
@@ -2617,25 +2841,47 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             case 5: // bkgColor
                             case 8:
                             case 9: // bkgColor
-                                width = Integer.parseInt(arrCommand[2]);
-                                height= Integer.parseInt(arrCommand[3]);
+                                width = string2int(arrCommand[2]);
+                                height= string2int(arrCommand[3]);
                                 if (argNum>5)
                                 {
-                                    srcX1 = Integer.parseInt(arrCommand[4]);
-                                    srcY1 = Integer.parseInt(arrCommand[5]);
-                                    srcX2 = Integer.parseInt(arrCommand[6]);
-                                    srcY2 = Integer.parseInt(arrCommand[7]);
+                                    srcX1 = string2int(arrCommand[4]);
+                                    srcY1 = string2int(arrCommand[5]);
+                                    srcX2 = string2int(arrCommand[6]);
+                                    srcY2 = string2int(arrCommand[7]);
                                 }
                                 if (isOR)
                                 {
-                                    canonical=canonical+" "+width+" "+height;
+                                    // canonical=canonical+" "+width+" "+height;
+                                    if (bUseInt4numbers)
+                                    {
+                                        canonical = canonical+" "+width+" "+height;
+                                    }
+                                    else
+                                    {
+                                        canonical = canonical+" "+arrCommand[2]+" "+arrCommand[3];
+                                    }
+
                                     if (argNum==5)        // bkgColor
                                     {
                                         canonical=canonical+" "+colorNickName;
                                     }
                                     else if (argNum>5)
                                     {
-                                        canonical=canonical+" "+srcX1+" "+srcY1+" "+srcX2+" "+srcY2;;
+                                        // canonical=canonical+" "+srcX1+" "+srcY1+" "+srcX2+" "+srcY2;
+                                        if (isOR)
+                                        {
+                                            if (bUseInt4numbers)
+                                            {
+                                                canonical = canonical+" "+srcX1+" "+srcY1+" "+srcX2+" "+srcY2;
+                                            }
+                                            else
+                                            {
+                                                canonical = canonical+" "+arrCommand[4]+" "+arrCommand[5]+
+                                                                          arrCommand[6]+" "+arrCommand[7];
+                                            }
+                                        }
+
                                         if (argNum==9)    // bkgColor
                                         {
                                             canonical=canonical+" "+colorNickName;
@@ -2667,27 +2913,125 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         break;
                     }
 
-                case TRANSLATE: // "translate x [y]" move origin; if y omitted, uses x
+                case TRANSLATE: // "translate x [y]" query or move origin; if y omitted, uses x
                     {
-                        if (arrCommand.length<2 && arrCommand.length>3)
+                        if (arrCommand.length>3)
                         {
-                            throw new IllegalArgumentException("this command needs 1 or 2 arguments, received "+(arrCommand.length-1)+" instead");
+                            throw new IllegalArgumentException("this command needs no, 1 or 2 arguments, received "+(arrCommand.length-1)+" instead");
                         }
-                        Integer newX = Integer.parseInt(arrCommand[1]);
-                        Integer newY = newX;    // default to newX
-                        if (arrCommand.length==3)
+
+                            // get current settings
+                        AffineTransform at=bufGC.getTransform();
+                        String strResult=null;
+                        Integer newX=null, newY=null;
+
+                        strResult=at.getTranslateX()+" "+at.getTranslateY();
+                        if (arrCommand.length>1)
                         {
-                            newY = Integer.parseInt(arrCommand[2]);
+                            newX = string2int(arrCommand[1]);
+                            newY = newX;    // default to newX
+                            if (arrCommand.length==3)
+                            {
+                                newY = string2int(arrCommand[2]);
+                            }
+                                // no exception, so args o.k.
+                            bufGC.translate(newX,newY);
                         }
-                            // no exception, so args o.k.
-                        bufGC.translate(newX,newY);
+
                         if (isOR)
                         {
-                            writeOutput(slot, canonical+" "+newX+" "+newY);
+                            if (arrCommand.length>1)
+                            {
+                                // canonical = canonical+" "+newX+" "+newY;
+                                if (bUseInt4numbers)
+                                {
+                                    canonical = canonical+" "+newX+" "+newY;
+                                }
+                                else
+                                {
+                                    canonical = canonical+" "+arrCommand[1]+" "+
+                                        (arrCommand.length==3 ? arrCommand[2] : arrCommand[1]);
+                                }
+                            }
+                            writeOutput(slot, canonical);
                         }
-                        // return newX+" "+newY;
-                        return null;        // RC="0", command executed alright
+                        return strResult;   // return previous setting
                     }
+
+
+                    // 2022-10-28
+                case TRANSFORM: //   "transform { | RESET | translateX translateY scaleX scaleY shearX shearY} " query, change reset Graphics2D's AfineTransform
+                    {
+                        int argNum = arrCommand.length;
+                        if (argNum!=1 && argNum!=2 && argNum!=7)
+                        {
+                            throw new IllegalArgumentException("this command needs exactly no, 1 or 6 arguments, received "+(arrCommand.length-1)+" instead");
+                        }
+
+                        AffineTransform at = bufGC.getTransform();  // get current settings
+                        double translateX=at.getTranslateX(),
+                               translateY=at.getTranslateY(),
+                               scaleX    =at.getScaleX(),
+                               scaleY    =at.getScaleY(),
+                               shearX    =at.getShearX(),
+                               shearY    =at.getShearY();
+
+                        String strResult=translateX+" "+translateY+" "+
+                                         scaleX+" "+scaleY+" "+
+                                         shearX+" "+shearY;
+
+                        String strReset="RESET";
+                        if (argNum>1)
+                        {
+                            AffineTransform newAT=null;
+                            if (argNum==2)  // reset?
+                            {
+                                char c = arrCommand[1].charAt(0);
+                                boolean bReset = (c=='r' || c=='R');    // first character must be 'r' or 'R' for 'RESET'
+                                if (!bReset)    // wrong argument!
+                                {
+                                    throw new IllegalArgumentException("single argument supplied, must be \"RESET\" (first character gets inspected), received the value \""+arrCommand[1]+"\" instead");
+                                }
+                                newAT = new AffineTransform();  // uses the default values tX=tY=shX=shY=0 and scX=scY=1
+                            }
+                            else if (argNum==7)
+                            {
+                                // a dot keeps the current value
+                                translateX = arrCommand[1].equals(".") ? translateX : Double.parseDouble(arrCommand[1]);
+                                translateY = arrCommand[2].equals(".") ? translateY : Double.parseDouble(arrCommand[2]);
+                                scaleX     = arrCommand[3].equals(".") ? scaleX     : Double.parseDouble(arrCommand[3]);
+                                scaleY     = arrCommand[4].equals(".") ? scaleY     : Double.parseDouble(arrCommand[4]);
+                                shearX     = arrCommand[5].equals(".") ? shearX     : Double.parseDouble(arrCommand[5]);
+                                shearY     = arrCommand[6].equals(".") ? shearY     : Double.parseDouble(arrCommand[6]);
+
+                                // matrix:  { m00/sX m10/shY m01/shX m11/sY m02/tX m12/tY }
+                                newAT=new AffineTransform(
+                                    scaleX, shearY, shearX, scaleY, translateX, translateY
+                                    );
+                            }
+
+                            bufGC.setTransform(newAT);  // assign AffineTransform
+                        }
+
+                        if (isOR)
+                        {
+                            if (arrCommand.length==2)
+                            {
+                                canonical = canonical+" "+strReset;
+                            }
+                            else if (arrCommand.length==7)
+                            {
+                                canonical = canonical+" "+translateX+" "+translateY+" "+
+                                                          scaleX+" "+scaleY+" "+
+                                                          shearX+" "+shearY;
+                            }
+                            writeOutput(slot, canonical);
+                        }
+
+                        return strResult;   // return previous setting
+                    }
+
+
 
                 case PUSH_GC:   // pushes current GC, does a create() & assigns the new one as current
                 case POP_GC:    // pops and & assigns as current
@@ -2768,7 +3112,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             return img;     // return pushed (copy) image
                             // return resultValue;
                         }
-                        else    // POP_IMAGE
+                        else    // POP_IMAGE: the returned image should be used to draw via current GC
                         {
                             BufferedImage img=null;
                             if (adImageStack.size()>0)
@@ -2784,6 +3128,8 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 }
                                 return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-14", errMsg );
                             }
+
+                            // bufGC.clearRect(0,0,bufImage.getWidth(),bufImage.getHeight());  // clear rectangle
                             bufGC.drawImage(img,0,0,null);
                             if (isOR)
                             {
@@ -3065,18 +3411,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
         {
             return null;
         }
-if (bStaticDebug)
-{
-    System.err.println("RexxArrayExpressionToIntArray(): value=["+value+"], pos=["+pos+"]");
-    System.err.println("RexxArrayExpressionToIntArray(): start  /end  =["+value.substring(start,end)+"]");
-    System.err.println("RexxArrayExpressionToIntArray(): start+1/end-1=["+value.substring(start+1,end-1)+"]");
-}
         String [] parts=value.substring(start+1,end-1).split(",");
-if (bStaticDebug)
-{
-    System.err.println("RexxArrayExpressionToIntArray(): parts.length =["+parts.length+"] (after split)");
-    System.err.println("RexxArrayExpressionToIntArray(): parts="+Arrays.deepToString(parts));
-}
         float [] res=new float[parts.length];       // create array of needed size
         for (int i=0;i<parts.length;i++)        // fill array
         {
@@ -3107,18 +3442,7 @@ if (bStaticDebug)
         {
             return null;
         }
-if (bStaticDebug)
-{
-    System.err.println("RexxArrayExpressionToIntArray(): value=["+value+"], pos=["+pos+"]");
-    System.err.println("RexxArrayExpressionToIntArray(): start  /end  =["+value.substring(start,end)+"]");
-    System.err.println("RexxArrayExpressionToIntArray(): start+1/end-1=["+value.substring(start+1,end-1)+"]");
-}
         String [] parts=value.substring(start+1,end-1).split(",");
-if (bStaticDebug)
-{
-    System.err.println("RexxArrayExpressionToIntArray(): parts.length =["+parts.length+"] (after split)");
-    System.err.println("RexxArrayExpressionToIntArray(): parts="+Arrays.deepToString(parts));
-}
         int [] res=new int[parts.length];       // create array of needed size
         for (int i=0;i<parts.length;i++)        // fill array
         {
@@ -3151,11 +3475,6 @@ if (bStaticDebug)
         {
             if (value.charAt(end)==' ') break;    // arrived at a trailing blank
         }
-if (bStaticDebug)
-{
-    System.out.println("\tvalue                     =["+value+"] start="+start+", end="+end);
-    System.out.println("\tvalue.substring(start,end)=["+value.substring(start,end)+"]");
-}
         return value.substring(start,end);  // return digits only so Integer.parseInt() does not barf
     }
 
@@ -3179,6 +3498,33 @@ if (bStaticDebug)
         }
         sb.append(arrayCloseDeli);
         return sb.toString();
+    }
+
+    /** Parse string value to an int value, even if the string value represents a float or double value.
+     *  Implemenation is geared toward speed, only use Double.parseDouble() if a dot contained in the
+     *  the string value.
+     *
+     * @param strValue
+     * @return int value representint strValue
+     * @throws NumberFormatException
+     */
+    static int string2int(String strValue) throws NumberFormatException
+    {
+        // if a dot in string assume Double value, else an int value
+        boolean assumeInt=true;
+        for (int i=0; i<strValue.length(); i++)
+        {
+            if (strValue.charAt(i)=='.')
+            {
+                assumeInt=false;
+                break;
+            }
+        }
+        if (assumeInt)
+        {
+            return Integer.parseInt(strValue);
+        }
+        return (int) Math.round(Double.parseDouble(strValue));
     }
 
 
@@ -3263,7 +3609,7 @@ enum Command {
     COMPOSITE                   ( "composite"                ) ,    //   "composite [rule [alpha]]": get current or get and set new;
 
 // 20220929: do not (yet) support Shapes, maybe in a future update
-//    CLIP_NEW                    ( "clipNew"                  ) ,    //  ?? "clipNew x y w h" -> setClip(x y w h)
+
     CLIP_REMOVE                 ( "clipRemove"               ) ,    //   "clipRemove" -> setClip(null)
     CLIP                        ( "clip"                     ) ,    //   "clip [x y w h]" -> get (getClipBounds()) or clipRect(x y w h)
 
@@ -3290,15 +3636,18 @@ enum Command {
     FONT                        ( "font"                     ) ,    //   "font   [fontNickName [name]]" query or set font using curr type and size
     GRADIENT_PAINT              ( "gradientPaint"            ) ,    //   "gradientPaint paintNickName [x1 y1 colorName1 x2 y2 colorName2 [cyclic]]": set or define and set gradientPaint
     PAINT                       ( "paint"                    ) ,    //   "paint [gradiantPaintNickName|colorNickName]" query or set paint (for background) // 2022-09-22, paint, as of 20220922 cf. <http://underpop.online.fr/j/java/help/colors-graphics-programming.html.gz>
-    POS                         ( "pos"                      ) ,    //   "pos [x y]" query or set position, synonyms: "goto"
+    MOVE_TO                     ( "moveTo"                   ) ,    //   "pos [x y]" query or set position, synonyms: "goto"
     ROTATE                      ( "rotate"                   ) ,    //   "rotate [theta [x y]]" query or set rotation
-    SCALE                       ( "scale"                    ) ,    //   "scale x [y]" set scale for x, y; if y omitted, uses x
+    SCALE                       ( "scale"                    ) ,    //   "scale [x [y]]" query or set scale for x, y; if y omitted, uses x
     SET_PAINT_MODE              ( "setPaintMode"             ) ,    //   "setPaintMode": cf. Grahpics#setPaintMode()
-    SHEAR                       ( "shear"                    ) ,    //   "shear x [y]" set scale for x, y; if y omitted, uses x
+    SHEAR                       ( "shear"                    ) ,    //   "shear [x [y]]" query or set shear for x, y; if y omitted, uses x
     SLEEP                       ( "sleep"                    ) ,    //   "sleep msecs" (uses Thread.sleep())
     STROKE                      ( "stroke"                   ) ,    //   "stroke [strokeNickName [width [cap join [miterlimit [[]floatDash floatDashPhase]]]]" query or set stroke
-    TRANSLATE                   ( "translate"                ) ,    //   "translate x [y]" move origin; if y omitted, uses x
-    XOR_MODE                    ( "xorMode"                  ) ,    //   "xorMode colorNickName": sets xorMode to supplied color
+    TRANSLATE                   ( "translate"                ) ,    //   "translate [x [y]]" query origin or move origin; if y omitted, uses x
+    SET_XOR_MODE                ( "setXorMode"               ) ,    //   "xorMode colorNickName": sets xorMode to supplied color
+
+    COPY_AREA                   ( "copyArea"                 ) ,    //   "copyArea width height distX distY"
+    TRANSFORM                   ( "transform"                ) ,    //   "transform { | RESET | translateX translateY scaleX scaleY shearX shearY} " query, change reset Graphics2D's AfineTransform
 
     // ------------------------------
     // commands for control, maintenance logic
@@ -3365,8 +3714,10 @@ enum Command {
 
          // add synonyms         new name      enum type
          upperCase2Command.put( "CLEAR"      , RESET     ) ;
-         upperCase2Command.put( "GOTO"       , POS       ) ;
-         upperCase2Command.put( "LOCATION"   , POS       ) ;    // 2022-10-23: new alias
+         upperCase2Command.put( "GOTO"       , MOVE_TO   ) ;
+         upperCase2Command.put( "LOCATION"   , MOVE_TO   ) ;    // 2022-10-23: new alias
+         upperCase2Command.put( "POS"        , MOVE_TO   ) ;    // 2022-10-29: new alias
+         upperCase2Command.put( "POSITION"   , MOVE_TO   ) ;    // 2022-10-26: new alias
          upperCase2Command.put( "WINMOVETO"  , WIN_LOCATION ) ;
     }
 
