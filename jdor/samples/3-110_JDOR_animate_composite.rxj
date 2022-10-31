@@ -43,8 +43,8 @@
 jdor=.bsf~new("org.oorexx.handlers.jdor.JavaDrawingHandler")
 call BsfCommandHandler "add", "JDOR", jdor
 
--- address jdor            -- set default environment to JDOR
-address jdor with error using (.error) -- set default environment to JDOR
+address jdor            -- set default environment to JDOR
+-- address jdor with error using (.error) -- set default environment to JDOR
 
 w=400                   -- width
 h=400                   -- height
@@ -69,7 +69,7 @@ do loc over locations   -- load and draw bitmaps
    parse var loc name x y size
    loadImage name name  -- load image from file use filename as nick name
    moveTo x y           -- move to desired location
-   composite src_over 0.01 -- composite set to transparent (alpha to 0.01)
+   composite src_over 0.025   -- composite set to transparent (alpha to 0.01)
    do i=1 to 100        -- repeatedly drawing adds current alpha to existing picture (fade in)
       drawImage name size size   -- draw image with desired size
       sleep 0.01        -- sleep causes animation effect
@@ -105,14 +105,15 @@ do counter c loc over locations
    end
 end
 
-moveTo 25 200
+moveTo 75 200
 color blue
 fontSize 18
-font "Serif"
-drawString "Wer are done, goodbye! (press enter to end ...)"
+font f1 "Serif"
+drawString "We are done, goodbye! ('sleep 5' ...)"
+say "'sleep 5' ..."
+sleep 5
 
-say "press enter to end ..."
-parse pull
+-- say "press enter to end ..."; parse pull
 
 ::requires "BSF.CLS" -- get ooRexx-Java bridge
 

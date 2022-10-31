@@ -92,7 +92,7 @@ jImage=rc               -- save image in Rexx variable named "jImage"
 say "image~toString:" pp(jImage~toString)
 say
    -- note the name of a Rexx variable needs to be quoted, otherwise its value gets used
-address sdor drawImageFromVar "jImage" -- use image from Rexx variable named "jImage"
+address sdor drawImage "jImage" -- use image from Rexx variable named "jImage"
 sleep 0.75              -- sleep (wait) a bit
 
 sleepTime=1/30          -- appr. 30 updates per second
@@ -101,13 +101,15 @@ round=0
 do i=0 to 360+90 by 5   -- rotate 1 1/4 rounds ...
   round+=1
   address sdor rotate i center   -- rotate transform
-  address sdor drawImageFromVar "jImage"  -- draw image referred to by the Rexx variable "jImage"
+  address sdor drawImage "jImage"  -- draw image referred to by the Rexx variable "jImage"
   sleep sleepTime       -- sleeping causes animation effect
 end
 say "finished after" pp(round) "rotations"
 
-say "press enter to end ..."
-parse pull
+say "'sleep 5' ..."
+sleep 5
+
+-- say "press enter to end ..."; parse pull
 
 ::requires "jdor.cls"   -- makes routine addJdorHandler([environmentName]) available
 

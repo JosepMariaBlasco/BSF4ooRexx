@@ -8,8 +8,9 @@ winShow                 -- show frame on screen
 drawLine width height   -- from currX=0, currY=0
 color red               -- set the color to red (preregistered with nickname "RED")
 moveTo width 0          -- currX=220, currY=0
+position                -- query current position
 say "--> rc="pp(rc)     -- RC refers to the previous command's result: "220 0" (currX=220, currY=0)
-drawLine 0 height       -- from currX=250, currY=0
+drawLine 0 height       -- from currX=220, currY=0
    -- draw a rectangle at the center of the bitmap
 len = 50                -- drawing a rectangle with each side being 50 px (a square)
 moveTo (width-len)/2 (height-len)/2 -- go to the center minus half of the square's side lengths
@@ -20,8 +21,9 @@ color blue              -- set color to blue (preregistered with nickname "BLUE"
 drawRect len len        -- draw the frame with the blue color
    -- draw a string (text) at the lower half of the bitmap
 color somePurple 127 46 111   -- define a custom RGB color, store it with nickname "SOMEPURPLE"
-say "--> rc="pp(rc)     -- show result from command (the Java color object)
-say "    rc~toString:" pp(rc~toString) -- shows the RGB intensities of the color
+color                   -- query current color
+say "--> rc="pp(rc)     -- show result from command (a Java color object)
+say "    rc~toString:" pp(rc~toString) -- shows the RGB intensities of the current color
 newY=height-40
 lineHeight = 15         -- default font size is 12px, add 3 px space
                         -- define an array of three strings
