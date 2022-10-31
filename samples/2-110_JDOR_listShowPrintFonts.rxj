@@ -20,6 +20,7 @@
    Changes: 2022-10-20, ---rgf: adjust for corrected drawString command, simplify footer,
                                 let footer stand out by being printed on white background,
                                 add total number of pages
+            2022-10-31 - changed "goto" to "moveTo"
 
    last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
                 (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
@@ -96,11 +97,11 @@ do i=1 to nrItems       -- iterate over all font names in the array
    end
    fontName=allFontFamilies[i]      -- get current font family name (Rexx)
    y=currLine*lineHeight            -- calculate y (Rexx)
-   goto xCol1 y                     -- goto x y (JDOR command)
+   moveTo xCol1 y                   -- moveTo x y (JDOR command)
    say i~right(3)":" fontName       -- show fontName on command line (Rexx)
    font mono                        -- use already loaded monotype font (JDOR command)
    drawString i~right(3)":" fontName  -- write font family name (JDOR command)
-   goto xCol2 y                     -- goto x y  (JDOR command)
+   moveTo xCol2 y                   -- moveTo x y  (JDOR command)
    font "font"i fontName            -- load and use font family font (JDOR command)
    drawString "Hello world, this is ooRexx using the JDOR command handler ..." -- (JDOR command)
    currLine+=1                      -- increase line (Rexx)
@@ -112,19 +113,20 @@ if i>1 then
 say
 say "you have a total of" pp(nrItems) "fonts installed on your system!"
 
+say "'sleep 3.009'  ..."
 "sleep" 3 + .009        -- let us look at the last image for three plus 9/1000 more seconds ;) (JDOR command)
 exit
 
 printFooter:
    tmpFileName = fileName || pageNr"."fileType  -- define file name
    background white              -- set background to white (by clearRect command below)
-   goto 0 (lines*lineHeight+9)
+   moveTo 0 (lines*lineHeight+9)
    clearRect width (2*lineHeight+3)
 
    y=(lines+2)*lineHeight              -- calc footer position
    fontSize 10; font dialog "Dialog"   -- set font size and font
-   goto xCol1 y; drawString "page" pageNr"/"totalPages "(as of:" .dateTime~new")"  -- write footer part 1
-   goto xCol2 y; drawString tmpFileName      -- write footer part 2
+   moveTo xCol1 y; drawString "page" pageNr"/"totalPages "(as of:" .dateTime~new")" -- write footer part 1
+   moveTo xCol2 y; drawString tmpFileName -- write footer part 2
    background oldBackground
    -- winUpdate .true-- update Frame (JDOR command)
    say "saving sample to:" pp(tmpFileName)

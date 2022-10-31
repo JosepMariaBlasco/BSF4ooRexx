@@ -295,8 +295,8 @@ title to the definition list
         <em><a href="#cmdTranslate">translate</a></em>,
         <em><a href="#cmdScale">scale</a></em>,
         <em><a href="#cmdShear">shear</a></em>
-        will cause the respective factors
-        to be changed accordingly in the <em>Graphics2D</em>'s maintained <em>AffineTransform</em>.
+        will cause the respective factors to be changed accordingly in the <em>Graphics2D</em>'s
+        maintained <em>AffineTransform</em>.
 
         <br>The <em><a href="#cmdTransform">transform</a></em> command allows to interact with
         the <em>Graphics2D</em>'s <em>AffineTransform</em> to query, set or reset the
@@ -496,7 +496,7 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command" id="cmdBackground"> &quot;background&quot;
-    <td colspan="3"> Queries or sets the background color to a registered color.
+    <td colspan="3"> Queries and optionally sets the background color to a registered color.
 
         <br>Querying the current value (no argument supplied) will return it, setting
         (changing) the value to a new value will return the old (previously set) value
@@ -531,7 +531,7 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command" id="cmdClip">  &quot;clip&quot;
-    <td colspan="2"> Queries or sets a clipping area of an image. Returns a
+    <td colspan="2"> Queries and optionally sets  a clipping area of an image. Returns a
         blank delimited string with the <em>x</em>, <em>y</em>,
         <em>width</em> and <em>height</em> values of the previously defined clipping rectangle (area)
         or <em>.nil</em> if no such area was defined
@@ -604,7 +604,7 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command">  &quot;composite&quot;
-    <td colspan="2"> Queries or creates and sets the composite value (an instance of the
+    <td colspan="2"> Queries and optionally sets or creates the composite value (an instance of the
         Java class <em>java.awt.AlphaComposite</em>).
 
         <br>Querying the current value (no argument supplied) will return it, setting
@@ -692,7 +692,8 @@ value.
     <td colspan="2"> Draws an image which got previously loaded from the filesystem
         with the command <em><a href="#cmdLoadImage">loadImage</a></em> and stored internally
         with an <em>nickName</em> in the internal image registry, or an image that got
-        pushed with a <em>nickName</em> in the command <em><a href="#cmdPushImage">pushImage</a></em>
+        pushed with a <em>nickName</em> in the command <em><a href="#cmdPushImage">pushImage</a></em>,
+        or stored in a Rexx variable.
 
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
         method <em>drawImage(...)</em>.
@@ -701,7 +702,8 @@ value.
     <td>
     <td class="argument"> nickName [bkgColor]
     <td> <em>nickName</em> denotes the name of an image stored in the
-         internal image registry. Draws as much of the image as possible.
+         internal image registry or the name of a Rexx variable referring
+         to an image. Draws as much of the image as possible.
 
          <br>Optional <em>bkgColor</em> is the <em>colorNickName</em> of a previously stored color.
 
@@ -709,7 +711,9 @@ value.
     <td>
     <td class="argument"> nickName width height [bkgColor]
     <td> <em>nickName</em> denotes the name of an image stored in the
-         internal image registry. Draws as much of the image as possible scaled to the
+         internal image registry or the name of a Rexx variable referring
+         to an image.
+         Draws as much of the image as possible scaled to the
          <em>width</em> and <em>height</em> in pixels.
 
          <br>Optional <em>bkgColor</em> is the <em>colorNickName</em> of a previously stored color.
@@ -718,47 +722,8 @@ value.
     <td>
     <td class="argument"> nickName width height srcX1 srcY1 srcX2 srcY2 [bkgColor]
     <td> <em>nickName</em> denotes the name of an image stored in the
-         internal image registry. Draws as much of the image as possible scaled to the
-         <em>width</em> and <em>height</em> in pixels, using from the image the rectangle
-         with the first corner with the coordinate <em>srcX1</em> and <em>srcY1</em> and
-         the second corner with the coordinate <em>srcX2</em> and <em>srcY2</em>.
-
-         <br>Optional <em>bkgColor</em> is the <em>colorNickName</em> of a previously stored color.
-
-
-    <!-- -------------------------------------------------------- -->
-    <tr class="CommandRowColumn"><!-- table row -->
-    <td class="cmdNr">
-    <td class="command">  &quot;drawImageFromVar&quot;
-    <td colspan="2"> Draws an image (an instance of <em>java.awt.Image</em>) referred
-        to by a Rexx variable.
-        <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
-        method <em>drawImageFromVar(...)</em>.
-
-    <tr class="ArgumentRowColor"><td><!-- table row -->
-    <td>
-    <td class="argument"> rexxVariableName [bkgColor]
-    <td> <em>rexxVariableName</em> denotes the name of a Rexx variable that refers to an image
-        (hint: enquote the Rexx variable name).
-         Draws as much of the image as possible.
-
-         <br>Optional <em>bkgColor</em> is the <em>colorNickName</em> of a previously stored color.
-
-    <tr class="ArgumentRowColor"><td><!-- table row -->
-    <td>
-    <td class="argument"> rexxVariableName width height [bkgColor]
-    <td> <em>rexxVariableName</em> denotes the name of a Rexx variable that refers to an image
-        (hint: enquote the Rexx variable name).
-         Draws as much of the image as possible scaled to the
-         <em>width</em> and <em>height</em> in pixels.
-
-         <br>Optional <em>bkgColor</em> is the <em>colorNickName</em> of a previously stored color.
-
-    <tr class="ArgumentRowColor"><td><!-- table row -->
-    <td>
-    <td class="argument"> rexxVariableName width height srcX1 srcY1 srcX2 srcY2 [bkgColor]
-    <td> <em>rexxVariableName</em> denotes the name of a Rexx variable that refers to an image
-        (hint: enquote the Rexx variable name).
+         internal image registry or the name of a Rexx variable referring
+         to an image.
          Draws as much of the image as possible scaled to the
          <em>width</em> and <em>height</em> in pixels, using from the image the rectangle
          with the first corner with the coordinate <em>srcX1</em> and <em>srcY1</em> and
@@ -1027,16 +992,6 @@ value.
     <td class="argument"> fontNickName
     <td> <em>fontNickName</em> gets uppercased and is used to look up the internal
          font registry for the denoted font which should be used from now on.
-         <br>
-         <em>Note:</em> if
-            <em>fontNickName</em> is one of the operating system independent font names
-            <em>&quot;Dialog&quot;</em>,
-            <em>&quot;DialogInput&quot;</em>,
-            <em>&quot;Serif&quot;</em>,
-            <em>&quot;SansSerif&quot;</em>,
-            <em>&quot;Monospaced&quot;</em>, then a font of this kind gets created using
-            the currently set <a href="#cmdFontSize"><em>fontSize</em></a>
-            and <a href="#cmdFontStyle"><em>fontStyle</em></a> instead.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
@@ -1056,7 +1011,7 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command" id="cmdFontSize">  &quot;fontSize&quot;
-    <td colspan="2"> Queries or sets the font size to be used when loading a new
+    <td colspan="2"> Queries and optionally sets  the font size to be used when loading a new
         <a href="#cmdFont"><em>font</em></a>.
 
         <br>Querying the current value (no argument supplied) will return it, setting
@@ -1076,7 +1031,7 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command" id="cmdFontStyle">  &quot;fontStyle&quot;
-    <td colspan="2"> Queries or sets the font style to be used when loading a new
+    <td colspan="2"> Queries and optionally sets the font style to be used when loading a new
         <a href="#cmdFont"><em>font</em></a>.
 
         <br>Querying the current value (no argument supplied) will return it, setting
@@ -1160,7 +1115,7 @@ value.
     <td class="command" id="cmdMoveTo">  &quot;goto&quot; <br> &quot;location&quot;
          <br> &quot;moveTo&quot; <br> &quot;pos&quot;
          <br> &quot;position&quot;
-    <td colspan="2"> Queries or sets <em>currX</em> and <em>currX</em> in the current image.
+    <td colspan="2"> Queries and optionally sets  <em>currX</em> and <em>currX</em> in the current image.
 
         <br>Querying the current value (no argument supplied) will return it, setting
         (changing) the value to a new value will return the old (previously set) value
@@ -1317,7 +1272,7 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command" id="cmdPaint">  &quot;paint&quot;
-    <td colspan="2"> Queries or sets current paint (used for filling).
+    <td colspan="2"> Queries and optionally sets  current paint (used for filling).
 
         <br>Querying the current value (no argument supplied) will return it, setting
         (changing) the value to a new value will return the old (previously set) value
@@ -1358,7 +1313,7 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command" id="cmdPreferredImageType">  &quot;preferredImageType&quot;
-    <td colspan="2"> Queries or sets the preferred image type used for creating new images
+    <td colspan="2"> Queries and optionally sets  the preferred image type used for creating new images
     (cf. <a href="#cmdNew">new</a> command).
         Returns the image type via the Rexx variable <em>RC</em> upon return from this command.
 
@@ -1391,20 +1346,22 @@ value.
     <td class="cmdNr">
     <td class="command">  &quot;printImage&quot;
     <td colspan="2"> Uses the default printer to print the image. If the <em>imageNickName</em>
-        is supplied, it gets uppercased and used to look it up in the image registry and prints it.
+        is supplied, it gets uppercased and used to look it up in the image registry or if not
+        found from a Rexx variable of the same name and prints it.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> imageNickName
     <td> optional <em>imageNickName</em> is uppercased and used to look up the image from the internal
-        registry that should get printed.
+        registry or the name of a Rexx variable referring to an image of type <em>BufferedImage</em>
+        that should get printed.
 
 
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command">  &quot;printPos&quot;
-    <td colspan="2"> Queries or sets the left upper hand corner on the page where the image should
+    <td colspan="2"> Queries and optionally sets  the left upper hand corner on the page where the image should
         be drawn to. This command has no effect if <em>printScaleToPage</em> was set to
         <em>.true</em> (<em>1</em>).
 
@@ -1440,7 +1397,7 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command">  &quot;printScaleToPage&quot;
-    <td colspan="2"> Queries or sets the value.
+    <td colspan="2"> Queries and optionally sets  the value.
 
         <br>Querying the current value (no argument supplied) will return it, setting
         (changing) the value to a new value will return the old (previously set) value
@@ -1568,8 +1525,12 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command" id="cmdScale">  &quot;scale&quot;
-    <td colspan="2"> Queries or sets the scale factor for the <em>y</em> and <em>y</em> axis.
-        The command returns the scale values at the time of invocation.
+    <td colspan="2"> Queries and optionally changes (&quot;concatenates&quot;) the scale factor for
+        the <em>x</em> and <em>y</em> axis. The command returns the scale values
+        at the time of invocation.
+        <br>Cf. the Java documentation for the Java class <em>Graphics2D</em> and the
+        method <em>scale(...)</em>.
+        <br>To set these factors to absolute values use the <a href="#cmdTransform">transform</a> command.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
@@ -1609,8 +1570,12 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command" id="cmdShear">  &quot;shear&quot;
-    <td colspan="2"> Queries or sets the shear (skew) factor for the <em>y</em> and <em>y</em>
-        axis. The command returns the shear values at the time of invocation.
+    <td colspan="2"> Queries and optionally changes (&quot;concatenates&quot;) the shear (skew) factor for
+        the <em>x</em> and <em>y</em> axis. The command returns the shear values
+        at the time of invocation.
+        <br>Cf. the Java documentation for the Java class <em>Graphics2D</em> and the
+        method <em>shear(...)</em>.
+        <br>To set these factors to absolute values use the <a href="#cmdTransform">transform</a> command.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
@@ -1700,6 +1665,10 @@ value.
         to <em>currX</em> and  <em>y</em> pixels to <em>currY</em>. The command returns
         the translate values at the time of invocation.
 
+        <br>Cf. the Java documentation for the Java class <em>Graphics2D</em> and the
+        method <em>translate(...)</em>.
+        <br>To set these factors to absolute values use the <a href="#cmdTransform">transform</a> command.
+
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> x [y]
@@ -1720,8 +1689,8 @@ value.
         calculate the effective <em>x</em> and <em>y</em> values for the target device according
         to this formula:
 
-        <p><code>&nbsp;&nbsp;&nbsp;  x' = scaleX*x + shearX*y + translateX </code>
-        <br><code>&nbsp;&nbsp;&nbsp; y' = scaleY*y + shearY*x + translateY </code>
+        <p><code>&nbsp;&nbsp;&nbsp;  x' = translateX + scaleX*x + shearX*y </code>
+        <br><code>&nbsp;&nbsp;&nbsp; y' = translateY + scaleY*y + shearY*x </code>
 
         <p>Cf. the Java documentation for the Java classes <em>java.awt.geom.AffineTransform</em>,
         <em>java.awt.Graphics2D</em> and the methods <em>getTransform()</em>, <em>setTransform(...)</em>.
@@ -1746,7 +1715,7 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command">  &quot;winAlwaysOnTop&quot;
-    <td colspan="2"> Queries or sets the value.
+    <td colspan="2"> Queries and optionally sets the value.
 
         <br>Querying the current value (no argument supplied) will return it, setting
         (changing) the value to a new value will return the old (previously set) value
@@ -1796,7 +1765,7 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command">  &quot;winFrame&quot;
-    <td colspan="2"> Queries or sets the value.
+    <td colspan="2"> Queries and optionally sets the value.
 
         <br>Querying the current value (no argument supplied) will return it, setting
         (changing) the value to a new value will return the old (previously set) value
@@ -1836,7 +1805,7 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command">  &quot;winLocation&quot;<br> &quot;winMoveTo&quot;
-    <td colspan="2"> Queries or sets the location of the frame (window) that shows the current image.
+    <td colspan="2"> Queries and optionally sets location of the frame (window) that shows the current image.
 
         <br>Querying the current value (no argument supplied) will return it, setting
         (changing) the value to a new value will return the old (previously set) value
@@ -1881,7 +1850,7 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command">  &quot;winSize&quot;
-    <td colspan="2"> Queries or sets the size of the frame (window) that displays
+    <td colspan="2"> Queries and optionally sets the size of the frame (window) that displays
         the current image.
 
         <br>Querying the current value (no argument supplied) will return it, setting
@@ -1902,7 +1871,7 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command">  &quot;winTitle&quot;
-    <td colspan="2"> Queries or sets the title of the frame (window) that displays
+    <td colspan="2"> Queries and optionally sets the title of the frame (window) that displays
         the current image.
 
         <br>Querying the current value (no argument supplied) will return it, setting
@@ -1950,7 +1919,7 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command">  &quot;winUpdate&quot;
-    <td colspan="2"> Queries or sets the value. If set to <em>.true</em>, the frame (window)
+    <td colspan="2"> Queries and optionally sets the value. If set to <em>.true</em>, the frame (window)
         that displays the current image will be updated each time a change occurs in the
         current image, otherwise the frame (window) does not get visually updated.
 
@@ -1974,8 +1943,8 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command">  &quot;winVisible&quot;
-    <td colspan="2"> Queries or sets the value. If set to <em>.true</em>, the frame (window)
-        that displays the current image will be shown, otherwise it will be hided.
+    <td colspan="2"> Queries and optionally sets the value. If set to <em>.true</em>, the frame (window)
+        that displays the current image will be shown, otherwise it will be hidden.
 
 
         <br>Querying the current value (no argument supplied) will return it, setting
@@ -2005,7 +1974,7 @@ value.
 <center>
    <hr width="75%">
     <small>
-       JDOC synopsis of commands, version: 100.20221030
+       JDOC synopsis of commands, version: 100.20221031
        <br>Acknowledgement: the author wishes to thank DI Walter Pachl
        <br>for his help in testing and proof reading
     </small>

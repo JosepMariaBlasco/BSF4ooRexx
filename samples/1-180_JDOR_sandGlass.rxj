@@ -12,7 +12,7 @@
 
    Author:  Rony G. Flatscher, WU Vienna
 
-   Changes: --
+   Changes: 2022-10-31 - changed "goto" to "moveTo"
 
    last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
                 (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
@@ -55,11 +55,12 @@ do i=1 to 3
   h = height-m
   color  colors[i]
   stroke strokes[i]
-  goto m m; drawLine w m
-  goto w m; drawLine m h
-  goto m h; drawLine w h
-  goto w h; drawLine m m
+  moveTo m m; drawLine w m
+  moveTo w m; drawLine m h
+  moveTo m h; drawLine w h
+  moveTo w h; drawLine m m
 end
+say "'sleep 3' ..."
 sleep 3                 -- sleep for three seconds
 -- say 'hit enter to continue...'; parse pull .
 

@@ -13,7 +13,7 @@
 
    Author:  Rony G. Flatscher, WU Vienna
 
-   Changes: --
+   Changes: 2022-10-31 - changed "goto" to "moveTo"
 
    last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
                 (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
@@ -42,8 +42,8 @@ address jdor            -- set default environment to JDOR
 new 500 500             -- create new bitmap
 winShow                 -- show frame
    -- draw two lines forming a big X
-goto 100  150           -- currX=100, currY=150
-      -- define and set color, register it with the name "saddlebrown50"
+moveTo 100  150         -- currX=100, currY=150
+   -- define and set color, register it with the name "saddlebrown50"
 color saddlebrown50 139 69 19 127   -- R,G,B,alpha=127 (50 % transparency)
 fillRect 50 50          -- first fill
 color blue              -- set color to blue (predefined)
@@ -52,7 +52,7 @@ color red               -- set color to red (predefined)
 drawOval 50 50          -- draw border
    -- draw a rectangle at the center of the bitmap
 translate 260 250       -- move origin 0,0 to (260,250)
-goto 0 0                -- x=0, y=0 (effectively: x=0+260, y=0+250)
+moveTo 0 0              -- x=0, y=0 (effectively: x=0+260, y=0+250)
 rotate 45               -- rotate by 45 degrees (clock wise starting out from 3 o'clock)
 color saddlebrown50     -- use registered color named saddlebrown50 [R,G,B,alpha=127 (50 % transparency)]
 fillRect 50 75          -- fill 50% transparency
@@ -61,6 +61,7 @@ color blue              -- set color to blue (predefined)
 drawRect 50 75          -- draw border in blue
 color red               -- set color to red (predefined)
 drawOval 50 75          -- draw border in red
+say "'sleep 5' ..."
 sleep 5                 -- sleep for five seconds
 -- say "press enter to end.";parse pull
 

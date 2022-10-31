@@ -12,7 +12,7 @@
 
    Author:  Rony G. Flatscher, WU Vienna
 
-   Changes: --
+   Changes: 2022-10-31 - changed "goto" to "moveTo"
 
    last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
                 (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
@@ -44,14 +44,15 @@ new 300 500             -- create new bitmap
 winShow                 -- show frame
    -- draw two lines forming a big X
 drawLine 300 500        -- currX=0, currY=0
-goto 300 0              -- currX=300, currY=0
+moveTo 300 0            -- currX=300, currY=0
 drawLine 0 500
    -- draw a rectangle at the center of the bitmap
-goto (300-50)/2 (500-50)/2
+moveTo (300-50)/2 (500-50)/2
 fillRect 50 50
 drawRect 50 50
    -- draw a test at the lower half of the bitmap
-goto 50 450
+moveTo 50 450
 drawString "Hello, world via JDOR ..."
+say "'sleep 3' ..."
 sleep 3                 -- sleep for three seconds
 -- say "press enter to end.";parse pull

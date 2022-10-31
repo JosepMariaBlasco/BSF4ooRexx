@@ -105,14 +105,15 @@ do counter c loc over locations
    end
 end
 
-moveTo 25 200
+moveTo 75 200
 color blue
 fontSize 18
-font "Serif"
-drawString "Wer are done, goodbye! (press enter to end ...)"
+font f1 "Serif"
+drawString "Wer are done, goodbye! ('sleep 5' ...)"
+say "'sleep 5' ..."
+sleep 5
 
-say "press enter to end ..."
-parse pull
+-- say "press enter to end ..."; parse pull
 
 ::requires "BSF.CLS" -- get ooRexx-Java bridge
 

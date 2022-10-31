@@ -10,7 +10,7 @@
 
    author:  Rony G. Flatscher
    date:    2022-09-05/2022-10-05
-   version: 003.20221030
+   version: 003.20221031
    license: Apache license 2.0
 
    license:
@@ -74,6 +74,12 @@
                     - "font": fixed bug if using one of the operating system independent (logical)
                               fonts named "Dialog", "DialogInput", "Serif", "SansSerif", "Monospaced":
                               now honors also fontSize and fontStyle
+        2022-10-31: - fix COMPOSITE (correct int value caused exception)
+                    - removed command DRAW_IMAGE_FROM_VAR_NAME, instead changed DRAW_IMAGE to
+                      try to fetch the image from a Rexx variable named as the nickName, if an
+                      image cannot be found in the registry by that nickname
+                    - PRINT_IMAGE now also can take an image (must be a BufferedImage) from a Rexx
+                      variable named after the nickname (only if not found in the image registry)
 */
 
 /*  Sample program in ooRexx (temporarily):
@@ -261,7 +267,7 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     /* static definitions           */
 
     // default image sizes
-    static final public String version = "005.20221030";
+    static final public String version = "005.20221031";
     static final private int prefWidth  = 500;
     static final private int prefHeight = 500;
     static       private int prefImageType = BufferedImage.TYPE_INT_ARGB; // default with alpha (only png supported)
@@ -1102,10 +1108,25 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             String name = arrCommand[1];        // get  nickname
                             tmpImage = hmImages.get(name.toUpperCase());
+/* ---
                             if (tmpImage==null)
                             {
                                 throw new IllegalArgumentException("image with the name \""+name+"\" not found, you must first use \"loadImage "+name+" filename\"");
                             }
+-- */
+                            if (tmpImage==null)
+                            {
+                                try
+                                {
+                                    tmpImage = (BufferedImage) getContextVariable(slot, name);   // try to get from a Rexx variable
+                                }
+                                catch (Throwable t) {}
+                                if (tmpImage==null)
+                                {
+                                    throw new IllegalArgumentException("image (must be a BufferedImage) with the name \""+name+"\" not found, you must first use \"loadImage "+name+" filename\" or \"pushImage "+name+"\" or assign an BufferedImage to a Rexx variable named \""+name+"\"");
+                                }
+                            }
+
                             canonical = canonical+" "+name;
                         }
                         if (isOR)
@@ -1843,13 +1864,13 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             {
                                 throw new IllegalArgumentException("unknown value for \"rule\" argument: \""+arrCommand[1]+"\"");
                             }
-                            intRule=alphaComposites.get(ruleName);
+                            intRule=val;
                         }
 
                         if (isOR)
                         {
                             canonical=canonical+" "+
-                                (bUseNames4canonical ? alphaCompositesInt2Name.get(ruleName) : ruleName) ;
+                                (bUseNames4canonical ? alphaCompositesInt2Name.get(intRule) : intRule) ;
                         }
 
                         AlphaComposite ac = null;
@@ -2249,6 +2270,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         if (arrCommand.length==2 )
                         {
                             font = hmFonts.get(fontNickName.toUpperCase());
+/* -- 2022-10-31 (injected the day before): remove, as it should be possible to use these fonts with a nickname
                             if (font==null)
                             {
                                 // maybe one of the five operating system independent fonts?
@@ -2266,6 +2288,18 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                     return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-10", errMsg );
                                 }
                             }
+-- */
+                            if (font==null)
+                            {
+                                String errMsg="font with the supplied nickname \""+fontNickName+"\" is not registered";
+                                if (isOR)
+                                {
+                                    writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
+                                }
+                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-10", errMsg );
+                            }
+
+
                             bufGC.setFont(font);
                             if (isOR)
                             {
@@ -2762,7 +2796,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
 
 
                     // rgf, 2022-10-21: command to allow drawing an image referred to by a rexx Variable
-                case DRAW_IMAGE_FROM_REXX_VAR:   // "drawImageFromVar rexxVarName [bkgColor] | rexxVarName width height [bkgColor] | rexxVarName width height srcX1 srcY1 srcX2 srcY2 [bkgColor]"
+//                case DRAW_IMAGE_FROM_REXX_VAR:   // "drawImageFromVar rexxVarName [bkgColor] | rexxVarName width height [bkgColor] | rexxVarName width height srcX1 srcY1 srcX2 srcY2 [bkgColor]"
                 case DRAW_IMAGE:   // "drawImage nickName [bkgColor] | nickName width height [bkgColor] | nickName width height srcX1 srcY1 srcX2 srcY2 [bkgColor]"
                     {
                         int argNum = arrCommand.length;
@@ -2783,15 +2817,15 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             img = hmImages.get(name.toUpperCase());
                             if (img==null)
                             {
-                                throw new IllegalArgumentException("image with the name \""+name+"\" not found, you must first use \"loadImage "+name+" filename\" or \"pushImage "+name+"\"");
-                            }
-                        }
-                        else                            // fetch from the denoted Rexx variable
-                        {
-                            img = (Image) getContextVariable(slot, name);
-                            if (img==null)
-                            {
-                                throw new IllegalArgumentException("Rexx variable named \""+name+"\" does not refer to an image");
+                                try
+                                {
+                                    img = (Image) getContextVariable(slot, name);   // try to get from a Rexx variable
+                                }
+                                catch (Throwable t) {}
+                                if (img==null)
+                                {
+                                    throw new IllegalArgumentException("image with the name \""+name+"\" not found, you must first use \"loadImage "+name+" filename\" or \"pushImage "+name+"\" or assign an image to a Rexx variable named \""+name+"\"");
+                                }
                             }
                         }
 
@@ -3616,8 +3650,6 @@ enum Command {
     DRAW_3D_RECT                ( "draw3DRect"               ) ,    //   "draw3DRect width height raised" - 20220906
     DRAW_ARC                    ( "drawArc"                  ) ,    //   "drawArc  width height startAngle arcAngle"
     DRAW_IMAGE                  ( "drawImage"                ) ,    //   "drawImage nickName [bkgColor] | nickName width height [bkgColor] | nickName width height srcX1 srcY1 srcX2 srcY2 [bkgColor]"
-
-    DRAW_IMAGE_FROM_REXX_VAR    ( "drawImageFromVar"         ) ,    // "drawImageFromVar rexxVarName [bkgColor] | rexxVarName width height [bkgColor] | rexxVarName width height srcX1 srcY1 srcX2 srcY2 [bkgColor]"
 
     DRAW_LINE                   ( "drawLine"                 ) ,    //   "drawLine toX toY"
     DRAW_OVAL                   ( "drawOval"                 ) ,    //   "drawOval width height"

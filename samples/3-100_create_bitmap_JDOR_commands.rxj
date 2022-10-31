@@ -20,7 +20,7 @@
 
    Author:  Rony G. Flatscher, Wien University
 
-   Changes: --
+   Changes: 2022-10-31 - changed "goto" to "moveTo"
 
    last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
                 (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
@@ -87,18 +87,18 @@ color white             -- set color
 do counter c i over positions
    tmpX=i[1]
    tmpY=i[2]
-   goto tmpX tmpY
+   moveTo tmpX tmpY
    fileName      = images[c]
    imageFromFile="img_"c
    loadImage imageFromFile fileName
 
    drawImage imageFromFile
-   goto tmpX tmpY+10
+   moveTo tmpX tmpY+10
    drawString fileName
       -- drawing at 50% of size either on the right or left of the original sized picture
    if c=3 then tmpX -= 256
           else tmpX += 256+128
-   goto tmpX tmpY
+   moveTo tmpX tmpY
    drawImage imageFromFile tmpX+128 tmpY+128 0 0 256 256
 end
 -- sleep 0.5
@@ -107,11 +107,11 @@ end
    -- draw a string (text) using the current (default) font
 color green
 text="Hello, world, it is:" .dateTime~new
-goto (0+borderWidth) (height/2-20)
+moveTo (0+borderWidth) (height/2-20)
 drawString text
    -- draw a thick line underneath
 stroke stroke5
-goto (0+borderWidth) (height/2-10)
+moveTo (0+borderWidth) (height/2-10)
 drawLine 260 (height/2-10)
 -- sleep 0.5
 
@@ -135,7 +135,7 @@ do counter c fontName over "Dialog", "DialogInput", "Serif", "SansSerif", "Monos
     end
     fontSize size
     font "font"c fontName
-    goto xPos (yStart+(size*c)+5)
+    moveTo xPos (yStart+(size*c)+5)
     text=c"." fontName hint"," size "points"
     drawString text
 end
@@ -149,7 +149,7 @@ pushGC   -- save GC
    -- draw a line from upper right hand corner down: coordinates must be integers!
 color  teal
 stroke dashedStroke
-goto (width-borderWidth) (0+borderWidth)
+moveTo (width-borderWidth) (0+borderWidth)
 drawLine (width-format(width/17,,0))  200
 
    -- move 0,0 co-ordinate relative to current position (i.e. to center)
@@ -160,7 +160,7 @@ color yellow
 do counter c i=1 to 360/15    -- 24 steps!
    rotate 15                  -- rotate by 15°
    text="--> Hello, world, it is:" .dateTime~new "<-- #" c "("c*15"°) "
-   goto 0 0
+   moveTo 0 0
    drawString text
 end
 
@@ -174,7 +174,7 @@ translate (-400) (-100)
    -- draw an ellipse (if rectangle is a square, then a circle gets drawn)
 color  magenta
 stroke dashedStroke
-goto 0 50
+moveTo 0 50
 drawOval 275 75
 -- sleep 0.5
 
@@ -189,7 +189,7 @@ r = 200     -- radius
 s = r*2
 x = borderWidth+width/2-r
 y = borderWidth+height/2-r
-goto x y
+moveTo x y
 drawOval s s
 -- sleep 0.5
 

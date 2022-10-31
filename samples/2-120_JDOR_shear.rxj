@@ -62,11 +62,12 @@ stroke str1 1 CAP_BUTT JOIN_BEVEL 0 "(3,1)" 0   -- change line for drawing
 color blue              -- change color
 call drawFigure         -- draw the same figure as above
 
-say "Press enter to end ..."
-parse pull .
+say "sleep 5 ..."
+sleep 5
+-- say "Press enter to end ..."; parse pull .
 exit
 
-drawFigure: procedure   -- moves origin, draws axes with right and down error, draws rectangle
+drawFigure: procedure   -- moves origin, draws axes with right and down arrow, draws rectangle
   lineLength  = 54
   arrowLength = 4
   tickSize    = 4

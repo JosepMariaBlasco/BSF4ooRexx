@@ -14,7 +14,7 @@
 
    Author:  Rony G. Flatscher, WU Vienna
 
-   Changes: --
+   Changes: 2022-10-31 - added hint about sleeping time
 
    last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
                 (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
@@ -59,13 +59,14 @@ do i=1 to 3
   h = height-m
   "color"  colors[i]          -- set defined color
   "STROKE" strokes[i]         -- set defined stroke
-  "PoS"  m m; "DRAWLINE" w m  -- sets the x and y position
-  "GOTO" w m; "drawline" m h  -- GOTO is a synonym for POS
-  "pos"  m h; "DRAWLINE" w h  -- sets the x and y position
-  "GOTO" w h; "drawline" m m  -- GOTO is a synonym for POS
+  "PoS"  m m; "DRAWLINE" w m  -- POS is a synonym for MOVETO sets the x and y position
+  "GOTO" w m; "drawline" m h  -- GOTO is a synonym for MOVETO
+  "pos"  m h; "DRAWLINE" w h  -- POS is a synonym for MOVETO sets the x and y position
+  "GOTO" w h; "drawline" m m  -- GOTO is a synonym for MOVETO
 end
 s~close
 saveImage  "1-180_JDOR_sandGlass.png"  -- "png" allows for ARGB (RGB colors with alpha (transparency9)
+say "'sleep 3' ..."
 sleep 3                       -- sleep for three seconds
 
 ::requires "jdor.cls"   -- makes routine addJdorHandler([environmentName]) available
