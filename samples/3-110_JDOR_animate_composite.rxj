@@ -19,6 +19,9 @@
    last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
                 (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
 
+   Changed: 2022-11-01 - use new command 'stringBounds' and calculate center for the
+                         concluding string, let that string move in from the right
+
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
@@ -43,8 +46,8 @@
 jdor=.bsf~new("org.oorexx.handlers.jdor.JavaDrawingHandler")
 call BsfCommandHandler "add", "JDOR", jdor
 
--- address jdor            -- set default environment to JDOR
-address jdor with error using (.error) -- set default environment to JDOR
+address jdor            -- set default environment to JDOR
+-- address jdor with error using (.error) -- set default environment to JDOR
 
 w=400                   -- width
 h=400                   -- height
@@ -69,7 +72,7 @@ do loc over locations   -- load and draw bitmaps
    parse var loc name x y size
    loadImage name name  -- load image from file use filename as nick name
    moveTo x y           -- move to desired location
-   composite src_over 0.01 -- composite set to transparent (alpha to 0.01)
+   composite src_over 0.025   -- composite set to transparent (alpha to 0.01)
    do i=1 to 100        -- repeatedly drawing adds current alpha to existing picture (fade in)
       drawImage name size size   -- draw image with desired size
       sleep 0.01        -- sleep causes animation effect
@@ -105,11 +108,33 @@ do counter c loc over locations
    end
 end
 
-moveTo 75 200
-color blue
-fontSize 18
-font f1 "Serif"
-drawString "Wer are done, goodbye! ('sleep 5' ...)"
+-- get bounds of string, draw it at the center, but let it move in
+color blue              -- change color
+fontSize 18             -- change font size
+fontStyle Italic        -- change font style
+font f1 "Serif"         -- create and use the font
+str="We are done, goodbye! ('sleep 5' ...)"  -- string to show
+stringBounds str        -- current font and current graphic context
+say "                           str:" pp(str)
+say "'stringBounds str' returned rc:" pp(rc) "(in pixels)"
+parse var rc x1 y1 width1 height1   -- get fields
+x2=(w-width1)/2         -- horizontal center position
+y2=(h-y1)/2             -- vertical center position
+x=w+1                   -- move one pixel outside of the image
+moveTo x y2             -- position
+say "moving in from the right ..."
+loop while x>x2
+   winUpdate .false     -- do not update window (frame)
+   composite clear      -- use CLEAR composite (to remove from image)
+   drawString str       -- draw the string
+   x+=-1                -- move one pixel to the left
+   composite src_over   -- re-establish writing src over destination
+   moveTo x y2          -- go to next position
+   drawString str       -- draw the string
+   winUpdate .true      -- do not update window (frame)
+   sleep 0.01           -- sleep causes animation effect
+end
+
 say "'sleep 5' ..."
 sleep 5
 

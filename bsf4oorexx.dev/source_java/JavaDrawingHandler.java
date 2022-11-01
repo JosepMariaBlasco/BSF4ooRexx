@@ -10,7 +10,7 @@
 
    author:  Rony G. Flatscher
    date:    2022-09-05/2022-10-05
-   version: 003.20221031
+   version: 100.20221101
    license: Apache license 2.0
 
    license:
@@ -80,6 +80,12 @@
                       image cannot be found in the registry by that nickname
                     - PRINT_IMAGE now also can take an image (must be a BufferedImage) from a Rexx
                       variable named after the nickname (only if not found in the image registry)
+        2022-11-01: - add fontStyles[Int2Name], replace fontStyle numeric value with name, if
+                      "bUseName4canonical" is set
+                    - new command "imageCopy": returns a copy of an image (maybe for buffering purposes)
+                    - new command "stringBounds": returns the Rectangle2D floats for "x y width height"
+                      for the supplied string (allows for adjusting the string)
+
 */
 
 /*  Sample program in ooRexx (temporarily):
@@ -134,7 +140,8 @@ package org.oorexx.handlers.jdor;
 import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import  java.awt.geom.AffineTransform;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Rectangle2D;
 import java.awt.Toolkit;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -142,6 +149,7 @@ import javax.swing.JPanel;
 import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Dimension;
 import java.awt.GradientPaint;
 import java.awt.Paint;
@@ -267,7 +275,7 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     /* static definitions           */
 
     // default image sizes
-    static final public String version = "005.20221031";
+    static final public String version = "100.20221101";
     static final private int prefWidth  = 500;
     static final private int prefHeight = 500;
     static       private int prefImageType = BufferedImage.TYPE_INT_ARGB; // default with alpha (only png supported)
@@ -287,6 +295,10 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     // AlphaComposite
     static final HashMap<String,Integer> alphaComposites         = new HashMap<>();
     static final HashMap<Integer,String> alphaCompositesInt2Name = new HashMap<>();
+
+    // FontStyle
+    static final HashMap<String,Integer> fontStyles              = new HashMap<>();
+    static final HashMap<Integer,String> fontStylesInt2Name      = new HashMap<>();
 
     static {
         // ----------------------------------------------------------------------
@@ -354,6 +366,15 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
         alphaComposites.put("XOR"     , 12);
         // allow for looking up constant names (key) by value
         alphaComposites.forEach((K,V)->alphaCompositesInt2Name.put(V,K));
+
+        // ----------------------------------------------------------------------
+        // FontStyle
+        fontStyles.put("PLAIN"      , 0);
+        fontStyles.put("BOLD"       , 1);
+        fontStyles.put("ITALIC"     , 2);
+        fontStyles.put("BOLD_ITALIC", 3);
+        // allow for looking up constant names (key) by value
+        fontStyles.forEach((K,V)->fontStylesInt2Name.put(V,K));
     }
 
 
@@ -1108,12 +1129,6 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             String name = arrCommand[1];        // get  nickname
                             tmpImage = hmImages.get(name.toUpperCase());
-/* ---
-                            if (tmpImage==null)
-                            {
-                                throw new IllegalArgumentException("image with the name \""+name+"\" not found, you must first use \"loadImage "+name+" filename\"");
-                            }
--- */
                             if (tmpImage==null)
                             {
                                 try
@@ -1382,6 +1397,42 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         }
                         return ""+img.getType();
                     }
+
+                case IMAGE_COPY:    //   "imageCopy [nickName]": get a copy of the current image, if nickName supplied use from registry and if not found from Rexx variable
+                    {
+                        if (arrCommand.length>2)
+                        {
+                            throw new IllegalArgumentException("this command needs either no or exactly 1 argument (image's nickname for lookup), received "+(arrCommand.length-1)+" instead");
+                        }
+                        BufferedImage tmpImage = bufImage;  // current image
+                        if (arrCommand.length==2)           // load image
+                        {
+                            String name = arrCommand[1];    // get  nickname
+                            tmpImage = hmImages.get(name.toUpperCase());
+                            if (tmpImage==null)
+                            {
+                                try
+                                {
+                                    tmpImage = (BufferedImage) getContextVariable(slot, name);  // try to get from a Rexx variable
+                                }
+                                catch (Throwable t) {}
+                                if (tmpImage==null)
+                                {
+                                    throw new IllegalArgumentException("image (must be a BufferedImage) with the name \""+name+"\" not found, you must first use \"loadImage "+name+" filename\" or \"pushImage "+name+"\" or assign an BufferedImage to a Rexx variable named \""+name+"\"");
+                                }
+                            }
+                            if (isOR)
+                            {
+                                canonical = canonical+" "+name;
+                            }
+                        }
+                        if (isOR)
+                        {
+                            writeOutput(slot, canonical);
+                        }
+                        return copyImage(tmpImage); // return copy of image
+                    }
+
 
                 case IMAGE_SIZE:      // "imageSize [nickName]"
                     {
@@ -2190,18 +2241,33 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
 
                         if (arrCommand.length==2)
                         {
-                            int newFontStyle = Integer.parseInt(arrCommand[1]);
-                                // no exception, so args o.k.
-                            if (newFontStyle<0 || newFontStyle>3)
+                            int    fontStyle;
+                            String newFontStyle = arrCommand[1].toUpperCase();
+                            if (startRexxVariableChar.indexOf(newFontStyle.charAt(0))>=0)    // a symbolic name?
                             {
-                                throw new IllegalArgumentException("illegal fontStyle ["+newFontStyle+"]: must be one of 0 (PLAIN), 1 (BOLD), 2 (ITALIC) or 3 (BOLD+ITALIC)");
+                                if (!fontStyles.containsKey(newFontStyle))
+                                {
+                                    throw new IllegalArgumentException("unknown value for \"fontStyle\" argument: \""+arrCommand[1]+"\"");
+                                }
+                                fontStyle=fontStyles.get(newFontStyle);
                             }
-                            currFontStyle = newFontStyle;
+                            else // verbatim int type
+                            {
+                                fontStyle=Integer.parseInt(newFontStyle);
+                                if (!fontStyles.containsValue(fontStyle))
+                                {
+                                    throw new IllegalArgumentException("unknown value for \"fontStyle\" argument: \""+arrCommand[1]+"\"");
+                                }
+                            }
                             if (isOR)
                             {
-                                canonical=canonical+" "+newFontStyle;
+                                canonical = canonical + " " +
+                                    (bUseNames4canonical ? fontStylesInt2Name.get(fontStyle) : arrCommand[1]) ;
                             }
+                            currFontStyle=fontStyle;
+
                         }
+
                         if (isOR)
                         {
                             writeOutput(slot, canonical);
@@ -2265,30 +2331,10 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             canonical = canonical + " " + fontNickName;
                         }
 
-
                         // Dialog", "DialogInput", "Serif", "SansSerif", "Monospaced"
                         if (arrCommand.length==2 )
                         {
                             font = hmFonts.get(fontNickName.toUpperCase());
-/* -- 2022-10-31 (injected the day before): remove, as it should be possible to use these fonts with a nickname
-                            if (font==null)
-                            {
-                                // maybe one of the five operating system independent fonts?
-                                if ("Dialog DialogInput Serif SansSerif Monospaced".indexOf(fontNickName)>=0)
-                                {
-                                    font = new Font(fontNickName, currFontStyle, currFontSize);
-                                }
-                                if (font==null)
-                                {
-                                    String errMsg="font with the supplied nickname \""+fontNickName+"\" is not registered";
-                                    if (isOR)
-                                    {
-                                        writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
-                                    }
-                                    return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-10", errMsg );
-                                }
-                            }
--- */
                             if (font==null)
                             {
                                 String errMsg="font with the supplied nickname \""+fontNickName+"\" is not registered";
@@ -2305,7 +2351,6 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             {
                                 writeOutput(slot, canonical);
                             }
-                            // return font;
                             return resultValue;
                         }
 
@@ -2321,13 +2366,13 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             }
                             return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-11", errMsg );
                         }
+                        canonical = canonical + " " + fontName;
                         hmFonts.put(fontNickName.toUpperCase(),font);
                         bufGC.setFont(font);
                         if (isOR)
                         {
                             writeOutput(slot, canonical);
                         }
-                        // return font;
                         return resultValue;
                     }
 
@@ -2432,6 +2477,41 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         bufGC.drawString(str,currX,currY);
                     }
                     break;
+
+
+                    // 2022-11-01: return bounds of string with current font and gc
+                case STRING_BOUNDS:     // ( "stringBounds"             ) ,    //   "stringBounds string": returns width and height)
+                    {
+                        // ArrayList<int[]> al = getWordBoundaries(command);   // parse command return word boundaries
+                        ArrayList<int[]> al = alWordBoundaries;
+                        if (al.size()<2)
+                        {
+                            throw new IllegalArgumentException("this command needs 1 argument (the string to be measured with current font and graphic context)");
+                        }
+                            // no exception, so args o.k.
+                            // to fetch leading blanks we skip over first blank (unlike for other commands where we ignore all blanks after the command)
+                        int [] pos = (int []) al.get(0);
+                        String str = command.substring(pos[1]+1);   // extract String: skip over first trailing blank
+
+                        FontMetrics fm = bufGC.getFontMetrics();    // get current font metrics
+                        String strResult = null;
+
+                        // int width  = fm.stringWidth(str);
+                        // TODO: use getMaxAscent() and getMaxDescent() instead? or use
+                        // int height = fm.getAscent() + fm.getDescent();
+                        // strResult = width + " " + height;
+
+                        Rectangle2D r2d = fm.getStringBounds(str, bufGC);
+                        strResult = r2d.getX()+" "+r2d.getY()+" "+r2d.getWidth()+" "+r2d.getHeight();
+
+                        if (isOR)
+                        {
+                            writeOutput(slot,canonical+" "+str);
+                        }
+                        return strResult;
+                    }
+
+
 
                 case DRAW_OVAL:     // "drawOval width height"
                 case FILL_OVAL:
@@ -3698,6 +3778,10 @@ enum Command {
     IMAGE_TYPE                  ( "imageType"                ) ,    //   "imageType [nickName]": get current image's type, if nickName supplied return its image type
     LOAD_IMAGE                  ( "loadImage"                ) ,    //   "loadImage imageNickName filename", loads an image -> returns its dimension
     SAVE_IMAGE                  ( "saveImage"                ) ,    //   "saveImage filename", saves current image to file
+
+    // 2022-11-01
+    IMAGE_COPY                  ( "imageCopy"                ) ,    //   "imageCopy [nickName]": get a copy of the current image, if nickName supplied use from registry and if not found from Rexx variable
+    STRING_BOUNDS               ( "stringBounds"             ) ,    //   "stringBounds string": returns the Rectangle2D x y w h (in floats?)
 
     PUSH_GC                     ( "pushGC"                   ) ,    //   "pushGC" push current gc
     POP_GC                      ( "popGC"                    ) ,    //   "popGC"  pop and set previous gc
