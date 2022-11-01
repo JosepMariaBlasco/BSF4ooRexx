@@ -675,7 +675,7 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command">  &quot;drawArc&quot;
-    <td colspan="2"> Draws an arc .
+    <td colspan="2"> Draws an arc.  Angles increase counterclockwise.
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
         method <em>drawArc(...)()</em>.
 
@@ -693,8 +693,8 @@ value.
     <td class="command">  &quot;drawImage&quot;
     <td colspan="2"> Draws an image which got previously loaded from the filesystem
         with the command <em><a href="#cmdLoadImage">loadImage</a></em> and stored internally
-        with an <em>nickName</em> in the internal image registry, or an image that got
-        pushed with a <em>nickName</em> in the command <em><a href="#cmdPushImage">pushImage</a></em>,
+        with an <em>imageNickName</em> in the internal image registry, or an image that got
+        pushed with a <em>imageNickName</em> in the command <em><a href="#cmdPushImage">pushImage</a></em>,
         or stored in a Rexx variable.
 
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
@@ -702,8 +702,8 @@ value.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
-    <td class="argument"> nickName [bkgColor]
-    <td> <em>nickName</em> denotes the name of an image stored in the
+    <td class="argument"> imageNickName [bkgColor]
+    <td> <em>imageNickName</em> denotes the name of an image stored in the
          internal image registry or the name of a Rexx variable referring
          to an image. Draws as much of the image as possible.
 
@@ -711,8 +711,8 @@ value.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
-    <td class="argument"> nickName width height [bkgColor]
-    <td> <em>nickName</em> denotes the name of an image stored in the
+    <td class="argument"> imageNickName width height [bkgColor]
+    <td> <em>imageNickName</em> denotes the name of an image stored in the
          internal image registry or the name of a Rexx variable referring
          to an image.
          Draws as much of the image as possible scaled to the
@@ -722,8 +722,8 @@ value.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
-    <td class="argument"> nickName width height srcX1 srcY1 srcX2 srcY2 [bkgColor]
-    <td> <em>nickName</em> denotes the name of an image stored in the
+    <td class="argument"> imageNickName width height srcX1 srcY1 srcX2 srcY2 [bkgColor]
+    <td> <em>imageNickName</em> denotes the name of an image stored in the
          internal image registry or the name of a Rexx variable referring
          to an image.
          Draws as much of the image as possible scaled to the
@@ -842,12 +842,16 @@ value.
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
-    <td class="command">  &quot;drawString&quot;
+    <td class="command" id="cmdDrawString">  &quot;drawString&quot;
     <td colspan="2"> Draws a string (text).
         <br><em>Note:</em> In order to preserve leading blanks in a string, only the
         first (delimiting) blank after the command <em>drawString</em> will be consumed, all
         following characters - including leading whitespace - are regarded to constitute
         the string to be drawn.
+        <br><em>Hint:</em> if you have a need to know the bounds (a rectangle) of the
+        string using the current font and the current graphics context you may want to use the
+        command <a href="#cmdStringBounds">stringBounds</a>.
+
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
         method <em>drawString(...)</em>.
 
@@ -879,7 +883,7 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command">  &quot;fillArc&quot;
-    <td colspan="2"> Fills an arc .
+    <td colspan="2"> Fills an arc.  Angles increase counterclockwise.
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
         method <em>fillArc(...)()</em>.
 
@@ -1049,8 +1053,8 @@ value.
     <td> <em>style</em> a number or symbolic name that gets used when loading a
          new font, defaults to <em>0</em> (<em>PLAIN</em>). Additional font style
          values are: <em>1</em> (<em>BOLD</em>),
-                    <em>2</em> (<em>ITALIC</em>) and
-                    <em>3</em> (<em>BOLD</em> and <em>ITALIC</em>).
+                     <em>2</em> (<em>ITALIC</em>) and
+                     <em>3</em> (<em>BOLD_ITALIC</em>).
 
 
     <!-- -------------------------------------------------------- -->
@@ -1197,6 +1201,24 @@ value.
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
+    <td class="command">  &quot;imageCopy&quot;
+    <td colspan="2"> Creates and returns a copy of an image which got previously loaded from the filesystem
+        with the command <em><a href="#cmdLoadImage">loadImage</a></em> and stored internally
+        with an <em>imageNickName</em> in the internal image registry, or an image that got
+        pushed with a <em>imageNickName</em> in the command <em><a href="#cmdPushImage">pushImage</a></em>,
+        or stored in a Rexx variable.
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> imageNickName [bkgColor]
+    <td> <em>imageNickName</em> denotes the name of an image stored in the
+         internal image registry or the name of a Rexx variable referring
+         to a <em>BufferedImage</em>.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
     <td class="command">  &quot;imageSize&quot;
     <td colspan="2"> Query the image size (dimension). With no arguments returns the current image's
         <em>width</em> and <em>height</em> which can be referred to via the Rexx variable
@@ -1209,7 +1231,6 @@ value.
     <td class="argument"> imageNickName
     <td> optional <em>imageNickName</em> gets uppercased and is used to look up the internal
          image registry, get its size which is returned via the Rexx variable <em>RC</em>.
-
 
 
     <!-- -------------------------------------------------------- -->
@@ -1591,7 +1612,8 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command">  &quot;sleep&quot;
-    <td colspan="2"> Sleeps (halts execution) for the number of <em>seconds</em>.
+    <td colspan="2"> Sleeps (halts execution) for the given interval expressed
+        in <em>seconds</em>.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
@@ -1599,6 +1621,31 @@ value.
     <td> <em>seconds</em> determines the length of the sleep. It is possible to supply <em>1/1000</em>
         of a fraction of a second to allow for animation effects, eg.<em>0.01</em> or <em>0.005</em>.
 
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdStringBounds">  &quot;stringBounds&quot;
+    <td colspan="2"> Returns the bounds (a rectangle) for the supplied string (text)
+        if drawn in the current font on the current graphic context (via the Rexx variable <em>RC</em>).
+        One can use this information to exactly set the <a href="#cmdMoveTo">position</a>
+        before using the <a href="#cmdDrawString">drawString</a> command to draw the string.
+
+        <br><em>Note:</em> In order to preserve leading blanks in a string, only the
+        first (delimiting) blank after the command <em>drawString</em> will be consumed, all
+        following characters - including leading whitespace - are regarded to constitute
+        the string to be drawn.
+
+        <br>Cf. the Java documentation for the Java class <em>java.awt.FontMetrics</em> and the
+        method <em>getStringBounds(String str, Graphics context)</em>.
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> string
+    <td> <em>string</em> (text) for which the bounds get returned if drawn in the
+        current font using the current graphics context. The string returned via the Rexx
+        variable <em>RC</em> consists of: <em>&quot;x y width height&quot;</em>.
 
 
     <!-- -------------------------------------------------------- -->
@@ -1976,7 +2023,7 @@ value.
 <center>
    <hr width="75%">
     <small>
-       JDOC synopsis of commands, version: 100.20221031
+       JDOC synopsis of commands, version: 100.20221101
        <br>Acknowledgement: the author wishes to thank DI Walter Pachl
        <br>for his help in testing and proof reading
     </small>
