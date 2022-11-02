@@ -48,7 +48,7 @@ address jdor      -- set default environment to JDOR
 pkgLocal=.context~package~local     -- get package's local environment
    -- add PIXEL.PER.CM entry to it, thereafter can be retrieved via the
    -- environment symbol .PIXEL.PER.CM from any place in this package
-pkgLocal~pixel.per.cm = 72 / 2.54   -- there are 72 dots per inch, an inch is 2.54cm -> 28.3464567 pixel per cm
+pkgLocal~dpcm = 72 / 2.54   -- there are 72 dots per inch, an inch is 2.54cm -> 28.3464567 dpcm (dots per cm)
 
 new 450 350             -- create image
 winShow                 -- show image in a window (a JFrame)
@@ -109,8 +109,8 @@ drawArrows: procedure
 drawTickMarks: procedure
   use strict arg tickStart, tickSize=4, lineLength=54
 
-  do i = tickStart while i < lineLength/.pixel.per.cm
-     tick = i * .pixel.per.cm
+  do i = tickStart while i < lineLength/.dpcm
+     tick = i * .dpcm
      -- x-axis
      moveTo     tick      (-tickSize)
      drawLine   tick        tickSize
@@ -126,10 +126,11 @@ drawTickMarks: procedure
 
 drawRect: procedure
   use strict arg x=1, y=1, w=2, h=1 -- arguments are cm values
-  x=x*.pixel.per.cm  -- calculate pixels
-  y=y*.pixel.per.cm  -- calculate pixels
-  w=w*.pixel.per.cm  -- calculate pixels
-  h=h*.pixel.per.cm  -- calculate pixels
+   -- calculate needed dots per cm (dpcm)
+  x=x*.dpcm       -- calculate dots (pixels)
+  y=y*.dpcm       -- calculate dots (pixels)
+  w=w*.dpcm       -- calculate dots (pixels)
+  h=h*.dpcm       -- calculate dots (pixels)
   moveTo x y
   drawRect w h
   return

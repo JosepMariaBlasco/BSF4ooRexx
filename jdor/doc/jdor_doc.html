@@ -675,7 +675,7 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command">  &quot;drawArc&quot;
-    <td colspan="2"> Draws an arc.  Angles increase counterclockwise.
+    <td colspan="2"> Draws an arc which is part of the oval inscribed in a rectangle.
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
         method <em>drawArc(...)()</em>.
 
@@ -684,7 +684,7 @@ value.
     <td class="argument"> width height startAngle arcAngle
     <td> <em>width</em> and <em>height</em> in pixels of the rectangle,
          <em>startAngle</em> in degrees (<em>0</em> is the 3 o'clock position), <em>arcAngle</em>
-         angular extend in degrees relative to <em>startAngle</em>.
+         angular extend in degrees relative to <em>startAngle</em> (angles increase counterclockwise).
 
 
     <!-- -------------------------------------------------------- -->
@@ -883,7 +883,7 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command">  &quot;fillArc&quot;
-    <td colspan="2"> Fills an arc.  Angles increase counterclockwise.
+    <td colspan="2"> Fills an arc which is part of the oval inscribed in a rectangle.
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
         method <em>fillArc(...)()</em>.
 
@@ -892,7 +892,7 @@ value.
     <td class="argument"> width height startAngle arcAngle
     <td> <em>width</em> and <em>height</em> in pixels of the rectangle,
          <em>startAngle</em> in degrees (<em>0</em> is the 3 o'clock position), <em>arcAngle</em>
-         angular extent in degrees relative to <em>startAngle</em>.
+         angular extent in degrees relative to <em>startAngle</em> (angles increase counterclockwise).
 
 
 
@@ -983,15 +983,21 @@ value.
 
         <br>Supplying only the <em>fontNickName</em> argument will load the font from the
             internal register and use it until it gets changed again.
+
         <br>Supplying in addition the <em>fontName</em>, a <em>java.awt.Font</em>
             gets loaded from the system, registered with the supplied <em>fontNickName</em>
             and then used for setting the new font. The font size is taken from
             <a href="#cmdFontSize"><em>fontSize</em></a>
-            and the style from <a href="#cmdFontStyle"><em>fontStyle</em></a>.
+            and the style from <a href="#cmdFontStyle"><em>fontStyle</em></a> unless
+            the font name includes a trailing dash or blank, optionally a style (one of <em>PLAIN</em>,
+            <em>ITALIC</em>, <em>BOLD</em>, <em>BOLDITALIC</em>) and/or a trailing dash
+            or blank and size information (e.g. <em>&quot;Arial BOLD 18&quot;</em> or
+            <em>&quot;Arial-BOLD-18&quot;</em>, <em>&quot;Arial 18&quot;</em> or
+            <em>&quot;Arial-BOLD&quot;</em>).
 
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
-        methods <em>getFont()</em>, <em>setFont(...)</em>, as well as the Java class
-        <em>java.awt.Font</em>.
+        methods <em>getFont()</em>, <em>setFont(...)</em>, as
+        well as the Java class <em>java.awt.Font</em> and the method <em>decode(fontName)</em>.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
@@ -1054,7 +1060,7 @@ value.
          new font, defaults to <em>0</em> (<em>PLAIN</em>). Additional font style
          values are: <em>1</em> (<em>BOLD</em>),
                      <em>2</em> (<em>ITALIC</em>) and
-                     <em>3</em> (<em>BOLD_ITALIC</em>).
+                     <em>3</em> (<em>BOLDITALIC</em>).
 
 
     <!-- -------------------------------------------------------- -->
@@ -1474,6 +1480,37 @@ value.
         in the internal image registry.
 
 
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command">  &quot;render&quot;
+    <td colspan="2"> Queries and optionally allows to change general and text antialiasing
+        rendering hints.
+
+        <br>Querying the current value (no argument supplied) will return it, setting
+        (changing) the value to a new value will return the old (previously set) value
+        via the Rexx variable <em>RC</em>. The blank delimited string consists of two
+        values, the first representing the setting of <em>RenderingHints.KEY_ANTIALIASING</em>
+        (controls general antialiasing, JDOR default set to <em>&quot;aliasOn&quot;</em>)
+        and the second the setting of <em>RenderingHints.KEY_TEXT_ANTIALIASING</em>
+        (controls text antialising, JDOR default set to <em>&quot;textAliasOn&quot;</em>). By default
+        these two keys are set to <em><code>aliasOn textAliasOn</code></em> to get the best
+        rendering on high resolution screens and print devices.
+
+        <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
+        methods <em>getRenderingHint()</em>, <em>setRenderingHint(...)</em> and the Java class
+        <em>java.awt.RenderingHints</em>.
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> rendering1 [rendering2]
+    <td> <em>rendering1</em> and optionally <em>rendering2</em> are values for either
+         <em>RenderingHints.KEY_ANTIALIASING</em> (one of the values <em>&quot;aliasOn&quot;</em>,
+         <em>&quot;aliasOff&quot;</em>, <em>&quot;aliasDefault&quot;</em>) or
+         <em>RenderingHints.KEY_TEXT_ANTIALIASING</em> (<em>&quot;textAliasOn&quot;</em>,
+         <em>&quot;textAliasOff&quot;</em>, <em>&quot;textAliasDefault&quot;</em>).
+
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
@@ -1645,7 +1682,7 @@ value.
     <td class="argument"> string
     <td> <em>string</em> (text) for which the bounds get returned if drawn in the
         current font using the current graphics context. The string returned via the Rexx
-        variable <em>RC</em> consists of: <em>&quot;x y width height&quot;</em>.
+        variable <em>RC</em> consists of blank delimited fields: <em>&quot;x y width height&quot;</em>.
 
 
     <!-- -------------------------------------------------------- -->
@@ -1670,14 +1707,14 @@ value.
     <td>
     <td class="argument"> strokeNickName
     <td> <em>strokeNickName</em> is uppercased and used to fetch the stroke from the internal stroke
-        registry, sets the <em>Graphics[2D]</em> object to it and returns the stroke via the Rexx
+        registry, sets the <em>Graphics[2D]</em> object to it and returns the previous stroke via the Rexx
         variable <em>RC</em>.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> strokeNickName width
     <td> Defines a new stroke of <em>width</em> in pixels, stores it in the internal registry
-         with the uppercased <em>strokeNickName</em> and returns the new stroke via the Rexx
+         with the uppercased <em>strokeNickName</em> and returns the previous stroke via the Rexx
          variable <em>RC</em>.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
@@ -1685,7 +1722,7 @@ value.
     <td class="argument"> strokeNickName width cap join
     <td> Defines a new stroke of <em>width</em> in pixels, <em>cap</em>, <em>join</em>,
          stores it in the internal registry with the uppercased <em>strokeNickName</em>
-         and returns the new stroke via the Rexx variable <em>RC</em>.
+         and returns the previous stroke via the Rexx variable <em>RC</em>.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
@@ -1693,7 +1730,7 @@ value.
     <td> Defines a new stroke of <em>width</em> in pixels, <em>cap</em>, <em>join</em>,
          <em>miterlimit</em>,
          stores it in the internal registry with the uppercased <em>strokeNickName</em>
-         and returns the new stroke via the Rexx variable <em>RC</em>.
+         and returns the previous stroke via the Rexx variable <em>RC</em>.
 
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
@@ -1703,7 +1740,7 @@ value.
          <em>miterlimit</em>, <a href="#dtDashArray"><em>dashArray</em></a>,
          <em>dashPhase</em>,
          stores it in the internal registry with the uppercased <em>strokeNickName</em>
-         and returns the new stroke via the Rexx variable <em>RC</em>.
+         and returns the previous stroke via the Rexx variable <em>RC</em>.
 
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
@@ -2023,7 +2060,7 @@ value.
 <center>
    <hr width="75%">
     <small>
-       JDOC synopsis of commands, version: 100.20221101
+       JDOC synopsis of commands, version: 100.20221102
        <br>Acknowledgement: the author wishes to thank DI Walter Pachl
        <br>for his help in testing and proof reading
     </small>

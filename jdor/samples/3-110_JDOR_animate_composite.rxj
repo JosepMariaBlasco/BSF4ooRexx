@@ -12,6 +12,8 @@
             animation effects gets positioned without a frame to the lower
             right hand of the screen.
 
+   Note:
+
    Date:    2022-10-30
 
    Author:  Rony G. Flatscher, WU Vienna
@@ -21,6 +23,9 @@
 
    Changed: 2022-11-01 - use new command 'stringBounds' and calculate center for the
                          concluding string, let that string move in from the right
+            2022-11-02 - adding flashing animation for five seconds
+                       - turn off text aliasing for animated text/string (interpolation
+                         pixel would distort the drawn string)
 
    license:
 
@@ -110,6 +115,7 @@ end
 
 -- get bounds of string, draw it at the center, but let it move in
 color blue              -- change color
+font f2 "Serif bolditalic 19" -- for final flashing, alternate definition of a font: embedd style and size
 fontSize 18             -- change font size
 fontStyle Italic        -- change font style
 font f1 "Serif"         -- create and use the font
@@ -123,6 +129,7 @@ y2=(h-y1)/2             -- vertical center position
 x=w+1                   -- move one pixel outside of the image
 moveTo x y2             -- position
 say "moving in from the right ..."
+render textAliasOff     -- otherwise a blue trail gets created from the interpolation pixels
 loop while x>x2
    winUpdate .false     -- do not update window (frame)
    composite clear      -- use CLEAR composite (to remove from image)
@@ -135,8 +142,35 @@ loop while x>x2
    sleep 0.01           -- sleep causes animation effect
 end
 
-say "'sleep 5' ..."
-sleep 5
+-- flash for 5 seconds
+say "flashing for 5 seconds ..."
+dt0=.dateTime~new
+bErase=.true
+bBold =.false
+do while (.dateTime~new - dt0)~seconds < 5
+   if bErase then       -- erase string/text?
+   do
+      composite clear
+      drawString str
+      composite src_over
+   end
+   else                 -- draw string/text
+   do
+      if bBold then font f1   -- now show in f1 (Serif italic 18)
+               else font f2   -- now show in f2 (Serif bolditalic 19)
+      bBold=\bBold      -- invert boolean value for next round
+      stringBounds str  -- uses current font and current graphic context
+      parse var rc x1 y1 width1 height1   -- get fields
+      x2=(w-width1)/2   -- horizontal center position
+      y2=(h-y1)/2       -- vertical center position
+      moveTo x2 y2
+      drawString str
+   end
+   bErase=\bErase       -- invert boolean value
+   sleep 0.3            -- cause animation effect
+end
+say "we are done."
+
 
 -- say "press enter to end ..."; parse pull
 
