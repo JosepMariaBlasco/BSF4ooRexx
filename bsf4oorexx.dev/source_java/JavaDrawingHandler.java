@@ -10,7 +10,7 @@
 
    author:  Rony G. Flatscher
    date:    2022-09-05/2022-10-05
-   version: 100.20221101
+   version: 100.20221102
    license: Apache license 2.0
 
    license:
@@ -85,7 +85,7 @@
                     - new command "imageCopy": returns a copy of an image (maybe for buffering purposes)
                     - new command "stringBounds": returns the Rectangle2D floats for "x y width height"
                       for the supplied string (allows for adjusting the string)
-
+        2022-11-02: - when loading a font try also Font.getFont(...) in addition
 */
 
 /*  Sample program in ooRexx (temporarily):
@@ -136,7 +136,6 @@
 
 package org.oorexx.handlers.jdor;
 
-
 import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -154,6 +153,7 @@ import java.awt.Dimension;
 import java.awt.GradientPaint;
 import java.awt.Paint;
 import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.Stroke;
 import java.awt.BasicStroke;
 import java.awt.event.WindowAdapter;
@@ -275,7 +275,7 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     /* static definitions           */
 
     // default image sizes
-    static final public String version = "100.20221101";
+    static final public String version = "100.20221102";
     static final private int prefWidth  = 500;
     static final private int prefHeight = 500;
     static       private int prefImageType = BufferedImage.TYPE_INT_ARGB; // default with alpha (only png supported)
@@ -297,8 +297,13 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     static final HashMap<Integer,String> alphaCompositesInt2Name = new HashMap<>();
 
     // FontStyle
-    static final HashMap<String,Integer> fontStyles              = new HashMap<>();
-    static final HashMap<Integer,String> fontStylesInt2Name      = new HashMap<>();
+    static final HashMap<String,Integer> fontStyles         = new HashMap<>();
+    static final HashMap<Integer,String> fontStylesInt2Name = new HashMap<>();
+
+    // RenderingHint.Key supported for "rendering" command
+    static final HashMap<String,Object>  renderingHints         = new HashMap<>();
+    static final HashMap<String,String>  renderingHintsAlias    = new HashMap<>();
+    static final HashMap<Object,String>  renderingHintsObj2Name = new HashMap<>();
 
     static {
         // ----------------------------------------------------------------------
@@ -369,12 +374,28 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
 
         // ----------------------------------------------------------------------
         // FontStyle
-        fontStyles.put("PLAIN"      , 0);
-        fontStyles.put("BOLD"       , 1);
-        fontStyles.put("ITALIC"     , 2);
-        fontStyles.put("BOLD_ITALIC", 3);
+        fontStyles.put("PLAIN"     , 0);
+        fontStyles.put("BOLD"      , 1);
+        fontStyles.put("ITALIC"    , 2);
+        fontStyles.put("BOLDITALIC", 3);
         // allow for looking up constant names (key) by value
         fontStyles.forEach((K,V)->fontStylesInt2Name.put(V,K));
+
+        // ----------------------------------------------------------------------
+        renderingHints.put("ALIASON"         , RenderingHints.VALUE_ANTIALIAS_ON);
+        renderingHints.put("ALIASOFF"        , RenderingHints.VALUE_ANTIALIAS_OFF);
+        renderingHints.put("ALIASDEFAULT"    , RenderingHints.VALUE_ANTIALIAS_DEFAULT);
+        renderingHints.put("TEXTALIASON"     , RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        renderingHints.put("TEXTALIASOFF"    , RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
+        renderingHints.put("TEXTALIASDEFAULT", RenderingHints.VALUE_TEXT_ANTIALIAS_DEFAULT);
+        renderingHintsAlias.put("ALIASON"         , "aliasOn"           );
+        renderingHintsAlias.put("ALIASOFF"        , "aliasOff"          );
+        renderingHintsAlias.put("ALIASDEFAULT"    , "aliasDefault"      );
+        renderingHintsAlias.put("TEXTALIASON"     , "textAliasOn"       );
+        renderingHintsAlias.put("TEXTALIASOFF"    , "textAliasOff"      );
+        renderingHintsAlias.put("TEXTALIASDEFAULT", "textAliasDefault"  );
+        // allow for looking up constant names (key) by value
+        renderingHints.forEach((K,V)->renderingHintsObj2Name.put(V,K));
     }
 
 
@@ -406,6 +427,9 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     boolean currVisible = false;
     boolean currWinUpdate = true;       // update Frame whenever we draw: allows turning updating on/off
 
+    // 2022-11-02: makes a difference when rendered to screen as well, so by default antialising is turned on
+    Object currAntiAliasing     = RenderingHints.VALUE_ANTIALIAS_ON;
+    Object currTextAntiAliasing = RenderingHints.VALUE_TEXT_ANTIALIAS_ON;
 
     /** Stack for graphic configurations. */
     ArrayDeque <Graphics2D>adGCStack = new ArrayDeque<>();
@@ -440,7 +464,7 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
         Graphics2D tGC = null;
         if (adGCStack.size()>0)
         {
-            tGC = adGCStack.pop();
+           tGC = adGCStack.pop();
         }
         while (tGC!=null)
         {
@@ -552,6 +576,8 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
             bufImage = new BufferedImage(prefWidth, prefHeight, prefImageType);
             bufGC    = (Graphics2D) bufImage.getGraphics();
             bufGC.setColor(Color.BLACK);
+            bufGC.setRenderingHint(RenderingHints.KEY_ANTIALIASING,      currAntiAliasing);
+            bufGC.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, currTextAntiAliasing);
             Font currFont = bufGC.getFont();
             currFontStyle = currFont.getStyle();
             currFontSize  = currFont.getSize();
@@ -1318,6 +1344,9 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         bufImage=new BufferedImage(width, height, type);    // create new image
                         bufGC=(Graphics2D) bufImage.getGraphics();          // get its GraphicsConfiguration
                         bufGC.setColor(Color.BLACK);            // make sure color is set to black
+
+                        bufGC.setRenderingHint(RenderingHints.KEY_ANTIALIASING,      currAntiAliasing);
+                        bufGC.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, currTextAntiAliasing);
                         if (jd!=null)                           // update Frame if it exists
                         {
                             jd.bufImage=bufImage;
@@ -1500,6 +1529,10 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         rop.sendMessage2("SETENTRY", "printPosY"        , printPosY);
                         rop.sendMessage2("SETENTRY", "printScaleX"      , printScaleX);
                         rop.sendMessage2("SETENTRY", "printScaleY"      , printScaleY);
+
+                        // current rendering options in effect
+                        rop.sendMessage2("SETENTRY", "currAntiAliasing"    , currAntiAliasing);
+                        rop.sendMessage2("SETENTRY", "currTextAntiAliasing", currTextAntiAliasing);
 
                         // current GraphicConfiguration
                         rop.sendMessage2("SETENTRY", "gc.background" , bufGC.getBackground());
@@ -1947,6 +1980,83 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         return resultValue;
                     }
 
+
+                case RENDER:        // "render [opt1 [opt2]]": returns or sets the current antialiasing settings for rendering
+                    {
+                        int argNum=arrCommand.length;
+                        if (argNum>3)
+                        {
+                            throw new IllegalArgumentException("this command needs either no, one or two rendering arguments, received "+(argNum-1)+" instead");
+                        }
+
+                        // get current settings
+                        Object o1=bufGC.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+                        Object o2=bufGC.getRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING);
+                        String s1=renderingHintsObj2Name.get(o1);
+                        String s2=renderingHintsObj2Name.get(o2);
+                        resultValue = s1+" "+s2;    // query current value (to be returned if change occurs)
+
+                        if (argNum==1)
+                        {
+                            if (isOR)
+                            {
+                                writeOutput(slot, canonical);
+                            }
+                            return resultValue;
+                        }
+
+                        String strArg = arrCommand[1].toUpperCase();   // get argument
+                        if (!renderingHints.containsKey(strArg))
+                        {
+                            throw new IllegalArgumentException("unknown value for argument # 1: \""+arrCommand[1]+"\"");
+                        }
+
+                        if (strArg.startsWith("TEXT"))
+                        {
+                            currTextAntiAliasing = renderingHints.get(strArg);
+                            bufGC.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, currTextAntiAliasing);
+                        }
+                        else
+                        {
+                            currAntiAliasing = renderingHints.get(strArg);
+                            bufGC.setRenderingHint(RenderingHints.KEY_ANTIALIASING, currAntiAliasing);
+                        }
+                        if (isOR)
+                        {
+                            canonical=canonical+" "+renderingHintsAlias.get(strArg);
+                        }
+
+                        if (argNum==3)
+                        {
+                            strArg = arrCommand[2].toUpperCase();
+                            if (!renderingHints.containsKey(strArg))
+                            {
+                                throw new IllegalArgumentException("unknown value for argument # 1: \""+arrCommand[1]+"\"");
+                            }
+                            if (strArg.startsWith("TEXT"))
+                            {
+                                currTextAntiAliasing = renderingHints.get(strArg);
+                                bufGC.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, currTextAntiAliasing);
+                            }
+                            else
+                            {
+                                currAntiAliasing = renderingHints.get(strArg);
+                                bufGC.setRenderingHint(RenderingHints.KEY_ANTIALIASING, currAntiAliasing);
+                            }
+                            if (isOR)
+                            {
+                                canonical=canonical+" "+renderingHintsAlias.get(strArg);
+                            }
+                        }
+
+                        if (isOR)
+                        {
+                            writeOutput(slot, canonical);
+                        }
+                        return resultValue;
+                    }
+
+
                 case CLIP_REMOVE:   //  "removeClip" -> setClip(null)
                     {
                         if (arrCommand.length!=1)
@@ -2357,14 +2467,21 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         // o.k. Font name may contain blanks so use start of third word and all what remains
                         String fontName = command.substring(alWordBoundaries.get(2)[0]);
                         font = new Font(fontName, currFontStyle, currFontSize);
-                        if (font==null)
+                        // note: it may be the case that the font is not found and a replacement (Dialog.plain) gets returned
+                        if (font==null || !font.getFontName().startsWith(fontName) )
                         {
-                            String errMsg="font \""+fontName+"\" could not be loaded";
-                            if (isOR)
+                            // 2022-11-02: use Font.decode(): if a registered Font with style and size encoded
+                            //             e.g. "Arial-BOLD-18", "Arial BOLD 18", "Arial-BOLD", "Arial 18", "Arial"
+                            font = Font.decode(fontName);
+                            if (font==null)
                             {
-                                writeOutput(slot, "-- ERROR (fontname argument): ["+command+"]");
+                                String errMsg="font \""+fontName+"\" could not be loaded";
+                                if (isOR)
+                                {
+                                    writeOutput(slot, "-- ERROR (fontname argument): ["+command+"]");
+                                }
+                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-11", errMsg );
                             }
-                            return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-11", errMsg );
                         }
                         canonical = canonical + " " + fontName;
                         hmFonts.put(fontNickName.toUpperCase(),font);
@@ -3782,6 +3899,9 @@ enum Command {
     // 2022-11-01
     IMAGE_COPY                  ( "imageCopy"                ) ,    //   "imageCopy [nickName]": get a copy of the current image, if nickName supplied use from registry and if not found from Rexx variable
     STRING_BOUNDS               ( "stringBounds"             ) ,    //   "stringBounds string": returns the Rectangle2D x y w h (in floats?)
+
+    // 2022-11-02
+    RENDER                      ( "render"                   ) ,    //   "render [opt1 [opt2]]": returns or sets the current antialiasing settings for rendering
 
     PUSH_GC                     ( "pushGC"                   ) ,    //   "pushGC" push current gc
     POP_GC                      ( "popGC"                    ) ,    //   "popGC"  pop and set previous gc
