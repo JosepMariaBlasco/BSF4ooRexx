@@ -5,8 +5,10 @@
             without any knowledge about Java installation issues)
    Author:  Rony G. Flatscher
    Date:    2006-01-07
-   Version: 1.41
+   Version: 1.42
    Changed:
+            2022-11-03, - add cmd.eHomeDir"/BSF4ooRexx/lib/" || "*" to classpath to pick up all jars there
+
             2022-10-16, - copy BSF4ooRexx850/clr's dll and jar files into BSF4ooRexx850/lib
                         - leave BSF4ooRexx850/clr's gacutilrgf.exe in BSF4ooRexx850/clr and use it from there
                         - copy BSF4ooRexx850/clr's CLR.CLS to BSF4ooRexx850 (BSF4ooRexx850 directory is on PATH)
@@ -383,25 +385,25 @@ do
    call usage  -- will exit -1
 end
 
-      /* determine commands depending on Unix or Windows (OS2)    */
-cmd.eIsUnix=(j.file.separator="/")
 
 parse upper source s +1  -- get operating system name in uppercase
 cmd.eIsMacOSX=(s="D" | s="M")    -- determine whether running on "MACOSX" replaced by "Darwin"
 
--- cmd.eIsUnix=.true -- for debugging only !!
+if cmd.eIsUnix then  -- get home directory
+do
+   cmd.eHomeDir      = determineHomeDir(cmd.eRealUserName, cmd.eIsMacOSX)  -- find for Unix (Darwin, Linux, etc.)
+end
+else
+do
+   cmd.eHomeDir=value("USERPROFILE",,"environment")
+end
 
-/* -- rgf, 20221004: no extension library supported by newer Java !
-      /* DLL/SO-extension library usually named "i386" on Intel, and "solaris" for Sun's Java   */
-cmd.eExt.dir.bin=j.java.home || j.file.separator || "lib" || j.file.separator || ,
-                                iif(pos("86", j.os.arch)>0, "i386", j.os.arch)
--- */
+-- cmd.eIsUnix=.true -- for debugging only !!
 
 cmd.eSuperDir = qualify(directory() || j.file.separator || "..")  -- get path to super directory
 cmd.eSuperDir2=cmd.eSuperDir || j.file.separator   -- supply a trailing separator
 
    /* set BSF4OOREXX_HOME */
--- cmd.eSetBSF4OOREXX_HOME=iif(cmd.eIsUnix=1, "", "set ") || "BSF4OOREXX_HOME="cmd.eSuperDir
    -- if BSF4OOREXX_HOME not defined, assign default value
 if cmd.eIsWindows then
    cmd.eSetBSF4OOREXX_HOME='if "%BSF4OOREXX_HOME%"=="" set BSF4OOREXX_HOME='cmd.eSuperDir
@@ -445,7 +447,7 @@ do i=1 to cmd.eJarBaseNames.0    /* iterate over all found jar-files    */
 end
 -- */
 -- watch out for Rexx comment, hence concatenating asterisk
-cmd.eSetCP=cmd.eSetCP || iif(cmd.eIsUnix=1, ":$BSF4OOREXX_HOME/lib/" || "*", ";%BSF4OOREXX_HOME%\lib\*")
+cmd.eSetCP=cmd.eSetCP || iif(cmd.eIsUnix=1, "$BSF4OOREXX_HOME/lib/" || "*", "%BSF4OOREXX_HOME%\lib\*")
 
 -- 2016-08-15, rgf: define .NET/CLR
 if cmd.eIsUnix<>1 then
@@ -483,19 +485,23 @@ do
    cmd.eJarBaseNames.i=cmd.eCommonsLoggingJarName
 end
 
+   -- add current directory (new: 2022-11-03) followed by "homedir/lib/*" to pick up all jars there
 if cmd.eIsUnix=.true then
 do
+   tmpHomeDirLib=":"cmd.eHomeDir"/BSF4ooRexx/lib/" || "*"   -- 2022-11-03: allow user's lib to be used as jar collection
+
    if right(cmd.eSetCP,1)="=" then
-      cmd.eSetCP=cmd.eSetCP || "."  || "$TMPCP"
+      cmd.eSetCP=cmd.eSetCP || "."  || tmpHomeDirLib || "$TMPCP"
    else
-      cmd.eSetCP=cmd.eSetCP || ":." || "$TMPCP"
+      cmd.eSetCP=cmd.eSetCP || ":." || tmpHomeDirLib || "$TMPCP"
 end
 else
 do
+   tmpHomeDirLib=";"cmd.eHomeDir"\BSF4ooRexx\lib\*"   -- 2022-11-03: allow user's lib to be used as jar collection
    if right(cmd.eSetCP,1)="=" then
-      cmd.eSetCP=cmd.eSetCP                     || "." || j.path.separator || "%CLASSPATH%"
+      cmd.eSetCP=cmd.eSetCP                     || "." || tmpHomeDirLib || ";%CLASSPATH%"
    else
-      cmd.eSetCP=cmd.eSetCP || j.path.separator || "." || j.path.separator || "%CLASSPATH%"
+      cmd.eSetCP=cmd.eSetCP || j.path.separator || "." || tmpHomeDirLib || ";%CLASSPATH%"
 end
 
    /* define path to "jvm.dll/libjvm.so" ("javai.dll/libjavai.so" for Java 1.1.8)   */
@@ -606,7 +612,7 @@ do
                                              supported by the Linux distribution;
                                              if .false, install into user's profile ~/.bashrc else */
 
-   cmd.eHomeDir      = determineHomeDir(cmd.eRealUserName, cmd.eIsMacOSX)
+   -- TODO: remove done above: cmd.eHomeDir      = determineHomeDir(cmd.eRealUserName, cmd.eIsMacOSX)  -- find for Unix (Darwin, Linux, etc.)
 
    cmd.eAdd2BashRc   = cmd.eHomeDir"/.bashrc"   /* logon user's bash profile to add entry to       */
    cmd.eAdd2Profile  = "/etc/profile"     /* system wide setting                       */
@@ -737,7 +743,6 @@ do
 
    if cmd.eBinDir="" then
       cmd.eBinDir=getRexxDir()   /* directory where executables reside     */
-
 
    cmd.eLibDir=cmd.eBinDir
    cmd.eQuote='"'                /* always quote file names for Windows    */
@@ -1157,7 +1162,7 @@ createInstallScript: procedure expose j. cmd. path.
       call lineout fn, ""
 
          -- add bsf-jars to CLASSPATH
-      tmpArgs=";"cmd.eSuperdir"\lib\*"    -- rgf, 20221004 instead of ""
+      tmpArgs=cmd.eSuperdir"\lib\*"    -- rgf, 20221004 instead of ""
       do i=1 to cmd.eJarBaseNames.0
          if tmpArgs<>"" then tmpArgs=tmpArgs || j.path.separator
          tmpArgs=tmpArgs || cmd.eJarBaseNames.i
@@ -1165,7 +1170,8 @@ createInstallScript: procedure expose j. cmd. path.
 
       if tmpArgs<>"" then
       do
-         tmpArgs=tmpArgs || j.path.separator || "."   -- add current directory (for datergf-BSF4Rexx-samples to work)
+         -- add current directory followed by user's homedir "lib" to pick up all jars there, if any
+         tmpArgs=tmpArgs || ";.;" || cmd.eHomeDir"\BSF4ooRexx\lib\" || "*"
 
             -- make sure the current directory is searched as well
          if cmd.eRegistryClassPath~left(5)="HKCU\" then  -- rgf, 2011-01-25: make sure that system set CLASSPATH is honored !
