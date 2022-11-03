@@ -501,7 +501,7 @@ value.
     <td colspan="3"> Queries and optionally sets the background color to a registered color.
 
         <br>Querying the current value (no argument supplied) will return it, setting
-        (changing) the value to a new value will return the old (previously set) value
+        (changing) the value to a new color value will return the old (previously set) value
         via the Rexx variable <em>RC</em>.
 
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
@@ -510,8 +510,9 @@ value.
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> colorNickName
-    <td> The name of a registered color (cf. <em><a href="#cmdColor">color</a></em> command) to
-        which the background color should be set to.
+    <td> The name of a registered color (cf. <em><a href="#cmdColor">color</a></em> command)
+         or the name of a Rexx variable referring to a color
+         to which the background color should be set to.
 
 
     <!-- -------------------------------------------------------- -->
@@ -569,12 +570,14 @@ value.
         via the Rexx variable <em>RC</em>.
 
         <br>Supplying only the <em>colorNickName</em> argument will load the color from the
-            internal register and assign it to the <a href="#cmdGC"><em>GC</em></a> to
+            internal register
+            or from a Rexx variable by that name referring to a color
+            and assign it to the <a href="#cmdGC"><em>GC</em></a> to
             be used for drawing from now on.
 
         <br>Supplying in addition <em>intensity</em> (cf. <a href="#dtRGB"><em>RGB color</em></a> or
             <a href="#dtRGBA"><em>RGBA color</em></a>)
-        for the colors <em>red</em>, <em>green</em>, <em>blue</em>,
+            for the colors <em>red</em>, <em>green</em>, <em>blue</em>,
             and optionally <em>alpha</em>, a <em>java.awt.Color</em> of that type gets created, registered with
             the supplied <em>colorNickName</em> and then used for setting the new color.
 
@@ -586,7 +589,9 @@ value.
     <td>
     <td class="argument"> colorNickName
     <td> <em>colorNickName</em> gets uppercased and is used to look up the internal
-         color registry for the denoted color which should be used from now on. The
+         color registry for the denoted color
+         or the name of a Rexx variable referring to a color
+         which should be used from now on. The
          previously defined color gets gets returned via the Rexx variable <em>RC</em>.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
@@ -982,7 +987,9 @@ value.
         via the Rexx variable <em>RC</em>.
 
         <br>Supplying only the <em>fontNickName</em> argument will load the font from the
-            internal register and use it until it gets changed again.
+            internal register
+            or from a Rexx variable of that name which refers to a font
+            and use it for drawing strings until it gets changed again.
 
         <br>Supplying in addition the <em>fontName</em>, a <em>java.awt.Font</em>
             gets loaded from the system, registered with the supplied <em>fontNickName</em>
@@ -993,7 +1000,9 @@ value.
             <em>ITALIC</em>, <em>BOLD</em>, <em>BOLDITALIC</em>) and/or a trailing dash
             or blank and size information (e.g. <em>&quot;Arial BOLD 18&quot;</em> or
             <em>&quot;Arial-BOLD-18&quot;</em>, <em>&quot;Arial 18&quot;</em> or
-            <em>&quot;Arial-BOLD&quot;</em>).
+            <em>&quot;Arial-BOLD&quot;</em>). If the font style and font size get embedded
+            in the font name the <em>JDOR</em> fields <em>currFontSize</em> and <em>currFontStyle</em> get updated
+            accordingly.
 
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
         methods <em>getFont()</em>, <em>setFont(...)</em>, as
@@ -1003,7 +1012,8 @@ value.
     <td>
     <td class="argument"> fontNickName
     <td> <em>fontNickName</em> gets uppercased and is used to look up the internal
-         font registry for the denoted font which should be used from now on.
+         font registry for the denoted font which should be used from now on
+         or taken as the name of a Rexx variable which refers to an font.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
@@ -1082,8 +1092,10 @@ value.
         following entries are available:
         <ul>
             <li><em>colors</em> (a <em>java.util.HashMap</em>)
+            <li><em>currAntiAliasing</em>
             <li><em>currFontSize</em>
             <li><em>currFontStyle</em>
+            <li><em>currTextAntiAliasing</em>
             <li><em>currVisible</em>
             <li><em>currWinUpdate</em>
             <li><em>currX</em>
@@ -1230,13 +1242,16 @@ value.
         <em>width</em> and <em>height</em> which can be referred to via the Rexx variable
         <em>RC</em> upon return from this command.
         <br>Supplying the optional <em>imageNickName</em> argument will return the size of the image
-            from the internal register.
+            from the internal register,
+            or from a Rexx variable referring to an image.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> imageNickName
     <td> optional <em>imageNickName</em> gets uppercased and is used to look up the internal
-         image registry, get its size which is returned via the Rexx variable <em>RC</em>.
+         image registry
+         or the name of a Rexx variable referring to an image,
+         get its size which is returned via the Rexx variable <em>RC</em>.
 
 
     <!-- -------------------------------------------------------- -->
@@ -1246,13 +1261,15 @@ value.
     <td colspan="2"> Query the image type. With no arguments returns the current image's
         type which can be referred to via the Rexx variable <em>RC</em> upon return from this command.
         <br>Supplying the optional <em>imageNickName</em> argument will return the type of the image
-            from the internal register.
+            from the internal register,
+            or from a Rexx variable referring to an image.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> imageNickName
     <td> optional <em>imageNickName</em> gets uppercased and is used to look up the internal
-         image registry, get its type which is returned via the Rexx variable <em>RC</em>.
+         image registry or the name of a Rexx variable referring to an image,
+         get its type which is returned via the Rexx variable <em>RC</em>.
 
 
 
@@ -1314,7 +1331,9 @@ value.
     <td>
     <td class="argument"> nickName
     <td> <em>nickName</em> in uppercase will be used to look up a gradientPaint and if not found
-        a color in the respective internal registries in this order.
+        a color in the respective internal registries
+        or stored in a Rexx variable by that name
+        in this order.
 
 
     <!-- -------------------------------------------------------- -->
@@ -1622,8 +1641,8 @@ value.
     <td>
     <td class="argument"> colorNickName
     <td> <em>colorNickName</em> gets uppercased and is used to look up the internal
-         color registry for the denoted color which should be used from now on for
-         <em>xorMode</em> processing.
+         color registry for the denoted color or stored in a Rexx variable
+         which should be used from now on for <em>xorMode</em> processing.
 
 
     <!-- -------------------------------------------------------- -->
@@ -1707,7 +1726,8 @@ value.
     <td>
     <td class="argument"> strokeNickName
     <td> <em>strokeNickName</em> is uppercased and used to fetch the stroke from the internal stroke
-        registry, sets the <em>Graphics[2D]</em> object to it and returns the previous stroke via the Rexx
+        registry  or stored in a Rexx variable, sets the <em>Graphics[2D]</em> object to it and
+        returns the previous stroke via the Rexx
         variable <em>RC</em>.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
@@ -2060,7 +2080,7 @@ value.
 <center>
    <hr width="75%">
     <small>
-       JDOC synopsis of commands, version: 100.20221102
+       JDOC synopsis of commands, version: 100.20221103
        <br>Acknowledgement: the author wishes to thank DI Walter Pachl
        <br>for his help in testing and proof reading
     </small>
