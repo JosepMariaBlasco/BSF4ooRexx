@@ -10,7 +10,7 @@
 
    author:  Rony G. Flatscher
    date:    2022-09-05/2022-10-05
-   version: 100.20221102
+   version: 100.20221103
    license: Apache license 2.0
 
    license:
@@ -92,6 +92,9 @@
                     - added new 'render' command to query or change the settings; note: if animating
                       text (using drawString) it may be necessary to turn off text antialiasing to
                       inhibit a trail/shmear, cf. 3-110_JDOR_animate_composite.rxj as an example
+        2022-11-03: - the following commands now also take a Rexx variable named by the supplied
+                      nick name, if not found in the registries: BACKGROUND, COLOR, FONT, GRADIENT_PAINT,
+                      IMAGE_SIZE, IMAGE_TYPE, PAINT, SET_XOR_MODE, STROKE
 */
 
 /*  Sample program in ooRexx (temporarily):
@@ -281,7 +284,7 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     /* static definitions           */
 
     // default image sizes
-    static final public String version = "100.20221102";
+    static final public String version = "100.20221103";
     static final private int prefWidth  = 500;
     static final private int prefHeight = 500;
     static       private int prefImageType = BufferedImage.TYPE_INT_ARGB; // default with alpha (only png supported)
@@ -684,13 +687,16 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             newX = string2int(arrCommand[1]);
                             newY = string2int(arrCommand[2]);
                             jd.setLocation(newX, newY);
-                            if (bUseInt4numbers)
+                            if (isOR)
                             {
-                                canonical = canonical+" "+newX+" "+newY;
-                            }
-                            else
-                            {
-                                canonical = canonical+" "+arrCommand[1]+" "+arrCommand[2];
+                                if (bUseInt4numbers)
+                                {
+                                    canonical = canonical+" "+newX+" "+newY;
+                                }
+                                else
+                                {
+                                    canonical = canonical+" "+arrCommand[1]+" "+arrCommand[2];
+                                }
                             }
                         }
 
@@ -762,7 +768,10 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                             throw new IllegalArgumentException("the supplied \"frameVisible\" argument \""+newValue+"\" is not a valid BSF4ooRexx850 boolean value, valid values (in any case) are: "
                                                                   + "\"0\", \"1\", \"false\", \"true\", \".false\", \".true\"");
                                         }
-                                        canonical=canonical+" "+newValue;
+                                        if (isOR)
+                                        {
+                                            canonical=canonical+" "+newValue;
+                                        }
                                         jd.setAlwaysOnTop(retBoolValue);    // set value
                                     }
                                     break;
@@ -1085,7 +1094,10 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         if (arrCommand.length>1)
                         {
                             double tmpScaleX = Double.parseDouble(arrCommand[1]);
-                            canonical = canonical + " " + arrCommand[1];
+                            if (isOR)
+                            {
+                                canonical = canonical + " " + arrCommand[1];
+                            }
 
                             if (arrCommand.length==2)   //
                             {
@@ -1096,15 +1108,16 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             {
                                 printScaleY = Double.parseDouble(arrCommand[2]);
                                 printScaleX = tmpScaleX;
-                                canonical = canonical + " " + arrCommand[2];
+                                if (isOR)
+                                {
+                                    canonical = canonical + " " + arrCommand[2];
+                                }
                             }
                         }
                         if (isOR)
                         {
                             writeOutput(slot,canonical);
                         }
-
-                        //return printScaleX+" "+printScaleY;
                         return resultValue;
                     }
 
@@ -1170,11 +1183,14 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 catch (Throwable t) {}
                                 if (tmpImage==null)
                                 {
-                                    throw new IllegalArgumentException("image (must be a BufferedImage) with the name \""+name+"\" not found, you must first use \"loadImage "+name+" filename\" or \"pushImage "+name+"\" or assign an BufferedImage to a Rexx variable named \""+name+"\"");
+                                    throw new IllegalArgumentException("image (must be a BufferedImage) with the name \""+name+"\" not found, you must first use \"loadImage "+name+" filename\" or \"pushImage "+name+"\" or assign a BufferedImage to a Rexx variable named \""+name+"\"");
                                 }
                             }
 
-                            canonical = canonical+" "+name;
+                            if (isOR)
+                            {
+                                canonical = canonical+" "+name;
+                            }
                         }
                         if (isOR)
                         {
@@ -1423,7 +1439,15 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         BufferedImage img = hmImages.get(name.toUpperCase());
                         if (img==null)
                         {
-                            throw new IllegalArgumentException("image with the name \""+name+"\" not found, you must first use \"loadImage "+name+" filename\"");
+                            try
+                            {
+                                img = (BufferedImage) getContextVariable(slot, name);  // try to get from a Rexx variable
+                            }
+                            catch (Throwable t) {}
+                            if (img==null)
+                            {
+                                throw new IllegalArgumentException("image (must be a BufferedImage) with the name \""+name+"\" not found, you must first use \"loadImage "+name+" filename\" or \"pushImage "+name+"\" or assign a BufferedImage to a Rexx variable named \""+name+"\"");
+                            }
                         }
 
                         if (isOR)
@@ -1453,7 +1477,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 catch (Throwable t) {}
                                 if (tmpImage==null)
                                 {
-                                    throw new IllegalArgumentException("image (must be a BufferedImage) with the name \""+name+"\" not found, you must first use \"loadImage "+name+" filename\" or \"pushImage "+name+"\" or assign an BufferedImage to a Rexx variable named \""+name+"\"");
+                                    throw new IllegalArgumentException("image (must be a BufferedImage) with the name \""+name+"\" not found, you must first use \"loadImage "+name+" filename\" or \"pushImage "+name+"\" or assign a BufferedImage to a Rexx variable named \""+name+"\"");
                                 }
                             }
                             if (isOR)
@@ -1482,7 +1506,20 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             tmpImg = hmImages.get(name.toUpperCase());
                             if (tmpImg==null)
                             {
-                                throw new IllegalArgumentException("image with the name \""+name+"\" not found, you must first use \"loadImage "+name+" filename\"");
+                                try // try to get from a Rexx variable
+                                {
+                                    tmpImg = (BufferedImage) getContextVariable(slot, name);
+                                }
+                                catch (Throwable t) {}
+                                if (tmpImg==null)
+                                {
+                                    String errMsg="image with the name \""+name+"\" not found, you must first use \"loadImage "+name+" filename\" or supply a Rexx variable referring to a BufferedImage";
+                                    if (isOR)
+                                    {
+                                        writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
+                                    }
+                                    return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-2", errMsg );
+                                }
                             }
                             if (isOR)
                             {
@@ -1597,12 +1634,20 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             color = hmColors.get(colorNickName.toUpperCase());
                             if (color==null)
                             {
-                                String errMsg="color with the supplied nickname \""+colorNickName+"\" is not registered";
-                                if (isOR)
+                                try // try to get from a Rexx variable
                                 {
-                                    writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
+                                    color = (Color) getContextVariable(slot, colorNickName);
                                 }
-                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-2", errMsg );
+                                catch (Throwable t) {}
+                                if (color==null)
+                                {
+                                    String errMsg="color with the supplied nickname \""+colorNickName+"\" is not registered nor is it a Rexx variable referring to a color";
+                                    if (isOR)
+                                    {
+                                        writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
+                                    }
+                                    return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-3", errMsg );
+                                }
                             }
                             if (isOR)
                             {
@@ -1711,19 +1756,26 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             gradientPaint = hmGradientPaints.get(paintNickName.toUpperCase());
                             if (gradientPaint==null)
                             {
-                                String errMsg="gradientPaint with the supplied nickname \""+paintNickName+"\" is not registered";
-                                if (isOR)
+                                try // try to get from a Rexx variable
                                 {
-                                    writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
+                                    gradientPaint = (GradientPaint) getContextVariable(slot, paintNickName);
                                 }
-                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-3", errMsg );
+                                catch (Throwable t) {}
+                                if (gradientPaint==null)
+                                {
+                                    String errMsg="gradientPaint with the supplied nickname \""+paintNickName+"\" is not registered nor is it a Rexx variable referring to a GradientPaint object";
+                                    if (isOR)
+                                    {
+                                        writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
+                                    }
+                                    return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-4", errMsg );
+                                }
                             }
                             if (isOR)
                             {
                                 writeOutput(slot, canonical);
                             }
                             bufGC.setPaint(gradientPaint);
-                            // return gradientPaint;
                             return resultValue;
                         }
 
@@ -1741,7 +1793,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             {
                                 writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
                             }
-                            return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-4", errMsg );
+                            return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-5", errMsg );
                         }
 
                         x2   = Float.parseFloat(arrCommand[5]);
@@ -1755,7 +1807,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             {
                                 writeOutput(slot, "-- ERROR (nickname2 argument): ["+command+"]");
                             }
-                            return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-5", errMsg );
+                            return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-6", errMsg );
                         }
                         if (isOR)
                         {
@@ -1828,21 +1880,29 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         if (arrCommand.length==2)
                         {
                             String nickName = arrCommand[1];   // get color name
-                            canonical=canonical+" "+nickName;
+                            if (isOR)
+                            {
+                                canonical=canonical+" "+nickName;
+                            }
                             Paint paint=null;
                             paint=hmGradientPaints.get(nickName.toUpperCase()); // first consult gradientPaints
                             if (paint==null)    // now try the registered colors
                             {
                                 paint=hmColors.get(nickName.toUpperCase());
+                                try // try to get from a Rexx variable
+                                {
+                                    paint = (Paint) getContextVariable(slot, nickName);
+                                }
+                                catch (Throwable t) {}
                             }
                             if (paint==null)    // neither found
                             {
-                                String errMsg="neither paint nor gradientPaint with the supplied nickname \""+nickName+"\" is registered";
+                                String errMsg="neither paint nor gradientPaint with the supplied nickname \""+nickName+"\" is registered nor supplied with a Rexx variable of that name";
                                 if (isOR)
                                 {
                                     writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
                                 }
-                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-6", errMsg );
+                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-7", errMsg );
                             }
                             if (isOR)
                             {
@@ -1870,16 +1930,27 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         if (arrCommand.length==2)
                         {
                             String colorNickName = arrCommand[1];   // get color name
-                            canonical=canonical+" "+colorNickName;
+                            if (isOR)
+                            {
+                                canonical=canonical+" "+colorNickName;
+                            }
                             Color  color=hmColors.get(colorNickName.toUpperCase());
                             if (color==null)
                             {
-                                String errMsg="color with the supplied nickname \""+colorNickName+"\" is not registered";
-                                if (isOR)
+                                try // try to get from a Rexx variable
                                 {
-                                    writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
+                                    color = (Color) getContextVariable(slot, colorNickName);
                                 }
-                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-7", errMsg );
+                                catch (Throwable t) {}
+                                if (color==null)
+                                {
+                                    String errMsg="color with the supplied nickname \""+colorNickName+"\" is not registered nor is it a Rexx variable referring to a color";
+                                    if (isOR)
+                                    {
+                                        writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
+                                    }
+                                    return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-8", errMsg );
+                                }
                             }
                             if (isOR)
                             {
@@ -1899,16 +1970,28 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             throw new IllegalArgumentException("this command needs exactly 1 argument, received "+(arrCommand.length-1)+" instead");
                         }
                         String colorNickName = arrCommand[1];   // get color name
-                        canonical=canonical+" "+colorNickName;
+                        if (isOR)
+                        {
+                            canonical=canonical+" "+colorNickName;
+                        }
                         Color  color=hmColors.get(colorNickName.toUpperCase());
                         if (color==null)
                         {
-                            String errMsg="color with the supplied nickname \""+colorNickName+"\" is not registered";
-                            if (isOR)
+                            try // try to get from a Rexx variable
                             {
-                                writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
+                                color = (Color) getContextVariable(slot, colorNickName);
                             }
-                            return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-8", errMsg );
+                            catch (Throwable t) {}
+
+                            if (color==null)
+                            {
+                                String errMsg="color with the supplied nickname \""+colorNickName+"\" is not registered nor supplied via a Rexx variable of that name";
+                                if (isOR)
+                                {
+                                    writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
+                                }
+                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-9", errMsg );
+                            }
                         }
                         if (isOR)
                         {
@@ -2105,16 +2188,18 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             int newHeight = string2int(arrCommand[4]);
                             resultValue = newX+" "+newY+" "+newWidth+" "+newHeight;
 
-                            if (bUseInt4numbers)
+                            if (isOR)
                             {
-                                canonical = canonical+" "+resultValue;
+                                if (bUseInt4numbers)
+                                {
+                                    canonical = canonical+" "+resultValue;
+                                }
+                                else
+                                {
+                                    canonical = canonical+" "+arrCommand[1] + " " + arrCommand[2] +
+                                                          " "+arrCommand[3] + " " + arrCommand[4] ;
+                                }
                             }
-                            else
-                            {
-                                canonical = canonical+" "+arrCommand[1] + " " + arrCommand[2] +
-                                                      " "+arrCommand[3] + " " + arrCommand[4] ;
-                            }
-
                             bufGC.clipRect(newX, newY, newWidth, newHeight);
                         }
                             // no exception, so args o.k.
@@ -2211,12 +2296,21 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             stroke = hmStrokes.get(strokeNickName.toUpperCase());
                             if (stroke==null)
                             {
-                                String errMsg="stroke with the supplied nickname \""+strokeNickName+"\" is not registered";
-                                if (isOR)
+                                try // try to get from a Rexx variable
                                 {
-                                    writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
+                                    stroke = (Stroke) getContextVariable(slot, strokeNickName);
                                 }
-                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-9", errMsg );
+                                catch (Throwable t) {}
+
+                                if (stroke==null)
+                                {
+                                    String errMsg="stroke with the supplied nickname \""+strokeNickName+"\" is not registered nor is it a Rexx variable referring to a stroke";
+                                    if (isOR)
+                                    {
+                                        writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
+                                    }
+                                    return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-10", errMsg );
+                                }
                             }
                             if (isOR)
                             {
@@ -2453,14 +2547,21 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             font = hmFonts.get(fontNickName.toUpperCase());
                             if (font==null)
                             {
-                                String errMsg="font with the supplied nickname \""+fontNickName+"\" is not registered";
-                                if (isOR)
+                                try // try to get from a Rexx variable
                                 {
-                                    writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
+                                    font = (Font) getContextVariable(slot, fontNickName);
                                 }
-                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-10", errMsg );
+                                catch (Throwable t) {}
+                                if (font==null)
+                                {
+                                    String errMsg="font with the supplied nickname \""+fontNickName+"\" is not registered nor is it a Rexx variable referring to a font";
+                                    if (isOR)
+                                    {
+                                        writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
+                                    }
+                                    return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-11", errMsg );
+                                }
                             }
-
 
                             bufGC.setFont(font);
                             if (isOR)
@@ -2486,10 +2587,18 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 {
                                     writeOutput(slot, "-- ERROR (fontname argument): ["+command+"]");
                                 }
-                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-11", errMsg );
+                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-12", errMsg );
+                            }
+                            else  // adjust currFontStyle and currFontSize
+                            {
+                                currFontStyle=font.getStyle();
+                                currFontSize =font.getSize();
                             }
                         }
-                        canonical = canonical + " " + fontName;
+                        if (isOR)
+                        {
+                            canonical = canonical + " " + fontName;
+                        }
                         hmFonts.put(fontNickName.toUpperCase(),font);
                         bufGC.setFont(font);
                         if (isOR)
@@ -2682,15 +2791,19 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         int height = string2int(arrCommand[2]);
                         int dx     = string2int(arrCommand[3]);
                         int dy     = string2int(arrCommand[4]);
-                        canonical = canonical+" "+width+" "+height+" "+dx+" "+dy;
-                        if (bUseInt4numbers)
+
+                        if (isOR)
                         {
                             canonical = canonical+" "+width+" "+height+" "+dx+" "+dy;
-                        }
-                        else
-                        {
-                            canonical = canonical+" "+arrCommand[1]+" "+arrCommand[2]+
-                                                  " "+arrCommand[3]+" "+arrCommand[4];
+                            if (bUseInt4numbers)
+                            {
+                                canonical = canonical+" "+width+" "+height+" "+dx+" "+dy;
+                            }
+                            else
+                            {
+                                canonical = canonical+" "+arrCommand[1]+" "+arrCommand[2]+
+                                                      " "+arrCommand[3]+" "+arrCommand[4];
+                            }
                         }
 
                         bufGC.copyArea(currX, currY, width, height, dx, dy);
@@ -2719,13 +2832,16 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         }
                         int width  = string2int(arrCommand[1]);
                         int height = string2int(arrCommand[2]);
-                        if (bUseInt4numbers)
+                        if (isOR)
                         {
-                            canonical = canonical+" "+width+" "+height;
-                        }
-                        else
-                        {
-                            canonical = canonical+" "+arrCommand[1]+" "+arrCommand[2];
+                            if (bUseInt4numbers)
+                            {
+                                canonical = canonical+" "+width+" "+height;
+                            }
+                            else
+                            {
+                                canonical = canonical+" "+arrCommand[1]+" "+arrCommand[2];
+                            }
                         }
 
                         int arcWidth=-1, arcHeight=-1;
@@ -2733,13 +2849,16 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             arcWidth  = string2int(arrCommand[3]);
                             arcHeight = string2int(arrCommand[4]);
-                            if (bUseInt4numbers)
+                            if (isOR)
                             {
-                                canonical = canonical+" "+arcWidth+" "+arcHeight;
-                            }
-                            else
-                            {
-                                canonical = canonical+" "+arrCommand[3]+" "+arrCommand[4];
+                                if (bUseInt4numbers)
+                                {
+                                    canonical = canonical+" "+arcWidth+" "+arcHeight;
+                                }
+                                else
+                                {
+                                    canonical = canonical+" "+arrCommand[3]+" "+arrCommand[4];
+                                }
                             }
                         }
                             // no exception, so args o.k.
@@ -2868,7 +2987,6 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             writeOutput(slot, canonical+" "+nickName+" "+fileName);
                         }
-                        // return img;
                         return img.getWidth()+" "+img.getHeight();
                     }
 
@@ -2977,15 +3095,17 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 {
                                     int x = string2int(arrCommand[2]);
                                     int y = string2int(arrCommand[3]);
-                                    if (bUseInt4numbers)
+                                    if (isOR)
                                     {
-                                        canonical = canonical+" "+x+" "+y;
+                                        if (bUseInt4numbers)
+                                        {
+                                            canonical = canonical+" "+x+" "+y;
+                                        }
+                                        else
+                                        {
+                                            canonical = canonical+" "+arrCommand[2]+" "+arrCommand[3];
+                                        }
                                     }
-                                    else
-                                    {
-                                        canonical = canonical+" "+arrCommand[2]+" "+arrCommand[3];
-                                    }
-
                                     bufGC.rotate(radiansTheta, x, y);
                                 }
                             }
@@ -3058,7 +3178,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 {
                                     writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
                                 }
-                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-12", errMsg );
+                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-13", errMsg );
                             }
                         }
                         switch (argNum)
@@ -3106,17 +3226,14 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                     else if (argNum>5)
                                     {
                                         // canonical=canonical+" "+srcX1+" "+srcY1+" "+srcX2+" "+srcY2;
-                                        if (isOR)
+                                        if (bUseInt4numbers)
                                         {
-                                            if (bUseInt4numbers)
-                                            {
-                                                canonical = canonical+" "+srcX1+" "+srcY1+" "+srcX2+" "+srcY2;
-                                            }
-                                            else
-                                            {
-                                                canonical = canonical+" "+arrCommand[4]+" "+arrCommand[5]+
-                                                                          arrCommand[6]+" "+arrCommand[7];
-                                            }
+                                            canonical = canonical+" "+srcX1+" "+srcY1+" "+srcX2+" "+srcY2;
+                                        }
+                                        else
+                                        {
+                                            canonical = canonical+" "+arrCommand[4]+" "+arrCommand[5]+
+                                                                      arrCommand[6]+" "+arrCommand[7];
                                         }
 
                                         if (argNum==9)    // bkgColor
@@ -3289,7 +3406,6 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             {
                                 writeOutput(slot, canonical);
                             }
-                            // return tmpG2D;
                         }
                         else    // POP_GC
                         {
@@ -3305,7 +3421,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 {
                                     writeOutput(slot, "-- ERROR (stack empty): ["+command+"]");
                                 }
-                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-13", errMsg );
+                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-14", errMsg );
                             }
                             bufGC.dispose();        // dispose current GC
                             bufGC=d2d;              // replace with previous GC
@@ -3313,7 +3429,6 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             {
                                 writeOutput(slot, canonical);
                             }
-                            // return bufGC;
                             resultValue=bufGC;  // old one is disposed, so cannot use that anymore
                         }
                         return resultValue;
@@ -3347,7 +3462,6 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 writeOutput(slot, canonical);
                             }
                             return img;     // return pushed (copy) image
-                            // return resultValue;
                         }
                         else    // POP_IMAGE: the returned image should be used to draw via current GC
                         {
@@ -3363,7 +3477,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 {
                                     writeOutput(slot, "-- ERROR (empty stack): ["+command+"]");
                                 }
-                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-14", errMsg );
+                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-15", errMsg );
                             }
 
                             // bufGC.clearRect(0,0,bufImage.getWidth(),bufImage.getHeight());  // clear rectangle
@@ -3383,7 +3497,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                     {
                         writeOutput(slot, "-- FAILURE (unimplemented command): ["+command+"]");
                     }
-                    return createCondition (slot, nrCommand, command, ConditionType.FAILURE, "-17", "unimplemented command");
+                    return createCondition (slot, nrCommand, command, ConditionType.FAILURE, "-16", "unimplemented command");
             }
         }
         catch (Throwable t)     // raise error condition if args etc. were causing exceptions
@@ -3392,7 +3506,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
             {
                 writeOutput(slot, "-- ERROR (argument): ["+command+"]");
             }
-            return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-16", t.toString() );
+            return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-17", t.toString() );
         }
 
         // draws/changes have occurred, redraw if we have a JavaDrawingFrame instance to show to user
@@ -3839,21 +3953,21 @@ enum Command {
     // define the enum values for the commands available to Rexx programs,
     // supplying the strings associated with them                   // ? synonyms too
 
+    // 20220929: do not support Shapes, maybe in a future update; one can always
+    //           get access using "gc" command and interact with it from ooRexx directly
+
     // java.awt.Graphics or java.awt.Graphics2D related
+
     BACKGROUND                  ( "background"               ) ,    //   "background  [colorNickName]" query current background color or set
     CLEAR_RECT                  ( "clearRect"                ) ,    //   "clear width height": uses current color to clear background
+    CLIP                        ( "clip"                     ) ,    //   "clip [x y w h]" -> get (getClipBounds()) or clipRect(x y w h)
+    CLIP_REMOVE                 ( "clipRemove"               ) ,    //   "clipRemove" -> setClip(null)
     COLOR                       ( "color"                    ) ,    //   "color  [colorNickName [r g b [a]]" query current color or set + define new color
     COMPOSITE                   ( "composite"                ) ,    //   "composite [rule [alpha]]": get current or get and set new;
-
-// 20220929: do not (yet) support Shapes, maybe in a future update
-
-    CLIP_REMOVE                 ( "clipRemove"               ) ,    //   "clipRemove" -> setClip(null)
-    CLIP                        ( "clip"                     ) ,    //   "clip [x y w h]" -> get (getClipBounds()) or clipRect(x y w h)
-
+    COPY_AREA                   ( "copyArea"                 ) ,    //   "copyArea width height distX distY"
     DRAW_3D_RECT                ( "draw3DRect"               ) ,    //   "draw3DRect width height raised" - 20220906
     DRAW_ARC                    ( "drawArc"                  ) ,    //   "drawArc  width height startAngle arcAngle"
     DRAW_IMAGE                  ( "drawImage"                ) ,    //   "drawImage nickName [bkgColor] | nickName width height [bkgColor] | nickName width height srcX1 srcY1 srcX2 srcY2 [bkgColor]"
-
     DRAW_LINE                   ( "drawLine"                 ) ,    //   "drawLine toX toY"
     DRAW_OVAL                   ( "drawOval"                 ) ,    //   "drawOval width height"
     DRAW_POLYGON                ( "drawPolygon"              ) ,    //   "drawPolygon  []xPoints []yPoints nPoints
@@ -3861,7 +3975,6 @@ enum Command {
     DRAW_RECT                   ( "drawRect"                 ) ,    //   "drawRect width height"
     DRAW_ROUND_RECT             ( "drawRoundRect"            ) ,    //   "drawRoundRect width height arcWidth arcHeight"
     DRAW_STRING                 ( "drawString"               ) ,    //   "drawString text"
-
     FILL_3D_RECT                ( "fill3DRect"               ) ,    //   "fill3DRect width height raised" - 20220906
     FILL_ARC                    ( "fillArc"                  ) ,    //   "fillArc  width height startAngle arcAngle"
     FILL_OVAL                   ( "fillOval"                 ) ,    //   "fillOval width height"
@@ -3869,71 +3982,53 @@ enum Command {
     FILL_RECT                   ( "fillRect"                 ) ,    //   "fillRect width height"
     FILL_ROUND_RECT             ( "fillRoundRect"            ) ,    //   "fillRoundRect width height arcWidth arcHeight"
     FONT                        ( "font"                     ) ,    //   "font   [fontNickName [name]]" query or set font using curr type and size
-    GRADIENT_PAINT              ( "gradientPaint"            ) ,    //   "gradientPaint paintNickName [x1 y1 colorName1 x2 y2 colorName2 [cyclic]]": set or define and set gradientPaint
-    PAINT                       ( "paint"                    ) ,    //   "paint [gradiantPaintNickName|colorNickName]" query or set paint (for background) // 2022-09-22, paint, as of 20220922 cf. <http://underpop.online.fr/j/java/help/colors-graphics-programming.html.gz>
-    MOVE_TO                     ( "moveTo"                   ) ,    //   "pos [x y]" query or set position, synonyms: "goto"
-    ROTATE                      ( "rotate"                   ) ,    //   "rotate [theta [x y]]" query or set rotation
-    SCALE                       ( "scale"                    ) ,    //   "scale [x [y]]" query or set scale for x, y; if y omitted, uses x
-    SET_PAINT_MODE              ( "setPaintMode"             ) ,    //   "setPaintMode": cf. Grahpics#setPaintMode()
-    SHEAR                       ( "shear"                    ) ,    //   "shear [x [y]]" query or set shear for x, y; if y omitted, uses x
-    SLEEP                       ( "sleep"                    ) ,    //   "sleep msecs" (uses Thread.sleep())
-    STROKE                      ( "stroke"                   ) ,    //   "stroke [strokeNickName [width [cap join [miterlimit [[]floatDash floatDashPhase]]]]" query or set stroke
-    TRANSLATE                   ( "translate"                ) ,    //   "translate [x [y]]" query origin or move origin; if y omitted, uses x
-    SET_XOR_MODE                ( "setXorMode"               ) ,    //   "xorMode colorNickName": sets xorMode to supplied color
-
-    COPY_AREA                   ( "copyArea"                 ) ,    //   "copyArea width height distX distY"
-    TRANSFORM                   ( "transform"                ) ,    //   "transform { | RESET | translateX translateY scaleX scaleY shearX shearY} " query, change reset Graphics2D's AfineTransform
-
-    // ------------------------------
-    // commands for control, maintenance logic
-    PREFERRED_IMAGE_TYPE        ( "preferredImageType"       ) ,    //   "preferredImageType [type]": get or set preferred image type, type can be integer or name of BufferedImage TYPE constant
-    NEW                         ( "new"                      ) ,    //   "new [width height [type]]" creates a new BufferedImage
-    RESET                       ( "reset"                    ) ,    //   "reset" synonym: "clear", clears everything, resets
-
     FONT_SIZE                   ( "fontSize"                 ) ,    //   "fontSize size
     FONT_STYLE                  ( "fontStyle"                ) ,    //   "fontStyle 0=PLAIN | 1=BOLD | 2=ITALIC | 3=BOLD+ITALIC
-
     GET_GC                      ( "GC"                       ) ,    //   "GC"    returns current GC (GraphicsContext)
     GET_IMAGE                   ( "image"                    ) ,    //   "image [nickName]" returns image or nickName-stored image
     GET_STATE                   ( "getState"                 ) ,    //   "getState [ctxtVariableName]" returns a StringTable with current variables, stacks and HashMaps;
-
+    GRADIENT_PAINT              ( "gradientPaint"            ) ,    //   "gradientPaint paintNickName [x1 y1 colorName1 x2 y2 colorName2 [cyclic]]": set or define and set gradientPaint
+    IMAGE_COPY                  ( "imageCopy"                ) ,    //   "imageCopy [nickName]": get a copy of the current image, if nickName supplied use from registry and if not found from Rexx variable
     IMAGE_SIZE                  ( "imageSize"                ) ,    //   "imageSize [imageNickName]": returns width and height
     IMAGE_TYPE                  ( "imageType"                ) ,    //   "imageType [nickName]": get current image's type, if nickName supplied return its image type
     LOAD_IMAGE                  ( "loadImage"                ) ,    //   "loadImage imageNickName filename", loads an image -> returns its dimension
-    SAVE_IMAGE                  ( "saveImage"                ) ,    //   "saveImage filename", saves current image to file
-
-    // 2022-11-01
-    IMAGE_COPY                  ( "imageCopy"                ) ,    //   "imageCopy [nickName]": get a copy of the current image, if nickName supplied use from registry and if not found from Rexx variable
-    STRING_BOUNDS               ( "stringBounds"             ) ,    //   "stringBounds string": returns the Rectangle2D x y w h (in floats?)
-
-    // 2022-11-02
-    RENDER                      ( "render"                   ) ,    //   "render [opt1 [opt2]]": returns or sets the current antialiasing settings for rendering
-
-    PUSH_GC                     ( "pushGC"                   ) ,    //   "pushGC" push current gc
+    MOVE_TO                     ( "moveTo"                   ) ,    //   "pos [x y]" query or set position, synonyms: "goto"
+    NEW                         ( "new"                      ) ,    //   "new [width height [type]]" creates a new BufferedImage
+    PAINT                       ( "paint"                    ) ,    //   "paint [gradiantPaintNickName|colorNickName]" query or set paint (for background) // 2022-09-22, paint, as of 20220922 cf. <http://underpop.online.fr/j/java/help/colors-graphics-programming.html.gz>
     POP_GC                      ( "popGC"                    ) ,    //   "popGC"  pop and set previous gc
-
-    PUSH_IMAGE                  ( "pushImage"                ) ,    //   "pushImage [nickName]" push current image displayed
     POP_IMAGE                   ( "popImage"                 ) ,    //   "popImage"  pop and display previous image
-
+    PREFERRED_IMAGE_TYPE        ( "preferredImageType"       ) ,    //   "preferredImageType [type]": get or set preferred image type, type can be integer or name of BufferedImage TYPE constant
     PRINT_IMAGE                 ( "printImage"               ) ,    //   "printImage [nickName]": print image, either current or the one by nickname
     PRINT_POS                   ( "printPos"                 ) ,    //   "printPos [X Y]: get or set position of left upperhand corner; honored if printScaleToPage is false
     PRINT_SCALE                 ( "printScale"               ) ,    //   "printScale [scaleX [scaleY]": get or set scaleX (if no scaleY use scaleX); honored if printScaleToPage is false
     PRINT_SCALE_TO_PAGE         ( "printScaleToPage"         ) ,    //   "printScaleToPage [.true|.false]": get or set
-
+    PUSH_GC                     ( "pushGC"                   ) ,    //   "pushGC" push current gc
+    PUSH_IMAGE                  ( "pushImage"                ) ,    //   "pushImage [nickName]" push current image displayed
+    RENDER                      ( "render"                   ) ,    //   "render [opt1 [opt2]]": returns or sets the current antialiasing settings for rendering
+    RESET                       ( "reset"                    ) ,    //   "reset" synonym: "clear", clears everything, resets
+    ROTATE                      ( "rotate"                   ) ,    //   "rotate [theta [x y]]" query or set rotation
+    SAVE_IMAGE                  ( "saveImage"                ) ,    //   "saveImage filename", saves current image to file
+    SCALE                       ( "scale"                    ) ,    //   "scale [x [y]]" query or set scale for x, y; if y omitted, uses x
+    SET_PAINT_MODE              ( "setPaintMode"             ) ,    //   "setPaintMode": cf. Grahpics#setPaintMode()
+    SET_XOR_MODE                ( "setXorMode"               ) ,    //   "xorMode colorNickName": sets xorMode to supplied color
+    SHEAR                       ( "shear"                    ) ,    //   "shear [x [y]]" query or set shear for x, y; if y omitted, uses x
+    SLEEP                       ( "sleep"                    ) ,    //   "sleep msecs" (uses Thread.sleep())
+    STRING_BOUNDS               ( "stringBounds"             ) ,    //   "stringBounds string": returns the Rectangle2D x y w h (in floats?)
+    STROKE                      ( "stroke"                   ) ,    //   "stroke [strokeNickName [width [cap join [miterlimit [[]floatDash floatDashPhase]]]]" query or set stroke
+    TRANSFORM                   ( "transform"                ) ,    //   "transform { | RESET | translateX translateY scaleX scaleY shearX shearY} " query, change reset Graphics2D's AfineTransform
+    TRANSLATE                   ( "translate"                ) ,    //   "translate [x [y]]" query origin or move origin; if y omitted, uses x
+    WIN_ALWAYS_ON_TOP           ( "winAlwaysOnTop"           ) ,    //   "winAlwaysOnTop [.true | .false]" get or set of this window state
+    WIN_ALWAYS_ON_TOP_SUPPORTED ( "winAlwaysOnTopSupported"  ) ,    //   "winAlwaysOnTopSupported" get value
     WIN_CLOSE                   ( "winClose"                 ) ,    // S "winClose" synonym: "exit" closes JavaDrawingFrame instance
     WIN_FRAME                   ( "winFrame"                 ) ,    //   "winFrame [.true|.false]": query or set JFrame's frame according to argument
     WIN_HIDE                    ( "winHide"                  ) ,    //   "winHide" hide JavaDrawingFrame
-
     WIN_LOCATION                ( "winLocation"              ) ,    //   (synonym: WINMOVETO)"winLocation [x y]" get or set location on screen
-    WIN_TO_BACK                 ( "winToBack"                ) ,    //   "winToBack" put window into the back
-    WIN_TO_FRONT                ( "winToFront"               ) ,    //   "winToFront" put window into the front
-    WIN_ALWAYS_ON_TOP           ( "winAlwaysOnTop"           ) ,    //   "winAlwaysOnTop [.true | .false]" get or set of this window state
-    WIN_ALWAYS_ON_TOP_SUPPORTED ( "winAlwaysOnTopSupported"  ) ,    //   "winAlwaysOnTopSupported" get value
-
     WIN_SCREEN_SIZE             ( "winScreenSize"            ) ,    //   "winScreenSize" query screen's width and size
     WIN_SHOW                    ( "winShow"                  ) ,    //   "winShow" show JavaDrawingFrame
     WIN_SIZE                    ( "winSize"                  ) ,    //   "winSize [width height]" query or set position
     WIN_TITLE                   ( "winTitle"                 ) ,    //   "winTitle [newtitle]": get or set JFrame's title
+    WIN_TO_BACK                 ( "winToBack"                ) ,    //   "winToBack" put window into the back
+    WIN_TO_FRONT                ( "winToFront"               ) ,    //   "winToFront" put window into the front
     WIN_UPDATE                  ( "winUpdate"                ) ,    //   "winUpdate [.true|.false]" get or set whether Frame should be updated upon draws/changes
     WIN_VISIBLE                 ( "winVisible"               ) ,    //   "winVisible [.true|.false]" get or set visibility
 
