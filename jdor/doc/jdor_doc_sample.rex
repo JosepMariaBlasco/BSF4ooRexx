@@ -26,11 +26,16 @@ say "--> rc="pp(rc)     -- show result from command (a Java color object)
 say "    rc~toString:" pp(rc~toString) -- shows the RGB intensities of the current color
 newY=height-40
 lineHeight = 15         -- default font size is 12px, add 3 px space
-                        -- define an array of three strings
-text=("Hello, Rexx world ...", "... from JDOR ...", "(Rexx command handler)") -- array of 3 strings
+                        -- define an array of three colors and three strings
+clrs=("somePurple", "blue", "gray")  -- define three different colors
+text=("Hello, Rexx world ...", "... from JDOR ...", "(a Rexx command handler)") -- array of 3 strings
 do counter c i=0 to 30 by lineHeight   -- iterate over array of strings
-   moveTo 50 (newY+i)   -- set position
-   drawString text[c]   -- draw the string
+   s=text[c]            -- fetch the string to draw from array
+   stringBounds s       -- get the bounding box dimensions for this string
+   parse var rc . . w . -- parse the width of the string's bounding box
+   moveTo (width-w)/2 (newY+i)   -- calc x position to center this string, set y position
+   color clrs[c]        -- fetch and use the color from the array
+   drawString s         -- draw the string
 end
                         -- save the current image
 saveImage "jdor_doc_sample.png"  -- save image to file "jdor_doc_sample.png"

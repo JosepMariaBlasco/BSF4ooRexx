@@ -10,7 +10,7 @@
 
    author:  Rony G. Flatscher
    date:    2022-09-05/2022-10-05
-   version: 100.20221103
+   version: 100.20221106
    license: Apache license 2.0
 
    license:
@@ -95,6 +95,16 @@
         2022-11-03: - the following commands now also take a Rexx variable named by the supplied
                       nick name, if not found in the registries: BACKGROUND, COLOR, FONT, GRADIENT_PAINT,
                       IMAGE_SIZE, IMAGE_TYPE, PAINT, SET_XOR_MODE, STROKE
+        2022-11-05: - changing logic of "font" command:
+                      - if sought font is not found, but a replacement font gets supplied then
+                        use that but create an error condition to communicate that fact
+                      - if sought font could be found via Font.decode() (may include trailing font style
+                        and font size information), then do not change currFontType and currFontSize which
+                        serve as default values if a font gets created with a name without type and size
+                        information
+        2022-11-06: - cmd "reset" also resets GC's AffineTransform (translate to 0,0, scale to 1,1,
+                      shear to 0,0
+                    - cmd "getState" adds an entry "gc.transform" referring to current AffienTransform object
 */
 
 /*  Sample program in ooRexx (temporarily):
@@ -284,7 +294,7 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     /* static definitions           */
 
     // default image sizes
-    static final public String version = "100.20221103";
+    static final public String version = "100.20221106";
     static final private int prefWidth  = 500;
     static final private int prefHeight = 500;
     static       private int prefImageType = BufferedImage.TYPE_INT_ARGB; // default with alpha (only png supported)
@@ -462,6 +472,10 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
 
         currFontStyle    =  0;  // PLAIN by default
         currFontSize     = 12;
+        if (bufGC!=null)
+        {
+            bufGC.setTransform(new AffineTransform());   // reset transform
+        }
 
         printScaleToPage = false;
         printPosX        = 0;
@@ -1584,6 +1598,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         rop.sendMessage2("SETENTRY", "gc.font"       , bufGC.getFont()      );
                         rop.sendMessage2("SETENTRY", "gc.paint"      , bufGC.getPaint()     );
                         rop.sendMessage2("SETENTRY", "gc.stroke"     , bufGC.getStroke()    );
+                        rop.sendMessage2("SETENTRY", "gc.transform"  , bufGC.getTransform() );
 
                         // stack and HashMaps
                         rop.sendMessage2("SETENTRY", "gcStack"    , adGCStack            ); // pushGC
@@ -2575,12 +2590,13 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         String fontName = command.substring(alWordBoundaries.get(2)[0]);
                         font = new Font(fontName, currFontStyle, currFontSize);
                         // note: it may be the case that the font is not found and a replacement (Dialog.plain) gets returned
-                        if (font==null || !font.getFontName().startsWith(fontName) )
+                        if (font==null || !font.getFontName().startsWith(fontName) ) // null or not the font sought
                         {
+                            Font prevFont=font; // in case we got a font, but it was  not the one sought
                             // 2022-11-02: use Font.decode(): if a registered Font with style and size encoded
                             //             e.g. "Arial-BOLD-18", "Arial BOLD 18", "Arial-BOLD", "Arial 18", "Arial"
                             font = Font.decode(fontName);
-                            if (font==null)
+                            if (font==null && prevFont==null)
                             {
                                 String errMsg="font \""+fontName+"\" could not be loaded";
                                 if (isOR)
@@ -2589,11 +2605,25 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 }
                                 return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-12", errMsg );
                             }
+
+                            if (font==null)     // font could not be decoded, use previouls replacement font
+                            {
+                                bufGC.setFont(prevFont);    // set to replacement font, create error
+                                String errMsg="font \""+fontName+"\" could not be found, using Java's replacement font";
+                                if (isOR)
+                                {
+                                    writeOutput(slot, "-- ERROR (fontname argument): ["+command+"]");
+                                }
+                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-13", errMsg );
+                            }
+
+/* no, do not adjust the current values, they are taken as current default
                             else  // adjust currFontStyle and currFontSize
                             {
                                 currFontStyle=font.getStyle();
                                 currFontSize =font.getSize();
                             }
+*/
                         }
                         if (isOR)
                         {
@@ -3178,7 +3208,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 {
                                     writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
                                 }
-                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-13", errMsg );
+                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-14", errMsg );
                             }
                         }
                         switch (argNum)
@@ -3421,7 +3451,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 {
                                     writeOutput(slot, "-- ERROR (stack empty): ["+command+"]");
                                 }
-                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-14", errMsg );
+                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-15", errMsg );
                             }
                             bufGC.dispose();        // dispose current GC
                             bufGC=d2d;              // replace with previous GC
@@ -3477,7 +3507,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 {
                                     writeOutput(slot, "-- ERROR (empty stack): ["+command+"]");
                                 }
-                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-15", errMsg );
+                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-16", errMsg );
                             }
 
                             // bufGC.clearRect(0,0,bufImage.getWidth(),bufImage.getHeight());  // clear rectangle
@@ -3497,7 +3527,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                     {
                         writeOutput(slot, "-- FAILURE (unimplemented command): ["+command+"]");
                     }
-                    return createCondition (slot, nrCommand, command, ConditionType.FAILURE, "-16", "unimplemented command");
+                    return createCondition (slot, nrCommand, command, ConditionType.FAILURE, "-17", "unimplemented command");
             }
         }
         catch (Throwable t)     // raise error condition if args etc. were causing exceptions
@@ -3506,7 +3536,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
             {
                 writeOutput(slot, "-- ERROR (argument): ["+command+"]");
             }
-            return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-17", t.toString() );
+            return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-18", t.toString() );
         }
 
         // draws/changes have occurred, redraw if we have a JavaDrawingFrame instance to show to user
