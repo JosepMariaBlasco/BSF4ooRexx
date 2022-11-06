@@ -1911,7 +1911,7 @@ info:                            /* tell user what has happened   */
 
   say
   say " " pp(cmd.eSetEnvironmentScriptName)": helper script for setting up the environment"
-  say "              for running BSF4ooRexx850 rograms"
+  say "              for running BSF4ooRexx850 programs"
   say
 
   say "Good luck! :-)  [You may also want to take a look at these generated scripts.]"

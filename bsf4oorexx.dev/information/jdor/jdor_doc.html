@@ -179,11 +179,16 @@ for creating the most challenging graphics (images) from Rexx.
     say "    rc~toString:" pp(rc~toString) -- shows the RGB intensities of the current color
     newY=height-40
     lineHeight = 15         -- default font size is 12px, add 3 px space
-                            -- define an array of three strings
-    text=("Hello, Rexx world ...", "... from JDOR ...", "(Rexx command handler)") -- array of 3 strings
+                            -- define an array of three colors and three strings
+    clrs=("somePurple", "blue", "gray")  -- define three different colors
+    text=("Hello, Rexx world ...", "... from JDOR ...", "(a Rexx command handler)") -- array of 3 strings
     do counter c i=0 to 30 by lineHeight   -- iterate over array of strings
-       moveTo 50 (newY+i)   -- set position
-       drawString text[c]   -- draw the string
+       s=text[c]            -- fetch the string to draw from array
+       stringBounds s       -- get the bounding box dimensions for this string
+       parse var rc . . w . -- parse the width of the string's bounding box
+       moveTo (width-w)/2 (newY+i)   -- calc x position to center this string, set y position
+       color clrs[c]        -- fetch and use the color from the array
+       drawString s         -- draw the string
     end
                             -- save the current image
     saveImage "jdor_doc_sample.png"  -- save image to file "jdor_doc_sample.png"
@@ -476,9 +481,9 @@ variable name as otherwise its value gets supplied instead.
 at the time of writing does not happen) or are used as Rexx variable names in your program.
 
 <p> Unquoted literals will be uppercased according to the Rexx rules and then supplied to the
-command handler.  If commands or arguments are unqouted then they get uppercased as well and blanks
-between them will be reduced to a single white space according to the Rexx rules before supplying
-the resulting command with arguments to the Rexx command handler.
+command handler.  If commands or arguments are unquoted then they get uppercased as well and blanks
+between them will be reduced to a single blank according to the Rexx rules before supplying the
+resulting command with arguments to the Rexx command handler.
 
 <p><em>Hint:</em> in general any command that allows for querying and setting a value will return the
 current value and in the case of setting it to a new value will return the old (previously current)
@@ -1000,9 +1005,7 @@ value.
             <em>ITALIC</em>, <em>BOLD</em>, <em>BOLDITALIC</em>) and/or a trailing dash
             or blank and size information (e.g. <em>&quot;Arial BOLD 18&quot;</em> or
             <em>&quot;Arial-BOLD-18&quot;</em>, <em>&quot;Arial 18&quot;</em> or
-            <em>&quot;Arial-BOLD&quot;</em>). If the font style and font size get embedded
-            in the font name the <em>JDOR</em> fields <em>currFontSize</em> and <em>currFontStyle</em> get updated
-            accordingly.
+            <em>&quot;Arial-BOLD&quot;</em>).
 
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
         methods <em>getFont()</em>, <em>setFont(...)</em>, as
@@ -1101,13 +1104,14 @@ value.
             <li><em>currX</em>
             <li><em>currY</em>
             <li><em>fonts</em> (a <em>java.util.HashMap</em>)
-            <li><em>GC</em>
+            <li><em>gc</em> (a <em>java.awt.Graphics2D</em>)
             <li><em>gc.background</em>
             <li><em>gc.color</em>
             <li><em>gc.composite</em>
             <li><em>gc.font</em>
             <li><em>gc.paint</em>
             <li><em>gc.stroke</em>
+            <li><em>gc.transform</em> (a <em>java.awt.geom.AffineTransform</em>)
             <li><em>gcStack</em> (a <em>java.util.ArrayDeque</em>)
             <li><em>gradiantPaints</em> (a <em>java.util.HashMap</em>)
             <li><em>image</em>
@@ -1534,15 +1538,16 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command" id="cmdReset">  &quot;reset&quot; <br> &quot;clear&quot;
-    <td colspan="2"> Resets the following runtime values:
+    <td colspan="2"> Resets the following values:
         <ul>
             <li><em>colors</em>: the <em>java.util.HashMap</em> gets emptied except for the constant colors
                 defined in the <em>java.awt.Color</em> class
-
             <li><em>currFontSize</em>: <em>12</em>
             <li><em>currFontStyle</em>: <em>0</em>
             <li><em>currX</em>: <em>0</em>
             <li><em>currY</em>: <em>0</em>
+            <li><em>transform</em>: resets <em>translate</em> to <em>0,0</em>,
+                <em>scale</em> to <em>1,1</em> and <em>shear</em> to <em>0,0</em>
             <li><em>fonts</em>: the <em>java.util.HashMap</em> gets emptied
             <li><em>gcStack</em>: the <em>java.util.ArrayDeque</em> gets emptied
             <li><em>gradiantPaints</em>: the <em>java.util.HashMap</em> gets emptied
@@ -1652,8 +1657,12 @@ value.
     <td colspan="2"> Queries and optionally changes (&quot;concatenates&quot;) the shear (skew) factor for
         the <em>x</em> and <em>y</em> axis. The command returns the shear values
         at the time of invocation.
+        <em>Note:</em> if supplying <em>shear</em> factors the shear algorithm may not only
+        change the <em>shear</em> factors but also the <em>scale</em> factors.
+
         <br>Cf. the Java documentation for the Java class <em>Graphics2D</em> and the
         method <em>shear(...)</em>.
+
         <br>To set these factors to absolute values use the <a href="#cmdTransform">transform</a> command.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
@@ -2080,7 +2089,7 @@ value.
 <center>
    <hr width="75%">
     <small>
-       JDOC synopsis of commands, version: 100.20221103
+       JDOC synopsis of commands, version: 100.20221106
        <br>Acknowledgement: the author wishes to thank DI Walter Pachl
        <br>for his help in testing and proof reading
     </small>
