@@ -26,6 +26,7 @@
             2022-11-02 - adding flashing animation for five seconds
                        - turn off text aliasing for animated text/string (interpolation
                          pixel would distort the drawn string)
+            2022-11-27 - change current directory to source directory to allow access to png files
 
    license:
 
@@ -45,6 +46,8 @@
        limitations under the License.
     -----------------------------------------------------------------------------
 */
+parse source . . s      -- get full path to this program
+call directory filespec('loc',s) -- change current dir to this program's source dir
 
 /* Cf. e.g. <https://docs.oracle.com/javase/tutorial/2d/advanced/compositing.html> */
 

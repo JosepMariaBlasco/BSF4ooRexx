@@ -149,61 +149,65 @@ href="https://sourceforge.net/projects/bsf4oorexx/">BSF4ooRexx850</a> and later)
 2D functionality available to Rexx programmers via commands that simplify the interaction, yet allow
 for creating the most challenging graphics (images) from Rexx.
 
-<p>Example:
-<pre>
-    call addJdorHandler     -- load and add the Java Rexx command handler, default name: JDOR
-    address jdor            -- set default environment to the JDOR command handler
-    width =220              -- define width of image in pixels (there are 72 px to an inch)
-    height=250              -- define height of image in pixels (there are 72 px to an inch)
-    new width height        -- create new bitmap with currX=0, currY=0, width=220, height=250
-    winShow                 -- show frame on screen
-       -- draw two lines forming a big X
-    drawLine width height   -- from currX=0, currY=0
-    color red               -- set the color to red (preregistered with nickname "RED")
-    moveTo width 0          -- currX=220, currY=0
-    position                -- query current position
-    say "--> rc="pp(rc)     -- RC refers to the previous command's result: "220 0" (currX=220, currY=0)
-    drawLine 0 height       -- from currX=220, currY=0
-       -- draw a rectangle at the center of the bitmap
-    len = 50                -- drawing a rectangle with each side being 50 px (a square)
-    moveTo (width-len)/2 (height-len)/2 -- go to the center minus half of the square's side lengths
-    color green             -- set color to green (preregistered with nickname "GREEN")
-    fillRect len len        -- fill the square with the green color
-    stroke str3 3           -- set line stroke to 3 points width, store it with nickname "STR3"
-    color blue              -- set color to blue (preregistered with nickname "BLUE")
-    drawRect len len        -- draw the frame with the blue color
-       -- draw a string (text) at the lower half of the bitmap
-    color somePurple 127 46 111   -- define a custom RGB color, store it with nickname "SOMEPURPLE"
-    color                   -- query current color
-    say "--> rc="pp(rc)     -- show result from command (a Java color object)
-    say "    rc~toString:" pp(rc~toString) -- shows the RGB intensities of the current color
-    newY=height-40
-    lineHeight = 15         -- default font size is 12px, add 3 px space
-                            -- define an array of three colors and three strings
-    clrs=("somePurple", "blue", "gray")  -- define three different colors
-    text=("Hello, Rexx world ...", "... from JDOR ...", "(a Rexx command handler)") -- array of 3 strings
-    do counter c i=0 to 30 by lineHeight   -- iterate over array of strings
-       s=text[c]            -- fetch the string to draw from array
-       stringBounds s       -- get the bounding box dimensions for this string
-       parse var rc . . w . -- parse the width of the string's bounding box
-       moveTo (width-w)/2 (newY+i)   -- calc x position to center this string, set y position
-       color clrs[c]        -- fetch and use the color from the array
-       drawString s         -- draw the string
-    end
-                            -- save the current image
-    saveImage "jdor_doc_sample.png"  -- save image to file "jdor_doc_sample.png"
-    sleep 3.123             -- sleep for 3.123 seconds
+<p>
 
-    ::requires "jdor.cls"   -- Rexx package that defines the public routine addJdorHandler()
-</pre>
+<p>Example <em>&quot;jdor_doc_sample.rex&quot;</em>:
+<!-- used IntelliJ to copy highlighted text to AOO swriter and saved as html; changed background
+     and font-size (not sure why needed) -->
+<pre style="background: LemonChiffon; font-size: 75%">
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace"><FONT COLOR="#0033b3">call </FONT>addJdorHandler     <FONT COLOR="#8c8c8c"><I>-- load and add the Java Rexx command handler, default name: JDOR</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace"><FONT COLOR="#0033b3">address </FONT>jdor            <FONT COLOR="#8c8c8c"><I>-- set default environment to the JDOR command handler</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">width <FONT COLOR="#cc3300">=</FONT><FONT COLOR="#1750eb">220              </FONT><FONT COLOR="#8c8c8c"><I>-- define width of image in pixels (there are 72 px to an inch)</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">height<FONT COLOR="#cc3300">=</FONT><FONT COLOR="#1750eb">250              </FONT><FONT COLOR="#8c8c8c"><I>-- define height of image in pixels (there are 72 px to an inch)</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">new width height        <FONT COLOR="#8c8c8c"><I>-- create new bitmap with currX=0, currY=0, width=220, height=250</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">winShow                 <FONT COLOR="#8c8c8c"><I>-- show frame on screen</I></FONT></FONT></FONT>
+    <FONT COLOR="#8c8c8c">   <FONT FACE="IBM Plex Mono, monospace"><I>-- draw two lines forming a big X</I></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">drawLine (width<FONT COLOR="#cc3300">-</FONT><FONT COLOR="#1750eb">1</FONT>) (height<FONT COLOR="#cc3300">-</FONT><FONT COLOR="#1750eb">1</FONT>) <FONT COLOR="#8c8c8c"><I>-- from currX=0, currY=0</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">color red               <FONT COLOR="#8c8c8c"><I>-- set the color to red (preregistered with nickname &quot;RED&quot;)</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">moveTo (width<FONT COLOR="#cc3300">-</FONT><FONT COLOR="#1750eb">1</FONT>) <FONT COLOR="#1750eb">0      </FONT><FONT COLOR="#8c8c8c"><I>-- currX=219, currY=0</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">position                <FONT COLOR="#8c8c8c"><I>-- query current position</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace"><FONT COLOR="#0033b3">say </FONT><FONT COLOR="#067d17">&quot;--&gt; rc=&quot;</FONT>pp(rc)     <FONT COLOR="#8c8c8c"><I>-- RC refers to the previous command's result: &quot;219 0&quot; (currX=219, currY=0)</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">drawLine <FONT COLOR="#1750eb">0 </FONT>(height<FONT COLOR="#cc3300">-</FONT><FONT COLOR="#1750eb">1</FONT>)   <FONT COLOR="#8c8c8c"><I>-- from currX=219, currY=0</I></FONT></FONT></FONT>
+    <FONT COLOR="#8c8c8c">   <FONT FACE="IBM Plex Mono, monospace"><I>-- draw a rectangle at the center of the bitmap</I></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">len <FONT COLOR="#cc3300">= </FONT><FONT COLOR="#1750eb">50                </FONT><FONT COLOR="#8c8c8c"><I>-- drawing a rectangle with each side being 50 px (a square)</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">moveTo (width<FONT COLOR="#cc3300">-</FONT>len)<FONT COLOR="#cc3300">/</FONT><FONT COLOR="#1750eb">2 </FONT>(height<FONT COLOR="#cc3300">-</FONT>len)<FONT COLOR="#cc3300">/</FONT><FONT COLOR="#1750eb">2 </FONT><FONT COLOR="#8c8c8c"><I>-- go to the center minus half of the square's side lengths</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">color green             <FONT COLOR="#8c8c8c"><I>-- set color to green (preregistered with nickname &quot;GREEN&quot;)</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">fillRect len len        <FONT COLOR="#8c8c8c"><I>-- fill the square with the green color</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">stroke str3 <FONT COLOR="#1750eb">3           </FONT><FONT COLOR="#8c8c8c"><I>-- set line stroke to 3 points width, store it with nickname &quot;STR3&quot;</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">color blue              <FONT COLOR="#8c8c8c"><I>-- set color to blue (preregistered with nickname &quot;BLUE&quot;)</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">drawRect len len        <FONT COLOR="#8c8c8c"><I>-- draw the frame with the blue color</I></FONT></FONT></FONT>
+    <FONT COLOR="#8c8c8c">   <FONT FACE="IBM Plex Mono, monospace"><I>-- draw a string (text) at the lower half of the bitmap</I></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">color somePurple <FONT COLOR="#1750eb">127 46 111   </FONT><FONT COLOR="#8c8c8c"><I>-- define a custom RGB color, store it with nickname &quot;SOMEPURPLE&quot;</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">color                   <FONT COLOR="#8c8c8c"><I>-- query current color</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace"><FONT COLOR="#0033b3">say </FONT><FONT COLOR="#067d17">&quot;--&gt; rc=&quot;</FONT>pp(rc)     <FONT COLOR="#8c8c8c"><I>-- show result from command (a Java color object)</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace"><FONT COLOR="#0033b3">say </FONT><FONT COLOR="#067d17">&quot;    rc~toString:&quot; </FONT>pp(rc<FONT COLOR="#cc3300">~</FONT>toString) <FONT COLOR="#8c8c8c"><I>-- shows the RGB intensities of the current color</I></FONT></FONT></FONT>
+    <FONT COLOR="#8c8c8c">   <FONT FACE="IBM Plex Mono, monospace"><I>-- draw three lines of centered strings at the bottom</I></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">lineHeight <FONT COLOR="#cc3300">= </FONT><FONT COLOR="#1750eb">15         </FONT><FONT COLOR="#8c8c8c"><I>-- default font size is 12px, add 3 px lead</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">newY<FONT COLOR="#cc3300">=</FONT>height<FONT COLOR="#cc3300">-</FONT><FONT COLOR="#1750eb">40          </FONT><FONT COLOR="#8c8c8c"><I>-- draw the three strings at the bottom</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">clrs<FONT COLOR="#cc3300">=</FONT>(<FONT COLOR="#067d17">&quot;somePurple&quot;</FONT>, <FONT COLOR="#067d17">&quot;blue&quot;</FONT>, <FONT COLOR="#067d17">&quot;gray&quot;</FONT>)  <FONT COLOR="#8c8c8c"><I>-- define three different colors</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">text<FONT COLOR="#cc3300">=</FONT>(<FONT COLOR="#067d17">&quot;Hello, Rexx world ...&quot;</FONT>, <FONT COLOR="#067d17">&quot;... from JDOR ...&quot;</FONT>, <FONT COLOR="#067d17">&quot;(a Rexx command handler)&quot;</FONT>) <FONT COLOR="#8c8c8c"><I>-- array of 3 strings</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace"><FONT COLOR="#0033b3">do counter </FONT>c i<FONT COLOR="#cc3300">=</FONT><FONT COLOR="#1750eb">0 </FONT><FONT COLOR="#0033b3">to </FONT><FONT COLOR="#1750eb">30 </FONT><FONT COLOR="#0033b3">by </FONT>lineHeight   <FONT COLOR="#8c8c8c"><I>-- iterate over array of strings</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT COLOR="#8c8c8c">   </FONT><FONT FACE="IBM Plex Mono, monospace">s</FONT><FONT COLOR="#cc3300"><FONT FACE="IBM Plex Mono, monospace">=</FONT></FONT><FONT FACE="IBM Plex Mono, monospace">text[c]            </FONT><FONT COLOR="#8c8c8c"><FONT FACE="IBM Plex Mono, monospace"><I>-- fetch the string to draw from array</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT COLOR="#8c8c8c">   </FONT><FONT FACE="IBM Plex Mono, monospace">stringBounds s       </FONT><FONT COLOR="#8c8c8c"><FONT FACE="IBM Plex Mono, monospace"><I>-- get the bounding box dimensions for this string</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT COLOR="#8c8c8c">   </FONT><FONT COLOR="#0033b3"><FONT FACE="IBM Plex Mono, monospace">parse var </FONT></FONT><FONT FACE="IBM Plex Mono, monospace">rc . . w . </FONT><FONT COLOR="#8c8c8c"><FONT FACE="IBM Plex Mono, monospace"><I>-- parse the width of the string's bounding box</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT COLOR="#8c8c8c">   </FONT><FONT FACE="IBM Plex Mono, monospace">moveTo (width</FONT><FONT COLOR="#cc3300"><FONT FACE="IBM Plex Mono, monospace">-</FONT></FONT><FONT FACE="IBM Plex Mono, monospace">w)</FONT><FONT COLOR="#cc3300"><FONT FACE="IBM Plex Mono, monospace">/</FONT></FONT><FONT COLOR="#1750eb"><FONT FACE="IBM Plex Mono, monospace">2 </FONT></FONT><FONT FACE="IBM Plex Mono, monospace">(newY</FONT><FONT COLOR="#cc3300"><FONT FACE="IBM Plex Mono, monospace">+</FONT></FONT><FONT FACE="IBM Plex Mono, monospace">i)   </FONT><FONT COLOR="#8c8c8c"><FONT FACE="IBM Plex Mono, monospace"><I>-- calc x position to center this string, set y position</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT COLOR="#8c8c8c">   </FONT><FONT FACE="IBM Plex Mono, monospace">color clrs[c]        </FONT><FONT COLOR="#8c8c8c"><FONT FACE="IBM Plex Mono, monospace"><I>-- fetch and use the color from the array</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT COLOR="#8c8c8c">   </FONT><FONT FACE="IBM Plex Mono, monospace">drawString s         </FONT><FONT COLOR="#8c8c8c"><FONT FACE="IBM Plex Mono, monospace"><I>-- draw the string</I></FONT></FONT></FONT>
+    <FONT COLOR="#0033b3"><FONT FACE="IBM Plex Mono, monospace">end</FONT></FONT>
+    <FONT COLOR="#080808"><FONT COLOR="#0033b3">   </FONT><FONT COLOR="#8c8c8c"><FONT FACE="IBM Plex Mono, monospace"><I>-- save the current image</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">saveImage <FONT COLOR="#067d17">&quot;jdor_doc_sample.png&quot;  </FONT><FONT COLOR="#8c8c8c"><I>-- save image to file &quot;jdor_doc_sample.png&quot;</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">sleep <FONT COLOR="#1750eb">3.123             </FONT><FONT COLOR="#8c8c8c"><I>-- sleep for 3.123 seconds</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace"><FONT COLOR="#0033b3">::requires </FONT><FONT COLOR="#067d17">&quot;jdor.cls&quot;   </FONT><FONT COLOR="#8c8c8c"><I>-- Rexx package that defines the public routine addJdorHandler()</I></FONT></FONT></FONT>
+</PRE>
+
 
 <br>The above Rexx program with the JDOR commands will output the following text in the
     command line window:
-    <pre>
-    --> rc=[220 0]
-    --> rc=[java.awt.Color@4fe3c938]
-        rc~toString: [java.awt.Color[r=127,g=46,b=111]]
-    </pre>
+    <pre STYLE="background: LemonChiffon; font: IBM Plex Mono, monospace">
+    --> rc=[219 0]
+    --> rc=[java.awt.Color@5fa7e7ff]
+        rc~toString: [java.awt.Color[r=127,g=46,b=111]] </pre>
+
     and create and save the following image (bitmap) using as filename &quot;<em>jdor_doc_sample.png</em>&quot;:
     <p>
     <center><img  src="jdor_doc_sample.png" border="1px"></center>
@@ -2089,7 +2093,7 @@ value.
 <center>
    <hr width="75%">
     <small>
-       JDOC synopsis of commands, version: 100.20221106
+       JDOC synopsis of commands, version: 100.20221116
        <br>Acknowledgement: the author wishes to thank DI Walter Pachl
        <br>for his help in testing and proof reading
     </small>

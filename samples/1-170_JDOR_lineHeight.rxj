@@ -14,6 +14,7 @@
    Author:  Rony G. Flatscher, WU Vienna
 
    Changes: 2022-10-31 - changed "goto" to "moveTo"
+            2022-11-27 - change current directory to source directory to allow access to png files
 
    last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
                 (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
@@ -36,6 +37,8 @@
        limitations under the License.
     -----------------------------------------------------------------------------
 */
+parse source . . s      -- get full path to this program
+call directory filespec('loc',s) -- change current dir to this program's source dir
 
 call addJdorHandler     -- load and add the Java Rexx command handler, default name: JDOR
 address jdor            -- set default environment to the JDOR command handler
