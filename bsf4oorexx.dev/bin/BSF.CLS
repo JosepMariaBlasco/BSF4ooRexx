@@ -19,6 +19,11 @@
           .BSF in .environment;
 
    date:
+         2022-12-04, ---rgf, - add entry "dev.null" to .environment, being a singleton of a private
+                               class "NullOutput" that swallows say/lineout/charout messages: purpose is to be
+                               usable as an "error/output using (.dev.null)" target representing
+                               "nul" (Windows) and "/dev/null" (Unix) in ooRexx terms
+
          2022-09-29, ---rgf, - new routine i2x(idValue[,deliString]): converts the identityHash number
                                returned by .Object's identityHash method into a hexadecimal string;
                                on 64-bit systems the hexadecimal string gets the deliString inserted
@@ -922,7 +927,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="850.20221127" -- set version (date distribution got created)
+      .bsf4rexx~version="850.20221204" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -939,6 +944,7 @@ end
       .environment~slot.argument=.slot.argument -- putting in .environment to allow FindClass() to find it
 
       call getAndSetPathToIcons
+      .environment~dev.null=.NullOutput~new  -- singleton to swallow SAY/LINEOUT/CHAROUT in redirected OUTPUT/ERROR targets
    end
 
    call create_display.version_entry      -- create the display version entry .bsf4rexx~display.version
@@ -6330,3 +6336,15 @@ syntax:
   if iDigits=18, deliString<>"" then   -- insert delimiter into hexadecimal string
      hexVal=hexVal~insert(deliString,8)
   return hexVal
+
+/** This class swallows/intercepts the messages SAY, LINEOUT and CHAROUT and therefore
+    can be used as an ooRexx "nul" (Windows) or "/dev/null" (Unix) target. A singleton
+    will be placed into .environment with the name "DEV.NULL" such that it can be always
+    used in redirected targets.
+    @since 2022-12-04
+*/
+::class "NullOutput" subclass OutputStream
+::method say          unguarded
+::method lineOut      unguarded  -- implement abstract method
+::method charOut      unguarded  -- implement abstract method
+
