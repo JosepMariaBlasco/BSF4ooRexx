@@ -62,6 +62,8 @@ stroke str1 1 CAP_BUTT JOIN_BEVEL 0 "(3,1)" 0   -- change line for drawing
 color blue              -- change color
 call drawFigure         -- draw the same figure as above
 
+
+
 say "sleep 5 ..."
 sleep 5
 -- say "Press enter to end ..."; parse pull .

@@ -21,6 +21,9 @@
                                 let footer stand out by being printed on white background,
                                 add total number of pages
             2022-10-31 - changed "goto" to "moveTo"
+            2022-11-08 - exploit new command "stringBounds" to left, center and right align strings
+                       - demonstrate "clip" and "clipRemove" to have a margin on the right hand side
+            2022-11-09 - corrected page numbers
 
    last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
                 (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
@@ -62,17 +65,19 @@ allFontFamilies=localGE~getAvailableFontFamilyNames   /* invoke the method "getA
 nrItems=allFontFamilies~items    -- get number of entries (Java array can be used as if it was an ooRexx array! */
    -- set values for creating images with the font samples
 -- there are 72 pixels per inch
-width  = 800      -- two columns: first column font name, second column font sample
+width  = 600      -- two columns: first column font name, second column font sample
 -- there are 72 pixels per inch
 height = trunc(12.5*72+10)    -- plus additional 10 px margin
 lineHeight=15                 -- line height (includes padding)
 lines  =  trunc(height/lineHeight) - 2  -- calc number of lines per page (allow for footer)
-totalPages=trunc(nrItems/lines)  -- pages needed for all fonts
-xCol1 = 10                    -- first column at 10px (margin)
-xCol2 = xCol1+250             -- second column 250px to the right of first column
+totalPages=format(.49+nrItems/lines,,0) -- total of pages needed for all fonts
+say "totalPages:" totalPages
+margin = 10                   -- margin from left and right
+xCol1 = margin                -- first column at 10px (margin)
+xCol2 = width/2 - 50          -- second column 250px to the right of first column
+clipWidth = width-xCol2-margin
 fileName="2-110_JDOR_FontSample_"   -- base name for
 fileType="gif"                -- save as gif bitmap
-
 
    -- we use the new JDOR Rexx command handler (cf. 2022 International Rexx Symposium)
 call addJdorHandler     -- load and add the Java Rexx command handler, using default name: JDOR
@@ -82,7 +87,7 @@ address jdor            -- set default environment to JDOR
 do i=1 to nrItems       -- iterate over all font names in the array
    if i//lines=1 then   -- arrived at another group of 50
    do
-      pageNr=i%lines    -- calc current pageNr (0-based)
+      pageNr=i%lines    -- calc current pageNr
       currLine=1        -- reset currLine
       if i>1 then       -- first page or at end of current page?
          call printFooter
@@ -103,12 +108,21 @@ do i=1 to nrItems       -- iterate over all font names in the array
    drawString i~right(3)":" fontName  -- write font family name (JDOR command)
    moveTo xCol2 y                   -- moveTo x y  (JDOR command)
    font "font"i fontName            -- load and use font family font (JDOR command)
-   drawString "Hello world, this is ooRexx using the JDOR command handler ..." -- (JDOR command)
+   str="Hello world, this is ooRexx using the JDOR command handler ..."
+   stringBounds str                 -- get bounding box with current font
+   parse var rc xsb ysb wsb hsb     -- parse the bounding box
+   x2=xCol2+xsb                     -- calc x position
+   clip x2 (y+ysb) (width-x2-margin) hsb  -- make sure we clip to leave margin on the right hand side
+   drawString str                   -- (JDOR command)
+   clipRemove                       -- remove clip to allow drawing everywhere
    currLine+=1                      -- increase line (Rexx)
 end
 
 if i>1 then
+do
+   pageNr=format(.99+i%lines,,0)    -- calc current pageNr (0-based)
    call printFooter
+end
 
 say
 say "you have a total of" pp(nrItems) "fonts installed on your system!"
@@ -119,21 +133,29 @@ exit
 
 printFooter:
    tmpFileName = fileName || pageNr"."fileType  -- define file name
+say "tmpFileName:" tmpFileName
    background white              -- set background to white (by clearRect command below)
    moveTo 0 (lines*lineHeight+9)
    clearRect width (2*lineHeight+3)
 
    y=(lines+2)*lineHeight              -- calc footer position
    fontSize 10; font dialog "Dialog"   -- set font size and font
-   moveTo xCol1 y; drawString "page" pageNr"/"totalPages "(as of:" .dateTime~new")" -- write footer part 1
-   moveTo xCol2 y; drawString tmpFileName -- write footer part 2
+   marginFooter=2
+   moveTo marginFooter y; drawString tmpFileName   -- write left aligned
+   str1="(as of:" .dateTime~new")"
+   str="page" pageNr"/"totalPages      -- write this string center aligned
+   stringBounds str; parse var rc . . w .; moveTo (width-w)/2 y; drawString str
+                                       -- write date right aligned
+   stringBounds str1; parse var rc . . w .; moveTo (width-(w+marginFooter+1)) y; drawString str1
+
    background oldBackground
    -- winUpdate .true-- update Frame (JDOR command)
    say "saving sample to:" pp(tmpFileName)
    "saveImage" tmpFileName    -- write current image (JDOR command)
    if bPrint then
    do
-      printScale 0.75         -- reduce printout by 25% (JDOR command)
+      -- printScale 0.75         -- reduce printout by 25% (JDOR command), not enough to show entire width
+      printScaleToPage .true  -- print entire page scaled to printer area (result may be too small)
       printImage              -- print current image (JDOR command)
    end
    say

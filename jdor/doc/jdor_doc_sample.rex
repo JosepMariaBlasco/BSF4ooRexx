@@ -5,12 +5,12 @@ height=250              -- define height of image in pixels (there are 72 px to 
 new width height        -- create new bitmap with currX=0, currY=0, width=220, height=250
 winShow                 -- show frame on screen
    -- draw two lines forming a big X
-drawLine width height   -- from currX=0, currY=0
+drawLine (width-1) (height-1) -- from currX=0, currY=0
 color red               -- set the color to red (preregistered with nickname "RED")
-moveTo width 0          -- currX=220, currY=0
+moveTo (width-1) 0      -- currX=219, currY=0
 position                -- query current position
-say "--> rc="pp(rc)     -- RC refers to the previous command's result: "220 0" (currX=220, currY=0)
-drawLine 0 height       -- from currX=220, currY=0
+say "--> rc="pp(rc)     -- RC refers to the previous command's result: "219 0" (currX=219, currY=0)
+drawLine 0 (height-1)   -- from currX=219, currY=0
    -- draw a rectangle at the center of the bitmap
 len = 50                -- drawing a rectangle with each side being 50 px (a square)
 moveTo (width-len)/2 (height-len)/2 -- go to the center minus half of the square's side lengths
@@ -24,9 +24,9 @@ color somePurple 127 46 111   -- define a custom RGB color, store it with nickna
 color                   -- query current color
 say "--> rc="pp(rc)     -- show result from command (a Java color object)
 say "    rc~toString:" pp(rc~toString) -- shows the RGB intensities of the current color
-newY=height-40
-lineHeight = 15         -- default font size is 12px, add 3 px space
-                        -- define an array of three colors and three strings
+   -- draw three lines of centered strings at the bottom
+lineHeight = 15         -- default font size is 12px, add 3 px lead
+newY=height-40          -- draw the three strings at the bottom
 clrs=("somePurple", "blue", "gray")  -- define three different colors
 text=("Hello, Rexx world ...", "... from JDOR ...", "(a Rexx command handler)") -- array of 3 strings
 do counter c i=0 to 30 by lineHeight   -- iterate over array of strings
@@ -37,7 +37,7 @@ do counter c i=0 to 30 by lineHeight   -- iterate over array of strings
    color clrs[c]        -- fetch and use the color from the array
    drawString s         -- draw the string
 end
-                        -- save the current image
+   -- save the current image
 saveImage "jdor_doc_sample.png"  -- save image to file "jdor_doc_sample.png"
 sleep 3.123             -- sleep for 3.123 seconds
 
