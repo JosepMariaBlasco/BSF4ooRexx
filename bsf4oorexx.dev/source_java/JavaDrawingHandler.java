@@ -10,7 +10,7 @@
 
    author:  Rony G. Flatscher
    date:    2022-09-05/2022-10-05
-   version: 100.20221106
+   version: 100.20221204
    license: Apache license 2.0
 
    license:
@@ -103,8 +103,38 @@
                         serve as default values if a font gets created with a name without type and size
                         information
         2022-11-06: - cmd "reset" also resets GC's AffineTransform (translate to 0,0, scale to 1,1,
-                      shear to 0,0
+                      shear to 0,0)
                     - cmd "getState" adds an entry "gc.transform" referring to current AffienTransform object
+        2022-12-03: - adding EnumShape enumeration
+                    - changing Command enumeration to EnumCommand
+                    - adding commands "shape", "fillShape", "drawShape", "clipShape"
+                    - adding support for Shapes: Arc2D, CubicCurve2D, Ellipse2D, Line2D, Polygon,
+                      QuadCurve2D, Rectangle2D, RoundRectangle2D
+        2022-12-03: - drawShape, fillShape, clipShape: if name not in cache, check whether a Rexx variable
+                      of that name refers to a Shape object, if so use it, otherwise raise an error condition
+                    - add alias names for shapes without the trailing "2D"
+*/
+
+/* add support for Shape (done 2022-12-03)
+    shape      name [type args]
+    fillShape  name
+    drawShape  name
+    clipShape  name         ... uses current clip rectangle (getClipBounds()); if no clip set, then sets clip to shape!
+
+    type: (to decide: supply just significant letters or full word?)
+         A[rc2D]            Double(double x, double y, double w, double h, double start, double extent, int type)
+                            Double(Rectangle2D ellipseBounds, double start, double extent, int type)
+         C[ubicCurve2D]     Double(double x1, double y1, double ctrlx1, double ctrly1, double ctrlx2, double ctrly2, double x2, double y2)
+         E[llipse2D]        Double(double x, double y, double w, double h)
+         L[ine2D]           Double(double x1, double y1, double x2, double y2)
+         Pol[ygon2D]        Polygon(int[] xpoints, int[] ypoints, int npoints)
+         Q[uadCurve2D]      Double(double x1, double y1, double ctrlx, double ctrly, double x2, double y2)
+         Re[ctangle2D]      Double(double x, double y, double w, double h)
+         Ro[undRectangle2D  Double(double x, double y, double w, double h, double arcw, double arch)
+
+    command environment intentionally does not support directly (no real use seen):
+
+         Area, Path2D, Point2D
 */
 
 /*  Sample program in ooRexx (temporarily):
@@ -159,7 +189,15 @@ import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Arc2D;
+import java.awt.geom.CubicCurve2D;
+import java.awt.geom.Ellipse2D;
+import java.awt.geom.Line2D;
+import java.awt.geom.QuadCurve2D;
 import java.awt.geom.Rectangle2D;
+import java.awt.geom.RoundRectangle2D;
+import java.awt.Polygon;
+import java.awt.Shape;
 import java.awt.Toolkit;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -294,7 +332,7 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     /* static definitions           */
 
     // default image sizes
-    static final public String version = "100.20221106";
+    static final public String version = "100.20221204";
     static final private int prefWidth  = 500;
     static final private int prefHeight = 500;
     static       private int prefImageType = BufferedImage.TYPE_INT_ARGB; // default with alpha (only png supported)
@@ -323,6 +361,10 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     static final HashMap<String,Object>  renderingHints         = new HashMap<>();
     static final HashMap<String,String>  renderingHintsAlias    = new HashMap<>();
     static final HashMap<Object,String>  renderingHintsObj2Name = new HashMap<>();
+
+    // Arc2D Closures
+    static final HashMap<String,Integer> arcClosures         = new HashMap<>();
+    static final HashMap<Integer,String> arcClosuresInt2Name = new HashMap<>();
 
     static {
         // ----------------------------------------------------------------------
@@ -415,6 +457,15 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
         renderingHintsAlias.put("TEXTALIASDEFAULT", "textAliasDefault"  );
         // allow for looking up constant names (key) by value
         renderingHints.forEach((K,V)->renderingHintsObj2Name.put(V,K));
+
+        // ----------------------------------------------------------------------
+        // Arc2D closures
+        arcClosures.put("OPEN"  , 0);
+        arcClosures.put("CHORD" , 1);
+        arcClosures.put("PIE"   , 2);
+        // allow for looking up constant names (key) by value
+        arcClosures.forEach((K,V)->arcClosuresInt2Name.put(V,K));
+
     }
 
 
@@ -463,6 +514,8 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     HashMap<String,GradientPaint> hmGradientPaints = new HashMap<>();
     HashMap<String,Font>          hmFonts  = new HashMap<>();
     HashMap<String,Stroke>        hmStrokes= new HashMap<>();
+    // 2022-12-03
+    HashMap<String,Shape>         hmShapes = new HashMap<>();
 
 
     void reset ()   // reset all current variables and caches
@@ -564,14 +617,14 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
 
         boolean isOR = isOutputRedirected(slot);    // is output redirected ?
 
-        // get the boundaries of the first ten words
+        // get the boundaries of the first 15 words
         ArrayList<int[]> alWordBoundaries = getWordBoundaries (command, 15);
         arrCommand = getNonBlankWords(command, alWordBoundaries);
 
-        Command cmd = null;
+        EnumCommand cmd = null;
         if (arrCommand.length>0)        // empty string
         {
-            cmd=Command.getCommand(arrCommand[0]);    // can be null, if not available
+            cmd=EnumCommand.getCommand(arrCommand[0]);    // can be null, if not available
         }
 
         if (cmd==null)  // unknown command raise error condition
@@ -594,7 +647,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
         }
 
             // no image as of yet, not the NEW command, hence create a default image
-        if (bufImage==null && !(cmd==Command.NEW))
+        if (bufImage==null && !(cmd==EnumCommand.NEW))
         {
             bufImage = new BufferedImage(prefWidth, prefHeight, prefImageType);
             bufGC    = (Graphics2D) bufImage.getGraphics();
@@ -746,14 +799,14 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                 case WIN_TO_FRONT:                  // "winToFront" put window into the front
                 case WIN_ALWAYS_ON_TOP_SUPPORTED:   // "winAlwaysOnTopSupported" get value
                     {
-                        if (cmd!=Command.WIN_ALWAYS_ON_TOP && arrCommand.length!=1)
+                        if (cmd!=EnumCommand.WIN_ALWAYS_ON_TOP && arrCommand.length!=1)
                         {
                             throw new IllegalArgumentException("this command expects no arguments, received "+(arrCommand.length-1)+" instead");
                         }
                         if (jd==null)   // implies creation of JavaDrawingFrame
                         {
                             jd = new JavaDrawingFrame(bufImage);
-                            if (cmd!=Command.WIN_ALWAYS_ON_TOP_SUPPORTED)
+                            if (cmd!=EnumCommand.WIN_ALWAYS_ON_TOP_SUPPORTED)
                             {
                                 jd.setVisible(true);    // make sure frame is visible
                                 currVisible=true;
@@ -1254,7 +1307,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         String strResult=null;
                         double newX=0, newY=0;
 
-                        if (cmd==Command.SCALE)
+                        if (cmd==EnumCommand.SCALE)
                         {
                             strResult=at.getScaleX()+" "+at.getScaleY();
                         }
@@ -1272,7 +1325,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 newY=Double.parseDouble(arrCommand[2]);
                             }
 
-                            if (cmd==Command.SCALE)
+                            if (cmd==EnumCommand.SCALE)
                             {
                                 bufGC.scale(newX,newY);
                             }
@@ -1606,6 +1659,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         rop.sendMessage2("SETENTRY", "colors"     , hmColors             );
                         rop.sendMessage2("SETENTRY", "gradiantPaints", hmGradientPaints  );
                         rop.sendMessage2("SETENTRY", "fonts"      , hmFonts              );
+                        rop.sendMessage2("SETENTRY", "shapes"     , hmShapes             );
                         rop.sendMessage2("SETENTRY", "strokes"    , hmStrokes            );
                         rop.sendMessage2("SETENTRY", "images"     , hmImages             );
 
@@ -2785,7 +2839,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         int width  = string2int(arrCommand[1]);
                         int height = string2int(arrCommand[2]);
                             // no exception, so args o.k.
-                        if (cmd==Command.DRAW_OVAL)
+                        if (cmd==EnumCommand.DRAW_OVAL)
                         {
                             bufGC.drawOval(currX,currY,width,height);
                         }
@@ -2855,7 +2909,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                 case FILL_RECT:          // "fillRect width height"
                 case CLEAR_RECT:
                     {
-                        boolean isRoundRect = (cmd==Command.DRAW_ROUND_RECT || cmd==Command.FILL_ROUND_RECT );
+                        boolean isRoundRect = (cmd==EnumCommand.DRAW_ROUND_RECT || cmd==EnumCommand.FILL_ROUND_RECT );
                         if (!isRoundRect && arrCommand.length!=3)
                         {
                             throw new IllegalArgumentException("this command needs exactly 2 arguments, received "+(arrCommand.length-1)+" instead");
@@ -2938,7 +2992,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                                   + "\"0\", \"1\", \"false\", \"true\", \".false\", \".true\"");
                         }
                             // no exception, so args o.k.
-                        if (cmd==Command.DRAW_RECT)
+                        if (cmd==EnumCommand.DRAW_RECT)
                         {
                             bufGC.draw3DRect(currX,currY,width,height,raised);
                         }
@@ -2973,7 +3027,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         int startAngle = string2int(arrCommand[3]);
                         int arcAngle   = string2int(arrCommand[4]);
                             // no exception, so args o.k.
-                        if (cmd==Command.DRAW_ARC)
+                        if (cmd==EnumCommand.DRAW_ARC)
                         {
                             bufGC.drawArc(currX,currY,width,height,startAngle,arcAngle);
                         }
@@ -3165,7 +3219,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
 
                            // get Image
                         Image img = null;
-                        if (cmd==Command.DRAW_IMAGE)   // fetch from the image registry
+                        if (cmd==EnumCommand.DRAW_IMAGE)   // fetch from the image registry
                         {
                             img = hmImages.get(name.toUpperCase());
                             if (img==null)
@@ -3427,7 +3481,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
 
                         resultValue = bufGC;   // query current value (to be returned if change occurs)
 
-                        if (cmd==Command.PUSH_GC)
+                        if (cmd==EnumCommand.PUSH_GC)
                         {
                             Graphics2D tmpG2D = bufGC;
                             adGCStack.push(bufGC);
@@ -3468,17 +3522,17 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                 case PUSH_IMAGE:   // pushes current one, does a create() & assigns the new one as current
                 case POP_IMAGE:    // pops and & assigns as current
                     {
-                        if ( cmd==Command.POP_IMAGE && arrCommand.length!=1 )
+                        if ( cmd==EnumCommand.POP_IMAGE && arrCommand.length!=1 )
                         {
                             throw new IllegalArgumentException("this command does not expect arguments, received "+(arrCommand.length-1)+" argument(s)");
                         }
-                        else if ( cmd==Command.PUSH_IMAGE && arrCommand.length>2 )
+                        else if ( cmd==EnumCommand.PUSH_IMAGE && arrCommand.length>2 )
                         {
                             throw new IllegalArgumentException("this command expects 1 argument at the most (nickName), received "+(arrCommand.length-1)+" argument(s)");
                         }
 
 
-                        if (cmd==Command.PUSH_IMAGE)
+                        if (cmd==EnumCommand.PUSH_IMAGE)
                         {
                             BufferedImage img = copyImage(bufImage);
                             adImageStack.push(img); // save current image
@@ -3521,13 +3575,371 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         }
                     }
 
+                    // "shape name [type args...]"
+                case SHAPE:
+                    {
+                        int argNum=arrCommand.length;
+                        if (arrCommand.length<2)
+                        {
+                            throw new IllegalArgumentException("this command needs more than "+arrCommand.length+" arguments");
+                        }
+                        String nickName=arrCommand[1];
+                        String ucNickName=nickName.toUpperCase();
+                        if (isOR)
+                        {
+                            canonical=canonical+" "+nickName;
+                        }
+                        Shape  sh=null;
+                        if (argNum==2)      // query Shape from registry
+                        {
+                            sh=hmShapes.get(ucNickName);
+                            if (sh==null)
+                            {
+                                String errMsg="Shape with the supplied nickname \""+nickName+"\" is not registered";
+                                if (isOR)
+                                {
+                                    writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
+                                }
+                                return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-17", errMsg );
+                            }
+                            if (isOR)
+                            {
+                                writeOutput(slot, canonical);
+                            }
+                            return sh;     // return Shape
+                        }
+
+                        // create and store a Shape
+                        String strShapeType=arrCommand[2];
+                        EnumShape eShape=EnumShape.getShape(strShapeType);
+                        if (eShape==null)
+                        {
+                            String errMsg="Shape type \""+strShapeType+"\" is not supported";
+                            return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-18", errMsg );
+                        }
+                        String canonicalShapeType=eShape.getMixedCase();
+                        canonical=canonical+" "+canonicalShapeType; // get canoncial shape type
+                        switch (eShape)
+                        {
+                                                //  Double(double x, double y, double w, double h, double start, double extent, int type)
+                            case SHAPE_ARC2D:   //  Double(Rectangle2D ellipseBounds             , double start, double extent, int type)
+                                {
+                                    if (argNum!=7 || argNum!=10)
+                                    {
+                                        String errMsg="Shape \""+canonicalShapeType+"\" needs exactly 4 (rectangle2d start extent type) or 7 arguments (x y w h start extent type), however there are "+(argNum-3)+" supplied";
+                                        if (isOR)
+                                        {
+                                            writeOutput(slot, "-- ERROR (wrong number of arguments for \""+canonicalShapeType+"\" shape): ["+command+"]");
+                                        }
+                                        return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-19", errMsg );
+                                    }
+
+                                    Rectangle2D r2d=null;
+                                    double x=-1.0;
+                                    double y=-1.0;
+                                    double h=-1.0;
+                                    double w=-1.0;
+                                    double start =-1.0;
+                                    double extent=-1.0;
+                                    int    type=-1;
+                                    String strType=null;
+
+                                    if (argNum==7)
+                                    {
+                                        String strArg3=arrCommand[3];
+                                        r2d=(Rectangle2D) hmShapes.get(strArg3.toUpperCase());
+                                        if (r2d==null)  // not registered, try Rexx variable instead
+                                        {
+                                            try
+                                            {
+                                                r2d=(Rectangle2D) getContextVariable(slot,strArg3);
+                                            }
+                                            catch (Throwable t) {}
+                                        }
+                                        if (r2d==null)
+                                        {
+                                            String errMsg="rectangle2d argument named \""+strArg3+"\" is not registered nor is it a Rexx variable referring to a Rectangle2D shape";
+                                            if (isOR)
+                                            {
+                                                writeOutput(slot, "-- ERROR (rectangle2d argument): ["+command+"]");
+                                            }
+                                            return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-20", errMsg );
+                                        }
+                                        if (isOR)
+                                        {
+                                            canonical=canonical+" "+strArg3;
+                                        }
+                                        start =Double.parseDouble(arrCommand[4]);
+                                        extent=Double.parseDouble(arrCommand[5]);
+                                        strType=arrCommand[6];
+                                    }
+                                    else
+                                    {
+                                        x=Double.parseDouble(arrCommand[3]);
+                                        y=Double.parseDouble(arrCommand[4]);
+                                        h=Double.parseDouble(arrCommand[5]);
+                                        w=Double.parseDouble(arrCommand[6]);
+                                        if (isOR)
+                                        {
+                                            canonical=canonical+" "+x+" "+y+" "+h+" "+w;
+                                        }
+                                        start =Double.parseDouble(arrCommand[7]);
+                                        extent=Double.parseDouble(arrCommand[8]);
+                                        strType=arrCommand[9];
+                                    }
+
+                                    // check validy of type argument!
+                                    String ucStringType = strType.toUpperCase();
+                                    if (startRexxVariableChar.indexOf(ucStringType.charAt(0))>=0)    // a symbolic name?
+                                    {
+                                        if (!arcClosures.containsKey(ucStringType))
+                                        {
+                                            throw new IllegalArgumentException("unknown value for \"type\" argument supplied: ["+strType+"]");
+                                        }
+                                        type=arcClosures.get(ucStringType);
+                                    }
+                                    else // verbatim int type
+                                    {
+                                        type=string2int(strType);
+                                        if (!arcClosures.containsValue(type))
+                                        {
+                                            throw new IllegalArgumentException("unknown value for \"type\" argument supplied: ["+strType+"]");
+                                        }
+                                    }
+
+                                    if (isOR)
+                                    {
+                                        canonical=canonical+" "+start+" "+extent+" ";
+                                        if (bUseNames4canonical)
+                                        {
+                                            canonical=canonical+arcClosuresInt2Name.get(type);
+                                        }
+                                        else
+                                        {
+                                            canonical=canonical+type;
+                                        }
+                                    }
+
+                                    if (argNum==7)
+                                    {
+                                        sh=new Arc2D.Double(r2d, start, extent, type);
+                                    }
+                                    else
+                                    {
+                                        sh=new Arc2D.Double(x, y, w, h, start, extent, type);
+                                    }
+                                    break;
+                                }
+
+
+                            case SHAPE_CUBIC_CURVE2D:   // Double(double x1, double y1, double ctrlx1, double ctrly1, double ctrlx2, double ctrly2, double x2, double y2)
+                                {
+                                    if (argNum!=11)
+                                    {
+                                        String errMsg="Shape \""+canonicalShapeType+"\" needs exactly 4 arguments, however there are "+(argNum-3)+" supplied";
+                                        if (isOR)
+                                        {
+                                            writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
+                                        }
+                                        return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-21", errMsg );
+                                    }
+                                    double arg1=Double.parseDouble(arrCommand[3]);
+                                    double arg2=Double.parseDouble(arrCommand[4]);
+                                    double arg3=Double.parseDouble(arrCommand[5]);
+                                    double arg4=Double.parseDouble(arrCommand[6]);
+                                    double arg5=Double.parseDouble(arrCommand[7]);
+                                    double arg6=Double.parseDouble(arrCommand[8]);
+                                    double arg7=Double.parseDouble(arrCommand[9]);
+                                    double arg8=Double.parseDouble(arrCommand[10]);
+                                    if (isOR)
+                                    {
+                                        canonical=canonical+" "+arg1+" "+arg2+" "+arg3+" "+arg4+" "+arg5+" "+arg6+" "+arg7+" "+arg8;
+                                    }
+                                    sh=new CubicCurve2D.Double(arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8);
+
+                                    break;
+                                }
+
+                            case SHAPE_ELLIPSE2D:   // Double(double x, double y, double w, double h)
+                            case SHAPE_LINE2D:      // Double(double x1, double y1, double x2, double y2)
+                            case SHAPE_RECTANGLE2D: // Double(double x, double y, double w, double h)
+                                {
+                                    if (argNum!=7)
+                                    {
+                                        String errMsg="Shape \""+canonicalShapeType+"\" needs exactly 4 arguments, however there are "+(argNum-3)+" supplied";
+                                        if (isOR)
+                                        {
+                                            writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
+                                        }
+                                        return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-22", errMsg );
+                                    }
+                                    double arg1=Double.parseDouble(arrCommand[3]);
+                                    double arg2=Double.parseDouble(arrCommand[4]);
+                                    double arg3=Double.parseDouble(arrCommand[5]);
+                                    double arg4=Double.parseDouble(arrCommand[6]);
+
+                                    if (eShape==EnumShape.SHAPE_ELLIPSE2D)
+                                    {
+                                        sh=new Ellipse2D.Double(arg1,arg2,arg3,arg4);
+                                    }
+                                    else if (eShape==EnumShape.SHAPE_LINE2D)
+                                    {
+                                        sh=new Line2D.Double(arg1,arg2,arg3,arg4);
+                                    }
+                                    else
+                                    {
+                                        sh=new Rectangle2D.Double(arg1,arg2,arg3,arg4);
+                                    }
+                                    if (isOR)
+                                    {
+                                        canonical=canonical+" "+arg1+" "+arg2+" "+arg3+" "+arg4;
+                                    }
+                                    break;
+                                }
+
+                            case SHAPE_POLYGON:     // Polygon(int[] xpoints, int[] ypoints, int npoints)
+                                {
+                                    if (arrCommand.length!=6)
+                                    {
+                                        throw new IllegalArgumentException("this command needs exactly 3 (xPointsArray yPointsArray nPoints) arguments, received "+(arrCommand.length-3)+" instead");
+                                    }
+
+                                    int [] xPoints=null, yPoints=null;
+                                    int    nPoints=0;
+
+                                    String strXPoints=arrCommand[3];
+                                    if (startRexxVariableChar.indexOf(strXPoints.charAt(0))>=0) // a Rexx variable?
+                                    {
+                                        xPoints=(int []) getContextVariable(slot, strXPoints);
+                                    }
+                                    else    // a Rexx array expression: comma separated list of ints in parentheses (no blanks!)
+                                    {
+                                        xPoints=RexxArrayExpressionToIntArray(strXPoints,0);
+                                    }
+
+                                    String strYPoints=arrCommand[4];
+                                    if (startRexxVariableChar.indexOf(strYPoints.charAt(0))>=0) // a Rexx variable?
+                                    {
+                                        yPoints=(int []) getContextVariable(slot, strYPoints);
+                                    }
+                                    else    // a Rexx array expression: comma separated list of floats in parentheses (no blanks!)
+                                    {
+                                        yPoints=RexxArrayExpressionToIntArray(strYPoints,0);
+                                    }
+
+                                    String strNPoints=arrCommand[5];
+                                    nPoints = Integer.parseInt(strNPoints);
+                                    if (isOR)
+                                    {
+                                        canonical=canonical+" "+strXPoints+" "+strYPoints+" "+strNPoints;
+                                    }
+                                    sh=new Polygon(xPoints, yPoints, nPoints);
+                                    break;
+                                }
+
+                            case SHAPE_QUAD_CURVE2D:        //  Double(double x1, double y1, double ctrlx, double ctrly, double x2, double y2)
+                            case SHAPE_ROUND_RECTANGLE2D:   // Double(double x, double y, double w, double h, double arcw, double arch)
+                                {
+                                    if (argNum!=9)
+                                    {
+                                        String errMsg="Shape \""+canonicalShapeType+"\" needs exactly 4 arguments, however there are "+(argNum-3)+" supplied";
+                                        if (isOR)
+                                        {
+                                            writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
+                                        }
+                                        return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-23", errMsg );
+                                    }
+                                    double arg1=Double.parseDouble(arrCommand[3]);
+                                    double arg2=Double.parseDouble(arrCommand[4]);
+                                    double arg3=Double.parseDouble(arrCommand[5]);
+                                    double arg4=Double.parseDouble(arrCommand[6]);
+                                    double arg5=Double.parseDouble(arrCommand[7]);
+                                    double arg6=Double.parseDouble(arrCommand[8]);
+                                    if (isOR)
+                                    {
+                                        canonical=canonical+" "+arg1+" "+arg2+" "+arg3+" "+arg4+" "+arg5+" "+arg6;
+                                    }
+
+                                    if (eShape==EnumShape.SHAPE_QUAD_CURVE2D)
+                                    {
+                                        sh=new QuadCurve2D.Double(arg1,arg2,arg3,arg4,arg5,arg6);
+                                    }
+                                    else
+                                    {
+                                        sh=new RoundRectangle2D.Double(arg1,arg2,arg3,arg4,arg5,arg6);
+                                    }
+                                    break;
+                                }
+
+                            default:
+                                {
+                                    String errMsg="shape type \""+canonicalShapeType+"\" not implemented";
+                                    return createCondition (slot, nrCommand, command, ConditionType.FAILURE, "-24", errMsg );
+                                }
+                        }
+                        hmShapes.put(ucNickName,sh);
+                        if (isOR)
+                        {
+                            writeOutput(slot, canonical);
+                        }
+                        return sh;      // return the shape
+                    }
+                    // "drawShape name
+                case DRAW_SHAPE:
+                    // "fillShape name
+                case FILL_SHAPE:
+                    // "clipShape name
+                case CLIP_SHAPE:
+                    {
+                        if (arrCommand.length!=2)
+                        {
+                            throw new IllegalArgumentException("this command needs no or exactly 1 argument, received "+(arrCommand.length-1)+" instead");
+                        }
+                        String nickName=arrCommand[1];
+
+                        Shape sh=hmShapes.get(nickName.toUpperCase());
+
+                        if (sh==null)
+                        {
+                            if (startRexxVariableChar.indexOf(nickName.charAt(0))>=0) // a Rexx variable?
+                            {
+                                sh=(Shape) getContextVariable(slot, nickName);
+                                if (sh==null)
+                                {
+                                    throw new IllegalArgumentException("no shape with name \""+nickName+"\" stored, nor a Rexx variable that refers to a Shape object");
+                                }
+                            }
+                        }
+
+                        if (EnumCommand.DRAW_SHAPE==cmd)
+                        {
+                            bufGC.draw(sh);
+                        }
+                        else
+                        if (EnumCommand.FILL_SHAPE==cmd)
+                        {
+                            bufGC.fill(sh);
+                        }
+                        else    // CLIP_SHAPE
+                        {
+                            bufGC.clip(sh);
+                        }
+
+                        if (isOR)
+                        {
+                            writeOutput(slot, canonical+" "+nickName);
+                        }
+                        break;
+                    }
+
+
 
                 default:        // unknown/unhandled command, raise failure condition (should never arrive here)
                     if (isOR)
                     {
                         writeOutput(slot, "-- FAILURE (unimplemented command): ["+command+"]");
                     }
-                    return createCondition (slot, nrCommand, command, ConditionType.FAILURE, "-17", "unimplemented command");
+                    return createCondition (slot, nrCommand, command, ConditionType.FAILURE, "-101", "unimplemented command");
             }
         }
         catch (Throwable t)     // raise error condition if args etc. were causing exceptions
@@ -3536,7 +3948,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
             {
                 writeOutput(slot, "-- ERROR (argument): ["+command+"]");
             }
-            return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-18", t.toString() );
+            return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-102", t.toString() );
         }
 
         // draws/changes have occurred, redraw if we have a JavaDrawingFrame instance to show to user
@@ -3976,10 +4388,8 @@ class JavaDrawingPrintable implements Printable
 
 // ============================================================================
 /** Define the commands we process, support the string renderings.
- *  Note: this sample can be extended to support drawImage, drawArc, drawPolygon,
- *        etc., cf. java.awt.Graphics and java.awt.Graphics2D
  */
-enum Command {
+enum EnumCommand {
     // define the enum values for the commands available to Rexx programs,
     // supplying the strings associated with them                   // ? synonyms too
 
@@ -4042,6 +4452,13 @@ enum Command {
     SET_PAINT_MODE              ( "setPaintMode"             ) ,    //   "setPaintMode": cf. Grahpics#setPaintMode()
     SET_XOR_MODE                ( "setXorMode"               ) ,    //   "xorMode colorNickName": sets xorMode to supplied color
     SHEAR                       ( "shear"                    ) ,    //   "shear [x [y]]" query or set shear for x, y; if y omitted, uses x
+
+    // 2022-12-03
+    SHAPE                       ( "shape"                    ) ,    //   "shape name [type args...]" query or create a shape
+    DRAW_SHAPE                  ( "drawShape"                ) ,    //   "drawShape name" draws the named shape
+    FILL_SHAPE                  ( "fillShape"                ) ,    //   "fillShape name" fills the named shape
+    CLIP_SHAPE                  ( "clipShape"                ) ,    //   "clipShape name" defines intersection with named shape as the new clip
+
     SLEEP                       ( "sleep"                    ) ,    //   "sleep msecs" (uses Thread.sleep())
     STRING_BOUNDS               ( "stringBounds"             ) ,    //   "stringBounds string": returns the Rectangle2D x y w h (in floats?)
     STROKE                      ( "stroke"                   ) ,    //   "stroke [strokeNickName [width [cap join [miterlimit [[]floatDash floatDashPhase]]]]" query or set stroke
@@ -4069,12 +4486,12 @@ enum Command {
     /**  HashMap that allows to retrieve the enum type given a string, irrespectible of the case the string was supplied.
      *   Cf. {@link #getCommand(String mixedCase)}.
      */
-    final static HashMap<String,Command> upperCase2Command=new HashMap<String,Command>(64);
+    final static HashMap<String,EnumCommand> upperCase2Command=new HashMap<>(64);
 
     static   // use static block to add synonym strings to upperCase2Command Map
     {
         // add all types to HashMap (in declaration order)
-         for (Command it : Command.values())
+         for (EnumCommand it : EnumCommand.values())
          {
              upperCase2Command.put(it.upperCase, it);
          }
@@ -4110,19 +4527,19 @@ enum Command {
     }
 
      // note: no access to static fields allowed in constructor (Enum values get created before static block
-    Command(String mixedCase)
+    EnumCommand(String mixedCase)
     {
         this.mixedCase=mixedCase;
         this.upperCase=mixedCase.toUpperCase();
     }
 
-    /** Returns the Command corresponding to the supplied String.
+    /** Returns the EnumCommand corresponding to the supplied String.
      *
      * @param mixedCase a String value in any case corresponding to the command from Rexx
      *
-     * @return the enum Command corresponding to the supplied String, <code>null</code> if not defined
+     * @return the enum EnumCommand corresponding to the supplied String, <code>null</code> if not defined
      */
-    static public Command getCommand(String mixedCase)
+    static public EnumCommand getCommand(String mixedCase)
     {
         if (mixedCase==null)
         {
@@ -4135,6 +4552,7 @@ enum Command {
     public static void main(String[] args) {
         System.err.println("... arrived in main, args.length="+args.length+", DRAW_LINE="+DRAW_LINE);
         System.err.println("... arrived in main, args.length="+args.length+", DRAW_LINE.toString()="+DRAW_LINE.toString());
+        System.err.println("... arrived in main, args.length="+args.length+", DRAW_LINE.getMixedCase()="+DRAW_LINE.getMixedCase());
         System.err.println("... arrived in main, args.length="+args.length+", getCommand(\"NOT_AVAIL\")="+getCommand("NOT_AVAIL"));
         System.err.println("... arrived in main, args.length="+args.length+", getCommand(\"cLeAr\")  ="+getCommand("cLeAr"));
         System.err.println("... arrived in main, args.length="+args.length+", getCommand(\"drawOval\")="+getCommand("drawOval"));
@@ -4142,6 +4560,128 @@ enum Command {
         for (int i=0; i<args.length; i++)
         {
             System.err.println("... ... ... .. main, args["+i+"/"+args.length+"]: getCommand("+args[i]+")=["+getCommand(args[i])+"]");
+        }
+    }
+}
+
+// ============================================================================
+/** Define the Shapes we know of, add aliases for the supported ones (first significant letter(s)),
+    names without trailing 2D),
+    support the string renderings.
+ */
+
+enum EnumShape {
+    // define the enum values for the commands available to Rexx programs,
+    // supplying the strings associated with them                   // ? synonyms too
+
+    // 20220929: do not support Shapes, maybe in a future update; one can always
+    //           get access using "gc" command and interact with it from ooRexx directly
+    // java.awt.Graphics or java.awt.Graphics2D related
+
+    SHAPE_ARC2D                 ( "Arc2D"                   ),
+    SHAPE_CUBIC_CURVE2D         ( "CubicCurve2D"            ),
+    SHAPE_ELLIPSE2D             ( "Ellipse2D"               ),
+    SHAPE_LINE2D                ( "Line2D"                  ),
+    SHAPE_POLYGON               ( "Polygon"                 ),
+    SHAPE_QUAD_CURVE2D          ( "QuadCurve2D"             ),
+    SHAPE_RECTANGLE2D           ( "Rectangle2D"             ),
+    SHAPE_ROUND_RECTANGLE2D     ( "RoundRectangle2D"        ),
+
+    // as of 2022-12-04: intentionally not (yet?) implemented, let that known as a failure
+    SHAPE_AREA                  ( "Area"                    ),
+    SHAPE_PATH2D                ( "Path2D"                  ),
+    SHAPE_POINT2D               ( "Point2D"                 ),
+
+    NO_OP                       ( "noOp"                    )      // last element, doing nothing
+    ;
+
+    /**  HashMap that allows to retrieve the enum type given a string, irrespectible of the case the string was supplied.
+     *   Cf. {@link #getShape(String mixedCase)}.
+     */
+    final static HashMap<String,EnumShape> upperCase2Shape=new HashMap<>(64);
+
+    static   // use static block to add synonym strings to upperCase2Shape Map
+    {
+        // add all types to HashMap (in declaration order)
+         for (EnumShape it : EnumShape.values())
+         {
+             upperCase2Shape.put(it.upperCase, it);
+         }
+
+         // we allow shortening the shape type to the significant letters
+         // add synonyms      new name      enum type
+         upperCase2Shape.put( "A"             , SHAPE_ARC2D             ) ;
+         upperCase2Shape.put( "ARC"           , SHAPE_ARC2D             ) ;
+         upperCase2Shape.put( "C"             , SHAPE_CUBIC_CURVE2D     ) ;
+         upperCase2Shape.put( "CUBICCURVE"    , SHAPE_CUBIC_CURVE2D     ) ;
+         upperCase2Shape.put( "E"             , SHAPE_ELLIPSE2D         ) ;
+         upperCase2Shape.put( "ELLIPSE"       , SHAPE_ELLIPSE2D         ) ;
+         upperCase2Shape.put( "L"             , SHAPE_LINE2D            ) ;
+         upperCase2Shape.put( "LINE"          , SHAPE_LINE2D            ) ;
+         upperCase2Shape.put( "P"             , SHAPE_POLYGON           ) ;
+         upperCase2Shape.put( "Q"             , SHAPE_QUAD_CURVE2D      ) ;
+         upperCase2Shape.put( "QUADCURVE"     , SHAPE_QUAD_CURVE2D      ) ;
+         upperCase2Shape.put( "RE"            , SHAPE_RECTANGLE2D       ) ;
+         upperCase2Shape.put( "RECTANGLE"     , SHAPE_RECTANGLE2D       ) ;
+         upperCase2Shape.put( "RO"            , SHAPE_ROUND_RECTANGLE2D ) ;
+         upperCase2Shape.put( "ROUNDRECTANGLE", SHAPE_ROUND_RECTANGLE2D ) ;
+    }
+
+
+    final String mixedCase;
+    /** Returns the String value in mixed case.
+     *
+     * @return  the String value in mixed case.
+     */
+    public String getMixedCase()
+    {
+        return mixedCase;
+    }
+
+    final String upperCase;
+    /** Returns the String value in upper case.
+     *
+     * @return  the String value in upper case.
+     */
+    public String getUpperCase()
+    {
+        return upperCase;
+    }
+
+     // note: no access to static fields allowed in constructor (Enum values get created before static block
+    EnumShape(String mixedCase)
+    {
+        this.mixedCase=mixedCase;
+        this.upperCase=mixedCase.toUpperCase();
+    }
+
+    /** Returns the EnumShape corresponding to the supplied String.
+     *
+     * @param mixedCase a String value in any case corresponding to the command from Rexx
+     *
+     * @return the enum EnumShape corresponding to the supplied String, <code>null</code> if not defined
+     */
+    static public EnumShape getShape(String mixedCase)
+    {
+        if (mixedCase==null)
+        {
+            return null;
+        }
+        return upperCase2Shape.get(mixedCase.toUpperCase());
+    }
+
+
+    public static void main(String[] args) {
+        System.err.println("... arrived in main, args.length="+args.length+", SHAPE_ARC2D="+SHAPE_ARC2D);
+        System.err.println("... arrived in main, args.length="+args.length+", SHAPE_ARC2D.toString()="+SHAPE_ARC2D.toString());
+        System.err.println("... arrived in main, args.length="+args.length+", SHAPE_ARC2D.getMixedCase()="+SHAPE_ARC2D.getMixedCase());
+        System.err.println("... arrived in main, args.length="+args.length+", getShape(\"NOT_AVAIL\")="+getShape("NOT_AVAIL"));
+        System.err.println("... arrived in main, args.length="+args.length+", getShape(\"A\")        ="+getShape("A"));
+        System.err.println("... arrived in main, args.length="+args.length+", getShape(\"q\")        ="+getShape("q"));
+
+        for (int i=0; i<args.length; i++)
+        {
+            System.err.println("... ... ... .. main, args["+i+"/"+args.length+"]: getShape("+args[i]+")=["+getShape(args[i])+"]");
         }
     }
 }
