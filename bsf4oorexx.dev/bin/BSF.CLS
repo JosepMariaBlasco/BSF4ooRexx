@@ -19,6 +19,8 @@
           .BSF in .environment;
 
    date:
+         2022-12-05, ---rgf, - changed "dev.null" to "nullDevice"
+
          2022-12-04, ---rgf, - add entry "dev.null" to .environment, being a singleton of a private
                                class "NullOutput" that swallows say/lineout/charout messages: purpose is to be
                                usable as an "error/output using (.dev.null)" target representing
@@ -944,7 +946,7 @@ end
       .environment~slot.argument=.slot.argument -- putting in .environment to allow FindClass() to find it
 
       call getAndSetPathToIcons
-      .environment~dev.null=.NullOutput~new  -- singleton to swallow SAY/LINEOUT/CHAROUT in redirected OUTPUT/ERROR targets
+      .environment~nullDevice=.NullOutput~new   -- singleton to swallow SAY/LINEOUT/CHAROUT in redirected OUTPUT/ERROR targets
    end
 
    call create_display.version_entry      -- create the display version entry .bsf4rexx~display.version
