@@ -1,29 +1,251 @@
+import org.apache.commons.io.FileUtils
+import java.time.LocalDate
+
+plugins {
+    id 'org.jetbrains.intellij' version '1.10.0'
+    id 'idea'
+    id 'org.jetbrains.grammarkit' version '2021.2.2'
+    id 'org.jetbrains.kotlin.jvm' version '1.7.20'
+}
+
+def intelliJBuildVersion = 'IC-222.4345.14'
+
 allprojects {
     apply plugin: 'java'
+    apply plugin: 'org.jetbrains.grammarkit'
+    apply plugin: 'idea'
+    apply plugin: 'org.jetbrains.intellij'
+    apply plugin: 'org.jetbrains.kotlin.jvm'
 
     group 'org.oorexx.idea'
-    version '2.0.5-GA'
+    version '2.1.7-Beta'
 
-    sourceCompatibility = 1.11
-    targetCompatibility = 1.11
-
+    sourceCompatibility = 1.17
+    targetCompatibility = 1.17
 
     repositories {
         mavenCentral()
     }
 
+    intellij {
+        version = intelliJBuildVersion
+        sandboxDir = project.projectDir.getAbsolutePath() + ' /sandbox'
+        plugins.set(["PsiViewer:222-SNAPSHOT"])
+
+        prepareSandbox {
+            pluginName = 'ooRexxPlugin'
+        }
+    }
+
+    test {
+        useJUnitPlatform()
+    }
+
+    idea {
+        module {
+            generatedSourceDirs += file('src/main/gen')
+        }
+    }
+}
+
+project(':lang') {
+
+    dependencies {
+        testImplementation "junit:junit:4.12"
+    }
+
+    sourceSets {
+        main {
+            java {
+                srcDirs 'src/main/gen'
+                srcDirs 'src/main/java'
+            }
+        }
+    }
+
+    generateLexer {
+        source = "src/main/resources/ooRexx.flex"
+        targetDir = "src/main/gen/org/oorexx/ide/lexer"
+        targetClass = "OoRexxLexer"
+        purgeOldFiles = true
+    }
+
+    generateParser {
+        source = "src/main/resources/ooRexx.bnf"
+        targetRoot = 'src/main/gen'
+        pathToParser = '/org/oorexx/ide/lang/OoRexxParser.java'
+        pathToPsiRoot = "/org/oorexx/ide/lang"
+        purgeOldFiles = true
+    }
+
+    tasks.withType(Test) { enabled = false }
+
+    compileJava {
+        dependsOn generateLexer
+        dependsOn generateParser
+    }
+
+    task cleanGen() {
+        dependsOn(clean)
+
+        FileUtils.deleteDirectory(new File(project(':lang').projectDir.absoluteFile, "src/main/gen/org"))
+    }
 }
 
 project(':oorexxdoc') {
 
     dependencies {
         implementation project(':lang')
+        implementation "org.freemarker:freemarker:2.3.31"
+        implementation "org.apache.commons:commons-lang3:3.12.0"
+        implementation "org.apache.commons:commons-text:1.9"
+        implementation "commons-io:commons-io:2.6"
+        implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-xml', version: '2.11.0'
+
+        testImplementation "org.junit.jupiter:junit-jupiter-api:5.7.2"
+        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.7.2"
+        testImplementation "junit:junit:4.13.2"
+
+        implementation files(rootDir.getAbsolutePath() + "/lib/grammar-kit-2021.1.2.jar")
     }
 
+    jar {
+        manifest {
+            attributes 'Main-Class': 'org.oorexx.doc.Application'
+        }
+        from {
+            project(':lang').sourceSets.main.output
+        }
+        from sourceSets.main.output
+    }
+
+    task fatJar(type: Jar) {
+        manifest.from jar.manifest
+        classifier = 'all'
+        duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+        from {
+            configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+        } {
+            exclude "META-INF/.SF"
+            exclude "META-INF/.DSA"
+            exclude "META-INF/*.RSA"
+        }
+        with jar
+    }
+
+    task copyBundle() {
+        dependsOn(fatJar)
+        doLast {
+            def prePackageDir = new File(project(':oorexxdoc').buildDir.absoluteFile, "/prepackage")
+            prePackageDir.mkdir()
+            def libDir = new File(project(':oorexxdoc').buildDir.absoluteFile, "/libs")
+            def sourceDir = project(':oorexxdoc').projectDir.absoluteFile
+
+            FileUtils.copyFile(new File(libDir, "oorexxdoc-${version}-all.jar"), new File(prePackageDir, "oorexxdoc-${version}.jar"))
+            FileUtils.copyDirectory(new File(sourceDir, "/src/main/resources/bundle"), prePackageDir)
+
+            println(new File(sourceDir, "/src/main/resources/bundle").getAbsolutePath())
+
+            def usageFile = file(prePackageDir.absolutePath + "/USAGE.md")
+            def licenseFile = file(prePackageDir.absolutePath + "/LICENSE.txt")
+
+            def usageFileReplacedContent = new String(usageFile.readBytes(), "UTF-8")
+                    .replaceAll("##date##", LocalDate.now().toString())
+                    .replaceAll("##year##", LocalDate.now().getYear().toString())
+                    .replaceAll("##version##", "${version}")
+                    .replaceAll("##intelliJVersion##", "${intellij.version}")
+
+            def licenseFileReplacedContent = new String(licenseFile.readBytes(), "UTF-8")
+                    .replaceAll("##date##", LocalDate.now().toString())
+                    .replaceAll("##year##", LocalDate.now().getYear().toString())
+                    .replaceAll("##version##", "${version}")
+                    .replaceAll("##intelliJVersion##", "${intellij.version}")
+
+            usageFile.write(usageFileReplacedContent)
+            licenseFile.write(licenseFileReplacedContent)
+
+        }
+    }
+
+    task createDistribution(type: Zip){
+        dependsOn(copyBundle)
+        archiveFileName = "ooRexxDoc-${version}.zip"
+        destinationDirectory = file("$buildDir/distributions")
+        from "$buildDir/prepackage"
+    }
+
+
+    task wrapper(type: Wrapper) { gradleVersion = "7.3.1" }
 }
 
 project(':plugin') {
+
     dependencies {
-        implementation project(':oorexxdoc')
+        implementation project(":oorexxdoc")
+        implementation project(":lang")
+        testImplementation "org.junit.jupiter:junit-jupiter-api:5.7.2"
+        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.7.2"
+        implementation "org.jetbrains.kotlin:kotlin-stdlib:1.5.30"
+        implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.12.5"
+        testImplementation files(rootDir.absolutePath + "/lib/grammar-kit-2021.1.2.jar")
+    }
+
+    tasks {
+        patchPluginXml {
+            sinceBuild.set("222")
+            untilBuild.set("444.*")
+        }
+    }
+
+    runPluginVerifier {
+        ideVersions = [intelliJBuildVersion]
+    }
+
+    sourceSets {
+        main.java.srcDirs += "src/main/java"
+        main.resources.srcDirs += "src/main/resources"
+        test.java.srcDirs += "test/java"
+        test.resources.srcDirs += "test/resources"
+    }
+
+    kotlin {
+        sourceSets {
+            main.kotlin.srcDirs += "src/main/kotlin"
+            test.kotlin.srcDirs += "test/kotlin"
+        }
+    }
+
+    task copyReadMeAndLicenseTxt() {
+        dependsOn(buildPlugin)
+
+        def distributionsDir = new File(project(':plugin').buildDir.absoluteFile, "distributions")
+
+        def sourceDir = rootProject.layout.projectDirectory.dir(".").asFile
+
+        FileUtils.copyDirectory(new File(sourceDir, "completionAddons"), distributionsDir)
+        FileUtils.copyFileToDirectory(new File(sourceDir, "README.txt"), distributionsDir)
+        FileUtils.copyFileToDirectory(new File(sourceDir, "LICENSE.txt"), distributionsDir)
+
+        def readmeFile = file(distributionsDir.absolutePath + "/README.txt")
+        def licenseFile = file(distributionsDir.absolutePath + "/LICENSE.txt")
+
+        def readmeFileReplacedContent = new String(readmeFile.readBytes(), "UTF-8")
+                .replaceAll("##date##", LocalDate.now().toString())
+                .replaceAll("##year##", LocalDate.now().getYear().toString())
+                .replaceAll("##version##", "${version}")
+                .replaceAll("##intelliJVersion##", "${intellij.version}")
+
+        def licenseFileReplacedContent = new String(licenseFile.readBytes(), "UTF-8")
+                .replaceAll("##date##", LocalDate.now().toString())
+                .replaceAll("##year##", LocalDate.now().getYear().toString())
+                .replaceAll("##version##", "${version}")
+                .replaceAll("##intelliJVersion##", "${intellij.version}")
+
+        readmeFile.write(readmeFileReplacedContent)
+        licenseFile.write(licenseFileReplacedContent)
+    }
+
+    tasks.named("processResources") {
+        duplicatesStrategy = "include"
     }
 }

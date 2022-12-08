@@ -1,0 +1,486 @@
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">-->
+
+    <title>ooRexxDoc - My Documentation - json.cls</title>
+
+    <style type="text/css">
+        body { padding-top: 70px; }
+
+        #toTop{
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            cursor: pointer;
+            display: none;
+        }
+
+        pre {
+            overflow-x: auto;
+        }
+        pre code {
+            overflow-wrap: normal;
+            white-space: pre;
+        }
+
+        .keyword {
+            color: #ff5f00;
+        }
+
+        #search {
+            margin-left: 10px;
+        }
+
+        :target {
+            display: block;
+            position: relative;
+            top: -50px;
+            visibility: hidden;
+        }
+
+        .class-info {
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+    </style>
+</head>
+
+<body>
+<nav class="navbar navbar-default navbar-fixed-top">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">ooRexxDoc</a>
+        </div>
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav">
+                <li><a href="../oorexxdoc.html">Home</a></li>
+                <li class="active"><a href="json.cls.html">json.cls</a></li>
+            </ul>
+            <form class="navbar-form">
+                <div class="form-group">
+                    <input type="text" id="search" class="form-control" placeholder="Search" id="test" data-provide="typeahead" autocomplete=off>
+                </div>
+                <span class="navbar-right">
+                        <span class="label label-info">Run-Date: 19 Nov 2022, 20:32:59</span>
+                </span>
+            </form>
+        </div>
+    </div>
+</nav>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="panel panel-default">
+                <div class="panel-heading">Packages</div>
+                <div class="panel-body" style="max-height: 420px;overflow-y: scroll;">
+                        <a href="BSF.CLS.html">BSF.CLS</a>
+                        <hr width="99%"/>
+                        <a href="FileManager.rxj.html">FileManager.rxj</a>
+                        <hr width="99%"/>
+                        <a href="json.cls.html">json.cls</a>
+                        <hr width="99%"/>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="panel panel-default">
+                <div class="panel-heading">json.cls Overview</div>
+                <div class="panel-body">
+                    <ul>
+                            <li>Classes
+                                <ul>
+                                        <li><a href="json.cls.html#json">json</a>
+                                                <ul>
+                                                    <li>Methods:
+                                                            <a href="json.cls.html#init">init</a>
+                                                            <a href="json.cls.html#fromJSON">fromJSON</a>
+                                                            <a href="json.cls.html#parseJSONarray">parseJSONarray</a>
+                                                            <a href="json.cls.html#parseJSONarrayValue">parseJSONarrayValue</a>
+                                                            <a href="json.cls.html#parseJSONobject">parseJSONobject</a>
+                                                            <a href="json.cls.html#parseJSONobjectValue">parseJSONobjectValue</a>
+                                                            <a href="json.cls.html#parseJSONother">parseJSONother</a>
+                                                            <a href="json.cls.html#parseJSONstring">parseJSONstring</a>
+                                                            <a href="json.cls.html#parseJSONvalue">parseJSONvalue</a>
+                                                            <a href="json.cls.html#parseRexxArray">parseRexxArray</a>
+                                                            <a href="json.cls.html#parseRexxDirectory">parseRexxDirectory</a>
+                                                            <a href="json.cls.html#parseRexxObject">parseRexxObject</a>
+                                                            <a href="json.cls.html#parseRexxString">parseRexxString</a>
+                                                            <a href="json.cls.html#toJSON">toJSON</a>
+                                                            <a href="json.cls.html#trimLeadingWhitespace">trimLeadingWhitespace</a>
+                                                    </li>
+                                                </ul>
+                                        </li>
+                                </ul>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-xs-9">
+            <div class="container-fluid" id="content-main">
+
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container-fluid">
+    <div class="row">
+        <div class="container-fluid">
+            <h1>json.cls</h1>
+
+
+
+
+
+
+
+
+
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="json"></a>
+                        <div class="panel-heading">
+                            <h4>Class: json</h4>
+                        </div>
+
+                        <div class="panel-body">
+
+                            <div>
+                            </div>
+
+
+
+                            <div>
+                                <h4>Attributes</h4>
+                                    <i>No Attributes</i>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Methods</h4>
+                                    <a id="init"></a>
+                                    <ul>
+                                        <li><b>init</b>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Initilizes the class
+                                                    </div>
+                                                </div>
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="fromJSON"></a>
+                                    <ul>
+                                        <li><b>fromJSON</b>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Recursively converts a JSON text to Rexx objects
+                                                            <br /><br />
+                                                            <b>param</b>: jsonString   A JSON text. <br />
+                                                    </div>
+                                                </div>
+
+
+                                                <br /><span class="keyword">USE ARG</span> jsonString
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="parseJSONarray"></a>
+                                    <ul>
+                                        <li><b>parseJSONarray</b>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Converts a JSON array into a Rexx array object.
+                                                    </div>
+                                                </div>
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="parseJSONarrayValue"></a>
+                                    <ul>
+                                        <li><b>parseJSONarrayValue</b>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Converts a JSON array values into Rexx array items.
+                                                            <br /><br />
+                                                            <b>param</b>: rexxArray   A Rexx array object. <br />
+                                                    </div>
+                                                </div>
+
+
+                                                <br /><span class="keyword">USE ARG</span> rexxArray
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="parseJSONobject"></a>
+                                    <ul>
+                                        <li><b>parseJSONobject</b>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Converts a JSON object into a Rexx directory object.
+                                                    </div>
+                                                </div>
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="parseJSONobjectValue"></a>
+                                    <ul>
+                                        <li><b>parseJSONobjectValue</b>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Converts JSON name:value pairs into a Rexx directory item@index.
+                                                            <br /><br />
+                                                            <b>param</b>: rexxDirectory   A Rexx directory object. <br />
+                                                    </div>
+                                                </div>
+
+
+                                                <br /><span class="keyword">USE ARG</span> rexxDirectory
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="parseJSONother"></a>
+                                    <ul>
+                                        <li><b>parseJSONother</b>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Converts other JSON types into Rexx objects.
+                                                    </div>
+                                                </div>
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="parseJSONstring"></a>
+                                    <ul>
+                                        <li><b>parseJSONstring</b>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Converts a quoted JSON string into a Rexx string object.
+                                                    </div>
+                                                </div>
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="parseJSONvalue"></a>
+                                    <ul>
+                                        <li><b>parseJSONvalue</b>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Determines type of value.
+                                                    </div>
+                                                </div>
+
+
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="parseRexxArray"></a>
+                                    <ul>
+                                        <li><b>parseRexxArray</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> rexxObject
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="parseRexxDirectory"></a>
+                                    <ul>
+                                        <li><b>parseRexxDirectory</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> rexxObject
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="parseRexxObject"></a>
+                                    <ul>
+                                        <li><b>parseRexxObject</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> rexxObject
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="parseRexxString"></a>
+                                    <ul>
+                                        <li><b>parseRexxString</b>
+
+
+
+
+                                                <br /><span class="keyword">USE ARG</span> rexxObject, quoted = .false
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="toJSON"></a>
+                                    <ul>
+                                        <li><b>toJSON</b>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Converts a Rexx object to JSON formatting
+                                                            <br /><br />
+                                                            <b>param</b>: rexxObject   The object to convert.  Accepts directory, array,                      or string objects, or nil.  Otherwise, it calls                      the makeArray method for the object, returning                      "null" if no makeArray method is available. <br />
+                                                    </div>
+                                                </div>
+
+
+                                                <br /><span class="keyword">USE ARG</span> rexxObject
+
+
+                                        </li>
+                                    </ul>
+                                    <a id="trimLeadingWhitespace"></a>
+                                    <ul>
+                                        <li><b>trimLeadingWhitespace</b>
+
+
+                                                <br /><br />
+                                                <div class="panel panel-default">
+                                                    <div class="panel-body">
+                                                        Skips allowed whitespace between values.
+                                                    </div>
+                                                </div>
+
+
+
+
+                                        </li>
+                                    </ul>
+                            </div>
+
+                            <hr />
+
+                            <div>
+                                <h4>Constants</h4>
+                                    <i>No Constants</i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+
+
+
+        </div>
+    </div>
+    <br />
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/typeahead-bootstrap.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+    <script src="../js/search-data.js"></script>
+    <script>
+        $(document).ready(function(){
+            $('body').append('<div id="toTop" class="btn btn-info"><span class="glyphicon glyphicon-chevron-up"></span> Back to Top</div>');
+            $(window).scroll(function () {
+                if ($(this).scrollTop() != 0) {
+                    $('#toTop').fadeIn();
+                } else {
+                    $('#toTop').fadeOut();
+                }
+            });
+            $('#toTop').click(function(){
+                $("html, body").animate({ scrollTop: 0 }, 200);
+                return false;
+            });
+        });
+
+    </script>
+    <script>
+        $(document).ready(function() {
+            $('#search').typeahead({
+                source: searchData,
+                displayText: function(item) {
+                    if(item.info !== null) {
+                        return item.type + ":" + item.name + " (" + item.info + ")";
+                    }
+
+                    return item.type + ":" + item.name;
+                },
+                matcher: function(item) {
+                    return item.name.toLowerCase().indexOf(this.query.toLowerCase()) != -1
+                },
+                afterSelect: function(item) {
+                    window.location.href = item.href;
+                    $("#search").val(item.name)
+                },
+                items: 20
+            });
+        })
+    </script>
+</body>
+</html>

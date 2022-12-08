@@ -1,0 +1,27 @@
+/*****************************************************************************/
+/*                                                                           */
+/*  Bean Scripting Framework for Open Object Rexx (BSF4ooRexx)               */
+/*                                                                           */
+/*  Copyright 2000-2021 Rony G. Flatscher                                    */
+/*  https://sourceforge.net/projects/bsf4oorexx/ (as of 2021-07-30)          */
+/*                                                                           */
+/*  License: Apache License 2.0                                              */
+/*                                                                           */
+/*****************************************************************************/
+
+Apache Bean Scripting Framework (BSF) 2.4/2.5
+Licensed under the AL 2.0: Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0).
+Available at: https://commons.apache.org/proper/commons-bsf/ (as of 2021-07-30)
+
+Janino 3.1.4 (Arno Unkrig)
+Licensed under the New BSD License (https://spdx.org/licenses/BSD-3-Clause.html)
+Available at: http://janino-compiler.github.io/janino/ (as of 2021-07-30)
+
+jni4net 0.8.8.0 (Pavel Savara)
+Licensed under the MIT license
+Available at: http://jni4net.com/ (as of 2021-07-30)
+
+xdg-utils (freedesktop.org)
+Licensed under the MIT license
+Available at: https://www.freedesktop.org/wiki/Software/xdg-utils/ (as of 2021-07-30)
+

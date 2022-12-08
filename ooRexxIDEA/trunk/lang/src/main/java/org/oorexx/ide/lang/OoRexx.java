@@ -9,4 +9,9 @@ public class OoRexx extends Language {
     public OoRexx() {
         super("ooRexx");
     }
+
+    @Override
+    public boolean isCaseSensitive() {
+        return false;
+    }
 }

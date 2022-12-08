@@ -4,9 +4,10 @@ import com.intellij.psi.PsiErrorElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.util.PsiTreeUtil
 import org.intellij.grammar.LightPsi
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.oorexx.ide.parser.standalone.OoRexxStandaloneParserDefinition
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
+
 
 class TestUtils {
     companion object {

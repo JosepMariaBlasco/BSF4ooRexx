@@ -325,6 +325,7 @@
             STEM = 'STEM'
             STREAM = 'STREAM'
             USING = 'USING'
+            DOT = 'DOT'
         ]
 
 }

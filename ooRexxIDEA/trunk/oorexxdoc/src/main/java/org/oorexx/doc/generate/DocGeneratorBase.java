@@ -43,7 +43,6 @@ import org.oorexx.doc.analyse.CommentContext;
 import org.oorexx.doc.analyse.PackageAnalyzer;
 import org.oorexx.doc.analyse.model.OoRexxClass;
 import org.oorexx.doc.analyse.model.OoRexxPackage;
-import org.oorexx.doc.input.cli.GenerateCommand;
 import org.oorexx.doc.input.intellij.IntelliJGenerationCommand;
 import org.oorexx.doc.input.model.OoRexxDocGenerationContext;
 import org.oorexx.doc.input.model.OoRexxDocGenerationContextFactory;
@@ -60,10 +59,6 @@ public abstract class DocGeneratorBase {
     protected final OoRexxDocGenerationContext ooRexxDocGenerationContext;
     protected ClassReferenceAnalyzer classReferenceAnalyzer = new ClassReferenceAnalyzer();
     protected File outputFile;
-
-    public DocGeneratorBase(GenerateCommand generateCommand) {
-        ooRexxDocGenerationContext = OoRexxDocGenerationContextFactory.of(generateCommand);
-    }
 
     public DocGeneratorBase(OoRexxDocXml ooRexxDocXml) {
         ooRexxDocGenerationContext = OoRexxDocGenerationContextFactory.of(ooRexxDocXml);

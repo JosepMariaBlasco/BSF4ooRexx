@@ -10,6 +10,7 @@ import org.oorexx.ide.lang.psi.impl.OoRexxInstructionTerminatorImpl;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -44,7 +45,7 @@ public class CommentContext {
         this.combinedList.addAll(docComments);
         this.combinedList.addAll(ooRexxDirectives);
 
-        this.combinedList.sort((o1, o2) -> new Integer(o1.getTextOffset()).compareTo(o2.getTextOffset()));
+        this.combinedList.sort(Comparator.comparingInt(PsiElement::getTextOffset));
     }
 
     public PsiComment getComment(OoRexxDirective ooRexxDirective){

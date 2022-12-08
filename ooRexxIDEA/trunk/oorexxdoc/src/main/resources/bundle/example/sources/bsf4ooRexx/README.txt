@@ -1,0 +1,1 @@
+Sources copied from bsf4ooRexx, see https://sourceforge.net/projects/bsf4oorexx/ (as of 2022-11-29)

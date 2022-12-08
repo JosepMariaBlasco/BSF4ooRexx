@@ -4,7 +4,6 @@ import com.intellij.psi.PsiElement;
 import org.oorexx.doc.analyse.CommentContext;
 import org.oorexx.doc.analyse.PackageAnalyzer;
 import org.oorexx.doc.analyse.model.OoRexxPackage;
-import org.oorexx.doc.input.cli.GenerateCommand;
 import org.oorexx.doc.input.model.xml.OoRexxDocXml;
 import org.oorexx.ide.file.OoRexxFile;
 
@@ -13,10 +12,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class StandaloneDocGenerator extends DocGeneratorBase{
-
-    public StandaloneDocGenerator(GenerateCommand generateCommand) {
-        super(generateCommand);
-    }
 
     public StandaloneDocGenerator(OoRexxDocXml ooRexxDocXml) {
         super(ooRexxDocXml);

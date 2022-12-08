@@ -493,9 +493,11 @@ DEC_LITERAL = [0-9] [0-9_]*
   "/*"                            { yybegin(IN_BLOCK_COMMENT); yypushback(2); }
   "--"  .* ([^\n|\r|\n\r])*             {return EOL_COMMENT;}
 
+
   "." {IDENTIFIER}                    { return getIdentifier(ENV_IDENTIFIER); }
-  {IDENTIFIER}                    { return getIdentifier(IDENTIFIER);
-  }
+  {IDENTIFIER}                    { return getIdentifier(IDENTIFIER); }
+  "." {return getIdentifier(DOT);}
+
 
 
   /* LITERALS */

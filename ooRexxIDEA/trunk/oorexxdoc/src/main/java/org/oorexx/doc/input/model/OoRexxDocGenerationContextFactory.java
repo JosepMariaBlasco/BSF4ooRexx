@@ -1,7 +1,6 @@
 package org.oorexx.doc.input.model;
 
 import com.intellij.openapi.vfs.VirtualFile;
-import org.oorexx.doc.input.cli.GenerateCommand;
 import org.oorexx.doc.input.intellij.IntelliJGenerationCommand;
 import org.oorexx.doc.input.model.xml.OoRexxDocXml;
 import org.oorexx.doc.input.model.xml.HeaderProperty;
@@ -10,16 +9,6 @@ import java.util.stream.Collectors;
 
 public class OoRexxDocGenerationContextFactory {
     private OoRexxDocGenerationContextFactory() {
-    }
-
-    public static OoRexxDocGenerationContext of(GenerateCommand generateCommand){
-        OoRexxDocGenerationContext ooRexxDocGenerationContext = new OoRexxDocGenerationContext();
-        
-        ooRexxDocGenerationContext.setInputs(generateCommand.getFilesAndDirectories());
-        ooRexxDocGenerationContext.setOutput(generateCommand.getOutputDirectory());
-        ooRexxDocGenerationContext.setTitle(generateCommand.getTitle());
-
-        return ooRexxDocGenerationContext;
     }
 
     public static OoRexxDocGenerationContext of(OoRexxDocXml ooRexxDocXml){

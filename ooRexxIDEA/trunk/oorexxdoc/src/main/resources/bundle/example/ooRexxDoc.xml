@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OoRexxDocXml>
+    <parser>
+        <output>./doc</output>
+        <input>./sources/bsf4ooRexx/FileManager.rxj</input>
+        <input>./sources/bsf4ooRexx/BSF.CLS</input>
+        <input>./sources/ooRexx</input>
+    </parser>
+    <title>My Documentation</title>
+    <header>
+        <property>
+            <key>Run-Date</key>
+            <value>${.now?datetime}</value>
+        </property>
+    </header>
+    <overview>My Overview</overview>
+    <settings>
+        <includePublic>true</includePublic>
+        <includePrivate>true</includePrivate>
+        <includePackage>true</includePackage>
+        <includeVariableReferences>true</includeVariableReferences>
+    </settings>
+</OoRexxDocXml>

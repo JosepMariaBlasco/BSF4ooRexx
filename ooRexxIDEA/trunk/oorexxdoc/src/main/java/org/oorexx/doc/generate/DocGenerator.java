@@ -5,9 +5,7 @@ import com.intellij.psi.PsiElement;
 import org.oorexx.doc.analyse.CommentContext;
 import org.oorexx.doc.analyse.PackageAnalyzer;
 import org.oorexx.doc.analyse.model.OoRexxPackage;
-import org.oorexx.doc.input.cli.GenerateCommand;
 import org.oorexx.doc.input.intellij.IntelliJGenerationCommand;
-import org.oorexx.doc.input.model.xml.OoRexxDocXml;
 import org.oorexx.ide.file.OoRexxFile;
 
 import java.util.Comparator;
@@ -15,13 +13,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class DocGenerator extends DocGeneratorBase{
-    public DocGenerator(GenerateCommand generateCommand) {
-        super(generateCommand);
-    }
-
-    public DocGenerator(OoRexxDocXml ooRexxDocXml) {
-        super(ooRexxDocXml);
-    }
 
     public DocGenerator(IntelliJGenerationCommand command) {
         super(command);

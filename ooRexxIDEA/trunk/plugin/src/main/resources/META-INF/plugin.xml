@@ -25,7 +25,7 @@
         <configurationType implementation="org.oorexx.ide.intellij.run.configuration.RunConfigurationType"/>
 
         <lang.commenter language="ooRexx" implementationClass="org.oorexx.ide.intellij.commenter.OoRexxCommenter"/>
-
+        <lang.braceMatcher implementationClass="org.oorexx.ide.intellij.completion.BraceMatcher" language="ooRexx" />
         <runConfigurationProducer implementation="org.oorexx.ide.intellij.run.configuration.RunConfigurationProducer"/>
 
 
@@ -33,17 +33,30 @@
                                  instance="org.oorexx.ide.setting.OoRexxLanguageConfigurable"/>
         <applicationService serviceImplementation="org.oorexx.ide.setting.OoRexxLanguageSettings"/>
 
+        <applicationService serviceImplementation="org.oorexx.ide.intellij.completion.OoRexxCompletionService"
+                            serviceInterface="com.intellij.codeInsight.completion.CompletionService"
+                            overrides="true" />
+
         <projectService
                 serviceImplementation="org.oorexx.ide.intellij.action.configuration.OoRexxDocQuickActionPersistentStateComponent"/>
         <!-- Project -->
 
         <moduleType id="OOREXX_MODULE" implementationClass="org.oorexx.ide.intellij.project.OoRexxModuleType"/>
 
+        <completion.contributor language="ooRexx" implementationClass="org.oorexx.ide.intellij.completion.OoRexxCompletionContributor"/>
+        <typedHandler implementation="org.oorexx.ide.intellij.completion.OoRexxCompletionAutoPopupHandler" id="completionAutoPopup"
+                      order="first"/>
 
     </extensions>
     <depends>com.intellij.modules.lang</depends>
 
     <actions>
+        <action id="CompleteWithParenthese" class="org.oorexx.ide.intellij.completion.action.CompleteWithParentheseAction"
+            text="Complete Method or Function with Parenthese '()'"
+        >
+            <keyboard-shortcut first-keystroke="meta COMMA" keymap="Mac OS X 10.5+" />
+            <keyboard-shortcut first-keystroke="ctrl COMMA" keymap="$default" />
+        </action>
         <action id="ooRexx.NewOoRexxFile.Rexx"
                 class="org.oorexx.ide.intellij.action.NewOoRexxFile"
                 text="ooRexx File"
