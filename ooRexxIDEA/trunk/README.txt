@@ -97,4 +97,4 @@ Highlighted Features:
         ::class my_class
 
 - To run ooRexxDoc without an active Intellij IDE (e.g. for usage in a build pipeline):
-    unpack the ooRexxDoc-{Version}.zip and follow the instructions/examples in the USAGE.md file
+    unpack the ooRexxDoc-##version##.zip and follow the instructions/examples in the USAGE.md file
