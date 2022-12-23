@@ -5,8 +5,9 @@
             without any knowledge about Java installation issues)
    Author:  Rony G. Flatscher
    Date:    2006-01-07
-   Version: 1.42
+   Version: 1.43
    Changed:
+            2022-12-23, - intercept syntax error on Windows if no Java entry in registry found
             2022-11-03, - add cmd.eHomeDir"/BSF4ooRexx/lib/" || "*" to classpath to pick up all jars there
 
             2022-10-16, - copy BSF4ooRexx850/clr's dll and jar files into BSF4ooRexx850/lib
@@ -2128,6 +2129,8 @@ determinePath2javaBinary: procedure expose cmd. j. path. -- rgf, 2011-05-24: det
 
    ----------------------------------------------------------------------------
       -- try to find java.exe via Windows registry
+   signal on syntax     -- if no entry in registry a runtime error occurs, inhibit it
+   tmpJavaBinary=""
    say "determinePath2javaBinary(), Java binary not found, consulting registry ..." "line #" pp(.line)
    wsh  = .OleObject~new("WScript.Shell")
    baseKey = "HKLM\Software\JavaSoft\Java Runtime Environment"
@@ -2138,6 +2141,8 @@ determinePath2javaBinary: procedure expose cmd. j. path. -- rgf, 2011-05-24: det
    javaHome=wsh~regRead(basekey"\"version"\JavaHome")
    say "... ["||basekey"\"version"\JavaHome}: ["javaHome"]"
    tmpJavaBinary=javaHome"\bin\java.exe"
+
+
 
       -- 32-bit Rexx on 64-bit Windows, but java.exe not in "ProgramFiles(x86)", then we point to 64-bit Java, reset
    if cmd.eBitness=32, wProgramW6432<>"", javaHome~caselessAbbrev(wProgramFiles86)=.false then
@@ -2165,8 +2170,9 @@ determinePath2javaBinary: procedure expose cmd. j. path. -- rgf, 2011-05-24: det
       end
    end
 
-
    ----------------------------------------------------------------------------
+syntax:     -- if no registry entry continue from here
+   signal off syntax -- disable this syntax handler
       -- not yet found try looking in the file system, ---rgf, 20150512
    say "determinePath2javaBinary(), Java binary not found, explicitly looking in standard program file directories ..." "line #" pp(.line)
    pf=wProgramFiles           -- value("ProgramFiles",,"environment")

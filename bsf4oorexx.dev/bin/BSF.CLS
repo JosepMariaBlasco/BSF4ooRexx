@@ -19,6 +19,9 @@
           .BSF in .environment;
 
    date:
+         2022-12-07, ---rgf, - added InputStream methods and renamed class to "NullDevice" to reflect
+                               it can be used for both, stream input and output
+
          2022-12-05, ---rgf, - changed "dev.null" to "nullDevice"
 
          2022-12-04, ---rgf, - add entry "dev.null" to .environment, being a singleton of a private
@@ -929,7 +932,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="850.20221204" -- set version (date distribution got created)
+      .bsf4rexx~version="850.20221223" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -946,7 +949,7 @@ end
       .environment~slot.argument=.slot.argument -- putting in .environment to allow FindClass() to find it
 
       call getAndSetPathToIcons
-      .environment~nullDevice=.NullOutput~new   -- singleton to swallow SAY/LINEOUT/CHAROUT in redirected OUTPUT/ERROR targets
+      .environment~nullDevice=.NullDevice~new   -- singleton to swallow SAY/LINEOUT/CHAROUT in redirected OUTPUT/ERROR targets
    end
 
    call create_display.version_entry      -- create the display version entry .bsf4rexx~display.version
@@ -6345,8 +6348,18 @@ syntax:
     used in redirected targets.
     @since 2022-12-04
 */
-::class "NullOutput" subclass OutputStream
-::method say          unguarded
-::method lineOut      unguarded  -- implement abstract method
-::method charOut      unguarded  -- implement abstract method
+::class "NullDevice" subclass InputOutputStream
+-- InputStream: raise notReady
+::method charIn         unguarded   -- implement abstract method
+   raise notReady
+::method chars          unguarded   -- implement abstract method
+   raise notReady
+::method lineIn         unguarded   -- implement abstract method
+   raise notReady -- return ("")
+::method lines          unguarded   -- implement abstract method
+   raise notReady
 
+-- OutputStream: just ignore
+::method say            unguarded
+::method lineOut        unguarded   -- implement abstract method
+::method charOut        unguarded   -- implement abstract method

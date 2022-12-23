@@ -113,6 +113,12 @@
         2022-12-03: - drawShape, fillShape, clipShape: if name not in cache, check whether a Rexx variable
                       of that name refers to a Shape object, if so use it, otherwise raise an error condition
                     - add alias names for shapes without the trailing "2D"
+        2022-12-07: - adding Path2D shape support, new commands: shapeBounds, pathAppend, pathClose,
+                      pathCurrentPoint, pathCurveTo, pathLineTo, pathMoveTo, pathQuatTo, pathReset,
+                      pathWindingRule
+                    - pathAppend: accepts a Shape or a PathIterator object via Rexx variable
+                    - add ability to have named TRANSFORM objects: allows creating affineTransforms
+                      via commands to be used in Shape.getPathIterator(affineTransform)
 */
 
 /* add support for Shape (done 2022-12-03)
@@ -194,6 +200,9 @@ import java.awt.geom.CubicCurve2D;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.QuadCurve2D;
+import java.awt.geom.Path2D;
+import java.awt.geom.PathIterator;
+import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.Polygon;
@@ -240,6 +249,15 @@ import javax.print.DocPrintJob;
 import javax.print.PrintService;
 import javax.print.PrintServiceLookup;
 import javax.print.SimpleDoc;
+
+// for clipboard support
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
+// import java.io.IOException;
 
 // ============================================================================
 /** Class to allow displaying the current image.
@@ -332,7 +350,7 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     /* static definitions           */
 
     // default image sizes
-    static final public String version = "100.20221204";
+    static final public String version = "100.20221208";
     static final private int prefWidth  = 500;
     static final private int prefHeight = 500;
     static       private int prefImageType = BufferedImage.TYPE_INT_ARGB; // default with alpha (only png supported)
@@ -365,6 +383,10 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     // Arc2D Closures
     static final HashMap<String,Integer> arcClosures         = new HashMap<>();
     static final HashMap<Integer,String> arcClosuresInt2Name = new HashMap<>();
+
+    // Path2D winding rules
+    static final HashMap<String,Integer> windingRules         = new HashMap<>();
+    static final HashMap<Integer,String> windingRulesInt2Name = new HashMap<>();
 
     static {
         // ----------------------------------------------------------------------
@@ -466,6 +488,12 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
         // allow for looking up constant names (key) by value
         arcClosures.forEach((K,V)->arcClosuresInt2Name.put(V,K));
 
+        // ----------------------------------------------------------------------
+        // Path2D windingRules
+        windingRules.put("WIND_EVEN_ODD" , 0);
+        windingRules.put("WIND_NON_ZERO" , 1);
+        // allow for looking up constant names (key) by value
+        windingRules.forEach((K,V)->windingRulesInt2Name.put(V,K));
     }
 
 
@@ -516,6 +544,8 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     HashMap<String,Stroke>        hmStrokes= new HashMap<>();
     // 2022-12-03
     HashMap<String,Shape>         hmShapes = new HashMap<>();
+    // 2022-12-07
+    HashMap<String,AffineTransform>   hmTransforms = new HashMap<>();
 
 
     void reset ()   // reset all current variables and caches
@@ -553,6 +583,10 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
         hmGradientPaints = new HashMap<>();
         hmFonts.clear();
         hmStrokes.clear();
+
+        hmShapes.clear();
+        hmTransforms.clear();
+
         if (jd!=null && bufImage!=null)
         {
 if (bDebug) System.err.println(" /// ---> resizeSurface(): w="+bufImage.getWidth()+", h="+bufImage.getHeight());
@@ -1659,9 +1693,10 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         rop.sendMessage2("SETENTRY", "colors"     , hmColors             );
                         rop.sendMessage2("SETENTRY", "gradiantPaints", hmGradientPaints  );
                         rop.sendMessage2("SETENTRY", "fonts"      , hmFonts              );
+                        rop.sendMessage2("SETENTRY", "images"     , hmImages             );
                         rop.sendMessage2("SETENTRY", "shapes"     , hmShapes             );
                         rop.sendMessage2("SETENTRY", "strokes"    , hmStrokes            );
-                        rop.sendMessage2("SETENTRY", "images"     , hmImages             );
+                        rop.sendMessage2("SETENTRY", "transforms" , hmTransforms         );
 
                         if (arrCommand.length==2)   // assign to Rexx variable in RexxContext
                         {
@@ -3397,15 +3432,20 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                     }
 
 
-                    // 2022-10-28
-                case TRANSFORM: //   "transform { | RESET | translateX translateY scaleX scaleY shearX shearY} " query, change reset Graphics2D's AfineTransform
+                    // 2022-10-28: "transform { | RESET | translateX translateY scaleX scaleY shearX shearY}" query, change reset Graphics2D's AffineTransform
+                    // 2022-12-07: additional option: "transform name translateX translateY scaleX scaleY shearX shearY}", returns AffineTransform
+                case TRANSFORM:
                     {
                         int argNum = arrCommand.length;
-                        if (argNum!=1 && argNum!=2 && argNum!=7)
+                        if ((argNum>2 && argNum<5) || argNum>7)
                         {
-                            throw new IllegalArgumentException("this command needs exactly no, 1 or 6 arguments, received "+(arrCommand.length-1)+" instead");
+                            throw new IllegalArgumentException("this command needs exactly no, 1, 2, 6, or 7 arguments, received "+(arrCommand.length-1)+" instead");
                         }
 
+                        String strReset="RESET";
+                        boolean isReset=false;
+                        String nickName="";
+                        String ucNickName="";
                         AffineTransform at = bufGC.getTransform();  // get current settings
                         double translateX=at.getTranslateX(),
                                translateY=at.getTranslateY(),
@@ -3414,33 +3454,78 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                shearX    =at.getShearX(),
                                shearY    =at.getShearY();
 
-                        String strResult=translateX+" "+translateY+" "+
+                        resultValue=translateX+" "+translateY+" "+
                                          scaleX+" "+scaleY+" "+
                                          shearX+" "+shearY;
 
-                        String strReset="RESET";
                         if (argNum>1)
                         {
                             AffineTransform newAT=null;
-                            if (argNum==2)  // reset?
+                            nickName=arrCommand[1];
+                            if (argNum==2)  // reset or query stored AffineTransform ?
                             {
-                                char c = arrCommand[1].charAt(0);
-                                boolean bReset = (c=='r' || c=='R');    // first character must be 'r' or 'R' for 'RESET'
-                                if (!bReset)    // wrong argument!
+                                ucNickName=nickName.toUpperCase();
+                                if (ucNickName.equals(strReset))
                                 {
-                                    throw new IllegalArgumentException("single argument supplied, must be \"RESET\" (first character gets inspected), received the value \""+arrCommand[1]+"\" instead");
+                                    newAT = new AffineTransform();  // uses the default values tX=tY=shX=shY=0 and scX=scY=1
+                                    isReset=true;
+                                    if (isOR)
+                                    {
+                                        canonical=canonical+" "+strReset;
+                                    }
                                 }
-                                newAT = new AffineTransform();  // uses the default values tX=tY=shX=shY=0 and scX=scY=1
+                                else    // try to get it from cache
+                                {
+                                    if (isOR)
+                                    {
+                                        canonical=canonical+" "+nickName;
+                                    }
+                                    at=hmTransforms.get(ucNickName);
+                                    if (at==null)
+                                    {
+                                        if (startRexxVariableChar.indexOf(ucNickName.charAt(0))>=0) // a Rexx variable?
+                                        {
+                                            try
+                                            {
+                                                at=(AffineTransform) getContextVariable(slot, ucNickName);
+                                            }
+                                            catch (Throwable t) {}
+
+                                            if (at==null)
+                                            {
+                                                throw new IllegalArgumentException("no transform with name \""+nickName+"\" stored, nor a Rexx variable that refers to an AffineTransform object");
+                                            }
+                                        }
+                                    }
+                                    return at;  // return AffineTransform object
+                                }
                             }
-                            else if (argNum==7)
+                            else // if (argNum==7)
                             {
-                                // a dot keeps the current value
-                                translateX = arrCommand[1].equals(".") ? translateX : Double.parseDouble(arrCommand[1]);
-                                translateY = arrCommand[2].equals(".") ? translateY : Double.parseDouble(arrCommand[2]);
-                                scaleX     = arrCommand[3].equals(".") ? scaleX     : Double.parseDouble(arrCommand[3]);
-                                scaleY     = arrCommand[4].equals(".") ? scaleY     : Double.parseDouble(arrCommand[4]);
-                                shearX     = arrCommand[5].equals(".") ? shearX     : Double.parseDouble(arrCommand[5]);
-                                shearY     = arrCommand[6].equals(".") ? shearY     : Double.parseDouble(arrCommand[6]);
+                                if (argNum==7)
+                                {
+                                    // a dot keeps the current value
+                                    translateX = arrCommand[1].equals(".") ? translateX : Double.parseDouble(arrCommand[1]);
+                                    translateY = arrCommand[2].equals(".") ? translateY : Double.parseDouble(arrCommand[2]);
+                                    scaleX     = arrCommand[3].equals(".") ? scaleX     : Double.parseDouble(arrCommand[3]);
+                                    scaleY     = arrCommand[4].equals(".") ? scaleY     : Double.parseDouble(arrCommand[4]);
+                                    shearX     = arrCommand[5].equals(".") ? shearX     : Double.parseDouble(arrCommand[5]);
+                                    shearY     = arrCommand[6].equals(".") ? shearY     : Double.parseDouble(arrCommand[6]);
+                                }
+                                else    // we need to store it!
+                                {
+                                    if (isOR)
+                                    {
+                                        canonical=canonical+" "+nickName;  // show name to use
+                                    }
+                                    translateX = Double.parseDouble(arrCommand[2]);
+                                    translateY = Double.parseDouble(arrCommand[3]);
+                                    scaleX     = Double.parseDouble(arrCommand[4]);
+                                    scaleY     = Double.parseDouble(arrCommand[5]);
+                                    shearX     = Double.parseDouble(arrCommand[6]);
+                                    shearY     = Double.parseDouble(arrCommand[7]);
+                                }
+
 
                                 // matrix:  { m00/sX m10/shY m01/shX m11/sY m02/tX m12/tY }
                                 newAT=new AffineTransform(
@@ -3448,16 +3533,20 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                     );
                             }
 
-                            bufGC.setTransform(newAT);  // assign AffineTransform
+                            if (isReset || argNum==7)
+                            {
+                                bufGC.setTransform(newAT);  // assign new AffineTransform
+                            }
+                            else    // return AffineTransform
+                            {
+                                hmTransforms.put(ucNickName,newAT);
+                                resultValue=newAT;
+                            }
                         }
 
                         if (isOR)
                         {
-                            if (arrCommand.length==2)
-                            {
-                                canonical = canonical+" "+strReset;
-                            }
-                            else if (arrCommand.length==7)
+                            if (arrCommand.length==7)
                             {
                                 canonical = canonical+" "+translateX+" "+translateY+" "+
                                                           scaleX+" "+scaleY+" "+
@@ -3466,7 +3555,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             writeOutput(slot, canonical);
                         }
 
-                        return strResult;   // return previous setting
+                        return resultValue;
                     }
 
 
@@ -3871,6 +3960,32 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                     break;
                                 }
 
+                            case SHAPE_PATH2D:   // shape shapeName pa[th[2d]] [WIND_NON_ZERO=1]
+                                {
+                                    if (argNum<3 || argNum>4)
+                                    {
+                                        String errMsg="Shape \""+canonicalShapeType+"\" needs no or exactly 1 argument, however there are "+(argNum-3)+" supplied";
+                                        if (isOR)
+                                        {
+                                            writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
+                                        }
+                                        return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-23", errMsg );
+                                    }
+                                    int arg1=1;      // default to WIND_NON_ZERO=1
+
+                                    if (argNum==4)
+                                    {
+                                        arg1=string2int(arrCommand[3]);
+                                    }
+
+                                    if (isOR)
+                                    {
+                                        canonical=canonical+" "+arg1;
+                                    }
+                                    sh = new Path2D.Double(arg1);
+                                    break;
+                                }
+
                             default:
                                 {
                                     String errMsg="shape type \""+canonicalShapeType+"\" not implemented";
@@ -3931,6 +4046,436 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         }
                         break;
                     }
+
+
+                    // 2022-12-07: return bounds for any supported shape
+                case SHAPE_BOUNDS:      // "shapeBounds shapeName" ... getBounds2D()
+                    {
+                        if (arrCommand.length!=2)
+                        {
+                            throw new IllegalArgumentException("this command needs exactly 1 argument (the name of the shape), received "+(arrCommand.length-1)+" instead");
+                        }
+
+                        String nickName=arrCommand[1];
+                        Shape sh=hmShapes.get(nickName.toUpperCase());
+                        if (sh==null)
+                        {
+                            throw new IllegalArgumentException("no shape with name \""+nickName+"\" stored");
+                        }
+
+                        Rectangle2D r2d = sh.getBounds2D();
+                        String strResult = r2d.getX()+" "+r2d.getY()+" "+r2d.getWidth()+" "+r2d.getHeight();
+
+                        if (isOR)
+                        {
+                            writeOutput(slot, canonical+" "+nickName);
+                        }
+                        return strResult;
+                    }
+
+                case PATH_APPEND:       //   "pathAppend shapeName {Shape|PathIterator-via-Rexx-variable} [connect=.true]"
+                    {
+                        if (arrCommand.length!=2 && arrCommand.length>3)
+                        {
+                            throw new IllegalArgumentException("this command needs exactly 2 or 3 arguments (the name of the shape and optionally the boolean connect argument), received "+(arrCommand.length-1)+" instead");
+                        }
+
+                        String nickName=arrCommand[1];
+                        Path2D path=(Path2D) hmShapes.get(nickName.toUpperCase());
+
+                        if (path==null)
+                        {
+                            throw new IllegalArgumentException("no Path2D shape with name \""+nickName+"\" stored");
+                        }
+
+                        String nickName2=arrCommand[2];
+                        // Shape sh=(Shape) hmShapes.get(nickName2.toUpperCase());
+                        Object sh=(Shape) hmShapes.get(nickName2.toUpperCase());
+                        if (sh==null)
+                        {
+                            sh = getContextVariable(slot, nickName2); // try to get from a Rexx variable
+                            if (sh==null || (! (sh instanceof Shape || sh instanceof PathIterator)) )
+                            {
+                                throw new IllegalArgumentException("no shape with name \""+nickName2+"\" stored, nor a Rexx variable pointing to a Shape or PathIterator");
+                            }
+                        }
+
+                        boolean bConnect=true;      // default: connect new shape (lineTo instead of moveTo)
+                        if (arrCommand.length==4)
+                        {
+                            bConnect = getBooleanValue(arrCommand[3]);
+                        }
+
+                        if (sh instanceof Shape)
+                        {
+                            path.append((Shape) sh,bConnect);
+                        }
+                        else
+                        {
+                            path.append((PathIterator) sh,bConnect);
+                        }
+
+                        if (isOR)
+                        {
+                            writeOutput(slot, canonical+" "+nickName+" "+nickName2+" "+(bConnect ? "1" : "0"));
+                        }
+                        return resultValue;
+                    }
+
+                case PATH_CLOSE:        //   "pathClose shapeName" ... closePath()
+                case PATH_RESET:        //   "pathReset shapeName"
+                case PATH_CURRENT_POINT://   "pathCurrentPoint shapeName" ... getCurrentPoint()
+                case PATH_CLONE:        //   "pathClone shapeName [newShapeName]"
+                    {
+                        if (cmd==EnumCommand.PATH_CLONE)
+                        {
+                            if (arrCommand.length<2 && arrCommand.length>3)
+                            {
+                                throw new IllegalArgumentException("this command needs exactly 1 or 2 arguments (the name of the Path2D shape), received "+(arrCommand.length-1)+" instead");
+                            }
+
+                        }
+                        else if (arrCommand.length!=2)
+                        {
+                            throw new IllegalArgumentException("this command needs exactly 1 argument (the name of the Path2D shape), received "+(arrCommand.length-1)+" instead");
+                        }
+
+                        String nickName=arrCommand[1];
+                        Path2D path=(Path2D) hmShapes.get(nickName.toUpperCase());
+
+                        if (path==null)
+                        {
+                            throw new IllegalArgumentException("no Path2D shape with name \""+nickName+"\" stored");
+                        }
+
+                        if (isOR)
+                        {
+                            canonical=canonical+" "+nickName;
+                        }
+
+                        if (cmd==EnumCommand.PATH_CLOSE)
+                        {
+                            path.closePath();
+                        }
+                        else if (cmd==EnumCommand.PATH_CLOSE)
+                        {
+                            path.reset();
+                        }
+                        else if (cmd==EnumCommand.PATH_CURRENT_POINT)
+                        {
+                            Point2D r2d=path.getCurrentPoint();
+                            resultValue=r2d.getX()+" "+r2d.getY();
+                        }
+                        else    // PATH_CLONE: may have a second argument
+                        {
+                            resultValue=path.clone();
+                            if (arrCommand.length==3)   // save the clone?
+                            {
+                                String nickName2=arrCommand[2];
+                                String ucNickName2=nickName2.toUpperCase();
+                                hmShapes.put(ucNickName2,(Shape) resultValue);
+                                if (isOR)
+                                {
+                                    canonical=canonical+" "+nickName2;
+                                }
+                            }
+                        }
+
+                        if (isOR)
+                        {
+                            writeOutput(slot, canonical);
+                        }
+                        return resultValue;
+                    }
+
+                case PATH_LINE_TO:      //   "pathLineTo shapeName x y"
+                case PATH_MOVE_TO:      //   "pathMoveTo shapeName x y"
+                case PATH_QUAD_TO:      //   "pathQuadTo shapeName x1 y1 x2 y2"
+                case PATH_CURVE_TO:     //   "pathCurveTo shapeName x1 y1 x2 y2 x3 y3"
+                    {
+                        int argNum=-1;
+                        if (cmd==EnumCommand.PATH_LINE_TO || cmd==EnumCommand.PATH_MOVE_TO)
+                        {
+                            argNum=3;
+                        }
+                        else if (cmd==EnumCommand.PATH_QUAD_TO)
+                        {
+                            argNum=5;
+                        }
+                        else    // PATH_CURVE_TO
+                        {
+                            argNum=7;
+                        }
+
+                        if (arrCommand.length!=argNum)
+                        {
+                            throw new IllegalArgumentException("this command needs exactly "+argNum+" arguments, received "+(arrCommand.length-1)+" instead");
+                        }
+
+                        String nickName=arrCommand[1];
+                        Path2D path=(Path2D) hmShapes.get(nickName.toUpperCase());
+
+                        if (path==null)
+                        {
+                            throw new IllegalArgumentException("no Path2D shape with name \""+nickName+"\" stored");
+                        }
+
+                        double arg1 = Double.parseDouble(arrCommand[2]);
+                        double arg2 = Double.parseDouble(arrCommand[3]);
+
+                        if (isOR)
+                        {
+                            canonical=canonical+" "+nickName+" "+arg1+" "+arg2;
+                        }
+
+                        if (cmd==EnumCommand.PATH_LINE_TO)
+                        {
+                            path.lineTo(arg1,arg2);
+                        }
+                        else if (cmd==EnumCommand.PATH_MOVE_TO)
+                        {
+                            path.moveTo(arg1,arg2);
+                        }
+                        else
+                        {
+                            double arg3 = Double.parseDouble(arrCommand[4]);
+                            double arg4 = Double.parseDouble(arrCommand[5]);
+                            if (isOR)
+                            {
+                                canonical=canonical+" "+arg3+" "+arg4;
+                            }
+                            if (cmd==EnumCommand.PATH_QUAD_TO)
+                            {
+                                path.quadTo(arg1,arg2,arg3,arg4);
+                            }
+                            else
+                            {
+                                double arg5 = Double.parseDouble(arrCommand[6]);
+                                double arg6 = Double.parseDouble(arrCommand[7]);
+                                if (isOR)
+                                {
+                                    canonical=canonical+" "+arg5+" "+arg6;
+                                }
+                                path.curveTo(arg1,arg2,arg3,arg4,arg5,arg6);
+                            }
+                        }
+
+                        if (isOR)
+                        {
+                            writeOutput(slot, canonical);
+                        }
+                        return resultValue;
+                    }
+
+
+                case PATH_TRANSFORM:    //   "pathTransform shapeName atName"
+                    {
+                        if (arrCommand.length!=3)
+                        {
+                            throw new IllegalArgumentException("this command needs exactly 2 arguments (the name of the shape and optionally the new winding rule argument), received "+(arrCommand.length-1)+" instead");
+                        }
+
+                        String pNickName=arrCommand[1];
+                        Path2D path=(Path2D) hmShapes.get(pNickName.toUpperCase());
+
+                        if (path==null)
+                        {
+                            throw new IllegalArgumentException("no Path2D shape with name \""+pNickName+"\" stored");
+                        }
+
+                        String atNickName=arrCommand[2];
+                        AffineTransform at=hmTransforms.get(atNickName.toUpperCase());
+                        if (at==null)
+                        {
+                            try
+                            {
+                                at = (AffineTransform) getContextVariable(slot, atNickName); // try to get from a Rexx variable
+                            }
+                            catch (Throwable t) {}
+                            if (at==null)
+                            {
+                                throw new IllegalArgumentException("no transform with name \""+atNickName+"\" stored, nor a Rexx variable pointing to an AffineTransform");
+                            }
+                        }
+
+                        path.transform(at);
+
+                        if (isOR)
+                        {
+                            writeOutput(slot, canonical+" "+pNickName+" "+atNickName);
+                        }
+                        return resultValue;
+                    }
+
+                case PATH_WINDING_RULE: //   "pathWindingRule shapeName [WIND_EVEN_ODD=0 | WIND_NON_ZERO=1]"
+                    {
+                        if (arrCommand.length!=2 && arrCommand.length>3)
+                        {
+                            throw new IllegalArgumentException("this command needs exactly 1 or 2 arguments (the name of the shape and optionally the new winding rule argument), received "+(arrCommand.length-1)+" instead");
+                        }
+
+                        String nickName=arrCommand[1];
+                        Path2D path=(Path2D) hmShapes.get(nickName.toUpperCase());
+
+                        if (path==null)
+                        {
+                            throw new IllegalArgumentException("no Path2D shape with name \""+nickName+"\" stored");
+                        }
+                        if (isOR)
+                        {
+                            canonical=canonical+" "+nickName;
+                        }
+
+                        int wRule=path.getWindingRule();
+                        if (arrCommand.length==2)
+                        {
+                            resultValue=""+wRule;
+                        }
+                        else    // get and set the new windingRule
+                        {
+                            // WindingRule
+                            String ucWR = arrCommand[2].toUpperCase();
+                            if (startRexxVariableChar.indexOf(ucWR.charAt(0))>=0)    // a symbolic name?
+                            {
+                                if (!windingRules.containsKey(ucWR))
+                                {
+                                    throw new IllegalArgumentException("unknown value for \"windingRule\" argument supplied: ["+ucWR+"]");
+                                }
+                                wRule=windingRules.get(ucWR);
+                            }
+                            else // verbatim int type
+                            {
+                                wRule=Integer.parseInt(ucWR);
+                                if (! windingRules.containsValue(wRule))
+                                {
+                                    throw new IllegalArgumentException("unknown value for \"windingRule\" argument supplied: ["+ucWR+"]");
+                                }
+                            }
+                            if (isOR)
+                            {
+                                if (bUseNames4canonical)
+                                {
+                                    canonical=canonical+" "+windingRulesInt2Name.get(wRule);
+                                }
+                                else
+                                {
+                                    canonical=canonical+" "+wRule;
+                                }
+                            }
+                            path.setWindingRule(wRule);
+                        }
+
+                        if (isOR)
+                        {
+                            writeOutput(slot, canonical);
+                        }
+                        return resultValue;
+                    }
+
+
+                case SHAPE_GET_PATH_ITERATOR:   //  "pathIterator shapeName [affinityTransformName=.nil [flatness]]" -> returns getPathIterator(AffinityTransform[,flatness])
+                    {
+                        int argNum=arrCommand.length;
+                        if (argNum<2 && argNum>4)
+                        {
+                            throw new IllegalArgumentException("this command needs exactly 1, 2 or 3 arguments (the name of the shape and optionally the new winding rule argument), received "+(arrCommand.length-1)+" instead");
+                        }
+
+                        String nickName=arrCommand[1];
+                        Shape sh=(Shape) hmShapes.get(nickName.toUpperCase());
+
+                        if (sh==null)
+                        {
+                            sh = (Shape) getContextVariable(slot, nickName); // try to get from a Rexx variable
+                            if (sh==null || (! (sh instanceof Shape ||  sh instanceof PathIterator)) )
+                            {
+                                throw new IllegalArgumentException("no shape with name \""+nickName+"\" stored, nor a Rexx variable pointing to a Shape");
+                            }
+                        }
+                        if (isOR)
+                        {
+                            canonical=canonical+" "+nickName;
+                        }
+
+                        AffineTransform at=null;
+                        String nickNameAT=null;
+
+                        if (arrCommand.length==2)
+                        {
+                            resultValue=sh.getPathIterator(at);
+                        }
+                        else
+                        {
+                            nickNameAT=arrCommand[2];
+                            at=hmTransforms.get(nickNameAT.toUpperCase());
+                            if (at==null)
+                            {
+                                if (startRexxVariableChar.indexOf(nickNameAT.charAt(0))>=0) // a Rexx variable?
+                                {
+                                    try
+                                    {
+                                        at=(AffineTransform) getContextVariable(slot, nickNameAT);
+                                    }
+                                    catch (Throwable t) {}
+                                    if (at==null)
+                                    {
+                                        throw new IllegalArgumentException("no transform with name \""+nickNameAT+"\" stored, nor a Rexx variable that refers to an AffineTransform object");
+                                    }
+                                }
+                            }
+
+                            if (isOR)
+                            {
+                                canonical=canonical+" "+nickNameAT;
+                            }
+
+                            double flatness=0d;
+                            if (argNum==4)
+                            {
+                                flatness = Double.parseDouble(arrCommand[3]);
+                                }
+                            if (isOR)
+                            {
+                                canonical=canonical+" "+flatness;
+                            }
+                            resultValue=sh.getPathIterator(at,flatness);
+                        }
+                        if (isOR)
+                        {
+                            writeOutput(slot, canonical);
+                        }
+
+                        return resultValue;
+                    }
+
+/*
+                case CLIPBOARD_GET:     //   "clipboardGet [imgName]": if imgName given, saves it and returns image width and height, else draws img and returns it as an img object
+                case CLIPBOARD_SET:     //   "clipboardSet [imgName]": copies current image to clipboard, if imgName given uses cached image instead; returns pre clipboard img object (if any) or .nil
+                    {
+                        if (arrCommand.length>2)
+                        {
+                            throw new IllegalArgumentException("this command needs no or exactly 1 (imgName) argument (the name of the shape and optionally the new winding rule argument), received "+(arrCommand.length-1)+" instead");
+                        }
+
+                        Clipboard sc=Toolkit.getDefaultToolkit().getSystemClipboard();
+
+                        BufferedImage tmpImg=null;
+                        if (cmd==EnumCommand.CLIPBOARD_GET)
+                        {
+
+
+                        }
+                        else
+                        {
+
+                        }
+
+
+
+                        break;
+                    }
+*/
+
 
 
 
@@ -4479,6 +5024,28 @@ enum EnumCommand {
     WIN_UPDATE                  ( "winUpdate"                ) ,    //   "winUpdate [.true|.false]" get or set whether Frame should be updated upon draws/changes
     WIN_VISIBLE                 ( "winVisible"               ) ,    //   "winVisible [.true|.false]" get or set visibility
 
+    // 2022-12-07, Path2D specific support
+    SHAPE_BOUNDS                ( "shapeBounds"              ) ,    //   "shapeBounds shapeName" ... getBounds2D()
+    SHAPE_GET_PATH_ITERATOR     ( "pathIterator"             ) ,    //  "pathIterator shapeName [affinityTransform=.nil [flatness]]" -> returns getPathIterator(AffinityTransform[,flatness])
+
+    // ad append: if shapeName not found check for Rexx variable name (must be either a Shape or a PathIterator!)
+    PATH_APPEND                 ( "pathAppend"               ) ,    //   "pathAppend shapeName | "rexxVarName (Shape|PathIterator)" [connect=.true]"
+    PATH_CLOSE                  ( "pathClose"                ) ,    //   "pathClose shapeName" ... closePath()
+    PATH_CURRENT_POINT          ( "pathCurrentPoint"         ) ,    //   "pathCurrentPoint shapeName" ... getCurrentPoint
+    PATH_CURVE_TO               ( "pathCurveTo"              ) ,    //   "pathCurveTo shapeName x1 y1 x2 y2 x3 y3"
+    PATH_LINE_TO                ( "pathLineTo"               ) ,    //   "pathLineTo shapeName x y"
+    PATH_MOVE_TO                ( "pathMoveTo"               ) ,    //   "pathMoveTo shapeName x y"
+    PATH_QUAD_TO                ( "pathQuadTo"               ) ,    //   "pathQuadTo shapeName x1 y1 x2 y2"
+    PATH_RESET                  ( "pathReset"                ) ,    //   "pathReset shapeName"
+    PATH_WINDING_RULE           ( "pathWindingRule"          ) ,    //   "pathWindingRule shapeName [WIND_EVEN_ODD=0 | WIND_NON_ZERO=1]" ... getWindingRule(), setWindingRule(newValue)
+
+    // 2022-12-08
+    PATH_CLONE                  ( "pathClone"                ) ,    //   "pathClone shapeName [newShapeName]"
+    PATH_TRANSFORM              ( "pathTransform"            ) ,    //   "pathTransform shapeName atName"
+    CLIPBOARD_GET               ( "clipboardGet"             ) ,    //   "clipboardGet [imgName]"
+    CLIPBOARD_SET               ( "clipboardSet"             ) ,    //   "clipboardSet [imgName]"
+
+
     NO_OP                       ( "noOp"                     )      // last element, doing nothing
                                ;
 
@@ -4619,6 +5186,8 @@ enum EnumShape {
          upperCase2Shape.put( "L"             , SHAPE_LINE2D            ) ;
          upperCase2Shape.put( "LINE"          , SHAPE_LINE2D            ) ;
          upperCase2Shape.put( "P"             , SHAPE_POLYGON           ) ;
+         upperCase2Shape.put( "PA"            , SHAPE_PATH2D            ) ;
+         upperCase2Shape.put( "PATH"          , SHAPE_PATH2D            ) ;
          upperCase2Shape.put( "Q"             , SHAPE_QUAD_CURVE2D      ) ;
          upperCase2Shape.put( "QUADCURVE"     , SHAPE_QUAD_CURVE2D      ) ;
          upperCase2Shape.put( "RE"            , SHAPE_RECTANGLE2D       ) ;
