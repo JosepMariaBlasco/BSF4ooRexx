@@ -98,10 +98,10 @@ return testResult
 
 ::method "test_07_error"
     self~expectSyntax(40.900)
-    call bsfRexxProxy(.java.lang.System)
+    call bsfRexxProxy .java.lang.System
 
 ::method "test_08_error"
     jao=bsf.createJavaArrayOf("java.lang.String", "eins", "zwei") -- create Java array object of type java.lang.String
 
     self~expectSyntax(40.900)
-    call bsfRexxProxy(jao)
+    call bsfRexxProxy jao

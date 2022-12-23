@@ -141,7 +141,7 @@ return testResult
   call check self, ref, .array~of('say "hi"', .nil, "", " ", "say 'holla'")
 
 
-  reName="org.rexxla.bsf.engines.rexx.jsr223.RexxScriptEngine@"
+  reName="org.rexxla.bsf.engines.rexx.RexxScriptEngine@"
   self~assertTrue(ref~getScriptEngine~objectName~abbrev(reName))    -- get a new RexxScriptEngine
   return
 
