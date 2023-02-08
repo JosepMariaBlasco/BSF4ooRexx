@@ -31,6 +31,8 @@
             2021-06-19, rgf: - use newer version of json-rgf.cls which includes utility class methods
                                for easying reading and writing JSON files
             2022-06-09, rgf: - extract numeric part of "javafx.runtime.version" to compare to >= 8
+            2023-02-08, rgf: - replace 'json-rgf.cls' with ooRexx 5.1.0 version, adjust toJsonFile()
+                               and supply .true as third argument to create a legible JSON rendering
 
    purpose: this is the ooRexx version of the pure Java tutorial on how to use JavaFX, demonstrating
             among other things also TableView and ObservableList; cf. the excellent tutorial as
@@ -302,7 +304,7 @@ syntax:
      arr~append(dir)
   end
 
-  .json~toJsonFile(filePath,arr)       -- write array of directories to a human legible JSON file
+  .json~toJsonFile(filePath,arr,.true) -- write array of directories to a human legible JSON file
   self~setPersonFilePath(filePath)     -- save this one as preference for next load
 
 
