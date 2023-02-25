@@ -36,6 +36,7 @@ remarks:
 
 inline jint impl_jniRexxHaltInterpreterInstance (JNIEnv *env, jobject jobj, jstring j_rii_ID)
 
+    2023-02-25, rgf: - remove fprintf() format warning (%lu -> %zu)
     2022-10-16, rgf: - resolve asterisk (*) wildcard character in CLASSPATH/java.class.path,
                        needed if Java gets loaded by Rexx as the JVM does not resolve it
                        (the Java launchers resolve the asterisk wildcard since Java 1.6/6
@@ -991,7 +992,7 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 // #define DEBUG_COMMAND_HANDLER       // 2022-08-20: allow for debugging command handler interactions
 // #define DEBUG_JNI
-// #define DEBUG_CREATE_HALT_TERMINATE
+#define DEBUG_CREATE_HALT_TERMINATE
 
 
 
@@ -1071,6 +1072,8 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 
 // -------------------- JNI-interface related: these C++ functions are called from RexxAndJava.java and are implemented here
+// 2023-02-03, rgf: "javah" to create these include files got removed with Java 11:
+//                  use "javac -h dir" instead, introduced in Java 8
 #include "org_rexxla_bsf_engines_rexx_RexxAndJava.h"    // rgf, 2005-06-02: Java native functions we must implement
 #include "org_rexxla_bsf_engines_rexx_RexxCleanupRef.h" // rgf, 2021-08-04: new Java class needs access to some JNI functions
 
@@ -1107,21 +1110,21 @@ thread_id_t  RgfGetTID();
 
 #if defined (BSF4REXX_32_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20221016 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20230225 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20221016 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20230225 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #elif defined (BSF4REXX_64_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20221016 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20230225 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20221016 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20230225 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #else
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20221016 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20230225 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20221016 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20230225 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #endif
 
@@ -8006,14 +8009,14 @@ RexxRoutine1(RexxObjectPtr, BsfTestPing, OPTIONAL_size_t,  repetitions)
         // nope, not yet attached, attach, but detach before leaving this routine
         if ( (defaultJVM->jvm->AttachCurrentThread((void **) &jenv, (void *) &defaultJavaVMAttachArgs)) != JNI_OK) // attach to JVM
         {
-            fprintf(stderr, "%s.BsfTestPing([repetitions=[%lu]]), cannot attach to Java!\n",DLLNAME, repetitions);
+            fprintf(stderr, "%s.BsfTestPing([repetitions=[%zu]]), cannot attach to Java!\n",DLLNAME, repetitions);
             return context->String("-99");         // JNI attach error, return prematurely, indicate by returning -99
         }
     }
 
     if (jenv==NULL)         // attaching did not work!
     {
-        fprintf(stderr, "%s.BsfTestPing([repetitions=[%lu]]), cannot attach to Java!\n",DLLNAME, repetitions);
+        fprintf(stderr, "%s.BsfTestPing([repetitions=[%zu]]), cannot attach to Java!\n",DLLNAME, repetitions);
         return context->String("-99");
     }
 
