@@ -53,6 +53,8 @@ if (WIN32)
     link_directories(${WIN_REXX_HOME}/api)
 else () # UNIX
     set (DEF_B4R_OPSYS_FLAG "-DUNIX")
+    include_directories(/usr/local/include)
+    link_directories(/usr/local/lib)
 endif ()
 
 add_compile_options(${DEF_B4R_OPSYS_FLAG} -D${BSF4REXX_BITNESS_FLAG} ${DEF_B4R_CRT_SECURE_NO_WARNINGS}) # MSC turn off sscanf related warnings
