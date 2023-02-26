@@ -3,19 +3,24 @@
 @ECHO OFF
 setlocal
 
+SET SAVED_DIR=%CD%
+SET BUILD=%SAVED_DIR%/build
+
 rem -------------------------------------------
 rem *** local, adjust accordingly or remove if access to compiler and cmake is established
+
+rem directory where BSF4ooRexx.cc is located:
+SET SRCDIR=%SAVED_DIR%/..
+
 rem make compiler available (here MSC)
 SET WINDOWS_COMPILER="cl.exe"
 echo WINDOWS_COMPILER: %WINDOWS_COMPILER%
 call "e:\Programme\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
+
 rem make cmake accessible
 set PATH=%programFiles%\CMake\bin;%PATH%
 rem -------------------------------------------
 
-SET SAVED_DIR=%CD%
-SET SRCDIR=%SAVED_DIR%/..
-SET BUILD=%SAVED_DIR%/build
 
 rem remove quietly the build directory
 rd "%BUILD%" /s /q 2>nul
