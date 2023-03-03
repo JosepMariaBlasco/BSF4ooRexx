@@ -992,7 +992,7 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 // #define DEBUG_COMMAND_HANDLER       // 2022-08-20: allow for debugging command handler interactions
 // #define DEBUG_JNI
-#define DEBUG_CREATE_HALT_TERMINATE
+// #define DEBUG_CREATE_HALT_TERMINATE
 
 
 
