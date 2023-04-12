@@ -28,7 +28,7 @@ import org.rexxla.bsf.engines.rexx.RexxCleanupRef;
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015-2022 Rony G. Flatscher
+   Copyright 2015-2023 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -44,6 +44,13 @@ import org.rexxla.bsf.engines.rexx.RexxCleanupRef;
 -----------------------------------------------------------------------------
 
    Changes:
+        2023-04-11, ---rgf, - make sure that rexxCreateRoutineAndPackageCode employs "use arg"
+                              instead of "parse arg" to become able to distinguish whether
+                              second argument is an array or a string
+
+                            - make sure that bsfCreatePrefixValue gets set, even in cases
+                              where BSF.CLS' prolog code does not get executed (to be expected
+                              in a future version of ooRexx 5.1)
 
         2022-08-06, ---rgf, - changed package name to 'org.rexxla.bsf.engines.rexx'
 
@@ -190,7 +197,7 @@ import org.rexxla.bsf.engines.rexx.RexxCleanupRef;
  * the tow (and caching compiled scripts for invoking the aforementioned method in a sensible way.
  *
  * @author Rony G. Flatscher
- * @version 103.20220806
+ * @version 104.20230411
  * @since  2015-05-11
  *
  */
@@ -799,8 +806,9 @@ if (bDebug==true) {exc.printStackTrace();}
      *         <code>entryValue</code>
      */
     String rexxCreateRoutineAndPackageCode=
-           "parse arg name, script                      /* fetch script code            */    ; " +
+           "use arg name, script                        /* fetch script code            */    ; " +
            "                                                                                  ; " +
+//        "say .context~name': name='name 'script='script                                    ; " +
            "if script~isA(.array) then                  /* argument already an array    */    ; " +
            "   r=.routine~new(name, script)             /* create routine object        */    ; " +
            "else                                                                              ; " +
@@ -808,12 +816,13 @@ if (bDebug==true) {exc.printStackTrace();}
            "                                                                                  ; " +
            "p=r~package                                 /* get its package              */    ; " +
            "   /* return Rexx objects in a Java array to ease access in the Java code   */    ; " +
+//        "say .context~name': before returning Java array, r='r 'p='p                       ; " +
            "return bsf.createJavaArrayOf('java.lang.Object', r, p)                            ; " +
            "                                                                                  ; " +
            "::requires BSF.CLS                                                                ; " ;
 
     String rexxCreateRoutineAndPackageCode_work1=
-           "parse arg name, script                      /* fetch script code            */    ; " +
+           "use arg name, script                        /* fetch script code            */    ; " +
            "                                                                                  ; " +
            "say 'script~class='pp(script~class)                                               ; " +
            "if script~isA(.array) then                  /* argument already an array    */    ; " +
@@ -853,7 +862,7 @@ if (bDebug==true) {exc.printStackTrace();}
            "::requires BSF.CLS                                                                ; " ;
 
     String rexxCreateRoutineAndPackageCode_nixi=
-           "parse arg name, script                      /* fetch script code            */    ; " +
+           "use arg name, script                        /* fetch script code            */    ; " +
            "                                                                                  ; " +
            "say 'script~class='pp(script~class)                                               ; " +
            "if script~isA(.array) then                  /* argument already an array    */    ; " +
@@ -1709,9 +1718,12 @@ if (bDebug)
             // the following statement makes sure, that the BSF infrastructure gets set up and is available
             // the package object will be returned by the Rexx code and can be used for adding it to
             // the next Rexx script that gets compiled
+            // rgf, 20230411: set rexxInterface to prepend prefix <O> or <S> for RexxScriptEngines by calling
+            //                new bsf.initRAJinstance() routine (in BSF.CLS)
             latestRexxPackage=(RexxProxy) bsfRexxEngine.apply(this.toString()+"_require_bsf", 0, 0,
-                                          dynamicallyRequireBSF +";return .context~package",
+                                          dynamicallyRequireBSF +";call bsf.initRAJinstance; return .context~package",
                                           null, null); // new Vector(), new Vector());
+
             bInitialBSFRequiresDone=true;
         }
 
