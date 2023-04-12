@@ -19,8 +19,14 @@
           .BSF in .environment;
 
    date:
+         2023-03-12, ---rgf, - added new public routine "bsf.initRAJinstance" to initialize
+                               RexxAndJava peer; allows to be called directly by RexxScriptEngine
+                               (ooRexx will not run prolog of re-required BSF.CLS, hence need to
+                               explicitly invoke this public routine)
+
          2022-12-07, ---rgf, - added InputStream methods and renamed class to "NullDevice" to reflect
                                it can be used for both, stream input and output
+                               TODO: NullDevice for input raises notready, but this seems to be not raised!
 
          2022-12-05, ---rgf, - changed "dev.null" to "nullDevice"
 
@@ -831,7 +837,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     8.50 (20221102)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
+   version:     8.50 (20230412)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -918,7 +924,9 @@ end
    end
 
    -- since 2008-06-22 (rgf) this forces RexxAndJava to prepend type indicators!
-   .routines["XBSF"]~call("bsfPrefixReturnValue", .true) -- now "<O>" (object) or "<S>" (string) get prepended to the returned value
+   -- .routines["XBSF"]~call("bsfPrefixReturnValue", .true) -- now "<O>" (object) or "<S>" (string) get prepended to the returned value
+   -- now using explicitly a public routine to allow RexxScriptEngine to call it for initialization
+   call bsf.initRAJinstance   -- this will set RexxAndJava peer to prefix returned bean names with "<O>" or "<S>"
 
    -------------------------------------------------------------------------------------------------
 
@@ -932,7 +940,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="850.20221223" -- set version (date distribution got created)
+      .bsf4rexx~version="850.20230412" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -6341,6 +6349,18 @@ syntax:
   if iDigits=18, deliString<>"" then   -- insert delimiter into hexadecimal string
      hexVal=hexVal~insert(deliString,8)
   return hexVal
+
+
+
+/** Routine that makes sure that a RexxAndJava (RexxEngine) instance gets initialized
+*   properly, even if the prolog code does not get executed (to be expected in future
+*   versions of ooRexx 5.x as of 2023-04,11)
+*
+*/
+::routine bsf.initRAJinstance public
+  call bsf 'bsfPrefixReturnValue',1
+
+
 
 /** This class swallows/intercepts the messages SAY, LINEOUT and CHAROUT and therefore
     can be used as an ooRexx "nul" (Windows) or "/dev/null" (Unix) target. A singleton
