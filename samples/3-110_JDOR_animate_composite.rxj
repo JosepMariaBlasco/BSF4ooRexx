@@ -1,9 +1,11 @@
 #!/usr/bin/env rexx
 /*
    Name:    "3-110_animate_composite.rxj"
-   Invoke:  "rexx 3-110_animate_composite.rxj"
-            "rexxj 3-110_animate_composite.rxj" (Windows)
-            "rexxj.sh 3-110_animate_composite.rxj" (Unix)
+   Invoke:  "rexx 3-110_animate_composite.rxj [?]"
+            "rexxj 3-110_animate_composite.rxj [?]" (Windows)
+            "rexxj.sh 3-110_animate_composite.rxj [?]" (Unix)
+
+            ? ... optional argument, if supplied displays processed JDOR commands
 
    Purpose: Demonstrates the usage of the "composite" command to realize
             fade-in animation effects as well as moving out bitmaps (images)
@@ -27,11 +29,15 @@
                        - turn off text aliasing for animated text/string (interpolation
                          pixel would distort the drawn string)
             2022-11-27 - change current directory to source directory to allow access to png files
+            2023-05-31 - added optional argument ? to show processed JDOR commands
+                         in canonical form for commands directed to "jdor" handler (not "sdor")
+                       - creates and defines JDOR handler explicitly (not using "jdor.cls")
+                       - changed "new" to "newImage"
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2022 Rony G. Flatscher
+       Copyright (C) 2022-2023 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -46,6 +52,7 @@
        limitations under the License.
     -----------------------------------------------------------------------------
 */
+   -- make sure we change current directory to program's directory
 parse source . . s      -- get full path to this program
 call directory filespec('loc',s) -- change current dir to this program's source dir
 
@@ -54,13 +61,19 @@ call directory filespec('loc',s) -- change current dir to this program's source 
 jdor=.bsf~new("org.oorexx.handlers.jdor.JavaDrawingHandler")
 call BsfCommandHandler "add", "JDOR", jdor
 
-address jdor            -- set default environment to JDOR
--- address jdor with error using (.error) -- set default environment to JDOR
+bShowCommands=(arg(1)="?") -- ? supplied as argument, then show "jdor" JDOR commands in canonical form
+-- set default environment to JDOR
+if bShowCommands then
+   -- redirect output:
+   address jdor with output using (.stdout)
+else
+   address jdor
 
+   -- now we can use JDOR commands
 w=400                   -- width
 h=400                   -- height
 center=w/2 h/2          -- center of image
-new w h                 -- create new bitmap
+newImage w h            -- create new bitmap
 
 winFrame .false         -- hide frame
 winScreenSize           -- get current screen size
@@ -74,9 +87,9 @@ b4r_x = 110             -- position of bsf4oorexx logo
 locations=.array~of( "bsf4oorexx_256.png" b4r_x b4r_x                 50 , -
                      "oorexx4ooo_256.png" (w-b4r_x)  (w-b4r_x)        50, -
                      "oorexx_256.png" trunc((w-75)/2) trunc((h-75)/2) 75)
-say "fade in ..."
+say "--> fade in ..."
 do loc over locations   -- load and draw bitmaps
-   say "processing:" pp(loc)
+   say "--> processing:" pp(loc)
    parse var loc name x y size
    loadImage name name  -- load image from file use filename as nick name
    moveTo x y           -- move to desired location
@@ -89,10 +102,10 @@ do loc over locations   -- load and draw bitmaps
    drawImage name size size   -- draw image with alpha 1.0
 end
 
-say "Moving out ..."
+say "--> Moving out ..."
 do counter c loc over locations
    parse var loc name x y size
-   say "#" c": moving out - name:" name "x:" x "y:" y "size:" size
+   say "--> #" c": moving out - name:" name "x:" x "y:" y "size:" size
    moveTo x y
    loop
       winUpdate .false     -- do not update window (frame)
@@ -125,13 +138,13 @@ font f1 "Serif"         -- create and use the font
 str="We are done, goodbye! ('sleep 5' ...)"  -- string to show
 stringBounds str        -- current font and current graphic context
 say "                           str:" pp(str)
-say "'stringBounds str' returned rc:" pp(rc) "(in pixels)"
+say "--> 'stringBounds str' returned rc:" pp(rc) "(in pixels)"
 parse var rc x1 y1 width1 height1   -- get fields
 x2=(w-width1)/2         -- horizontal center position
 y2=(h-y1)/2             -- vertical center position
 x=w+1                   -- move one pixel outside of the image
 moveTo x y2             -- position
-say "moving in from the right ..."
+say "--> moving in from the right ..."
 render textAliasOff     -- otherwise a blue trail gets created from the interpolation pixels
 loop while x>x2
    winUpdate .false     -- do not update window (frame)
@@ -146,7 +159,7 @@ loop while x>x2
 end
 
 -- flash for 5 seconds
-say "flashing for 5 seconds ..."
+say "--> flashing for 5 seconds ..."
 dt0=.dateTime~new
 bErase=.true
 bBold =.false
@@ -172,10 +185,6 @@ do while (.dateTime~new - dt0)~seconds < 5
    bErase=\bErase       -- invert boolean value
    sleep 0.3            -- cause animation effect
 end
-say "we are done."
+say "--> we are done."
 
-
--- say "press enter to end ..."; parse pull
-
-::requires "BSF.CLS" -- get ooRexx-Java bridge
-
+::requires "BSF.CLS"    -- get ooRexx-Java bridge, contains JDOR Rexx command handler

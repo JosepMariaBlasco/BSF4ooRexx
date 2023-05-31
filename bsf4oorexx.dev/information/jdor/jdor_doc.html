@@ -1,6 +1,6 @@
 <!--
     ======================== Apache Version 2.0 license =========================
-       Copyright (C) 2022 Rony G. Flatscher
+       Copyright (C) 2022-2023 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -21,12 +21,20 @@
     2022-12-07, rgf: a nice overview & introduction (in Java)
     - <https://www3.ntu.edu.sg/home/ehchua/programming/java/J8b_Game_2DGraphics.html>
     - <https://math.hws.edu/graphicsbook/c2/s5.html>
+
+    2022-12-31, rgf: correct description of drawRect
+
+    2023-01-04, rgf: - add hint about converting between degrees and radiants
+                     - start to add the documentation for shapes and affinity transform
+                       commands
+    2023-01-09, rgf: - completing documentation (new sections for Shapes, Path2D)
 -->
 
 
 <html>
 <head>
 <title>JDOR Synopsis</title>
+
     <style>
     /* --- definition list----------------------- */
     dl {
@@ -145,7 +153,14 @@
 </head>
 
 <body>
-<h3>Purpose of JDOR (Java Drawing for ooRexx)</h3>
+<h3 id="purposeOfJDOR">Purpose of JDOR (Java Drawing for ooRexx)</h3>
+
+<nav>
+<a href="#purposeOfJDOR">Purpose</a> |
+<a href="#briefOverview">Brief Overview</a> |
+<a href="#synopsisOfJDOR">Synopsis JDOR</a> |
+<a href="#jdorShapes">JDOR Shapes</a> (<a href="#h2ShapeCommands">Shapes</a>, <a href="#h2PathCommands">Path2D</a>)
+</nav>
 
 <p>JDOR (Java drawing for <a href="https://sourceforge.net/projects/oorexx/">ooRexx</a>) is a Rexx
 command handler (implemented in Java taking advantage of <a
@@ -163,7 +178,7 @@ for creating the most challenging graphics (images) from Rexx.
     <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace"><FONT COLOR="#0033b3">address </FONT>jdor            <FONT COLOR="#8c8c8c"><I>-- set default environment to the JDOR command handler</I></FONT></FONT></FONT>
     <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">width <FONT COLOR="#cc3300">=</FONT><FONT COLOR="#1750eb">220              </FONT><FONT COLOR="#8c8c8c"><I>-- define width of image in pixels (there are 72 px to an inch)</I></FONT></FONT></FONT>
     <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">height<FONT COLOR="#cc3300">=</FONT><FONT COLOR="#1750eb">250              </FONT><FONT COLOR="#8c8c8c"><I>-- define height of image in pixels (there are 72 px to an inch)</I></FONT></FONT></FONT>
-    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">new width height        <FONT COLOR="#8c8c8c"><I>-- create new bitmap with currX=0, currY=0, width=220, height=250</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">newImage width height   <FONT COLOR="#8c8c8c"><I>-- create new bitmap with currX=0, currY=0, width=220, height=250</I></FONT></FONT></FONT>
     <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">winShow                 <FONT COLOR="#8c8c8c"><I>-- show frame on screen</I></FONT></FONT></FONT>
     <FONT COLOR="#8c8c8c">   <FONT FACE="IBM Plex Mono, monospace"><I>-- draw two lines forming a big X</I></FONT></FONT>
     <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">drawLine (width<FONT COLOR="#cc3300">-</FONT><FONT COLOR="#1750eb">1</FONT>) (height<FONT COLOR="#cc3300">-</FONT><FONT COLOR="#1750eb">1</FONT>) <FONT COLOR="#8c8c8c"><I>-- from currX=0, currY=0</I></FONT></FONT></FONT>
@@ -218,7 +233,13 @@ for creating the most challenging graphics (images) from Rexx.
 
 <p><hr><p>
 
-<h3>Brief Overview</h3>
+<h3 id="briefOverview">Brief Overview</h3>
+<nav>
+<a href="#purposeOfJDOR">Purpose</a> |
+<a href="#briefOverview">Brief Overview</a> |
+<a href="#synopsisOfJDOR">Synopsis JDOR</a> |
+<a href="#jdorShapes">JDOR Shapes</a> (<a href="#h2ShapeCommands">Shapes</a>, <a href="#h2PathCommands">Path2D</a>)
+</nav>
 
 <p>
 The <em>JDOR</em> Rexx command handler makes <em>Java2D</em> functionality available
@@ -390,7 +411,7 @@ title to the definition list
     <dd>The image type defines the basic properties of an image and also determines
         in which format an image can be stored in the file system. The supported types
         are defined as constants in the Java class <em>java.awt.image.BufferedImage</em>
-        and are listed in the command <em><a href="#cmdNew">new</a></em>, subsection arguments.
+        and are listed in the command <em><a href="#cmdNewImage">newImage</a></em>, subsection arguments.
     </dd>
 
 
@@ -425,6 +446,9 @@ title to the definition list
         degrees! The rotate command will convert the degree value (easier for humans) to radians
         before invoking the Java method (cf. <a href="https://en.wikipedia.org/wiki/Gradian">Wikipedia Gradian</a>
         article).
+        <br>Note: if it is needed to translate <em>radians</em> to <em>degrees</em> then one could
+                  use <em>java.lang.Math</em>'s method <em>toDegree(radians)</em> (to invert one could
+                  use the its method <em>toRadians(degrees)</em>).
     </dd>
 
     <dt>scale</dt>
@@ -471,7 +495,13 @@ title to the definition list
 <p><hr><p>
 
 
-<h3>Synopsis of the <em>JDOR</em> Rexx Commands</h3>
+<h3 id="synopsisOfJDOR">Synopsis of the <em>JDOR</em> Rexx Commands</h3>
+<nav>
+<a href="#purposeOfJDOR">Purpose</a> |
+<a href="#briefOverview">Brief Overview</a> |
+<a href="#synopsisOfJDOR">Synopsis JDOR</a> |
+<a href="#jdorShapes">JDOR Shapes</a> (<a href="#h2ShapeCommands">Shapes</a>, <a href="#h2PathCommands">Path2D</a>)
+</nav>
 
 <p> In general the arguments to a command are blank delimited.  If supplying a Rexx variable, its
 referred to value will be supplied, if using a Rexx expression it will be evaluated and the
@@ -506,6 +536,26 @@ value.
     <th> Argument(s)
     <th> Description
 
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdAssignRC"> &quot;assignRC&quot;
+    <td colspan="3"> Allows to assign the current value of the Rexx variable <em>RC</em>
+        (set when a command returns a value) to a Rexx variable with the supplied name.
+
+        <br>This allows for creating self contained macros (redirecting the output will
+            protocol the commands which can later be used for replaying those commands)
+            that need to refer to returned values later.
+        <br><em>Note:</em> supplying Rexx variable names to commands will supply the value
+                the Rexx variable points to. Therefore it is advised to enquote such commands,
+                at least the Rexx variable name argument.
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> rexxVariableName
+    <td> The name of a Rexx variable which gets the current value of the Rexx variable
+         <em>RC</em> assigned to for later use.
 
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
@@ -833,7 +883,7 @@ value.
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> width height
-    <td> Draws an oval in a rectangle of <em>width</em> and
+    <td> Draws a rectangle of <em>width</em> and
          <em>height</em> pixels. If <em>width</em> and
          <em>height</em> are of the same length the rectangle will be a square.
 
@@ -1134,7 +1184,9 @@ value.
             <li><em>printScaleToPage</em>
             <li><em>printScaleX</em>
             <li><em>printScaleY</em>
+            <li><em>shapes</em> (a <em>java.util.HashMap</em>)
             <li><em>strokes</em> (a <em>java.util.HashMap</em>)
+            <li><em>transforms</em> (a <em>java.util.HashMap</em>)
         </ul>
 
 
@@ -1308,7 +1360,8 @@ value.
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
-    <td class="command" id="cmdNew">  &quot;new&quot;
+    <td class="command" id="cmdNewImage">  &quot;newImage&quot;<br>
+                                           &quot;new&quot;
     <td colspan="2"> Creates a new image. By default the <em>width</em> and the <em>height</em> are
         set to <em>500</em> and the <em>type</em> to the current value of
         <a href="#cmdPreferredImageType"><em>preferredImageType</em></a>.
@@ -1320,11 +1373,9 @@ value.
     <td>
     <td class="argument"> width height [type]
     <td> The size is given in <em>width</em> and <em>height</em> pixels. The optional <em>type</em>
-         allows to override the image type.
-         <br>The optional <em>type</em>, if omitted gets set to current value of
-         <a href="#cmdPreferredImageType"><em>preferredImageType</em></a> (defaults
-         to <em>2</em> a.k.a. <em>BufferedImage.TYPE_INT_ARGB</em>).
-
+         allows to override the image type. If <em>type</em> is omitted the current value of
+         <a href="#cmdPreferredImageType"><em>preferredImageType</em></a> (defaults to <em>2</em>
+         a.k.a. <em>BufferedImage.TYPE_INT_ARGB</em>) gets used.
 
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
@@ -1374,7 +1425,7 @@ value.
     <td class="cmdNr">
     <td class="command" id="cmdPreferredImageType">  &quot;preferredImageType&quot;
     <td colspan="2"> Queries and optionally sets  the preferred image type used for creating new images
-    (cf. <a href="#cmdNew">new</a> command).
+    (cf. <a href="#cmdNewImage">new</a> command).
         Returns the image type via the Rexx variable <em>RC</em> upon return from this command.
 
         <br>Cf. the Java documentation for the Java class <em>java.awt.image.BufferedImage</em> and
@@ -1803,12 +1854,11 @@ value.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command" id="cmdTransform">  &quot;transform&quot;
-    <td colspan="2"> Queries, resets or changes the current
-        <em><a href="#dtAffineTransform">AffineTransform</em></a> settings.
-        The command returns six blank delimited decimal numbers in the order: <em>translateX</em>,
-        <em>translateY</em>, <em>scaleX</em>, <em>scaleY</em>, <em>shearX</em>, <em>shearY</em>
-        at the time of invocation.
-        </em>The <em>AffineTransform</em> defines a matrix that gets used to
+    <td colspan="2"> Queries, resets, changes the current <em>gc</em> (<em>Graphics2D</em>)
+        settings or allows to define a new <em><a href="#dtAffineTransform">AffineTransform</em></a>
+        that gets stored with a <em>nickName</em>.
+
+        <br>An <em>AffineTransform</em> defines a matrix that gets used to
         calculate the effective <em>x</em> and <em>y</em> values for the target device according
         to this formula:
 
@@ -1818,20 +1868,47 @@ value.
         <p>Cf. the Java documentation for the Java classes <em>java.awt.geom.AffineTransform</em>,
         <em>java.awt.Graphics2D</em> and the methods <em>getTransform()</em>, <em>setTransform(...)</em>.
 
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument">
+    <td> No argument: returns the current <em>gc</em> (<em>Graphics2D</em>)
+        <a href="#dtAffineTransform">AffineTransform</em></a> settings in effect.
+
+        <br>The command returns six blank delimited decimal numbers in the order: <em>translateX</em>,
+        <em>translateY</em>, <em>scaleX</em>, <em>scaleY</em>, <em>shearX</em>, <em>shearY</em>
+        at the time of invocation.
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> translateX translateY scaleX scaleY shearX shearY
-    <td> The arguments are taken to be decimal numbers and used to set the new values to take effect.
+    <td> The arguments are taken to be decimal numbers and used to set the new values
+         for the current <em>gc</em> (<em>Graphics2D</em>) to take effect.
          If a value for an argument consists of a dot (.) only, then that argument's value does not
          get changed (its current value gets used instead).
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> R[ESET]
-    <td> The current transform will be reset such that <em>translateX</em>,
+    <td> The current transform settings of the current <em>gc</em> (<em>Graphics2D</em>)
+        will be reset such that <em>translateX</em>,
         <em>translateY</em>, <em>shearX</em>, <em>shearY</em> get set to <em>0.0</em> and
         <em>scaleX</em> and <em>scaleY</em> to <em>1.0</em>. It is only necessary to supply
         the first letter.
+
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument">nickName
+    <td> Returns the <a href="#dtAffineTransform">AffineTransform</em></a> object
+         stored with <em>nickName</em>.
+
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> nickName translateX translateY scaleX scaleY shearX shearY
+    <td> The arguments are used to create a new <a href="#dtAffineTransform">AffineTransform</em></a>
+         which gets stored with the name <em>nickName</em> and returned.
+
 
 
     <!-- -------------------------------------------------------- -->
@@ -2094,15 +2171,596 @@ value.
     </table>
 
 <p>
+<hr width="100%">
+<p>
+
+<h3 id="jdorShapes">The <em>JDOR Shape</em> Related Rexx Commands</h3>
+<nav>
+<a href="#purposeOfJDOR">Purpose</a> |
+<a href="#briefOverview">Brief Overview</a> |
+<a href="#synopsisOfJDOR">Synopsis JDOR</a> |
+<a href="#jdorShapes">JDOR Shapes</a> (<a href="#h2ShapeCommands">Shapes</a>, <a href="#h2PathCommands">Path2D</a>)
+</nav>
+
+<p>Java2D introduces the ability to define graphical shapes (cf. interface
+<a href="https://google.com/search?q=javadoc+8+Shape" target="_blank"><em>java.awt.Shape</em></a>)
+and use them for constructing <em>Path2D</em> shapes,
+filling shapes and drawing shapes:
+
+<ul>
+    <li><a href="https://google.com/search?q=javadoc+8+Arc2D" target="_blank"><em>java.awt.geom.Arc2D</em></a>
+    <li><a href="https://google.com/search?q=javadoc+8+CubicCurve2D" target="_blank"><em>java.awt.geom.CubicCurve2D</em></a>
+    <li><a href="https://google.com/search?q=javadoc+8+Ellipse2D" target="_blank"><em>java.awt.geom.Ellipse2D</em></a>
+    <li><a href="https://google.com/search?q=javadoc+8+Line2D" target="_blank"><em>java.awt.geom.Line2D</em></a>
+    <li><a href="https://google.com/search?q=javadoc+8+Path2D" target="_blank"><em>java.awt.geom.Path2D</em></a>
+    <li><a href="https://google.com/search?q=javadoc+8+QuadCurve2D" target="_blank"><em>java.awt.geom.QuadCurve2D</em></a>
+    <li><a href="https://google.com/search?q=javadoc+8+Rectangle2D" target="_blank"><em>java.awt.geom.Rectangle2D</em></a>
+    <li><a href="https://google.com/search?q=javadoc+8+RoundRectangle2D" target="_blank"><em>java.awt.geom.RoundRectangle2D</em></a>
+</ul>
+
+<em>Path2D</em> allows for creating any arbitrary shape. It is even possible to
+add (append) any shapes to a path or create a <em>PathIterator</em> from a shape, transform
+and add (append) it to a path.
+
+<p><em>Note:</em> the created shapes use <em>double</em> precision decimal numbers for highest fidelity. E.g. an
+                  <em>Arc2D</em> will be created using the Java class
+                  <a href="https://google.com/search?q=javadoc+8+Arc2D.Double" target="_blank"><em>Arc2D.Double</em></a>.
+
+<p>
+The <em>Shape</em> related <em>JDOR</em> Rexx commands are:
+
+<ul>
+    <li><a href="#cmdShape"><em>shape</em></a>
+                         (can be used to create one of the following shapes:
+                        <em>Arc2D</em>, <em>CubicCurve2D</em>,
+                        <em>Ellipse2D</em>, <em>Line2D</em>, <em>Path2D</em>,
+                        <em>QuadCurve2D</em>,
+                        <em>Rectangle2D</em>, <em>RoundRectangle2D</em>)
+
+    <li><a href="#cmdClipShape"><em>clipShape</em></a>
+    <li><a href="#cmdDrawShape"><em>drawShape</em></a>
+    <li><a href="#cmdFillShape"><em>fillShape</em></a>
+    <li><a href="#cmdPathIterator"><em>pathIterator</em></a>
+    <li><a href="#cmdShapeBounds"><em>shapeBounds</em></a>
+
+</ul>
+
+The <em>Path2D</em> specific <em>JDOR</em> Rexx commands are:
+
+<ul>
+    <li><a href="#cmdPathAppend"><em>pathAppend</em></a>
+    <li><a href="#cmdPathClone"><em>pathClone</em></a>
+    <li><a href="#cmdPathClose"><em>pathClose</em></a>
+    <li><a href="#cmdPathCurrentPoint"><em>pathCurrentPoint</em></a>
+    <li><a href="#cmdPathCurveTo"><em>pathCurveTo</em></a>
+    <li><a href="#cmdPathLineTo"><em>pathLineTo</em></a>
+    <li><a href="#cmdPathMoveTo"><em>pathMoveTo</em></a>
+    <li><a href="#cmdPathQuadTo"><em>pathQuadTo</em></a>
+    <li><a href="#cmdPathReset"><em>pathReset</em></a>
+    <li><a href="#cmdPathTransform"><em>pathTransform</em></a>
+    <li><a href="#cmdPathWindingRule"><em>pathWindingRule</em></a>
+
+</ul>
+
+
+<p>In general the arguments to a command are blank delimited.  If supplying a Rexx variable, its
+referred to value will be supplied, if using a Rexx expression it will be evaluated and the
+resulting value will be supplied to the Rexx command handler.
+
+<p>If you wish to supply the name of a Rexx variable to a command (e.g.  for the command
+<a href="#cmdAssingRC"><em>assignRC</em></a>), then make sure to <em>enquote</em> that
+variable name as otherwise its value gets supplied instead.
+
+<p>Commands need not be enquoted, unless their names collide with Rexx keyword names (which
+at the time of writing does not happen) or are used as Rexx variable names in your program.
+
+<p> Unquoted literals will be uppercased according to the Rexx rules and then supplied to the
+command handler.  If commands or arguments are unquoted then they get uppercased as well and blanks
+between them will be reduced to a single blank according to the Rexx rules before supplying the
+resulting command with arguments to the Rexx command handler.
+
+<p>
+<hr width="75%">
+<p>
+
+
+<h2 id="h2ShapeCommands"><em>Shape</em> Related Commands </h2>
+<nav>
+<a href="#purposeOfJDOR">Purpose</a> |
+<a href="#briefOverview">Brief Overview</a> |
+<a href="#synopsisOfJDOR">Synopsis JDOR</a> |
+<a href="#jdorShapes">JDOR Shapes</a> (<a href="#h2ShapeCommands">Shapes</a>, <a href="#h2PathCommands">Path2D</a>)
+</nav>
+
+<p>Here the <em>JDOR</em> commands that are related to all <em>Shape</em>s:
+<p>
+
+    <table>
+        <tr>
+    <tr class="TableHeader">
+    <th>
+    <th> Command
+    <th> Argument(s)
+    <th> Description
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdShape"> &quot;shape&quot;
+    <td colspan="3"> Queries or creates a named <em>Shape</em>.
+
+        <br>Querying will return the stored shape, creating a new shape
+            will store it with the supplied <em>shapeNickName</em> and return it
+            via the Rexx variable <em>RC</em>.
+
+        <!-- -------------------------------------- -->
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> shapeNickName
+    <td> The name <em>Shape</em> that gets returned from the registry.
+
+        <!-- -------------------------------------- -->
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> shapeNickName typeName args
+    <td> Creates a new <em>Shape</em> of type <em>typeName</em> using <em>args</em> arguments,
+         registers and returns it.
+         <table>
+             <th>typeName <th>args <th width="60%">Brief Description
+
+                 <!--  ----------------------------------- -->
+              <tr>
+                  <td class="command">Ar | Arc | <a href="https://google.com/search?q=javadoc+8+Arc2D" target="_blank">Arc2D</a>
+                  <td class="argument">x y width height start extent type
+                  <td>
+                       Defines an arc shape at position <em>x</em> and <em>y</em>
+                       in a rectangle of <em>width</em> and <em>height</em> pixels.
+
+                       <br>The arc will be drawn from <em>start</em>
+                       degrees to <em>extent</em> degrees counter clock wise.
+
+                       <br> <em>type</em> determines whether it should be left open (<em>OPEN</em> or
+                       <em>0</em>), or a line should be drawn between the starting and the ending point
+                       of the arc (<em>CHORD</em> or <em>1</em>),
+                       or a line should get drawn between the starting point, the center point and
+                       the ending point  of the arc (<em>PIE</em> or <em>2</em>).
+
+              <tr><td><td colspan="2" style="border: 1px solid black;border-collapse: collapse;">
+
+                 <!--  ----------------------------------- -->
+              <tr>
+                  <td class="command">
+                  <td class="argument">bounds start extent type
+                  <td>
+                       Defines an arc shape at position <em>x</em> and <em>y</em>
+                       in a rectangle of <em>width</em> and <em>height</em> pixels
+                       as defined by <em>bounds</em>, a <em>Rectangle2D</em> shape.
+
+                       <br>The arc will be drawn from <em>start</em>
+                       degrees to <em>extent</em> degrees counter clock wise.
+
+                       <br> <em>type</em> determines whether it should be left open (<em>OPEN</em> or
+                       <em>0</em>), or a line should be drawn between the starting and the ending point
+                       of the arc (<em>CHORD</em> or <em>1</em>),
+                       or a line should get drawn between the starting point, the center point and
+                       the ending point  of the arc (<em>PIE</em> or <em>2</em>).
+
+              <tr><td colspan="3" style="border: 1px solid black;border-collapse: collapse;">
+
+                 <!--  ----------------------------------- -->
+              <tr>
+                  <td class="command">Cu | CubicCurve | <a href="https://google.com/search?q=javadoc+8+CubicCurve2D" target="_blank">CubicCurve2D</a>
+                  <td class="argument">x1 y1 ctrlx1 ctrly1 ctrlx2 ctrly2 x2 y2
+                  <td> Defines a cubic parametric curve shape between the points <em>x1/y1</em> and
+                       <em>x2/y2</em> controlled by the two control points located
+                       at <em>ctrlx1/ctrly1</em> and <em>ctrlx2/ctrly2</em>.
+
+              <tr><td colspan="3" style="border: 1px solid black;border-collapse: collapse;">
+
+                 <!--  ----------------------------------- -->
+              <tr>
+                  <td class="command">El | Ellipse | <a href="https://google.com/search?q=javadoc+8+Ellipse2D" target="_blank">Ellipse2D</a>
+                  <td class="argument">x y width height
+                  <td>
+                       Defines an ellipse (oval) shape at position <em>x</em> and <em>y</em>
+                       in a rectangle of <em>width</em> and <em>height</em> pixels.
+                       If <em>width</em> and <em>height</em> are of the same length
+                       the ellipse (oval) will be a circle.
+
+              <tr><td colspan="3" style="border: 1px solid black;border-collapse: collapse;">
+
+                 <!--  ----------------------------------- -->
+              <tr>
+                  <td class="command">li | line | <a href="https://google.com/search?q=javadoc+8+Line2D" target="_blank">Line2D</a>
+                  <td class="argument">x1 y1 x2 y2
+                  <td>
+                       Defines a line shape that will be drawn from position <em>x1/y1</em> to
+                       <em>x2/y2</em>.
+
+              <tr><td colspan="3" style="border: 1px solid black;border-collapse: collapse;">
+
+                 <!--  ----------------------------------- -->
+              <tr>
+                  <td class="command">pa | path | <a href="https://google.com/search?q=javadoc+8+Path2D" target="_blank">Path2D</a>
+                  <td class="argument">[rule]
+                  <td>Creates a <em>Path2D</em> shape. The optional <em>rule</em>
+                      can be either <em>0</em> (<em>WIND_EVEN_ODD</em>) or
+                      <em>1</em> (<em>WIND_NON_ZERO</em>), which is the default.
+
+              <tr><td colspan="3" style="border: 1px solid black;border-collapse: collapse;">
+
+                 <!--  ----------------------------------- -->
+              <tr>
+                  <td class="command">po | polygon | <a href="https://google.com/search?q=javadoc+8+Polygon" target="_blank">Polygon</a>
+                  <td class="argument">xPoints-array yPoints-array nPoints
+                  <td>Creates a <em>Polygon</em> shape consisting of <em>nPoints</em>
+                      taken from the
+                      <a href="#dtPointsArray"><em>xPoints-array</em></a> and
+                      <a href="#dtPointsArray"><em>yPoints-array</em></a>.
+                      If the endpoint is not the same coordinate as the first point,
+                      the polygon gets closed by drawing a line from the
+                      first to the last point.
+
+
+              <tr><td colspan="3" style="border: 1px solid black;border-collapse: collapse;">
+
+                 <!--  ----------------------------------- -->
+              <tr>
+                  <td class="command">Qu | QuadCurve | <a href="https://google.com/search?q=javadoc+8+QuadCurve2D" target="_blank">QuadCurve2D</a>
+                  <td class="argument">x1 y1 ctrlx ctrly x2 y2
+                  <td> Defines a quadratic parametric curve shape between the points <em>x1/y1</em> and
+                       <em>x2/y2</em> controlled by the control point located
+                       at <em>ctrlx/ctrly</em>.
+
+              <tr><td colspan="3" style="border: 1px solid black;border-collapse: collapse;">
+
+                 <!--  ----------------------------------- -->
+              <tr>
+                  <td class="command">Re | Rectangle | <a href="https://google.com/search?q=javadoc+8+Rectangle2D" target="_blank">Rectangle2D</a>
+                  <td class="argument">x y width height
+                  <td>
+                       Defines a rectangular shape at position <em>x</em> and <em>y</em>
+                       of <em>width</em> and <em>height</em> pixels.
+                       If <em>width</em> and <em>height</em> are of the same length
+                       the rectangle is a square.
+
+              <tr><td colspan="3" style="border: 1px solid black;border-collapse: collapse;">
+
+
+                 <!--  ----------------------------------- -->
+              <tr>
+                  <td class="command">Ro | RoundRectangle | <a href="https://google.com/search?q=javadoc+8+RoundRectangle2D" target="_blank">RoundRectangle2D</a>
+                  <td class="argument">x y width height arcWidth arcHeight
+                  <td>
+                       Defines a round rectangular shape at position <em>x</em> and <em>y</em>
+                       of <em>width</em> and <em>height</em> pixels where
+                       the corner arc has <em>arcWidth</em> and <em>arcHeights</em> pixels.
+
+              <tr><td colspan="3" style="border: 1px solid black;border-collapse: collapse;">
+
+         </table>
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdClipShape"> &quot;clipShape&quot;
+    <td colspan="2"> Intersects the current clip with the interior of the supplied shape
+                     to create a new clip.
+                     Cf. <a href="https://google.com/search?q=javadoc+8+Graphics2D" target="_blank">Graphics2D</a>.
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> shapeNickName
+    <td> Applies the shape stored with <em>shapeNickName</em> and if not present
+         a <em>Shape</em> a Rexx variable named <em>shapeNickName</em> refers to.
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdDrawShape"> &quot;drawShape&quot;
+    <td colspan="2"> Draws the the supplied shape.
+                     Cf. <a href="https://google.com/search?q=javadoc+8+Graphics2D" target="_blank">Graphics2D</a>.
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> shapeNickName
+    <td> Draws the shape stored with <em>shapeNickName</em> and if not present
+         a <em>Shape</em> a Rexx variable named <em>shapeNickName</em> refers to.
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdFillShape"> &quot;fillShape&quot;
+    <td colspan="2"> Fills the the supplied shape.
+                     Cf. <a href="https://google.com/search?q=javadoc+8+Graphics2D" target="_blank">Graphics2D</a>.
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> shapeNickName
+    <td> Fills the shape stored with <em>shapeNickName</em> and if not present
+         a <em>Shape</em> a Rexx variable named <em>shapeNickName</em> refers to.
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPathIterator"> &quot;pathIterator&quot;
+    <td colspan="2"> Returns a <a href="https://google.com/search?q=javadoc+8+PathIterator" target="_blank"><em>PathIterator</em></a>
+                     of the supplied shape which can be used as an argument to the
+                     <a href="#cmdPathAppend"><em>pathAppend</em></a> command.
+                     Cf. <a href="https://google.com/search?q=javadoc+8+Shape" target="_blank">Shape</a>.
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> shapeNickName [transformNickName [flatness]]
+    <td> Creates and returns a <a href="https://google.com/search?q=javadoc+8+PathIterator" target="_blank"><em>PathIterator</em></a>
+         for the shape stored with <em>shapeNickName</em> and if not present
+         a <em>Shape</em> a Rexx variable named <em>shapeNickName</em> refers to.
+
+         <br>If the optional <a href="#cmdTransform"><em>transformNickName</em></a> is supplied, the
+             stored <a href="#dtAffineTransform">AffineTransform</em></a> is used to
+             transform the <em>PathIterator</em>.
+
+         <br>The optional <em>flatness</em> argument is a decimal value,
+            cf. <a href="https://google.com/search?q=javadoc+8+Shape" target="_blank">Shape.getPathIterator(AffineTransform at, double flatness)</a>
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdShapeBounds"> &quot;shapeBounds&quot;
+    <td colspan="2"> Returns the bounds (a <a href="https://google.com/search?q=javadoc+8+Rectangle2D" target="_blank"><em>Rectangle2D</em></a>)
+                     of the supplied shape as a blank delimited Rexx string:
+                     &quot;<em>x</em> <em>y</em> <em>width</em> <em>height</em>&quot;.
+
+                     Cf. <a href="https://google.com/search?q=javadoc+8+Shape" target="_blank">Shape</a>.
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> shapeNickName
+    <td> Returns a blank delimited string denoting the <em>bounds</em>
+        (<em>x</em>, <em>y</em>, <em>width</em>, <em>height</em>)
+         for the shape stored with <em>shapeNickName</em> and if not present
+         a <em>Shape</em> a Rexx variable named <em>shapeNickName</em> refers to.
+
+
+    </table>
+
+<p>
+<hr width="75%">
+<p>
+
+
+<h2 id="h2PathCommands"><em>Path2D</em> Related Related commands </h2>
+<nav>
+<a href="#purposeOfJDOR">Purpose</a> |
+<a href="#briefOverview">Brief Overview</a> |
+<a href="#synopsisOfJDOR">Synopsis JDOR</a> |
+<a href="#jdorShapes">JDOR Shapes</a> (<a href="#h2ShapeCommands">Shapes</a>, <a href="#h2PathCommands">Path2D</a>)
+</nav>
+
+<p>The <em>Path2d</em> (<a href="https://google.com/search?q=javadoc+8+Path2D" target="_blank"><em>java.awt.geom.Path2D</em></a>)
+   shape allows for creating any kind of shape and even allows for
+   using any <em>Shape</em> and <em>PathIterator</em> derived (and potentially
+   transformed) from a <em>Shape</em> while building it.
+
+
+<p>Here the <em>JDOR</em> commands that are related to any <em>Path2d</em> <em>Shape</em>:
+
+<p>
+    <table>
+        <tr>
+    <tr class="TableHeader">
+    <th>
+    <th> Command
+    <th> Argument(s)
+    <th> Description
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPathAppend"> &quot;pathAppend&quot;
+    <td colspan="3"> The named <em>Path2D</em> shape gets appended by the
+            named <em>Shape</em> or <em>PathIterator</em>.
+
+        <!-- -------------------------------------- -->
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> pNickName spNickName [connect=.true]
+    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
+         shape, <em>spNickName</em> either a
+         <em>Shape</em> or <em>PathIterator</em> that should be appended.
+         The optional <em>connect</em> argument controls whether
+         the appended shape should get connected with a line segment (default).
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPathClone"> &quot;pathClone&quot;
+    <td colspan="3"> The named <em>Path2D</em> shape gets cloned and returned.
+
+        <!-- -------------------------------------- -->
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> pNickName [clonedNickName]
+    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
+         shape, that gets cloned and returned. If the optional <em>cloneNickName</em>
+         is specified then the clone gets registered with the uppercased
+         <em>cloneNickName</em> as index.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPathClose"> &quot;pathClose&quot;
+    <td colspan="3"> The named <em>Path2D</em> shape will have its current segment
+        closed by drawing a straight line back to the last <em>pathMoveTo</em> position.
+
+        <!-- -------------------------------------- -->
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> pNickName
+    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
+         shape, of which the last segment gets closed by drawing a line
+         to the last <em>pathMoveTo</em> position.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPathCurrentPoint"> &quot;pathCurrentPoint&quot;
+    <td colspan="3"> Returns the current point (the position of the last <em>pathMoveTo</em>)
+        of the named <em>Path2D</em> shape.
+
+        <!-- -------------------------------------- -->
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> pNickName
+    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
+         shape, which current point gets returned.
+         <br>
+         <em>Note:</em> if no <em>pathMoveTo</em> was issued yet, then <em>.nil</em>
+                        gets returned, otherwise a blank delimited Rexx string in
+                        the form of: &quot;<em>x y</em>&quot;.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPathCurveTo"> &quot;pathCurveTo&quot;
+    <td colspan="3"> Creates a cubic parametric curve segment.
+
+        <!-- -------------------------------------- -->
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> pNickName ctrlx1 ctrly1 ctrlx2 ctrly2 x y
+    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
+         shape for which a cubic parametric curve segment gets
+         created between the points <em>currentPoint</em>
+         (cf. <em>pathCurrentPoint</em> command above)
+         and the point with the co-ordinate <em>x/y</em> controlled by the two control points located
+         at <em>ctrlx1/ctrly1</em> and <em>ctrlx2/ctrly2</em>.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPathLineTo"> &quot;pathLineTo&quot;
+    <td colspan="3"> Creates a line segment.
+
+        <!-- -------------------------------------- -->
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> pNickName x y
+    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
+         shape for which a line segment gets
+         created between the points <em>currentPoint</em>
+         (cf. <em>pathCurrentPoint</em> command above)
+         and the point with the co-ordinate <em>x/y</em>.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPathMoveTo"> &quot;pathMoveTo&quot;
+    <td colspan="3"> Adds a point to the path at the supplied position.
+
+        <!-- -------------------------------------- -->
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> pNickName x y
+    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
+         shape for which a point should get added at <em>x/y</em>
+         (making it the <em>currentPoint</em>, cf.
+         <em>pathCurrentPoint</em> command above).
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPathQuadTo"> &quot;pathQuadTo&quot;
+    <td colspan="3"> Creates a quadradic parametric curve segment.
+
+        <!-- -------------------------------------- -->
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> pNickName ctrlx ctrly x y
+    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
+         shape for which a quadradic parametric curve segment gets
+         created between the points <em>currentPoint</em>
+         (cf. <em>pathCurrentPoint</em> command above)
+         and the point with the co-ordinate <em>x/y</em> controlled by
+         the control point located at <em>ctrlx/ctrly</em>.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPathReset"> &quot;pathReset&quot;
+    <td colspan="3"> The named <em>Path2D</em> shape will be reset to
+        become empty.
+
+        <!-- -------------------------------------- -->
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> pNickName
+    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
+         shape, which gets reset to become empty.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPathTransform"> &quot;pathTransform&quot;
+    <td colspan="3"> The named <em>Path2D</em> shape gets transformed.
+
+        <!-- -------------------------------------- -->
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> pNickName tNickName
+    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
+         shape, that gets transformed as defined by <a href="#cmdTransform"><em>tNickName</em>
+         (an <em>AffineTransform</em>)</a> retrieved from the registry, and
+         if does not exist from a Rexx variable by that name.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPathWindingRule"> &quot;pathWindingRule&quot;
+    <td colspan="3"> Queries or sets the <em>winding rule</em> of the named
+                     <em>Path2D</em> shape.
+
+        <!-- -------------------------------------- -->
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> pNickName [newValue]
+    <td> Returns or sets the <em>winding rule</em> of the <em>Path2D</em> shape
+         denoted by <em>pNickName</em>. If <em>newValue</em> is supplied, it
+         needs to be <em>WIND_EVEN_ODD</em> or <em>0</em>, alternatively
+         <em>WIND_NON_ZERO</em> or <em>1</em>.
+
+
+    </table>
+
+
+<p>
 <center>
+
    <hr width="75%">
     <small>
-       JDOC synopsis of commands, version: 100.20221116
+       JDOC synopsis of commands, version: 100.20230122
        <br>Acknowledgement: the author wishes to thank DI Walter Pachl
        <br>for his help in testing and proof reading
     </small>
 </center>
+<nav>
+<a href="#purposeOfJDOR">Purpose</a> |
+<a href="#briefOverview">Brief Overview</a> |
+<a href="#synopsisOfJDOR">Synopsis JDOR</a> |
+<a href="#jdorShapes">JDOR Shapes</a> (<a href="#h2ShapeCommands">Shapes</a>, <a href="#h2PathCommands">Path2D</a>)
+</nav>
 </p>
+
 
 
 </body>

@@ -5,6 +5,8 @@
             "rexxj 1-180_JDOR_sandGlass_replay_log.rxj" (Windows)
             "rexxj.sh 1-180_JDOR_sandGlass_replay_log.rxj" (Unix)
 
+            ? ... optional argument, if supplied displays processed JDOR commands
+
    Purpose:  Demonstrates the use of input redirection from a file
              named "1-180_JDOR_sandGlass_commands.log" (a text file)
              which contains the JDOR commands to be executed (replayed).
@@ -17,6 +19,7 @@
    Author:  Rony G. Flatscher, WU Vienna
 
    Changes: 2022-11-27 - change current directory to source directory to allow access to png files
+            2023-05-30 - creates and defines JDOR handler explicitly (not using "jdor.cls")
 
    last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
                 (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
@@ -24,7 +27,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2022 Rony G. Flatscher
+       Copyright (C) 2022-2023 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -39,13 +42,18 @@
        limitations under the License.
     -----------------------------------------------------------------------------
 */
+   -- make sure we change current directory to program's directory
 parse source . . s      -- get full path to this program
 call directory filespec('loc',s) -- change current dir to this program's source dir
 
-call addJdorHandler     -- load and add the Java Rexx command handler, default name: JDOR
-
+   -- create JDOR handler
+jdh=.bsf~new("org.oorexx.handlers.jdor.JavaDrawingHandler")
+   -- define "JDOR" address environment serviced by our JDOR handler
+call BsfCommandHandler "add", "JDOR", jdh -- add command handler
+   -- define stream (file) to read JDOR commands from
 s=.stream~new("1-180_JDOR_sandGlass_commands.log")~~open("read")
 address jdor with input using (s)   -- redirect input to file
-"-- a comment"                -- we send a comment comment to activate the handler
+"-- a JDOR comment"     -- activate JDOR processing
 
-::requires "jdor.cls"   -- makes routine addJdorHandler([environmentName]) available
+::requires "BSF.CLS"    -- get ooRexx-Java bridge, contains JDOR Rexx command handler
+

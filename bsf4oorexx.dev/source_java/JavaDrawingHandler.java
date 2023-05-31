@@ -2,6 +2,13 @@
 
 // TODO: B4R -> resolving constructors, if class is not public
 
+// TODO: 20230529, rgf
+//      - add Area-support (it is a Shape): add(Area), exclusiveOr(Area), intersect(Area),
+//        subtract(Area), transform(AffineTransform) ?Area createTransformedArea(AffineTransform)
+//        constructor Area(Shape): areaNew nickname nicknameShape
+//      - Path2D: constructor Path2D.Double(Shape): pathNew nickname nicknameShape
+//      - add winResizable [.true|.false]
+
 /* Java classes that constitute the JDOR ("JavaDrawing ooRexx") command handler.
 
    This enables any programmer to easily create and manipulate bitmaps on any
@@ -10,13 +17,13 @@
 
    author:  Rony G. Flatscher
    date:    2022-09-05/2022-10-05
-   version: 100.20221204
+   version: 100.20230118
    license: Apache license 2.0
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2022 Rony G. Flatscher
+       Copyright (C) 2022-2023 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -119,6 +126,16 @@
                     - pathAppend: accepts a Shape or a PathIterator object via Rexx variable
                     - add ability to have named TRANSFORM objects: allows creating affineTransforms
                       via commands to be used in Shape.getPathIterator(affineTransform)
+        2023-01-04: - small edits and corrections to error messages
+                    - shape abbreviations, at least two letters, added "polygon" as abbreviation
+        2023-01-07: - simple text on new commands (shapes and path related)
+        2023-01-08: - add "assignTo RexxVarName" command: allows self contained macros to refer to earlier return values
+        2023-01-16: - drawString: if not at least a single blank, report error (ok, if "drawString  ")
+                    - bUseNames4canonical: if true then also use .true/.false if checkBooleanValue() used
+        2023-01-18: - rename command "new" to "newImage" to better self document, add "new" as an alias
+                      to allow existing programs to continue to work
+        2023-05-30: - GET_STATE: add Rexx variable name to canonical command, if supplied
+        2023-05-31: - fixed canonical name for STROKE (cap, join values)
 */
 
 /* add support for Shape (done 2022-12-03)
@@ -133,14 +150,17 @@
          C[ubicCurve2D]     Double(double x1, double y1, double ctrlx1, double ctrly1, double ctrlx2, double ctrly2, double x2, double y2)
          E[llipse2D]        Double(double x, double y, double w, double h)
          L[ine2D]           Double(double x1, double y1, double x2, double y2)
+         Path2D             ...
          Pol[ygon2D]        Polygon(int[] xpoints, int[] ypoints, int npoints)
          Q[uadCurve2D]      Double(double x1, double y1, double ctrlx, double ctrly, double x2, double y2)
          Re[ctangle2D]      Double(double x, double y, double w, double h)
          Ro[undRectangle2D  Double(double x, double y, double w, double h, double arcw, double arch)
 
+         TRANSFORM          [translateX translateY scaleX scaleY shearX shearY | reset | name [[translateX translateY scaleX scaleY shearX shearY] ]
+
     command environment intentionally does not support directly (no real use seen):
 
-         Area, Path2D, Point2D
+         Area, Point2D
 */
 
 /*  Sample program in ooRexx (temporarily):
@@ -350,7 +370,7 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     /* static definitions           */
 
     // default image sizes
-    static final public String version = "100.20221208";
+    static final public String version = "100.20230531";
     static final private int prefWidth  = 500;
     static final private int prefHeight = 500;
     static       private int prefImageType = BufferedImage.TYPE_INT_ARGB; // default with alpha (only png supported)
@@ -643,6 +663,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
     Object processCommand(Object slot, String address, String command, int nrCommand, String currCommand)
     {
         String [] arrCommand = null;
+// TODO: remove (a leftover from iniital development)
         String    mainCommand = command;    // command via address environment
         if (currCommand!=null)
         {
@@ -681,7 +702,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
         }
 
             // no image as of yet, not the NEW command, hence create a default image
-        if (bufImage==null && !(cmd==EnumCommand.NEW))
+        if (bufImage==null && !(cmd==EnumCommand.NEW_IMAGE))
         {
             bufImage = new BufferedImage(prefWidth, prefHeight, prefImageType);
             bufGC    = (Graphics2D) bufImage.getGraphics();
@@ -871,7 +892,14 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                         }
                                         if (isOR)
                                         {
-                                            canonical=canonical+" "+newValue;
+                                            if (bUseNames4canonical)
+                                            {
+                                                canonical=canonical+" "+ (retBoolValue ? ".true" : ".false");
+                                            }
+                                            else    // reuse argument verbatimely
+                                            {
+                                                canonical=canonical+" "+newValue;
+                                            }
                                         }
                                         jd.setAlwaysOnTop(retBoolValue);    // set value
                                     }
@@ -976,7 +1004,15 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         // no exception, so args o.k.
                         if (isOR)
                         {
-                            writeOutput(slot, canonical+" "+ (newFrameVisible ? "1" : "0") );
+                            if (bUseNames4canonical)
+                            {
+                                canonical=canonical+" "+(newFrameVisible ? ".true" : ".false");
+                            }
+                            else    // reuse argument verbatimely
+                            {
+                                canonical=canonical+" "+newValue;
+                            }
+                            writeOutput(slot, canonical);
                         }
 
                         if (jd.currFrameVisible!=newFrameVisible)
@@ -1033,7 +1069,16 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         // no exception, so args o.k.
                         if (isOR && arrCommand.length==2)
                         {
-                            writeOutput(slot,canonical+" "+(newBooleanValue ? "1" : "0"));
+                            if (bUseNames4canonical)
+                            {
+                                canonical=canonical+" "+(newBooleanValue ? ".true" : ".false");
+                            }
+                            else    // reuse argument verbatimely
+                            {
+                                canonical=canonical+" "+newValue;
+                            }
+
+                            writeOutput(slot,canonical);
                         }
 
                         if (jd==null)
@@ -1082,10 +1127,17 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         }
                         // no exception, so args o.k.
                         currWinUpdate = newBooleanValue;
-                        String res = (currWinUpdate ? "1" : "0");
                         if (isOR)
                         {
-                            writeOutput(slot,canonical+" "+res);
+                            if (bUseNames4canonical)
+                            {
+                                canonical=canonical+" "+(newBooleanValue ? ".true" : ".false");
+                            }
+                            else    // reuse argument verbatimely
+                            {
+                                canonical=canonical+" "+newValue;
+                            }
+                            writeOutput(slot,canonical);
                         }
                         // return res;
                         break;
@@ -1173,6 +1225,18 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         if (checkBooleanValue(newValue))   // a valid BSF4ooRexx850 boolean value?
                         {
                             printScaleToPage=getBooleanValue(newValue);  // get value
+                            if (isOR)
+                            {
+                                if (bUseNames4canonical)
+                                {
+                                    canonical=canonical+" "+(printScaleToPage ? ".true" : ".false");
+                                }
+                                else    // reuse argument verbatimely
+                                {
+                                    canonical=canonical+" "+newValue;
+                                }
+                                writeOutput(slot,canonical);
+                            }
                         }
                         else
                         {
@@ -1379,7 +1443,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         return strResult;       // current/old settings
                     }
 
-                case NEW:       // "new [width height [type]]" creates a new BufferedImage
+                case NEW_IMAGE:       // "new[Image] [width height [type]]" creates a new BufferedImage
                     {
                         if (arrCommand.length!=1 && arrCommand.length!=3 && arrCommand.length!=4)
                         {
@@ -1474,6 +1538,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             jd.bufImage=bufImage;
                         }
+// TODO: resultValue -> currently not set, hence returns 0 (null): shall we return a different value, e.g. "width height type" ?
                     }
                     break;
 
@@ -1645,6 +1710,10 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
 
                         if (isOR)
                         {
+                            if (arrCommand.length==2)   // supply context Rexx variable name to set
+                            {
+                                canonical = canonical + " " + arrCommand[1];
+                            }
                             writeOutput(slot, canonical);
                         }
 
@@ -1938,7 +2007,15 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
 
                             if (isOR)
                             {
-                                canonical=canonical+" "+(cyclic ? "1" : "0");
+                                // canonical=canonical+" "+(cyclic ? "1" : "0");
+                                if (bUseNames4canonical)
+                                {
+                                    canonical=canonical+" "+(cyclic ? ".true" : ".false");
+                                }
+                                else    // reuse argument verbatimely
+                                {
+                                    canonical=canonical+" "+newValue;
+                                }
                             }
 
                             gradientPaint = new GradientPaint(x1, y1, color1, x2, y2, color2, cyclic);
@@ -2487,12 +2564,12 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 if (bUseNames4canonical)
                                 {
                                     canonical=canonical+" "+
-                                              endCapsInt2Name.get(tmpCap)+" "+
-                                              lineJoinsInt2Name.get(tmpJoin);
+                                              endCapsInt2Name.get(cap)+" "+
+                                              lineJoinsInt2Name.get(join);
                                 }
                                 else
                                 {
-                                    canonical=canonical+" "+tmpCap+" "+tmpJoin;
+                                    canonical=canonical+" "+cap+" "+join;
                                 }
                             }
                             if (argNum==5)
@@ -2813,14 +2890,32 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                     {
                         // ArrayList<int[]> al = getWordBoundaries(command);   // parse command return word boundaries
                         ArrayList<int[]> al = alWordBoundaries;
-                        if (al.size()<2)
+                        int [] pos = (int []) al.get(0);    // get boundaries of first non-blank word
+                        if (al.size()<2)    // maybe blanks ?
                         {
-                            throw new IllegalArgumentException("this command needs 1 argument (the string to be drawn)");
+                            String str = command.substring(pos[1]); // extract String: skip over first trailing blank
+/*
+System.err.println("*** -> DRAW_STRING: al.size()<2: nrCommand=["+nrCommand+"] command=["+command+"].length()=["+command.length()+"], pos[0]="+pos[0]+"/pos[1]="+pos[1]+" -> str=["+str+"]");
+// bufGC.drawString("",currX,currY);
+System.err.println("*** <- drawString([],"+currX+","+currY+") ...");
+*/
+                            if (command.length()<= (pos[1]+1))    // not even a blank supplied
+                            {
+                                throw new IllegalArgumentException("this command needs 1 argument (the string to be drawn)");
+                            }
+
                         }
                             // no exception, so args o.k.
                             // to fetch leading blanks we skip over first blank (unlike for other commands where we ignore all blanks after the command)
-                        int [] pos = (int []) al.get(0);
                         String str = command.substring(pos[1]+1); // extract String: skip over first trailing blank
+/*
+if (al.size()<2) // blanks supplied
+{
+    System.err.println("*** <- drawString(str=["+str.replace(" ",".")+"],"+currX+","+currY+") ...");
+    System.err.println("*** <- drawString(str=["+str+"],"+currX+","+currY+") ...");
+}
+*/
+
                         if (isOR)
                         {
                             writeOutput(slot,canonical+" "+str);
@@ -3045,7 +3140,16 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             {
                                 canonical = canonical+" "+arrCommand[1]+" "+arrCommand[2];
                             }
-                            writeOutput(slot, canonical+" "+raised);
+                            if (bUseNames4canonical)
+                            {
+                                canonical=canonical+" "+(raised ? ".true" : ".false");
+                            }
+                            else    // reuse argument verbatimely
+                            {
+                                canonical=canonical+" "+strRaised;
+                            }
+                            // writeOutput(slot, canonical+" "+raised);
+                            writeOutput(slot, canonical);
                         }
                     }
                     break;
@@ -3437,9 +3541,9 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                 case TRANSFORM:
                     {
                         int argNum = arrCommand.length;
-                        if ((argNum>2 && argNum<5) || argNum>7)
+                        if ((argNum>2 && argNum<7) || argNum>8)
                         {
-                            throw new IllegalArgumentException("this command needs exactly no, 1, 2, 6, or 7 arguments, received "+(arrCommand.length-1)+" instead");
+                            throw new IllegalArgumentException("this command needs exactly no, 1, 6, or 7 arguments, received "+(arrCommand.length-1)+" instead");
                         }
 
                         String strReset="RESET";
@@ -3500,8 +3604,9 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                     return at;  // return AffineTransform object
                                 }
                             }
-                            else // if (argNum==7)
+                            else if (argNum>6)
                             {
+// System.err.println("*** argNum>6: argNum=["+argNum+"] | command # "+nrCommand+": ["+command+"]");
                                 if (argNum==7)
                                 {
                                     // a dot keeps the current value
@@ -3512,18 +3617,19 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                     shearX     = arrCommand[5].equals(".") ? shearX     : Double.parseDouble(arrCommand[5]);
                                     shearY     = arrCommand[6].equals(".") ? shearY     : Double.parseDouble(arrCommand[6]);
                                 }
-                                else    // we need to store it!
+                                else // if (argNum==8)   // we need to store it!
                                 {
+                                    ucNickName=nickName.toUpperCase();
                                     if (isOR)
                                     {
                                         canonical=canonical+" "+nickName;  // show name to use
                                     }
-                                    translateX = Double.parseDouble(arrCommand[2]);
-                                    translateY = Double.parseDouble(arrCommand[3]);
-                                    scaleX     = Double.parseDouble(arrCommand[4]);
-                                    scaleY     = Double.parseDouble(arrCommand[5]);
-                                    shearX     = Double.parseDouble(arrCommand[6]);
-                                    shearY     = Double.parseDouble(arrCommand[7]);
+                                    translateX = arrCommand[2].equals(".") ? translateX : Double.parseDouble(arrCommand[2]);
+                                    translateY = arrCommand[3].equals(".") ? translateY : Double.parseDouble(arrCommand[3]);
+                                    scaleX     = arrCommand[4].equals(".") ? scaleX     : Double.parseDouble(arrCommand[4]);
+                                    scaleY     = arrCommand[5].equals(".") ? scaleY     : Double.parseDouble(arrCommand[5]);
+                                    shearX     = arrCommand[6].equals(".") ? shearX     : Double.parseDouble(arrCommand[6]);
+                                    shearY     = arrCommand[7].equals(".") ? shearY     : Double.parseDouble(arrCommand[7]);
                                 }
 
 
@@ -3541,6 +3647,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             {
                                 hmTransforms.put(ucNickName,newAT);
                                 resultValue=newAT;
+// System.err.println("*** argNum>6: ucNickName=["+ucNickName+"], newAT=["+newAT+"]");
                             }
                         }
 
@@ -3664,6 +3771,28 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         }
                     }
 
+                case ASSIGN_RC:     //   "assignRC RexxVariable": assigns current value of RC to "RexxVariable": allows self contained macros
+                    {
+                        if (arrCommand.length!=2)
+                        {
+                            throw new IllegalArgumentException("this command needs exactly 1 (Rexx variable name) argument (the name of the shape and optionally the new winding rule argument), received "+(arrCommand.length-1)+" instead");
+                        }
+
+                        String rxVarName=arrCommand[1];
+                        if (startRexxVariableChar.indexOf(rxVarName.charAt(0))<0) // a Rexx variable?
+                        {
+                            throw new IllegalArgumentException("argument ["+rxVarName+"] is not a valid Rexx symbol for a Rexx variable name");
+                        }
+
+                        resultValue = getContextVariable(slot, "RC");   // get the current value of variable RC
+                        setContextVariable(slot, rxVarName, resultValue);
+                        if (isOR)
+                        {
+                            writeOutput(slot, canonical+" "+rxVarName);
+                        }
+                        break;
+                    }
+
                     // "shape name [type args...]"
                 case SHAPE:
                     {
@@ -3701,6 +3830,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         // create and store a Shape
                         String strShapeType=arrCommand[2];
                         EnumShape eShape=EnumShape.getShape(strShapeType);
+// System.err.println("# 3713 (SHAPE): cmd # "+nrCommand+":strShapeType=["+strShapeType+"], eShape=["+eShape+"], argNum=["+argNum+"]");
                         if (eShape==null)
                         {
                             String errMsg="Shape type \""+strShapeType+"\" is not supported";
@@ -3713,7 +3843,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                                 //  Double(double x, double y, double w, double h, double start, double extent, int type)
                             case SHAPE_ARC2D:   //  Double(Rectangle2D ellipseBounds             , double start, double extent, int type)
                                 {
-                                    if (argNum!=7 || argNum!=10)
+                                    if (argNum!=7 && argNum!=10)
                                     {
                                         String errMsg="Shape \""+canonicalShapeType+"\" needs exactly 4 (rectangle2d start extent type) or 7 arguments (x y w h start extent type), however there are "+(argNum-3)+" supplied";
                                         if (isOR)
@@ -3825,7 +3955,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 {
                                     if (argNum!=11)
                                     {
-                                        String errMsg="Shape \""+canonicalShapeType+"\" needs exactly 4 arguments, however there are "+(argNum-3)+" supplied";
+                                        String errMsg="Shape \""+canonicalShapeType+"\" needs exactly 8 arguments, however there are "+(argNum-3)+" supplied";
                                         if (isOR)
                                         {
                                             writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
@@ -3931,7 +4061,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 {
                                     if (argNum!=9)
                                     {
-                                        String errMsg="Shape \""+canonicalShapeType+"\" needs exactly 4 arguments, however there are "+(argNum-3)+" supplied";
+                                        String errMsg="Shape \""+canonicalShapeType+"\" needs exactly 6 arguments, however there are "+(argNum-3)+" supplied";
                                         if (isOR)
                                         {
                                             writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
@@ -3971,24 +4101,50 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                         }
                                         return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-23", errMsg );
                                     }
-                                    int arg1=1;      // default to WIND_NON_ZERO=1
+
+                                    int windingType=1;  // default to WIND_NON_ZERO (1)
 
                                     if (argNum==4)
                                     {
-                                        arg1=string2int(arrCommand[3]);
+                                        String strType=arrCommand[3];
+                                        // check validy of type argument!
+                                        String ucStringType = strType.toUpperCase();
+                                        if (startRexxVariableChar.indexOf(ucStringType.charAt(0))>=0)    // a symbolic name?
+                                        {
+                                            if (!windingRules.containsKey(ucStringType))
+                                            {
+                                                throw new IllegalArgumentException("unknown value for \"windingType\" argument supplied: ["+strType+"]");
+                                            }
+                                            windingType=windingRules.get(ucStringType);
+                                        }
+                                        else // verbatim int type
+                                        {
+                                            windingType=string2int(strType);
+                                            if (!windingRules.containsValue(windingType))
+                                            {
+                                                throw new IllegalArgumentException("unknown value for \"windingType\" argument supplied: ["+strType+"]");
+                                            }
+                                        }
                                     }
 
                                     if (isOR)
                                     {
-                                        canonical=canonical+" "+arg1;
+                                        if (bUseNames4canonical)
+                                        {
+                                            canonical=canonical+" "+windingRulesInt2Name.get(windingType);
+                                        }
+                                        else
+                                        {
+                                            canonical=canonical+" "+windingType;
+                                        }
                                     }
-                                    sh = new Path2D.Double(arg1);
+                                    sh = new Path2D.Double(windingType);
                                     break;
                                 }
 
                             default:
                                 {
-                                    String errMsg="shape type \""+canonicalShapeType+"\" not implemented";
+                                    String errMsg="shape type \""+canonicalShapeType+"\" not known/implemented";
                                     return createCondition (slot, nrCommand, command, ConditionType.FAILURE, "-24", errMsg );
                                 }
                         }
@@ -4073,9 +4229,9 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         return strResult;
                     }
 
-                case PATH_APPEND:       //   "pathAppend shapeName {Shape|PathIterator-via-Rexx-variable} [connect=.true]"
+                case PATH_APPEND:       //   "pathAppend pathName shapeName {Shape|PathIterator-via-Rexx-variable} [connect=.true]"
                     {
-                        if (arrCommand.length!=2 && arrCommand.length>3)
+                        if (arrCommand.length<3 || arrCommand.length>4)
                         {
                             throw new IllegalArgumentException("this command needs exactly 2 or 3 arguments (the name of the shape and optionally the boolean connect argument), received "+(arrCommand.length-1)+" instead");
                         }
@@ -4101,9 +4257,20 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         }
 
                         boolean bConnect=true;      // default: connect new shape (lineTo instead of moveTo)
-                        if (arrCommand.length==4)
+                        String  newValue="1";
+                        if (arrCommand.length==4)   // connect argument supplied!
                         {
-                            bConnect = getBooleanValue(arrCommand[3]);
+                            newValue=arrCommand[3];
+                            if (checkBooleanValue(newValue))   // a valid BSF4ooRexx850 boolean value?
+                            {
+                                bConnect=getBooleanValue(newValue);  // get value
+                            }
+                            else
+                            {
+                                throw new IllegalArgumentException("the supplied \"connect\" argument \""+newValue+"\" is not a valid BSF4ooRexx850 boolean value, valid values (in any case) are: "
+                                                      + "\"0\", \"1\", \"false\", \"true\", \".false\", \".true\"");
+                            }
+                            // bConnect = getBooleanValue(arrCommand[3]);
                         }
 
                         if (sh instanceof Shape)
@@ -4117,14 +4284,24 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
 
                         if (isOR)
                         {
-                            writeOutput(slot, canonical+" "+nickName+" "+nickName2+" "+(bConnect ? "1" : "0"));
+                            // writeOutput(slot, canonical+" "+nickName+" "+nickName2+" "+(bConnect ? "1" : "0"));
+                            canonical = canonical+" "+nickName+" "+nickName2;
+                            if (bUseNames4canonical)
+                            {
+                                canonical=canonical+" "+(bConnect ? ".true" : ".false");
+                            }
+                            else    // reuse argument verbatimely
+                            {
+                                canonical=canonical+" "+newValue;
+                            }
+                            writeOutput(slot, canonical);
                         }
                         return resultValue;
                     }
 
                 case PATH_CLOSE:        //   "pathClose shapeName" ... closePath()
                 case PATH_RESET:        //   "pathReset shapeName"
-                case PATH_CURRENT_POINT://   "pathCurrentPoint shapeName" ... getCurrentPoint()
+                case PATH_CURRENT_POINT://   "pathCurrentPoint shapeName" | ... getCurrentPoint()
                 case PATH_CLONE:        //   "pathClone shapeName [newShapeName]"
                     {
                         if (cmd==EnumCommand.PATH_CLONE)
@@ -4164,7 +4341,16 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         else if (cmd==EnumCommand.PATH_CURRENT_POINT)
                         {
                             Point2D r2d=path.getCurrentPoint();
-                            resultValue=r2d.getX()+" "+r2d.getY();
+                            if (r2d == null)    // no current point?
+                            {
+                                // resultValue="0 0";       // RC will be set to "0 0"
+                                // resultValue=null;        // RC will be set to "0" (false)
+                                resultValue=getNil(slot);   // get and assign .nil
+                            }
+                            else
+                            {
+                                resultValue=r2d.getX()+" "+r2d.getY();
+                            }
                         }
                         else    // PATH_CLONE: may have a second argument
                         {
@@ -4207,7 +4393,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             argNum=7;
                         }
 
-                        if (arrCommand.length!=argNum)
+                        if (arrCommand.length!=(argNum+1))
                         {
                             throw new IllegalArgumentException("this command needs exactly "+argNum+" arguments, received "+(arrCommand.length-1)+" instead");
                         }
@@ -4397,17 +4583,15 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                             canonical=canonical+" "+nickName;
                         }
 
-                        AffineTransform at=null;
-                        String nickNameAT=null;
 
                         if (arrCommand.length==2)
                         {
-                            resultValue=sh.getPathIterator(at);
+                            resultValue=sh.getPathIterator(null);
                         }
                         else
                         {
-                            nickNameAT=arrCommand[2];
-                            at=hmTransforms.get(nickNameAT.toUpperCase());
+                            String  nickNameAT=arrCommand[2];
+                            AffineTransform at=hmTransforms.get(nickNameAT.toUpperCase());
                             if (at==null)
                             {
                                 if (startRexxVariableChar.indexOf(nickNameAT.charAt(0))>=0) // a Rexx variable?
@@ -4429,16 +4613,19 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 canonical=canonical+" "+nickNameAT;
                             }
 
-                            double flatness=0d;
-                            if (argNum==4)
+                            if (argNum==4)  // flatness supplied
                             {
-                                flatness = Double.parseDouble(arrCommand[3]);
+                                double flatness = Double.parseDouble(arrCommand[3]);
+                                resultValue=sh.getPathIterator(at,flatness);
+                                if (isOR)
+                                {
+                                    canonical=canonical+" "+flatness;
                                 }
-                            if (isOR)
-                            {
-                                canonical=canonical+" "+flatness;
                             }
-                            resultValue=sh.getPathIterator(at,flatness);
+                            else
+                            {
+                                resultValue=sh.getPathIterator(at);
+                            }
                         }
                         if (isOR)
                         {
@@ -4447,6 +4634,8 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
 
                         return resultValue;
                     }
+
+
 
 /*
                 case CLIPBOARD_GET:     //   "clipboardGet [imgName]": if imgName given, saves it and returns image width and height, else draws img and returns it as an img object
@@ -4978,7 +5167,7 @@ enum EnumCommand {
     IMAGE_TYPE                  ( "imageType"                ) ,    //   "imageType [nickName]": get current image's type, if nickName supplied return its image type
     LOAD_IMAGE                  ( "loadImage"                ) ,    //   "loadImage imageNickName filename", loads an image -> returns its dimension
     MOVE_TO                     ( "moveTo"                   ) ,    //   "pos [x y]" query or set position, synonyms: "goto"
-    NEW                         ( "new"                      ) ,    //   "new [width height [type]]" creates a new BufferedImage
+    NEW_IMAGE                   ( "newImage"                 ) ,    //   "new[Image] [width height [type]]" creates a new BufferedImage
     PAINT                       ( "paint"                    ) ,    //   "paint [gradiantPaintNickName|colorNickName]" query or set paint (for background) // 2022-09-22, paint, as of 20220922 cf. <http://underpop.online.fr/j/java/help/colors-graphics-programming.html.gz>
     POP_GC                      ( "popGC"                    ) ,    //   "popGC"  pop and set previous gc
     POP_IMAGE                   ( "popImage"                 ) ,    //   "popImage"  pop and display previous image
@@ -5045,6 +5234,9 @@ enum EnumCommand {
     CLIPBOARD_GET               ( "clipboardGet"             ) ,    //   "clipboardGet [imgName]"
     CLIPBOARD_SET               ( "clipboardSet"             ) ,    //   "clipboardSet [imgName]"
 
+    // 2023-01-08
+    ASSIGN_RC                   ( "assignRC"                 ) ,    //   "assignRC RexxVariable"
+
 
     NO_OP                       ( "noOp"                     )      // last element, doing nothing
                                ;
@@ -5064,6 +5256,7 @@ enum EnumCommand {
          }
 
          // add synonyms         new name      enum type
+         upperCase2Command.put( "NEW"        , NEW_IMAGE ) ;    // 2023-01-18
          upperCase2Command.put( "CLEAR"      , RESET     ) ;
          upperCase2Command.put( "GOTO"       , MOVE_TO   ) ;
          upperCase2Command.put( "LOCATION"   , MOVE_TO   ) ;    // 2022-10-23: new alias
@@ -5149,14 +5342,15 @@ enum EnumShape {
     SHAPE_CUBIC_CURVE2D         ( "CubicCurve2D"            ),
     SHAPE_ELLIPSE2D             ( "Ellipse2D"               ),
     SHAPE_LINE2D                ( "Line2D"                  ),
+    SHAPE_PATH2D                ( "Path2D"                  ),
     SHAPE_POLYGON               ( "Polygon"                 ),
     SHAPE_QUAD_CURVE2D          ( "QuadCurve2D"             ),
     SHAPE_RECTANGLE2D           ( "Rectangle2D"             ),
     SHAPE_ROUND_RECTANGLE2D     ( "RoundRectangle2D"        ),
 
+
     // as of 2022-12-04: intentionally not (yet?) implemented, let that known as a failure
     SHAPE_AREA                  ( "Area"                    ),
-    SHAPE_PATH2D                ( "Path2D"                  ),
     SHAPE_POINT2D               ( "Point2D"                 ),
 
     NO_OP                       ( "noOp"                    )      // last element, doing nothing
@@ -5175,20 +5369,21 @@ enum EnumShape {
              upperCase2Shape.put(it.upperCase, it);
          }
 
-         // we allow shortening the shape type to the significant letters
+         // we allow shortening the shape type to the significant letters (at least 2 letters)
          // add synonyms      new name      enum type
-         upperCase2Shape.put( "A"             , SHAPE_ARC2D             ) ;
+         upperCase2Shape.put( "AR"            , SHAPE_ARC2D             ) ;
          upperCase2Shape.put( "ARC"           , SHAPE_ARC2D             ) ;
-         upperCase2Shape.put( "C"             , SHAPE_CUBIC_CURVE2D     ) ;
+         upperCase2Shape.put( "CU"            , SHAPE_CUBIC_CURVE2D     ) ;
          upperCase2Shape.put( "CUBICCURVE"    , SHAPE_CUBIC_CURVE2D     ) ;
-         upperCase2Shape.put( "E"             , SHAPE_ELLIPSE2D         ) ;
+         upperCase2Shape.put( "EL"            , SHAPE_ELLIPSE2D         ) ;
          upperCase2Shape.put( "ELLIPSE"       , SHAPE_ELLIPSE2D         ) ;
-         upperCase2Shape.put( "L"             , SHAPE_LINE2D            ) ;
+         upperCase2Shape.put( "LI"            , SHAPE_LINE2D            ) ;
          upperCase2Shape.put( "LINE"          , SHAPE_LINE2D            ) ;
-         upperCase2Shape.put( "P"             , SHAPE_POLYGON           ) ;
          upperCase2Shape.put( "PA"            , SHAPE_PATH2D            ) ;
          upperCase2Shape.put( "PATH"          , SHAPE_PATH2D            ) ;
-         upperCase2Shape.put( "Q"             , SHAPE_QUAD_CURVE2D      ) ;
+         upperCase2Shape.put( "PO"            , SHAPE_POLYGON           ) ;
+         upperCase2Shape.put( "POLYGON"       , SHAPE_POLYGON           ) ;
+         upperCase2Shape.put( "QU"            , SHAPE_QUAD_CURVE2D      ) ;
          upperCase2Shape.put( "QUADCURVE"     , SHAPE_QUAD_CURVE2D      ) ;
          upperCase2Shape.put( "RE"            , SHAPE_RECTANGLE2D       ) ;
          upperCase2Shape.put( "RECTANGLE"     , SHAPE_RECTANGLE2D       ) ;

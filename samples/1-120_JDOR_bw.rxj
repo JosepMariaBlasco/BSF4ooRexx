@@ -1,9 +1,11 @@
 #!/usr/bin/env rexx
 /*
    Name:    "1-120_JDOR_bw.rxj"
-   Invoke:  "rexx 1-120_JDOR_bw.rxj"
-            "rexxj 1-120_JDOR_bw.rxj" (Windows)
-            "rexxj.sh 1-120_JDOR_bw.rxj" (Unix)
+   Invoke:  "rexx 1-120_JDOR_bw.rxj [?]"
+            "rexxj 1-120_JDOR_bw.rxj [?]" (Windows)
+            "rexxj.sh 1-120_JDOR_bw.rxj [?]" (Unix)
+
+            ? ... optional argument, if supplied displays processed JDOR commands
 
    Purpose:  Demonstrates how to use JDOR commands to draw a cross, a string (text) and
              superimpose a filled rectangle on it using a single (black) color.
@@ -13,6 +15,9 @@
    Author:  Rony G. Flatscher, WU Vienna
 
    Changes: 2022-10-31 - changed "goto" to "moveTo"
+            2023-05-30 - added optional argument ? to show processed JDOR commands
+                         in canonical form
+                       - changed "new" to "newImage"
 
    last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
                 (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
@@ -20,7 +25,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2022 Rony G. Flatscher
+       Copyright (C) 2022-2023 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -35,12 +40,18 @@
        limitations under the License.
     -----------------------------------------------------------------------------
 */
-
 call jdor.cls           -- makes routine addJdorHandler([environmentName]) available
 call addJdorHandler     -- load and add the Java Rexx command handler, default name: JDOR
-address jdor            -- set default environment to JDOR
 
-new 300 500             -- create new bitmap
+bShowCommands=(arg(1)="?") -- ? supplied as argument, then show JDOR commands in canonical form
+-- set default environment to JDOR
+if bShowCommands then
+   address jdor with output using (.stdout)  -- redirect output
+else
+   address jdor
+
+   -- now use JDOR commands
+newImage 300 500        -- create new bitmap
 winShow                 -- show frame
    -- draw two lines forming a big X
 drawLine 300 500        -- currX=0, currY=0
@@ -53,6 +64,5 @@ drawRect 50 50
    -- draw a test at the lower half of the bitmap
 moveTo 50 450
 drawString "Hello, world via JDOR ..."
-say "'sleep 3' ..."
+if \bShowCommands then say "'sleep 3' ..."
 sleep 3                 -- sleep for three seconds
--- say "press enter to end.";parse pull

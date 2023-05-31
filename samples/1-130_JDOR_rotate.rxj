@@ -1,9 +1,11 @@
 #!/usr/bin/env rexx
 /*
    Name:    "1-130_JDOR_rotate.rxj"
-   Invoke:  "rexx 1-130_JDOR_rotate.rxj"
-            "rexxj 1-130_JDOR_rotate.rxj" (Windows)
-            "rexxj.sh 1-130_JDOR_rotate.rxj" (Unix)
+   Invoke:  "rexx 1-130_JDOR_rotate.rxj [?]"
+            "rexxj 1-130_JDOR_rotate.rxj [?]" (Windows)
+            "rexxj.sh 1-130_JDOR_rotate.rxj [?]" (Unix)
+
+            ? ... optional argument, if supplied displays processed JDOR commands
 
    Purpose:  Demonstrates how to use JDOR commands to draw rectangles
              employing translation (moving the origin 0,0 around) and
@@ -14,6 +16,10 @@
    Author:  Rony G. Flatscher, WU Vienna
 
    Changes: 2022-10-31 - changed "goto" to "moveTo"
+            2023-05-30 - added optional argument ? to show processed JDOR commands
+                         in canonical form
+                       - changed "new" to "newImage"
+                       - creates and defines JDOR handler explicitly (not using "jdor.cls")
 
    last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
                 (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
@@ -21,7 +27,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2022 Rony G. Flatscher
+       Copyright (C) 2022-2023 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -36,10 +42,20 @@
        limitations under the License.
     -----------------------------------------------------------------------------
 */
+   -- create JDOR handler
+jdh=.bsf~new("org.oorexx.handlers.jdor.JavaDrawingHandler")
+   -- define "JDOR" address environment serviced by our JDOR handler
+call BsfCommandHandler "add", "JDOR", jdh -- add command handler
 
-call addJdorHandler     -- load and add the Java Rexx command handler, using default name: JDOR
-address jdor            -- set default environment to JDOR
-new 500 500             -- create new bitmap
+bShowCommands=(arg(1)="?") -- ? supplied as argument, then show JDOR commands in canonical form
+-- set default environment to JDOR
+if bShowCommands then
+   address jdor with output using (.stdout)  -- redirect output
+else
+   address jdor
+
+   -- now use JDOR commands
+newImage 500 500        -- create new bitmap
 winShow                 -- show frame
    -- draw two lines forming a big X
 moveTo 100  150         -- currX=100, currY=150
@@ -61,8 +77,7 @@ color blue              -- set color to blue (predefined)
 drawRect 50 75          -- draw border in blue
 color red               -- set color to red (predefined)
 drawOval 50 75          -- draw border in red
-say "'sleep 5' ..."
+if \bShowCommands then say "'sleep 5' ..."
 sleep 5                 -- sleep for five seconds
--- say "press enter to end.";parse pull
 
-::requires "jdor.cls"   -- makes routine addJdorHandler([environmentName]) available
+::requires "BSF.CLS"    -- get ooRexx-Java bridge, contains JDOR Rexx command handler

@@ -1,9 +1,11 @@
 #!/usr/bin/env rexx
 /*
    Name:    "2-130_JDOR_animate_two_frames.rxj"
-   Invoke:  "rexx 2-130_JDOR_animate_two_frames.rxj"
-            "rexxj 2-130_JDOR_animate_two_frames.rxj" (Windows)
-            "rexxj.sh 2-130_JDOR_animate_two_frames.rxj" (Unix)
+   Invoke:  "rexx 2-130_JDOR_animate_two_frames.rxj [?]"
+            "rexxj 2-130_JDOR_animate_two_frames.rxj [?]" (Windows)
+            "rexxj.sh 2-130_JDOR_animate_two_frames.rxj [?]" (Unix)
+
+            ? ... optional argument, if supplied displays processed JDOR commands
 
    Purpose: Demonstrates the use of the JDOR commands to create two JDOR command handlers,
             moving their windows (frames) to the top left and top right hand side (that
@@ -19,6 +21,10 @@
    Author:  Rony G. Flatscher, WU Vienna
 
    Changes: 2022-11-27 - change current directory to source directory to allow access to png files
+   Changes: 2023-05-31 - added optional argument ? to show processed JDOR commands
+                         in canonical form for commands directed to "jdor" handler (not "sdor")
+                       - creates and defines JDOR handler explicitly (not using "jdor.cls")
+                       - changed "new" to "newImage"
 
    last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
                 (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
@@ -26,7 +32,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2022 Rony G. Flatscher
+       Copyright (C) 2022-2023 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -41,79 +47,84 @@
        limitations under the License.
     -----------------------------------------------------------------------------
 */
+   -- make sure we change current directory to program's directory
 parse source . . s      -- get full path to this program
 call directory filespec('loc',s) -- change current dir to this program's source dir
-
+   -- create two JDOR handlers, one for each window/image
 jdor=.bsf~new("org.oorexx.handlers.jdor.JavaDrawingHandler")
 call BsfCommandHandler "add", "JDOR", jdor
 
 sdor=.bsf~new("org.oorexx.handlers.jdor.JavaDrawingHandler")
 call BsfCommandHandler "add", "SDOR", sdor
 
-address jdor            -- set default environment to JDOR
--- address jdor with error using (.error) -- use for debugging the JDOR commands
+bShowCommands=(arg(1)="?") -- ? supplied as argument, then show "jdor" JDOR commands in canonical form
+-- set default environment to JDOR
+if bShowCommands then
+do
+      -- redirect output, show extended error messages if any
+   address jdor with output using (.stdout) error using (.error)
+   say "--> JDOR commands directed at the 'jdor' handler will get displayed ..."
+end
+else
+   address jdor
 
 w=400                   -- width
 h=400                   -- height
 center=w/2 h/2          -- center of image (used in rotate command below)
-new w h                 -- create new bitmap
+newImage w h            -- create new bitmap
 
 address sdor new w h    -- create new bitmap with the same dimension
 address sdor winFrame .false  -- remove frame
 
 winShow                 -- show frame
 winAlwaysOnTop .true    -- make sure frame is always on top
-winMoveTo 0 0           -- move to left upper corner of screen
+winMoveTo 0 0           -- move to left upper hand corner of screen
 
 address sdor winShow    -- show window (without frame)
--- say "press enter to continue"; parse pull
 
 winScreenSize           -- query current screen's size
 parse var rc scrW scrH
-address sdor winMoveTo (scrW-w) 0   -- move frameless window to upper right corner
+address sdor winMoveTo (scrW-w) 0   -- move frameless window to upper right hand corner
 address sdor winAlwaysOnTop .true   -- make sure window remains on top of all other windows
 
-say "the two windows are set to be always on top of all other windows"
+say "--> the two windows are set to be always on top of all other windows"
 
-loadImage b4r_logo bsf4oorexx_256.png  -- load the bsf4oorexx bitmap
+loadImage b4r_logo "bsf4oorexx_256.png"   -- load the bsf4oorexx bitmap
 moveTo 110 110
 drawImage b4r_logo 50 50   -- upper left hand side
 
 moveTo (w-110) (h-110)  -- lower right hand side
-loadImage ooo_logo oorexx4ooo_256.png  -- load OOo bitmap
+loadImage ooo_logo "oorexx4ooo_256.png"   -- load OOo bitmap
 drawImage ooo_logo 50 50
 
 orxX = (w-75)/2         -- calculate to place ooRexx logo to center
 orxY = (h-75)/2
 moveTo orxX orxY        -- center
-loadImage orx_logo oorexx_256.png
+loadImage orx_logo "oorexx_256.png"
 drawImage orx_logo 75 75
 
-say "fetching the current image from the left window ..."
+say "--> fetching the current image from the left window ..."
 image                   -- query current image, command return value in variable "RC"
-say "image returned in variable ""RC"":" pp(rc)
+say "--> image returned in variable ""RC"":" pp(rc)
 jImage=rc               -- save image in Rexx variable named "jImage"
-say "image~toString:" pp(jImage~toString)
+say "--> image~toString:" pp(jImage~toString)
 say
    -- note the name of a Rexx variable needs to be quoted, otherwise its value gets used
 address sdor drawImage "jImage" -- use image from Rexx variable named "jImage"
-sleep 0.75              -- sleep (wait) a bit
+sleep 1.5               -- sleep (wait) a bit
 
 sleepTime=1/30          -- appr. 30 updates per second
-say "animate rotating image on the right (frameless) window ..."
+say "--> animate rotating image on the right (frameless) window ..."
 round=0
 do i=0 to 360+90 by 5   -- rotate 1 1/4 rounds ...
   round+=1
   address sdor rotate i center   -- rotate transform
   address sdor drawImage "jImage"  -- draw image referred to by the Rexx variable "jImage"
-  sleep sleepTime       -- sleeping causes animation effect
+  address sdor sleep sleepTime      -- sleeping causes animation effect
 end
-say "finished after" pp(round) "rotations"
+say "--> finished after" pp(round) "rotations"
 
-say "'sleep 5' ..."
+if \bShowCommands then say "'sleep 5' ..."
 sleep 5
 
--- say "press enter to end ..."; parse pull
-
-::requires "jdor.cls"   -- makes routine addJdorHandler([environmentName]) available
-
+::requires "BSF.CLS"    -- get ooRexx-Java bridge, contains JDOR Rexx command handler
