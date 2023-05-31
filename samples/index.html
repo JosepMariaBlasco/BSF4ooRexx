@@ -197,6 +197,11 @@ example is to be expected:
         named <em>&quot;1-180_JDOR_sandGlass_commands.log&quot;</em> (a text file) in
         order to create a log (recording) of all JDOR commands in canonized form.
 
+    <dt><a href="1-180_JDOR_sandGlass_commands.log">1-180_JDOR_sandGlass_commands.log</a>
+    <dd>The JDOR commands that created by <a href="1-180_JDOR_sandGlass_log.rxj">1-180_JDOR_sandGlass_log.rxj</a>
+        and used in <a href="1-180_JDOR_sandGlass_replay_log.rxj">1-180_JDOR_sandGlass_replay_log.rxj</a> to
+        (re-)create the sand glass.
+
     <dt><a href="1-180_JDOR_sandGlass_replay_log.rxj">1-180_JDOR_sandGlass_replay_log.rxj</a>
     <dd>Demonstrates the use of <em>input redirection</em> from a file
         named <em>&quot;1-180_JDOR_sandGlass_commands.log&quot;</em> (a text file
@@ -553,6 +558,13 @@ example is to be expected:
         the environment variable
         <code>CLASSPATH</code> point to the <code>swt.jar</code> library!</em>
 
+    <dt><a href="runJDORcommands.rxj">runJDORcommands.rxj</a> <dd>A utility to turn JDOR
+        into a tool: this filter reads JDOR commands from <em>stdin</em> and executes them. If supplying
+        the argument <em>?</em> (question mark) on the command line the executed JDOR commands get
+        written to <em>stdout</em> in a canonized form.
+
+        <p>The source of JDOR commands to execute may be a text file or any
+           program that creates them and writes them to <em>stdout</em>.
 </dl>
 
 <p>
