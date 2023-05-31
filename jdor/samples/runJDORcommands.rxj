@@ -1,0 +1,92 @@
+#!/usr/bin/env rexx
+/*
+   Name:    "runJDORcommands.rxj"
+   Invoke:  "rexx runJDORcommands.rxj_     < file.txt [?]" (Linux, Windows)
+            "rexxj.sh runJDORcommands.rxj  < file.txt [?]" (macOS)
+                or via a pipe e.g. process JDOR commands from "someProgram" via stdin
+            "someProgram | rexx runJDORcommands.rxj     [?]"  (Linux, Windows)
+            "someProgram | rexxj.sh runJDORcommands.rxj [?]" (Linux, macOS)
+
+            ? ... optional argument, if supplied displays processed JDOR commands
+
+   Purpose:  Read JDOR commands from stdin and process them
+
+   Needs:    ooRexx 5.0 or higher:
+             BSF4ooRexx850:
+             Java/OpenJDK, e.g.:
+
+   Date:    2023-05-30
+
+   Author:  Rony G. Flatscher, WU Vienna
+
+   Changes: 2023-05-31 - check for existence of stdin data, available when
+                         redirected file or pipe that feeds stdin
+
+
+   last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
+                (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2023 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+bShowJDORcommands=.true -- show JDOR commands on stdout
+   -- create JDOR handler
+jdh=.bsf~new("org.oorexx.handlers.jdor.JavaDrawingHandler")
+   -- define "JDOR" address environment serviced by our JDOR handler
+call BsfCommandHandler "add", "JDOR", jdh -- add command handler
+if .stdin~state="READY" then
+do
+    if .stdin~chars=0 then
+    do
+        .error~say("this program is a filter program: it reads from stdin, please pipe or redirect stdin accordingly")
+        exit -1         -- indicate error
+    end
+
+   bShowCommands=(arg(1)="?") -- ? supplied as argument, then show "jdor" JDOR commands in canonical form
+   -- set default environment to JDOR
+   if bShowCommands then
+      -- redirect output (show canoniczed JDOR commands):
+      address jdor with input using (.stdin) output using (.output)
+   else
+      address jdor with input using (.stdin)
+
+   "-- comment to JDOR"       -- send a comment to JDOR to kick it to read from .stdin
+   say "--> done."
+   exit 0
+end
+exit -2     -- indicate NOTREADY
+
+::requires "BSF.CLS"    -- get ooRexx-Java bridge, contains JDOR Rexx command handler
+
+-- alternative filter implementations:
+/*    -- simplest
+      address jdor with input using (.stdin)
+*/
+
+/*
+signal on notready      -- if pipe/redirection ends
+do forever
+   parse linein command -- read next line from stdin
+      -- process the JDOR command
+   if bShowJDORcommands then  -- display canonical JDOR command?
+      address JDOR command with output using (.stdout)
+   else  -- do not display JDOR command
+      address JDOR command
+end
+notready:               -- label (target for signal)
+*/

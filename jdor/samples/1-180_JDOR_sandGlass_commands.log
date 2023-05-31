@@ -1,0 +1,39 @@
+stroke st15 15
+stroke st05 5
+stroke st01 1
+color saddlebrown50 139 69 19 127
+color green20 0 255 0 50
+newImage 500 500
+winShow
+color BLACK
+stroke ST01
+moveTo 50 50
+drawLine 450 50
+moveTo 450 50
+drawLine 50 450
+moveTo 50 450
+drawLine 450 450
+moveTo 450 450
+drawLine 50 50
+color SADDLEBROWN50
+stroke ST05
+moveTo 100 100
+drawLine 400 100
+moveTo 400 100
+drawLine 100 400
+moveTo 100 400
+drawLine 400 400
+moveTo 400 400
+drawLine 100 100
+color GREEN20
+stroke ST15
+moveTo 150 150
+drawLine 350 150
+moveTo 350 150
+drawLine 150 350
+moveTo 150 350
+drawLine 350 350
+moveTo 350 350
+drawLine 150 150
+saveImage 1-180_JDOR_sandGlass.png
+sleep 3.0

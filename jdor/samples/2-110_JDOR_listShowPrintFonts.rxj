@@ -1,9 +1,11 @@
 #!/usr/bin/env rexx
 /*
    Name:    "2-110_listShowPrintFonts.rxj"
-   Invoke:  "rexx 2-110_listShowPrintFonts.rxj"
-            "rexxj 2-110_listShowPrintFonts.rxj" (Windows)
-            "rexxj.sh 2-110_listShowPrintFonts.rxj" (Unix)
+   Invoke:  "rexx 2-110_listShowPrintFonts.rxj [?]"
+            "rexxj 2-110_listShowPrintFonts.rxj [?]" (Windows)
+            "rexxj.sh 2-110_listShowPrintFonts.rxj [?]" (Unix)
+
+            ? ... optional argument, if supplied displays processed JDOR commands
 
    Purpose:  Demonstrates the use of the JDOR commands to create visual samples
              of all font families installed which can optionally printed.
@@ -24,6 +26,9 @@
             2022-11-08 - exploit new command "stringBounds" to left, center and right align strings
                        - demonstrate "clip" and "clipRemove" to have a margin on the right hand side
             2022-11-09 - corrected page numbers
+            2023-05-31 - added optional argument ? to show processed JDOR commands
+                         in canonical form
+                       - creates and defines JDOR handler explicitly (not using "jdor.cls")
 
    last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
                 (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
@@ -31,7 +36,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2022 Rony G. Flatscher
+       Copyright (C) 2022-2023 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -71,7 +76,7 @@ height = trunc(12.5*72+10)    -- plus additional 10 px margin
 lineHeight=15                 -- line height (includes padding)
 lines  =  trunc(height/lineHeight) - 2  -- calc number of lines per page (allow for footer)
 totalPages=format(.49+nrItems/lines,,0) -- total of pages needed for all fonts
-say "totalPages:" totalPages
+say "--> totalPages:" totalPages
 margin = 10                   -- margin from left and right
 xCol1 = margin                -- first column at 10px (margin)
 xCol2 = width/2 - 50          -- second column 250px to the right of first column
@@ -79,10 +84,19 @@ clipWidth = width-xCol2-margin
 fileName="2-110_JDOR_FontSample_"   -- base name for
 fileType="gif"                -- save as gif bitmap
 
-   -- we use the new JDOR Rexx command handler (cf. 2022 International Rexx Symposium)
-call addJdorHandler     -- load and add the Java Rexx command handler, using default name: JDOR
-address jdor            -- set default environment to JDOR
+   -- create JDOR handler
+jdh=.bsf~new("org.oorexx.handlers.jdor.JavaDrawingHandler")
+   -- define "JDOR" address environment serviced by our JDOR handler
+call BsfCommandHandler "add", "JDOR", jdh -- add command handler
 
+bShowCommands=(arg(1)="?") -- ? supplied as argument, then show JDOR commands in canonical form
+-- set default environment to JDOR
+if bShowCommands then
+   address jdor with output using (.stdout)  -- redirect output
+else
+   address jdor
+
+   -- now we can use JDOR commands
 -- winUpdate .false        -- do not update Frame (JDOR command)
 do i=1 to nrItems       -- iterate over all font names in the array
    if i//lines=1 then   -- arrived at another group of 50
@@ -103,7 +117,7 @@ do i=1 to nrItems       -- iterate over all font names in the array
    fontName=allFontFamilies[i]      -- get current font family name (Rexx)
    y=currLine*lineHeight            -- calculate y (Rexx)
    moveTo xCol1 y                   -- moveTo x y (JDOR command)
-   say i~right(3)":" fontName       -- show fontName on command line (Rexx)
+   say "-->" i~right(3)":" fontName       -- show fontName on command line (Rexx)
    font mono                        -- use already loaded monotype font (JDOR command)
    drawString i~right(3)":" fontName  -- write font family name (JDOR command)
    moveTo xCol2 y                   -- moveTo x y  (JDOR command)
@@ -125,15 +139,15 @@ do
 end
 
 say
-say "you have a total of" pp(nrItems) "fonts installed on your system!"
+say "--> you have a total of" pp(nrItems) "fonts installed on your system!"
 
-say "'sleep 3.009'  ..."
+if \bShowCommands then say "--> 'sleep 3.009'  ..."
 "sleep" 3 + .009        -- let us look at the last image for three plus 9/1000 more seconds ;) (JDOR command)
 exit
 
 printFooter:
    tmpFileName = fileName || pageNr"."fileType  -- define file name
-say "tmpFileName:" tmpFileName
+say "--> tmpFileName:" tmpFileName
    background white              -- set background to white (by clearRect command below)
    moveTo 0 (lines*lineHeight+9)
    clearRect width (2*lineHeight+3)
@@ -150,7 +164,7 @@ say "tmpFileName:" tmpFileName
 
    background oldBackground
    -- winUpdate .true-- update Frame (JDOR command)
-   say "saving sample to:" pp(tmpFileName)
+   say "--> saving sample to:" pp(tmpFileName)
    "saveImage" tmpFileName    -- write current image (JDOR command)
    if bPrint then
    do
@@ -161,4 +175,4 @@ say "tmpFileName:" tmpFileName
    say
    return
 
-::requires "jdor.cls"   -- makes routine addJdorHandler([environmentName]) available
+::requires "BSF.CLS"    -- get ooRexx-Java bridge, contains JDOR Rexx command handler

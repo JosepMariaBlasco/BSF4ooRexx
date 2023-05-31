@@ -1,9 +1,11 @@
 #!/usr/bin/env rexx
 /*
    Name:    "1-150_JDOR_string_circle.rxj"
-   Invoke:  "rexx 1-150_JDOR_string_circle.rxj"
-            "rexxj 1-150_JDOR_string_circle.rxj" (Windows)
-            "rexxj.sh 1-150_JDOR_string_circle.rxj" (Unix)
+   Invoke:  "rexx 1-150_JDOR_string_circle.rxj [?]"
+            "rexxj 1-150_JDOR_string_circle.rxj [?]" (Windows)
+            "rexxj.sh 1-150_JDOR_string_circle.rxj [?]" (Unix)
+
+            ? ... optional argument, if supplied displays processed JDOR commands
 
    Purpose:  Demonstrates the use of the rotate command to draw strings in a circle.
 
@@ -13,6 +15,9 @@
 
    Changes: 2022-10-31 - changed "goto" to "moveTo"
             2022-11-27 - change current directory to source directory to allow access to png files
+            2023-05-30 - added optional argument ? to show processed JDOR commands
+                         in canonical form
+                       - creates and defines JDOR handler explicitly (not using "jdor.cls")
 
    last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
                 (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
@@ -20,7 +25,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2022 Rony G. Flatscher
+       Copyright (C) 2022-2023 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -35,14 +40,26 @@
        limitations under the License.
     -----------------------------------------------------------------------------
 */
+   -- make sure we change to program's directory to refer to images with unqualified filenames
 parse source . . s      -- get full path to this program
 call directory filespec('loc',s) -- change current dir to this program's source dir
 
-call addJdorHandler     -- load and add the Java Rexx command handler, using default name: JDOR
-address jdor            -- set default environment to JDOR
+   -- create JDOR handler
+jdh=.bsf~new("org.oorexx.handlers.jdor.JavaDrawingHandler")
+   -- define "JDOR" address environment serviced by our JDOR handler
+call BsfCommandHandler "add", "JDOR", jdh -- add command handler
+
+bShowCommands=(arg(1)="?") -- ? supplied as argument, then show JDOR commands in canonical form
+-- set default environment to JDOR
+if bShowCommands then
+   address jdor with output using (.stdout)  -- redirect output
+else
+   address jdor
+
+   -- now use JDOR commands
 winShow                 -- will implicitly create a 500x500 bitmap
 moveTo 450 450
-loadImage orx oorexx_256.png
+loadImage orx "oorexx_256.png"
 drawImage orx 50 50
 color blue
 moveTo 0 20
@@ -64,7 +81,7 @@ do i=2 to 360/angle
    if random(0,1) then do;  color red;    font serif1; end
                   else do; "color gray"; "font mono" ; end
 end
-say "'sleep 5' ..."
+if \bShowCommands then say "'sleep 5' ..."
 sleep 5                 -- sleep for five seconds
--- say "press enter to end.";parse pull
-::requires "jdor.cls"   -- makes routine addJdorHandler([environmentName]) available
+
+::requires "BSF.CLS"    -- get ooRexx-Java bridge, contains JDOR Rexx command handler

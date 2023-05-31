@@ -1,9 +1,11 @@
 #!/usr/bin/env rexx
 /*
    Name:    "2-120_JDOR_shear.rxj"
-   Invoke:  "rexx 2-120_JDOR_shear.rxj"
-            "rexxj 2-120_JDOR_shear.rxj" (Windows)
-            "rexxj.sh 2-120_JDOR_shear.rxj" (Unix)
+   Invoke:  "rexx 2-120_JDOR_shear.rxj [?]"
+            "rexxj 2-120_JDOR_shear.rxj [?]" (Windows)
+            "rexxj.sh 2-120_JDOR_shear.rxj [?]" (Unix)
+
+            ? ... optional argument, if supplied displays processed JDOR commands
 
    Purpose: Demonstrates the use of the JDOR commands to create arrowed axes with
             ticks (every 0.5cm and 1.0cm) arrows and a rectangle (one by two centimeters).
@@ -17,13 +19,17 @@
 
    Author:  Rony G. Flatscher, WU Vienna
 
+   Changes: 2023-05-31 - added optional argument ? to show processed JDOR commands
+                         in canonical form
+                       - changed "new" to "newImage"
+
    last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
                 (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2022 Rony G. Flatscher
+       Copyright (C) 2022-2023 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -42,7 +48,13 @@
 jdor=.bsf~new("org.oorexx.handlers.jdor.JavaDrawingHandler")   -- create a JDOR handler
 call BsfCommandHandler "add", "JDOR", jdor   -- add the JDOR handler to ooRexx
 
-address jdor      -- set default environment to JDOR
+bShowCommands=(arg(1)="?") -- ? supplied as argument, then show JDOR commands in canonical form
+-- set default environment to JDOR
+if bShowCommands then
+   address jdor with output using (.stdout)  -- redirect output
+else
+   address jdor
+
 -- address jdor with error using (.error) -- show error/failures in detail (for debugging)
 
 pkgLocal=.context~package~local     -- get package's local environment
@@ -50,7 +62,7 @@ pkgLocal=.context~package~local     -- get package's local environment
    -- environment symbol .PIXEL.PER.CM from any place in this package
 pkgLocal~dpcm = 72 / 2.54   -- there are 72 dots per inch, an inch is 2.54cm -> 28.3464567 dpcm (dots per cm)
 
-new 450 350             -- create image
+newImage 450 350        -- create image
 winShow                 -- show image in a window (a JFrame)
 winTitle "Shear Sample (a Transform)"
 
@@ -62,11 +74,8 @@ stroke str1 1 CAP_BUTT JOIN_BEVEL 0 "(3,1)" 0   -- change line for drawing
 color blue              -- change color
 call drawFigure         -- draw the same figure as above
 
-
-
-say "sleep 5 ..."
+if \bShowCommands then say "sleep 5 ..."
 sleep 5
--- say "Press enter to end ..."; parse pull .
 exit
 
 drawFigure: procedure   -- moves origin, draws axes with right and down arrow, draws rectangle
@@ -137,5 +146,4 @@ drawRect: procedure
   drawRect w h
   return
 
-::requires "BSF.CLS" -- get ooRexx-Java bridge
-
+::requires "BSF.CLS"    -- get ooRexx-Java bridge, contains JDOR Rexx command handler

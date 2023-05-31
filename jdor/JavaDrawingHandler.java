@@ -2,6 +2,13 @@
 
 // TODO: B4R -> resolving constructors, if class is not public
 
+// TODO: 20230529, rgf
+//      - add Area-support (it is a Shape): add(Area), exclusiveOr(Area), intersect(Area),
+//        subtract(Area), transform(AffineTransform) ?Area createTransformedArea(AffineTransform)
+//        constructor Area(Shape): areaNew nickname nicknameShape
+//      - Path2D: constructor Path2D.Double(Shape): pathNew nickname nicknameShape
+//      - add winResizable [.true|.false]
+
 /* Java classes that constitute the JDOR ("JavaDrawing ooRexx") command handler.
 
    This enables any programmer to easily create and manipulate bitmaps on any
@@ -10,7 +17,7 @@
 
    author:  Rony G. Flatscher
    date:    2022-09-05/2022-10-05
-   version: 100.20230104
+   version: 100.20230118
    license: Apache license 2.0
 
    license:
@@ -125,7 +132,10 @@
         2023-01-08: - add "assignTo RexxVarName" command: allows self contained macros to refer to earlier return values
         2023-01-16: - drawString: if not at least a single blank, report error (ok, if "drawString  ")
                     - bUseNames4canonical: if true then also use .true/.false if checkBooleanValue() used
-
+        2023-01-18: - rename command "new" to "newImage" to better self document, add "new" as an alias
+                      to allow existing programs to continue to work
+        2023-05-30: - GET_STATE: add Rexx variable name to canonical command, if supplied
+        2023-05-31: - fixed canonical name for STROKE (cap, join values)
 */
 
 /* add support for Shape (done 2022-12-03)
@@ -360,7 +370,7 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     /* static definitions           */
 
     // default image sizes
-    static final public String version = "100.20230116";
+    static final public String version = "100.20230531";
     static final private int prefWidth  = 500;
     static final private int prefHeight = 500;
     static       private int prefImageType = BufferedImage.TYPE_INT_ARGB; // default with alpha (only png supported)
@@ -653,6 +663,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
     Object processCommand(Object slot, String address, String command, int nrCommand, String currCommand)
     {
         String [] arrCommand = null;
+// TODO: remove (a leftover from iniital development)
         String    mainCommand = command;    // command via address environment
         if (currCommand!=null)
         {
@@ -691,7 +702,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
         }
 
             // no image as of yet, not the NEW command, hence create a default image
-        if (bufImage==null && !(cmd==EnumCommand.NEW))
+        if (bufImage==null && !(cmd==EnumCommand.NEW_IMAGE))
         {
             bufImage = new BufferedImage(prefWidth, prefHeight, prefImageType);
             bufGC    = (Graphics2D) bufImage.getGraphics();
@@ -1432,7 +1443,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         return strResult;       // current/old settings
                     }
 
-                case NEW:       // "new [width height [type]]" creates a new BufferedImage
+                case NEW_IMAGE:       // "new[Image] [width height [type]]" creates a new BufferedImage
                     {
                         if (arrCommand.length!=1 && arrCommand.length!=3 && arrCommand.length!=4)
                         {
@@ -1527,6 +1538,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         {
                             jd.bufImage=bufImage;
                         }
+// TODO: resultValue -> currently not set, hence returns 0 (null): shall we return a different value, e.g. "width height type" ?
                     }
                     break;
 
@@ -1698,6 +1710,10 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
 
                         if (isOR)
                         {
+                            if (arrCommand.length==2)   // supply context Rexx variable name to set
+                            {
+                                canonical = canonical + " " + arrCommand[1];
+                            }
                             writeOutput(slot, canonical);
                         }
 
@@ -2548,12 +2564,12 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                 if (bUseNames4canonical)
                                 {
                                     canonical=canonical+" "+
-                                              endCapsInt2Name.get(tmpCap)+" "+
-                                              lineJoinsInt2Name.get(tmpJoin);
+                                              endCapsInt2Name.get(cap)+" "+
+                                              lineJoinsInt2Name.get(join);
                                 }
                                 else
                                 {
-                                    canonical=canonical+" "+tmpCap+" "+tmpJoin;
+                                    canonical=canonical+" "+cap+" "+join;
                                 }
                             }
                             if (argNum==5)
@@ -5151,7 +5167,7 @@ enum EnumCommand {
     IMAGE_TYPE                  ( "imageType"                ) ,    //   "imageType [nickName]": get current image's type, if nickName supplied return its image type
     LOAD_IMAGE                  ( "loadImage"                ) ,    //   "loadImage imageNickName filename", loads an image -> returns its dimension
     MOVE_TO                     ( "moveTo"                   ) ,    //   "pos [x y]" query or set position, synonyms: "goto"
-    NEW                         ( "new"                      ) ,    //   "new [width height [type]]" creates a new BufferedImage
+    NEW_IMAGE                   ( "newImage"                 ) ,    //   "new[Image] [width height [type]]" creates a new BufferedImage
     PAINT                       ( "paint"                    ) ,    //   "paint [gradiantPaintNickName|colorNickName]" query or set paint (for background) // 2022-09-22, paint, as of 20220922 cf. <http://underpop.online.fr/j/java/help/colors-graphics-programming.html.gz>
     POP_GC                      ( "popGC"                    ) ,    //   "popGC"  pop and set previous gc
     POP_IMAGE                   ( "popImage"                 ) ,    //   "popImage"  pop and display previous image
@@ -5240,6 +5256,7 @@ enum EnumCommand {
          }
 
          // add synonyms         new name      enum type
+         upperCase2Command.put( "NEW"        , NEW_IMAGE ) ;    // 2023-01-18
          upperCase2Command.put( "CLEAR"      , RESET     ) ;
          upperCase2Command.put( "GOTO"       , MOVE_TO   ) ;
          upperCase2Command.put( "LOCATION"   , MOVE_TO   ) ;    // 2022-10-23: new alias

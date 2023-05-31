@@ -178,7 +178,7 @@ for creating the most challenging graphics (images) from Rexx.
     <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace"><FONT COLOR="#0033b3">address </FONT>jdor            <FONT COLOR="#8c8c8c"><I>-- set default environment to the JDOR command handler</I></FONT></FONT></FONT>
     <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">width <FONT COLOR="#cc3300">=</FONT><FONT COLOR="#1750eb">220              </FONT><FONT COLOR="#8c8c8c"><I>-- define width of image in pixels (there are 72 px to an inch)</I></FONT></FONT></FONT>
     <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">height<FONT COLOR="#cc3300">=</FONT><FONT COLOR="#1750eb">250              </FONT><FONT COLOR="#8c8c8c"><I>-- define height of image in pixels (there are 72 px to an inch)</I></FONT></FONT></FONT>
-    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">new width height        <FONT COLOR="#8c8c8c"><I>-- create new bitmap with currX=0, currY=0, width=220, height=250</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">newImage width height   <FONT COLOR="#8c8c8c"><I>-- create new bitmap with currX=0, currY=0, width=220, height=250</I></FONT></FONT></FONT>
     <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">winShow                 <FONT COLOR="#8c8c8c"><I>-- show frame on screen</I></FONT></FONT></FONT>
     <FONT COLOR="#8c8c8c">   <FONT FACE="IBM Plex Mono, monospace"><I>-- draw two lines forming a big X</I></FONT></FONT>
     <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">drawLine (width<FONT COLOR="#cc3300">-</FONT><FONT COLOR="#1750eb">1</FONT>) (height<FONT COLOR="#cc3300">-</FONT><FONT COLOR="#1750eb">1</FONT>) <FONT COLOR="#8c8c8c"><I>-- from currX=0, currY=0</I></FONT></FONT></FONT>
@@ -411,7 +411,7 @@ title to the definition list
     <dd>The image type defines the basic properties of an image and also determines
         in which format an image can be stored in the file system. The supported types
         are defined as constants in the Java class <em>java.awt.image.BufferedImage</em>
-        and are listed in the command <em><a href="#cmdNew">new</a></em>, subsection arguments.
+        and are listed in the command <em><a href="#cmdNewImage">newImage</a></em>, subsection arguments.
     </dd>
 
 
@@ -1184,7 +1184,9 @@ value.
             <li><em>printScaleToPage</em>
             <li><em>printScaleX</em>
             <li><em>printScaleY</em>
+            <li><em>shapes</em> (a <em>java.util.HashMap</em>)
             <li><em>strokes</em> (a <em>java.util.HashMap</em>)
+            <li><em>transforms</em> (a <em>java.util.HashMap</em>)
         </ul>
 
 
@@ -1358,7 +1360,8 @@ value.
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
-    <td class="command" id="cmdNew">  &quot;new&quot;
+    <td class="command" id="cmdNewImage">  &quot;newImage&quot;<br>
+                                           &quot;new&quot;
     <td colspan="2"> Creates a new image. By default the <em>width</em> and the <em>height</em> are
         set to <em>500</em> and the <em>type</em> to the current value of
         <a href="#cmdPreferredImageType"><em>preferredImageType</em></a>.
@@ -1422,7 +1425,7 @@ value.
     <td class="cmdNr">
     <td class="command" id="cmdPreferredImageType">  &quot;preferredImageType&quot;
     <td colspan="2"> Queries and optionally sets  the preferred image type used for creating new images
-    (cf. <a href="#cmdNew">new</a> command).
+    (cf. <a href="#cmdNewImage">new</a> command).
         Returns the image type via the Rexx variable <em>RC</em> upon return from this command.
 
         <br>Cf. the Java documentation for the Java class <em>java.awt.image.BufferedImage</em> and
@@ -1853,7 +1856,7 @@ value.
     <td class="command" id="cmdTransform">  &quot;transform&quot;
     <td colspan="2"> Queries, resets, changes the current <em>gc</em> (<em>Graphics2D</em>)
         settings or allows to define a new <em><a href="#dtAffineTransform">AffineTransform</em></a>
-        that gets stored with a <em>transformNickName</em>.
+        that gets stored with a <em>nickName</em>.
 
         <br>An <em>AffineTransform</em> defines a matrix that gets used to
         calculate the effective <em>x</em> and <em>y</em> values for the target device according
@@ -1898,8 +1901,6 @@ value.
     <td class="argument">nickName
     <td> Returns the <a href="#dtAffineTransform">AffineTransform</em></a> object
          stored with <em>nickName</em>.
-
-        <br>The command returns the stored
 
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
@@ -2390,6 +2391,21 @@ resulting command with arguments to the Rexx command handler.
 
                  <!--  ----------------------------------- -->
               <tr>
+                  <td class="command">po | polygon | <a href="https://google.com/search?q=javadoc+8+Polygon" target="_blank">Polygon</a>
+                  <td class="argument">xPoints-array yPoints-array nPoints
+                  <td>Creates a <em>Polygon</em> shape consisting of <em>nPoints</em>
+                      taken from the
+                      <a href="#dtPointsArray"><em>xPoints-array</em></a> and
+                      <a href="#dtPointsArray"><em>yPoints-array</em></a>.
+                      If the endpoint is not the same coordinate as the first point,
+                      the polygon gets closed by drawing a line from the
+                      first to the last point.
+
+
+              <tr><td colspan="3" style="border: 1px solid black;border-collapse: collapse;">
+
+                 <!--  ----------------------------------- -->
+              <tr>
                   <td class="command">Qu | QuadCurve | <a href="https://google.com/search?q=javadoc+8+QuadCurve2D" target="_blank">QuadCurve2D</a>
                   <td class="argument">x1 y1 ctrlx ctrly x2 y2
                   <td> Defines a quadratic parametric curve shape between the points <em>x1/y1</em> and
@@ -2732,7 +2748,7 @@ resulting command with arguments to the Rexx command handler.
 
    <hr width="75%">
     <small>
-       JDOC synopsis of commands, version: 100.20230116
+       JDOC synopsis of commands, version: 100.20230122
        <br>Acknowledgement: the author wishes to thank DI Walter Pachl
        <br>for his help in testing and proof reading
     </small>

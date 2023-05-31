@@ -1,9 +1,11 @@
 #!/usr/bin/env rexx
 /*
    Name:    "1-180_JDOR_sandGlass.rxj"
-   Invoke:  "rexx 1-180_JDOR_sandGlass.rxj"
-            "rexxj 1-180_JDOR_sandGlass.rxj" (Windows)
-            "rexxj.sh 1-180_JDOR_sandGlass.rxj" (Unix)
+   Invoke:  "rexx 1-180_JDOR_sandGlass.rxj [?]"
+            "rexxj 1-180_JDOR_sandGlass.rxj [?]" (Windows)
+            "rexxj.sh 1-180_JDOR_sandGlass.rxj [?]" (Unix)
+
+            ? ... optional argument, if supplied displays processed JDOR commands
 
    Purpose:  Demonstrates the use of JDOR for drawing a sand glass using different
              colors and strokes.
@@ -14,6 +16,9 @@
 
    Changes: 2022-10-31 - changed "goto" to "moveTo"
             2022-11-27 - change current directory to source directory to allow access to png files
+            2023-05-30 - added optional argument ? to show processed JDOR commands
+                         in canonical form
+                       - creates and defines JDOR handler explicitly (not using "jdor.cls")
 
    last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
                 (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
@@ -21,7 +26,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2022 Rony G. Flatscher
+       Copyright (C) 2022-2023 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -36,21 +41,39 @@
        limitations under the License.
     -----------------------------------------------------------------------------
 */
+   -- make sure we change current directory to program's directory
 parse source . . s      -- get full path to this program
 call directory filespec('loc',s) -- change current dir to this program's source dir
 
-call addJdorHandler     -- load and add the Java Rexx command handler, using default name: JDOR
-address jdor            -- set default environment to JDOR
-stroke st5 5            -- define stroke of 5 pts
+   -- create JDOR handler
+jdh=.bsf~new("org.oorexx.handlers.jdor.JavaDrawingHandler")
+   -- define "JDOR" address environment serviced by our JDOR handler
+call BsfCommandHandler "add", "JDOR", jdh -- add command handler
+
+bShowCommands=(arg(1)="?") -- ? supplied as argument, then show JDOR commands in canonical form
+-- set default environment to JDOR
+if bShowCommands then
+   address jdor with output using (.stdout)  -- redirect output
+else
+   address jdor
+
+   -- now we can use JDOR commands
+stroke st5 5            -- define stroke of 5 pts, implicitly creates 500x500 image
+image                   -- fetch image
+say "--> (image) rc:         " rc
+say "--> (image) rc~toString:" rc~tostring
 stroke st3 3            -- define stroke of 3 pts
 stroke st1 1            -- define stroke of 1 pt
 color saddlebrown50 139 69 19 128   -- R,G,B,alpha=128 (~50 % transparency)
 color green20         0 255  0 51    -- R,G,B,alpha= 51 (~20 % transparency)
 strokes=st1, st3, st5                 -- Rexx array of stroke nick names
 colors =black, saddlebrown50, green20 -- Rexx array of color nick names
-width=500
-height=500
-new width height        -- create new bitmap
+width=400
+height=400
+newImage width height   -- create new bitmap, replaces implicitly created one
+image                   -- fetch image
+say "--> (image) rc:         " rc
+say "--> (image) rc~toString:" rc~tostring
 winShow                 -- show frame
 do i=1 to 3
   m=50+(i-1)*50         -- margin
@@ -63,8 +86,7 @@ do i=1 to 3
   moveTo m h; drawLine w h
   moveTo w h; drawLine m m
 end
-say "'sleep 3' ..."
+if \bShowCommands then say "'sleep 3' ..."
 sleep 3                 -- sleep for three seconds
--- say 'hit enter to continue...'; parse pull .
 
-::requires "jdor.cls"   -- makes routine addJdorHandler([environmentName]) available
+::requires "BSF.CLS"    -- get ooRexx-Java bridge, contains JDOR Rexx command handler
