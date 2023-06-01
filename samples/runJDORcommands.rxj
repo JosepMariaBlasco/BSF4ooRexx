@@ -1,8 +1,8 @@
 #!/usr/bin/env rexx
 /*
    Name:    "runJDORcommands.rxj"
-   Invoke:  "rexx runJDORcommands.rxj_     < file.txt [?]" (Linux, Windows)
-            "rexxj.sh runJDORcommands.rxj  < file.txt [?]" (macOS)
+   Invoke:  "rexx runJDORcommands.rxj_     < file.txt [?] | file.txt [?]" (Linux, Windows)
+            "rexxj.sh runJDORcommands.rxj  < file.txt [?] | file.txt [?]" (macOS)
                 or via a pipe e.g. process JDOR commands from "someProgram" via stdin
             "someProgram | rexx runJDORcommands.rxj     [?]"  (Linux, Windows)
             "someProgram | rexxj.sh runJDORcommands.rxj [?]" (Linux, macOS)
@@ -21,6 +21,8 @@
 
    Changes: 2023-05-31 - check for existence of stdin data, available when
                          redirected file or pipe that feeds stdin
+                       - allow for directly supplying filename that contains JDOR commands
+                         (will have precedence over redirection of stdin)
 
 
    last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
@@ -44,38 +46,63 @@
        limitations under the License.
     -----------------------------------------------------------------------------
 */
-bShowJDORcommands=.true -- show JDOR commands on stdout
+parse source . . thisFileName
+thisPgmName=filespec('Name',thisFileName)
+
+bShowCommands=.false    -- by default do not show JDOR commands (in canonical form)
+s=.stdin                -- default to stdin
+   -- runJDORcommands.rxj [file.txt] [?] | < file.txt [?]
+if arg()>0 then      -- arguments given: an optional filename and/or a trailing ? (asterisk)
+do
+   if .sysCargs~items>2 then exit -1      -- indicate that too many arguments
+   bShowCommands=.sysCargs~lastItem='?'   -- show JDOR commands in canonical form?
+
+   if bShowCommands then
+   do
+      if .sysCargs~items=2 then
+         s=.stream~new(.sysCargs[1])~~open("read") -- read commands from file
+   end
+   else if .sysCargs~items=1 then
+   do
+      s=.stream~new(.sysCargs[1])~~open("read") -- read commands from file
+   end
+   else if .sysCargs~items>1 then   -- \bShowCommands & .sysCargs~items>1
+      exit -2   -- indicate that too many arguments
+end
+
    -- create JDOR handler
 jdh=.bsf~new("org.oorexx.handlers.jdor.JavaDrawingHandler")
    -- define "JDOR" address environment serviced by our JDOR handler
 call BsfCommandHandler "add", "JDOR", jdh -- add command handler
-if .stdin~state="READY" then
+if s~state="READY" then
 do
-    if .stdin~chars=0 then
+    if s~chars=0 then   -- no data to read
     do
-        .error~say("this program is a filter program: it reads from stdin, please pipe or redirect stdin accordingly")
-        exit -1         -- indicate error
+        .error~say(thisPgmName": no data to read: is stdin redirected or a text file with commands supplied?")
+        exit -10        -- indicate error
     end
-
-   bShowCommands=(arg(1)="?") -- ? supplied as argument, then show "jdor" JDOR commands in canonical form
    -- set default environment to JDOR
+   --    if "using output": JDOR commands get displayed in canonical form
+   --    if "using error" : JDOR commands with errors get displayed with additional error information
    if bShowCommands then
-      -- redirect output (show canoniczed JDOR commands):
-      address jdor with input using (.stdin) output using (.output)
+      -- redirect output (show canonized JDOR commands):
+      address jdor with input using (s) output using (.output) error using (.error)
    else
-      address jdor with input using (.stdin)
+      address jdor with input using (s) error using (.error)
 
    "-- comment to JDOR"       -- send a comment to JDOR to kick it to read from .stdin
    say "--> done."
    exit 0
 end
-exit -2     -- indicate NOTREADY
+exit -11    -- indicate state is NOTREADY
 
 ::requires "BSF.CLS"    -- get ooRexx-Java bridge, contains JDOR Rexx command handler
 
 -- alternative filter implementations:
 /*    -- simplest
       address jdor with input using (.stdin)
+      -- simplest with explicit error descriptions
+      address jdor with input using (.stdin) error using (.error)
 */
 
 /*
@@ -84,9 +111,9 @@ do forever
    parse linein command -- read next line from stdin
       -- process the JDOR command
    if bShowJDORcommands then  -- display canonical JDOR command?
-      address JDOR command with output using (.stdout)
+      address JDOR command with output using (.stdout) error using (.error)
    else  -- do not display JDOR command
-      address JDOR command
+      address JDOR command error using (.error)
 end
 notready:               -- label (target for signal)
 */
