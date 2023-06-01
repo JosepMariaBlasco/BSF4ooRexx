@@ -56,18 +56,12 @@ if arg()>0 then      -- arguments given: an optional filename and/or a trailing 
 do
    if .sysCargs~items>2 then exit -1      -- indicate that too many arguments
    bShowCommands=.sysCargs~lastItem='?'   -- show JDOR commands in canonical form?
-
-   if bShowCommands then
-   do
-      if .sysCargs~items=2 then
-         s=.stream~new(.sysCargs[1])~~open("read") -- read commands from file
-   end
-   else if .sysCargs~items=1 then
+   if (bShowCommands & .sysCargs~items=2) | (\bShowCommands & .sysCargs~items=1) then
    do
       s=.stream~new(.sysCargs[1])~~open("read") -- read commands from file
    end
-   else if .sysCargs~items>1 then   -- \bShowCommands & .sysCargs~items>1
-      exit -2   -- indicate that too many arguments
+   else if \bShowCommands & .sysCargs~items>1 then
+      exit -2   -- indicate too many arguments
 end
 
    -- create JDOR handler
@@ -83,37 +77,17 @@ do
     end
    -- set default environment to JDOR
    --    if "using output": JDOR commands get displayed in canonical form
-   --    if "using error" : JDOR commands with errors get displayed with additional error information
+   --    if "using error" : JDOR commands with errors get displayed with error information
    if bShowCommands then
       -- redirect output (show canonized JDOR commands):
       address jdor with input using (s) output using (.output) error using (.error)
    else
       address jdor with input using (s) error using (.error)
 
-   "-- comment to JDOR"       -- send a comment to JDOR to kick it to read from .stdin
+   "-- comment to JDOR" -- kick Rexx to send a command (a comment) to JDOR
    say "--> done."
    exit 0
 end
 exit -11    -- indicate state is NOTREADY
 
 ::requires "BSF.CLS"    -- get ooRexx-Java bridge, contains JDOR Rexx command handler
-
--- alternative filter implementations:
-/*    -- simplest
-      address jdor with input using (.stdin)
-      -- simplest with explicit error descriptions
-      address jdor with input using (.stdin) error using (.error)
-*/
-
-/*
-signal on notready      -- if pipe/redirection ends
-do forever
-   parse linein command -- read next line from stdin
-      -- process the JDOR command
-   if bShowJDORcommands then  -- display canonical JDOR command?
-      address JDOR command with output using (.stdout) error using (.error)
-   else  -- do not display JDOR command
-      address JDOR command error using (.error)
-end
-notready:               -- label (target for signal)
-*/
