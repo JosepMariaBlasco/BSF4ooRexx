@@ -21,8 +21,9 @@
 
    Changes: 2023-05-31 - check for existence of stdin data, available when
                          redirected file or pipe that feeds stdin
-                       - allow for directly supplying filename that contains JDOR commands
+            2023-06-01 - allow for directly supplying filename that contains JDOR commands
                          (will have precedence over redirection of stdin)
+
 
 
    last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $

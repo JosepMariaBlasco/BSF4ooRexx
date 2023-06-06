@@ -2,12 +2,6 @@
 
 // TODO: B4R -> resolving constructors, if class is not public
 
-// TODO: 20230529, rgf
-//      - add Area-support (it is a Shape): add(Area), exclusiveOr(Area), intersect(Area),
-//        subtract(Area), transform(AffineTransform) ?Area createTransformedArea(AffineTransform)
-//        constructor Area(Shape): areaNew nickname nicknameShape
-//      - Path2D: constructor Path2D.Double(Shape): pathNew nickname nicknameShape
-//      - add winResizable [.true|.false]
 
 /* Java classes that constitute the JDOR ("JavaDrawing ooRexx") command handler.
 
@@ -17,7 +11,7 @@
 
    author:  Rony G. Flatscher
    date:    2022-09-05/2022-10-05
-   version: 100.20230118
+   version: 100.20230606
    license: Apache license 2.0
 
    license:
@@ -136,6 +130,18 @@
                       to allow existing programs to continue to work
         2023-05-30: - GET_STATE: add Rexx variable name to canonical command, if supplied
         2023-05-31: - fixed canonical name for STROKE (cap, join values)
+        2023-06-03: - adding floatArrayToRexxArrayExpression(float [] floatArray)
+                    - Rexx int and float arrays will be turned into RexxArrayExpression strings for
+                      the canonical command form
+        2023-06-05: - remove unused variables
+                    - always use [int|float]ArrayToRexxExpression() in canonical command (polygon, strokes etc.)
+                    - changed resizable to false by default, adding new command "winResizable [.true|.false]"
+                    - add Area support (including Area's CAG methods)
+        2023-06-06: - allow Rexx variables as second argument to the areaXYZ commands
+                    - removed shape abbreviations that were too short to convey any meaning or
+                      (LI, PA, PO), changed shape abbreviations to allow inferring better (CU->CUBIC,
+                      EL->ELLI, QU->QUAD, RE->RECT, RO->ROUNDRECT)
+
 */
 
 /* add support for Shape (done 2022-12-03)
@@ -215,6 +221,7 @@ import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Area;
 import java.awt.geom.Arc2D;
 import java.awt.geom.CubicCurve2D;
 import java.awt.geom.Ellipse2D;
@@ -287,6 +294,7 @@ class JavaDrawingFrame extends JFrame
     /* static definitions           */
     static final private int prefWidth  = 500;
     static final private int prefHeight = 500;
+    static final private boolean prefResizable=false;
 
     /* instance definitions         */
     boolean bDebug= false; // true
@@ -295,6 +303,7 @@ class JavaDrawingFrame extends JFrame
     int currWidth  = prefWidth;
     int currHeight = prefHeight;
     boolean currFrameVisible = true;    // cf. command "winFrame [.true|.false]"
+    boolean currFrameResizable = prefResizable;
 
     BufferedImage bufImage = null;
 
@@ -318,6 +327,7 @@ class JavaDrawingFrame extends JFrame
         currWidth=bufImage.getWidth();
         currHeight=bufImage.getHeight();
         getContentPane().setPreferredSize(new Dimension(currWidth,currHeight));
+        setResizable(currFrameResizable);
         pack();
 
         setLocationRelativeTo(null);
@@ -370,7 +380,7 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     /* static definitions           */
 
     // default image sizes
-    static final public String version = "100.20230531";
+    static final public String version = "100.20230606";
     static final private int prefWidth  = 500;
     static final private int prefHeight = 500;
     static       private int prefImageType = BufferedImage.TYPE_INT_ARGB; // default with alpha (only png supported)
@@ -544,6 +554,7 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
 
     boolean currVisible = false;
     boolean currWinUpdate = true;       // update Frame whenever we draw: allows turning updating on/off
+    boolean currResizable = false;      // cf. command "winResizable [.true|.false]"
 
     // 2022-11-02: makes a difference when rendered to screen as well, so by default antialising is turned on
     Object currAntiAliasing     = RenderingHints.VALUE_ANTIALIAS_ON;
@@ -650,8 +661,6 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
     }
 
 
-// TODO: currently currCommand is not processed, should be a comment; maybe needs to be revisited?
-
     /** Process single command
                 processCommand(slot, address, command, nrCommand, currCommand);
      * @param slot opaque argument (needs to be used if invoking the Handler default methods to interact with the Rexx context)
@@ -663,12 +672,6 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
     Object processCommand(Object slot, String address, String command, int nrCommand, String currCommand)
     {
         String [] arrCommand = null;
-// TODO: remove (a leftover from iniital development)
-        String    mainCommand = command;    // command via address environment
-        if (currCommand!=null)
-        {
-            command=currCommand;        // command from redirected input
-        }
 
         boolean isOR = isOutputRedirected(slot);    // is output redirected ?
 
@@ -887,7 +890,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                         }
                                         else
                                         {
-                                            throw new IllegalArgumentException("the supplied \"frameVisible\" argument \""+newValue+"\" is not a valid BSF4ooRexx850 boolean value, valid values (in any case) are: "
+                                            throw new IllegalArgumentException("the supplied \"winAlwaysOnTo\" argument \""+newValue+"\" is not a valid BSF4ooRexx850 boolean value, valid values (in any case) are: "
                                                                   + "\"0\", \"1\", \"false\", \"true\", \".false\", \".true\"");
                                         }
                                         if (isOR)
@@ -997,7 +1000,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         }
                         else
                         {
-                            throw new IllegalArgumentException("the supplied \"frameVisible\" argument \""+newValue+"\" is not a valid BSF4ooRexx850 boolean value, valid values (in any case) are: "
+                            throw new IllegalArgumentException("the supplied \"winFrame\" argument \""+newValue+"\" is not a valid BSF4ooRexx850 boolean value, valid values (in any case) are: "
                                                   + "\"0\", \"1\", \"false\", \"true\", \".false\", \".true\"");
                         }
 
@@ -1030,6 +1033,73 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         break;
                     }
 
+                case WIN_RESIZABLE:   // winResizable [.true|.false]: query or set whether frame is resizable
+                    {
+                        resultValue = jd.currFrameResizable ? "1" : "0";  // query current value (to be returned if change occurs)
+
+                        if (arrCommand.length==1)   // return current setting (via RC)
+                        {
+                            if (isOR)
+                            {
+                                writeOutput(slot,canonical);
+                            }
+                            return resultValue;
+                        }
+
+                        if (arrCommand.length!=2)
+                        {
+                            throw new IllegalArgumentException("this command needs no or exactly 1 argument, received "+(arrCommand.length-1)+" instead");
+                        }
+
+                        String newValue = arrCommand[1];
+                        boolean newBooleanValue=false;
+
+                        if (checkBooleanValue(newValue))   // a valid BSF4ooRexx850 boolean value?
+                        {
+                            newBooleanValue=getBooleanValue(newValue);  // get value
+                        }
+                        else
+                        {
+                            throw new IllegalArgumentException("the supplied \"winResizable\" argument \""+newValue+"\" is not a valid BSF4ooRexx850 boolean value, valid values (in any case) are: "
+                                                  + "\"0\", \"1\", \"false\", \"true\", \".false\", \".true\"");
+                        }
+
+                        if (currResizable==newBooleanValue)   // already at the same state, ignore command, but return "old" value
+                        {
+                            return resultValue;
+                        }
+
+                        // no exception, so args o.k.
+                        if (isOR && arrCommand.length==2)
+                        {
+                            if (bUseNames4canonical)
+                            {
+                                canonical=canonical+" "+(newBooleanValue ? ".true" : ".false");
+                            }
+                            else    // reuse argument verbatimely
+                            {
+                                canonical=canonical+" "+newValue;
+                            }
+
+                            writeOutput(slot,canonical);
+                        }
+
+                        if (jd==null)
+                        {
+                            jd = new JavaDrawingFrame(bufImage);
+                            if (newBooleanValue)
+                            {
+                                jd.setResizable(true);    // make frame resizable
+                            }
+                        }
+                        else if (jd.currFrameResizable!=newBooleanValue)
+                        {
+                            jd.setResizable(newBooleanValue);
+                        }
+                        jd.currFrameResizable = newBooleanValue;
+                        break;
+                    }
+
                 case WIN_VISIBLE:     // winVisible [.true|.false]: query or set whether frame is visible
                     {
                         resultValue = currVisible ? "1" : "0";  // query current value (to be returned if change occurs)
@@ -1057,7 +1127,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         }
                         else
                         {
-                            throw new IllegalArgumentException("the supplied \"frameVisible\" argument \""+newValue+"\" is not a valid BSF4ooRexx850 boolean value, valid values (in any case) are: "
+                            throw new IllegalArgumentException("the supplied \"winVisible\" argument \""+newValue+"\" is not a valid BSF4ooRexx850 boolean value, valid values (in any case) are: "
                                                   + "\"0\", \"1\", \"false\", \"true\", \".false\", \".true\"");
                         }
 
@@ -1122,7 +1192,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         }
                         else
                         {
-                            throw new IllegalArgumentException("the supplied \"frameVisible\" argument \""+newValue+"\" is not a valid BSF4ooRexx850 boolean value, valid values (in any case) are: "
+                            throw new IllegalArgumentException("the supplied \"winUpdate\" argument \""+newValue+"\" is not a valid BSF4ooRexx850 boolean value, valid values (in any case) are: "
                                                   + "\"0\", \"1\", \"false\", \"true\", \".false\", \".true\"");
                         }
                         // no exception, so args o.k.
@@ -2428,7 +2498,11 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
 
                         if (isOR)
                         {
-                            canonical=canonical+" "+strXPoints+" "+strYPoints+" "+strNPoints;
+                            // canonical=canonical+" "+strXPoints+" "+strYPoints+" "+strNPoints;
+                            canonical=canonical+
+                                            " "+intArrayToRexxArrayExpression(xPoints)+
+                                            " "+intArrayToRexxArrayExpression(yPoints)+
+                                            " "+strNPoints;
                             writeOutput(slot, canonical);
                         }
 
@@ -2601,7 +2675,9 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                                     dashPhase=Float.parseFloat(strDashPhase);
                                     if (isOR)
                                     {
-                                        canonical=canonical+" "+strDash+" "+strDashPhase;
+// TODO: turn dash [] into quoted string instead of using strDash
+// canonical=canonical+" "+strDash+" "+strDashPhase;
+                                        canonical=canonical+" "+floatArrayToRexxArrayExpression(dash)+" "+strDashPhase;
                                     }
                                     stroke = new BasicStroke(width, cap, join, miterlimit, dash, dashPhase);
                                 }
@@ -3840,6 +3916,37 @@ if (al.size()<2) // blanks supplied
                         canonical=canonical+" "+canonicalShapeType; // get canoncial shape type
                         switch (eShape)
                         {
+
+                            case SHAPE_AREA:    //  "SHAPE areaNickName AREA shapeNickName" (can be an Area)
+                                {
+                                    if (argNum!=4)
+                                    {
+                                        String errMsg="Shape \""+canonicalShapeType+"\" needs exactly two arguments (\"areaNickName shapeNickName\"), however there are "+(argNum-3)+" supplied";
+                                        if (isOR)
+                                        {
+                                            writeOutput(slot, "-- ERROR (wrong number of arguments for \""+canonicalShapeType+"\" shape): ["+command+"]");
+                                        }
+                                        return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-19", errMsg );
+                                    }
+                                    // check whether shapeNickName exists
+                                    String strShapeArg2=arrCommand[3];
+                                    Shape arg2shape=(Shape) hmShapes.get(strShapeArg2.toUpperCase());
+                                    if (arg2shape==null)
+                                    {
+                                        String errMsg="area argument named \""+strShapeArg2+"\" is not registered";
+                                        if (isOR)
+                                        {
+                                            writeOutput(slot, "-- ERROR (area shape argument): ["+command+"]");
+                                        }
+                                        return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-20", errMsg );
+                                    }
+                                    if (isOR)
+                                    {
+                                        canonical=canonical+" "+strShapeArg2;
+                                    }
+                                    sh = new Area(arg2shape);
+                                    break;
+                                }
                                                 //  Double(double x, double y, double w, double h, double start, double extent, int type)
                             case SHAPE_ARC2D:   //  Double(Rectangle2D ellipseBounds             , double start, double extent, int type)
                                 {
@@ -3850,7 +3957,7 @@ if (al.size()<2) // blanks supplied
                                         {
                                             writeOutput(slot, "-- ERROR (wrong number of arguments for \""+canonicalShapeType+"\" shape): ["+command+"]");
                                         }
-                                        return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-19", errMsg );
+                                        return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-21", errMsg );
                                     }
 
                                     Rectangle2D r2d=null;
@@ -3882,7 +3989,7 @@ if (al.size()<2) // blanks supplied
                                             {
                                                 writeOutput(slot, "-- ERROR (rectangle2d argument): ["+command+"]");
                                             }
-                                            return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-20", errMsg );
+                                            return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-22", errMsg );
                                         }
                                         if (isOR)
                                         {
@@ -3960,7 +4067,7 @@ if (al.size()<2) // blanks supplied
                                         {
                                             writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
                                         }
-                                        return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-21", errMsg );
+                                        return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-23", errMsg );
                                     }
                                     double arg1=Double.parseDouble(arrCommand[3]);
                                     double arg2=Double.parseDouble(arrCommand[4]);
@@ -3990,7 +4097,7 @@ if (al.size()<2) // blanks supplied
                                         {
                                             writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
                                         }
-                                        return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-22", errMsg );
+                                        return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-24", errMsg );
                                     }
                                     double arg1=Double.parseDouble(arrCommand[3]);
                                     double arg2=Double.parseDouble(arrCommand[4]);
@@ -4050,7 +4157,14 @@ if (al.size()<2) // blanks supplied
                                     nPoints = Integer.parseInt(strNPoints);
                                     if (isOR)
                                     {
-                                        canonical=canonical+" "+strXPoints+" "+strYPoints+" "+strNPoints;
+
+
+
+                                        // canonical=canonical+" "+strXPoints+" "+strYPoints+" "+strNPoints;
+                                        canonical=canonical+
+                                                        " "+intArrayToRexxArrayExpression(xPoints)+
+                                                        " "+intArrayToRexxArrayExpression(yPoints)+
+                                                        " "+strNPoints;
                                     }
                                     sh=new Polygon(xPoints, yPoints, nPoints);
                                     break;
@@ -4066,7 +4180,7 @@ if (al.size()<2) // blanks supplied
                                         {
                                             writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
                                         }
-                                        return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-23", errMsg );
+                                        return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-25", errMsg );
                                     }
                                     double arg1=Double.parseDouble(arrCommand[3]);
                                     double arg2=Double.parseDouble(arrCommand[4]);
@@ -4099,7 +4213,7 @@ if (al.size()<2) // blanks supplied
                                         {
                                             writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
                                         }
-                                        return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-23", errMsg );
+                                        return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-25", errMsg );
                                     }
 
                                     int windingType=1;  // default to WIND_NON_ZERO (1)
@@ -4145,7 +4259,7 @@ if (al.size()<2) // blanks supplied
                             default:
                                 {
                                     String errMsg="shape type \""+canonicalShapeType+"\" not known/implemented";
-                                    return createCondition (slot, nrCommand, command, ConditionType.FAILURE, "-24", errMsg );
+                                    return createCondition (slot, nrCommand, command, ConditionType.FAILURE, "-26", errMsg );
                                 }
                         }
                         hmShapes.put(ucNickName,sh);
@@ -4228,6 +4342,92 @@ if (al.size()<2) // blanks supplied
                         }
                         return strResult;
                     }
+
+                        // AREA-command areaNickname shapeNickname (can be an area)
+                case AREA_ADD:
+                case AREA_EXCLUSIVE_OR:
+                case AREA_INTERSECT:
+                case AREA_SUBTRACT:
+                case AREA_TRANSFORM:        // areaTransform areaNickname transformNickname
+                    {
+                        if (arrCommand.length!=3)
+                        {
+                            if (cmd!=EnumCommand.AREA_TRANSFORM)
+                            {
+                                throw new IllegalArgumentException("this command needs exactly 2 arguments (the name of the area and area/shape to be used as argument for the operation), received "+(arrCommand.length-1)+" instead");
+                            }
+                            throw new IllegalArgumentException("this command needs exactly 2 arguments (the name of the area and the nickname of a transform to be applied to it), received "+(arrCommand.length-1)+" instead");
+                        }
+
+                        String nickName1=arrCommand[1];     // areaNickname
+                        Area   tmpArea1=(Area) hmShapes.get(nickName1.toUpperCase());
+
+                        if (tmpArea1==null)
+                        {
+                            throw new IllegalArgumentException("no Area shape with name \""+nickName1+"\" stored");
+                        }
+
+                        String nickName2=arrCommand[2];     // {transform|shape}NickName
+
+                        if (isOR)
+                        {
+                            canonical = canonical+" "+nickName1+" "+nickName2;
+                            writeOutput(slot, canonical);
+                        }
+
+                        if (cmd==EnumCommand.AREA_TRANSFORM)
+                        {
+                            AffineTransform at=hmTransforms.get(nickName2.toUpperCase());
+                            if (at==null)
+                            {
+                                if (startRexxVariableChar.indexOf(nickName2.charAt(0))>=0) // a Rexx variable?
+                                {
+                                    at=(AffineTransform) getContextVariable(slot, nickName2);
+                                }
+                                if (at==null)
+                                {
+                                    throw new IllegalArgumentException("no transform with name \""+nickName2+"\" stored, nor a Rexx variable that refers to a transform object");
+                                }
+                            }
+                            tmpArea1.transform(at); // carry out transform
+                        }
+                        else
+                        {
+                            Shape tmpShape=hmShapes.get(nickName2.toUpperCase());
+                            if (tmpShape==null)
+                            {
+                                if (startRexxVariableChar.indexOf(nickName2.charAt(0))>=0) // a Rexx variable?
+                                {
+                                    tmpShape=(Shape) getContextVariable(slot, nickName2);
+                                }
+                                if (tmpShape==null)
+                                {
+                                    throw new IllegalArgumentException("no Area or Shape with name \""+nickName2+"\" stored, nor a Rexx variable that refers to a shape object");
+                                }
+                            }
+
+                            Area tmpAreaRHS = (tmpShape instanceof Area) ? (Area) tmpShape : new Area(tmpShape);
+                            if (cmd==EnumCommand.AREA_ADD)
+                            {
+                                tmpArea1.add(tmpAreaRHS);
+                            }
+                            else if (cmd==EnumCommand.AREA_EXCLUSIVE_OR)
+                            {
+                                tmpArea1.exclusiveOr(tmpAreaRHS);
+                            }
+                            else if (cmd==EnumCommand.AREA_INTERSECT)
+                            {
+                                tmpArea1.intersect(tmpAreaRHS);
+                            }
+                            else if (cmd==EnumCommand.AREA_SUBTRACT)
+                            {
+                                tmpArea1.subtract(tmpAreaRHS);
+                            }
+                        }
+                        resultValue=tmpArea1;
+                        break;
+                    }
+
 
                 case PATH_APPEND:       //   "pathAppend pathName shapeName {Shape|PathIterator-via-Rexx-variable} [connect=.true]"
                     {
@@ -4637,7 +4837,9 @@ if (al.size()<2) // blanks supplied
 
 
 
-/*
+/* TODO: get and save in image Map under the name "clipboard"; set from current or map image
+         check JavaFX Clipboard interfaces first, if possible create a matching implementation
+         in plain Java (dealing with images, text and html text only)
                 case CLIPBOARD_GET:     //   "clipboardGet [imgName]": if imgName given, saves it and returns image width and height, else draws img and returns it as an img object
                 case CLIPBOARD_SET:     //   "clipboardSet [imgName]": copies current image to clipboard, if imgName given uses cached image instead; returns pre clipboard img object (if any) or .nil
                     {
@@ -5006,6 +5208,28 @@ if (al.size()<2) // blanks supplied
     }
 
         // create an ooRexx like array expression
+    /** Returns a Rexx array expression from received <code>float</code> array.
+     * @param floatArray int array to work on
+     * @return rendered Rexx array expression
+     */
+    static String floatArrayToRexxArrayExpression(float [] floatArray)
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append(arrayOpenDeli);
+        if (floatArray != null)
+        {
+            int last=floatArray.length-1;
+            for (int i=0;i<floatArray.length;i++)
+            {
+                sb.append(""+floatArray[i]);
+                if (i<last) sb.append(',');
+            }
+        }
+        sb.append(arrayCloseDeli);
+        return sb.toString();
+    }
+
+        // create an ooRexx like array expression
     /** Returns a Rexx array expression from received <code>int</code> array.
      * @param intArray int array to work on
      * @return rendered Rexx array expression
@@ -5204,6 +5428,7 @@ enum EnumCommand {
     WIN_FRAME                   ( "winFrame"                 ) ,    //   "winFrame [.true|.false]": query or set JFrame's frame according to argument
     WIN_HIDE                    ( "winHide"                  ) ,    //   "winHide" hide JavaDrawingFrame
     WIN_LOCATION                ( "winLocation"              ) ,    //   (synonym: WINMOVETO)"winLocation [x y]" get or set location on screen
+    WIN_RESIZABLE               ( "winResizable"             ) ,    //   "winResizable [.true|.false]": query or set JFrame's frame according to argument
     WIN_SCREEN_SIZE             ( "winScreenSize"            ) ,    //   "winScreenSize" query screen's width and size
     WIN_SHOW                    ( "winShow"                  ) ,    //   "winShow" show JavaDrawingFrame
     WIN_SIZE                    ( "winSize"                  ) ,    //   "winSize [width height]" query or set position
@@ -5237,6 +5462,14 @@ enum EnumCommand {
     // 2023-01-08
     ASSIGN_RC                   ( "assignRC"                 ) ,    //   "assignRC RexxVariable"
 
+    // 2023-06-05
+    AREA_ADD                    ( "areaAdd"                  ) ,    //   "areaAdd         areaName shapeName..."
+    AREA_EXCLUSIVE_OR           ( "areaExclusiveOr"          ) ,    //   "areaExclusiveOr areaName shapeName..."
+    AREA_INTERSECT              ( "areaIntersect"            ) ,    //   "areaIntersect   areaName shapeName..."
+    AREA_SUBTRACT               ( "areaSubtract"             ) ,    //   "areaSubtract    areaName shapeName..."
+    AREA_TRANSFORM              ( "areaTransform"            ) ,    //   "areaTransform   areaName tNickname"
+
+
 
     NO_OP                       ( "noOp"                     )      // last element, doing nothing
                                ;
@@ -5263,6 +5496,9 @@ enum EnumCommand {
          upperCase2Command.put( "POS"        , MOVE_TO   ) ;    // 2022-10-29: new alias
          upperCase2Command.put( "POSITION"   , MOVE_TO   ) ;    // 2022-10-26: new alias
          upperCase2Command.put( "WINMOVETO"  , WIN_LOCATION ) ;
+         upperCase2Command.put( "SHAPECLIP"  , CLIP_SHAPE   ) ; // 2023-06-06
+         upperCase2Command.put( "SHAPEDRAW"  , DRAW_SHAPE   ) ; // 2023-06-06
+         upperCase2Command.put( "SHAPEFILL"  , FILL_SHAPE   ) ; // 2023-06-06
     }
 
 
@@ -5331,13 +5567,10 @@ enum EnumCommand {
  */
 
 enum EnumShape {
-    // define the enum values for the commands available to Rexx programs,
-    // supplying the strings associated with them                   // ? synonyms too
+    // define the Shape enum values for the commands available to Rexx programs,
+    // supplying the strings associated with them
 
-    // 20220929: do not support Shapes, maybe in a future update; one can always
-    //           get access using "gc" command and interact with it from ooRexx directly
-    // java.awt.Graphics or java.awt.Graphics2D related
-
+    SHAPE_AREA                  ( "Area"                    ),
     SHAPE_ARC2D                 ( "Arc2D"                   ),
     SHAPE_CUBIC_CURVE2D         ( "CubicCurve2D"            ),
     SHAPE_ELLIPSE2D             ( "Ellipse2D"               ),
@@ -5350,7 +5583,6 @@ enum EnumShape {
 
 
     // as of 2022-12-04: intentionally not (yet?) implemented, let that known as a failure
-    SHAPE_AREA                  ( "Area"                    ),
     SHAPE_POINT2D               ( "Point2D"                 ),
 
     NO_OP                       ( "noOp"                    )      // last element, doing nothing
@@ -5371,23 +5603,20 @@ enum EnumShape {
 
          // we allow shortening the shape type to the significant letters (at least 2 letters)
          // add synonyms      new name      enum type
-         upperCase2Shape.put( "AR"            , SHAPE_ARC2D             ) ;
+//         upperCase2Shape.put( "ARE"           , SHAPE_AREA              ) ; no abbreviation, would be ridiculous
          upperCase2Shape.put( "ARC"           , SHAPE_ARC2D             ) ;
-         upperCase2Shape.put( "CU"            , SHAPE_CUBIC_CURVE2D     ) ;
+         upperCase2Shape.put( "CUBIC"         , SHAPE_CUBIC_CURVE2D     ) ;
          upperCase2Shape.put( "CUBICCURVE"    , SHAPE_CUBIC_CURVE2D     ) ;
-         upperCase2Shape.put( "EL"            , SHAPE_ELLIPSE2D         ) ;
+         upperCase2Shape.put( "ELLI"          , SHAPE_ELLIPSE2D         ) ;
          upperCase2Shape.put( "ELLIPSE"       , SHAPE_ELLIPSE2D         ) ;
-         upperCase2Shape.put( "LI"            , SHAPE_LINE2D            ) ;
          upperCase2Shape.put( "LINE"          , SHAPE_LINE2D            ) ;
-         upperCase2Shape.put( "PA"            , SHAPE_PATH2D            ) ;
          upperCase2Shape.put( "PATH"          , SHAPE_PATH2D            ) ;
-         upperCase2Shape.put( "PO"            , SHAPE_POLYGON           ) ;
          upperCase2Shape.put( "POLYGON"       , SHAPE_POLYGON           ) ;
-         upperCase2Shape.put( "QU"            , SHAPE_QUAD_CURVE2D      ) ;
+         upperCase2Shape.put( "QUAD"          , SHAPE_QUAD_CURVE2D      ) ;
          upperCase2Shape.put( "QUADCURVE"     , SHAPE_QUAD_CURVE2D      ) ;
-         upperCase2Shape.put( "RE"            , SHAPE_RECTANGLE2D       ) ;
+         upperCase2Shape.put( "RECT"          , SHAPE_RECTANGLE2D       ) ;
          upperCase2Shape.put( "RECTANGLE"     , SHAPE_RECTANGLE2D       ) ;
-         upperCase2Shape.put( "RO"            , SHAPE_ROUND_RECTANGLE2D ) ;
+         upperCase2Shape.put( "ROUNDRECT"     , SHAPE_ROUND_RECTANGLE2D ) ;
          upperCase2Shape.put( "ROUNDRECTANGLE", SHAPE_ROUND_RECTANGLE2D ) ;
     }
 
