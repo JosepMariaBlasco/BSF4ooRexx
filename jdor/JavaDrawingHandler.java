@@ -141,6 +141,11 @@
                     - removed shape abbreviations that were too short to convey any meaning or
                       (LI, PA, PO), changed shape abbreviations to allow inferring better (CU->CUBIC,
                       EL->ELLI, QU->QUAD, RE->RECT, RO->ROUNDRECT)
+        2023-06-08: - fixed bugs in Shape area (tested with new sample "1-190_JDOR_shapes.rxj")
+                    - fixed (introduced) bug in processCommand() that inhibited processing the
+                      redirected commands via redirected input
+                    - now handleCommand() will have the triggering command processed when
+                      executing redirected input
 
 */
 
@@ -572,6 +577,8 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
         Object res=null;
         if (isInputRedirected(slot))    // take commands via redirected input
         {
+            res=processCommand(slot, address, command, nrCommand, null);    // process kick-off command first
+
             String currCommand=null;
             while ( (currCommand=readInput(slot)) != null)   // feed commands from redirected input
             {
@@ -582,7 +589,7 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                 }
             }
         }
-        else    // single command
+        else    // single command, indicated by null in fifth argument
         {
             res=processCommand(slot, address, command, nrCommand, null);
         }
@@ -600,6 +607,10 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
      */
     Object processCommand(Object slot, String address, String command, int nrCommand, String currCommand)
     {
+        if (currCommand!=null)      // a command from redirected input, then it prevails
+        {
+            command=currCommand;    // direct command that triggered handler gets ignored in this use case
+        }
         String [] arrCommand = null;
 
         boolean isOR = isOutputRedirected(slot);    // is output redirected ?
@@ -4140,7 +4151,7 @@ if (al.size()<2) // blanks supplied
                                         {
                                             writeOutput(slot, "-- ERROR (nickname argument): ["+command+"]");
                                         }
-                                        return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-25", errMsg );
+                                        return createCondition (slot, nrCommand, command, ConditionType.ERROR, "-26", errMsg );
                                     }
 
                                     int windingType=1;  // default to WIND_NON_ZERO (1)
@@ -4186,7 +4197,7 @@ if (al.size()<2) // blanks supplied
                             default:
                                 {
                                     String errMsg="shape type \""+canonicalShapeType+"\" not known/implemented";
-                                    return createCondition (slot, nrCommand, command, ConditionType.FAILURE, "-26", errMsg );
+                                    return createCondition (slot, nrCommand, command, ConditionType.FAILURE, "-27", errMsg );
                                 }
                         }
                         hmShapes.put(ucNickName,sh);
@@ -5380,8 +5391,8 @@ enum EnumCommand {
     // 2022-12-08
     PATH_CLONE                  ( "pathClone"                ) ,    //   "pathClone shapeName [newShapeName]"
     PATH_TRANSFORM              ( "pathTransform"            ) ,    //   "pathTransform shapeName atName"
-    CLIPBOARD_GET               ( "clipboardGet"             ) ,    //   "clipboardGet [imgName]"
-    CLIPBOARD_SET               ( "clipboardSet"             ) ,    //   "clipboardSet [imgName]"
+    CLIPBOARD_GET               ( "clipboardGet"             ) ,    //   "clipboardGet [imgName]" ... if imgName: save in hmImages
+    CLIPBOARD_SET               ( "clipboardSet"             ) ,    //   "clipboardSet [imgName]" ... if imgName: get from hmImages
 
     // 2023-01-08
     ASSIGN_RC                   ( "assignRC"                 ) ,    //   "assignRC RexxVariable"

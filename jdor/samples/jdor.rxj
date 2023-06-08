@@ -64,7 +64,6 @@ do
    else if \bShowCommands & .sysCargs~items>1 then
       exit -2   -- indicate too many arguments
 end
-
    -- create JDOR handler
 jdh=.bsf~new("org.oorexx.handlers.jdor.JavaDrawingHandler")
    -- define "JDOR" address environment serviced by our JDOR handler
@@ -85,8 +84,7 @@ do
    else
       address jdor with input using (s) error using (.error)
 
-   "-- comment to JDOR" -- kick Rexx to send a command (a comment) to JDOR
-   say "--> done."
+   "-- a JDOR comment (by "thisPgmName") to trigger JDOR handler (by ooRexx) such that it becomes able to read from redirected input"
    exit 0
 end
 exit -11    -- indicate state is NOTREADY
