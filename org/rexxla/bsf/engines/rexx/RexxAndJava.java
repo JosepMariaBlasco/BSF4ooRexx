@@ -40,7 +40,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 850, 2022-09-02
+  * @version 850, 2022-12-31
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -53,6 +53,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
 
  /*
+     2022-12-31, rgf  - added Till Winkler to kudos
      2022-09-02, rgf  - added argument string to jniCreateCollectionObject ()
      2022-09-01, rgf  - new protected native Object  jniCreateCollectionObject (Object[] slot, int kind)
                         to ease handler code, if it wants to set a context variable with information
@@ -625,7 +626,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "850.20220902";
+    static final public String version = "850.20221231";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -2849,7 +2850,7 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
                           );
                    }
                }
-// System.err.println(" /// RexxAndJava - CREATE_ARRAY_OBJECT_OF --> ["+java.util.Arrays.toString((Object[])arr)+"]");
+// System.err.println(" /// "+this+" - CREATE_ARRAY_OBJECT_OF: arr=["+arr+"] --> ["+java.util.Arrays.toString((Object[])arr)+"]");
                return makeString4Rexx(this, arr);     // return the single dimensioned array object
            }
 
@@ -3889,7 +3890,7 @@ if (bDebug)
 
                    Object tmp = null;
                    tmp=lookupBean(this, args[1]);
-
+// System.err.println(" /// "+this+" - LOOKUP_BEAN: args[1]=["+args[1]+"], after lookupBean=["+tmp+"]");
                    if (tmp!=null)
                    {
                       return makeString4Rexx(this, tmp);
@@ -4587,6 +4588,7 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): b) unregister=
                            "Turner, Bill"                           + "\n" + // 2011-04-10, rgf
                            "Waglechner, Christoph"                  + "\n" +
                            "Wilson, Gray (artwork: graphics, icons)"+ "\n" +
+                           "Winkler, Till"                          + "\n" + // 2022-12-31, rgf
                            "Woehr, Jack"                            + "\n" +
                            "Wolfers, Jon (Sahananda)"
                            ;
@@ -5476,6 +5478,7 @@ System.err.println(this+":  registerBean4JNI(object=["+object+"]): object.getCla
 final boolean bDebug=false;
 if (bDebug)
 {
+    System.err.print(rajo+".registerBean(): rajo.bsfPrefixReturnValue=["+rajo.bsfPrefixReturnValue+"] <=== <--- <===");
     System.err.print(rajo+".registerBean(beanName=["+beanName+"], object=["+object+"]: ");
 }
 
@@ -5846,6 +5849,9 @@ if (bDebug) System.err.println("makeString4Rexx(): TSK # 1");
                 // possible to refer to from Rexx as well
 
        String beanName = makeBeanName(rajo, o);
+
+if (bDebug) System.err.println("makeString4Rexx(): returning -> registerBean(rajo, beanName, o), beanName=["+beanName+"]");
+
        return registerBean(rajo, beanName, o);
     }
 

@@ -19,6 +19,8 @@
           .BSF in .environment;
 
    date:
+
+         2023-05-11, ---rgf, - corrected RexxDoc to only use "runLater" and "runLaterLatest"
          2023-03-12, ---rgf, - added new public routine "bsf.initRAJinstance" to initialize
                                RexxAndJava peer; allows to be called directly by RexxScriptEngine
                                (ooRexx will not run prolog of re-required BSF.CLS, hence need to
@@ -837,7 +839,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     8.50 (20230412)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
+   version:     8.50 (20230608)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -940,7 +942,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="850.20230412" -- set version (date distribution got created)
+      .bsf4rexx~version="850.20230608" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -5488,7 +5490,7 @@ syntax:
     interact with the GUI and the elements. However, if Rexx code on a non-GUI-thread wishes
     to interact with the GUI, this would hang the GUI (single threaded implementations are
     typical for GUIs). Rather, such an interaction must occur on the GUI thread.
-    <p>The class methods <code>fxRunLater</code> and <code>fxRunLaterLatest</code> allow
+    <p>The class methods <code>runLater</code> and <code>runLaterLatest</code> allow
     Rexx programmers to send Rexx messages later, when running in the GUI thread.
 
     @since 2017-08-14
@@ -5827,7 +5829,7 @@ syntax:
     interact with the GUI and the elements. However, if Rexx code on a non-GUI-thread wishes
     to interact with the GUI, this would hang the GUI (single threaded implementations are
     typical for GUIs). Rather, such an interaction must occur on the GUI thread.
-    <p>The class methods <code>fxRunLater</code> and <code>fxRunLaterLatest</code> allow
+    <p>The class methods <code>runLater</code> and <code>runLaterLatest</code> allow
     Rexx programmers to send Rexx messages later, when running in the GUI thread.
 
     @since 2017-08-05
@@ -5887,7 +5889,7 @@ syntax:
     interact with the GUI and the elements. However, if Rexx code on a non-GUI-thread wishes
     to interact with the GUI, this would hang the GUI (single threaded implementations are
     typical for GUIs). Rather, such an interaction must occur on the GUI thread.
-    <p>The class methods <code>awtRunLater</code> and <code>awtRunLaterLatest</code> allow
+    <p>The class methods <code>runLater</code> and <code>runLaterLatest</code> allow
     Rexx programmers to send Rexx messages later, when running in the GUI thread.
 
     @since 2018-07-14

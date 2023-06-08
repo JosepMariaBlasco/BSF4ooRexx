@@ -985,9 +985,11 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 //  // #define DEBUG_REXX_PROXY     // 2022-08-11, debugging sendMessageScoped(...)
 //  #define DEBUG_REXX_PROXY_BSF
-//  #define INFO_SEND_MESSAGE_TO_REXX_OBJECT
+// #define INFO_SEND_MESSAGE_TO_REXX_OBJECT
+// #define DEBUG_SEND_MESSAGE_TO_REXX_OBJECT
+// #define DEBUG_JNI
+// #define DEBUG_JNI_ENTRY
 //  #define DEBUG_BSF_FUNCTION
-//  #define DEBUG_SEND_MESSAGE_TO_REXX_OBJECT
 //  #define DEBUG_CREATE_REXX_EXCEPTION
 
 // #define DEBUG_COMMAND_HANDLER       // 2022-08-20: allow for debugging command handler interactions
@@ -9970,6 +9972,10 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
             snprintf( msg, 1024, "%.16s/routine/jniRexxSendMessageToRexxObject(), error 1b: argument messageName is NULL (not supplied from Java)", DLLNAME);
         }
 
+#if defined(DEBUG_SEND_MESSAGE_TO_REXX_OBJECT)
+   fprintf(stderr, "//-->// %s %d %s: [%s] \\\\<--\\\\ \n", DLLNAME, __LINE__, __FUNCTION__, msg); fflush(stderr);
+#endif
+
         jthrowable j_rexxException=RgfCreateRexxException4Java(env, jobj,
                                                               NULL, // rtc,
                                                               NULL, // conditionObject
@@ -10023,13 +10029,13 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
 
         if (instance!=tmpInstance)
         {
-            fprintf(stderr, "\n-------------->\n---> arrived in _jniRexxSendMessageToRexxObject(),      count=[%8d], tid=[%6lu], rii_ID=[%p] <> rii_ID=[%p] (NOT OK!) | rii_id=[%s]~%s\n",
-                            ++count, (unsigned long) RgfGetTID(), instance, tmpInstance, c_rgf_obj_ID, c_rgf_msg);
+            fprintf(stderr, "\n-------------->\n---> arrived in _jniRexxSendMessageToRexxObject(),      line #=[%d]: count=[%8d], tid=[%6lu], rii_ID=[%p] <> rii_ID=[%p] (NOT OK!) | c_rgf_ojb_ID=[%s]~%s\n",
+                            __LINE__, ++count, (unsigned long) RgfGetTID(), instance, tmpInstance, c_rgf_obj_ID, c_rgf_msg);
         }
         else
         {
-            fprintf(stderr, "\n-------------->\n---> arrived in _jniRexxSendMessageToRexxObject(),      count=[%8d], tid=[%6lu], rii_ID=[%p] | rii_id=[%s]~%s\n",
-                            ++count, (unsigned long) RgfGetTID(), instance, c_rgf_obj_ID, c_rgf_msg );
+            fprintf(stderr, "\n-------------->\n---> arrived in _jniRexxSendMessageToRexxObject(),      line #=[%d]: count=[%8d], tid=[%6lu], rii_ID=[%p] | c_rgf_ojb_ID=[%s]~%s\n",
+                            __LINE__, ++count, (unsigned long) RgfGetTID(), instance, c_rgf_obj_ID, c_rgf_msg );
         }
         fflush(stderr);
 
@@ -10053,6 +10059,10 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
     {
        char *msg=new char[1024];
        snprintf( msg, 1024, "%.16s/routine/jniRexxSendMessageToRexxObject(), error 2: Rexx interpreter instance with the ID '%.256s' could not be found", DLLNAME, c_rii_ID);
+
+#if defined(DEBUG_SEND_MESSAGE_TO_REXX_OBJECT)
+   fprintf(stderr, "//-->// %s %d %s: [%s] \\\\<--\\\\ \n", DLLNAME, __LINE__, __FUNCTION__, msg); fflush(stderr);
+#endif
 
        jthrowable j_rexxException=RgfCreateRexxException4Java(env, jobj,
                                                              NULL, // rtc,
@@ -10088,6 +10098,10 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
         char *msg=new char[1024];
         snprintf(msg, 1024, "%.16s/routine/jniRexxSendMessageToRexxObject(), error 3: could not AttachThread() to Rexx interpreter instance with the ID '%.256s'", DLLNAME, c_rii_ID);
 
+#if defined(DEBUG_SEND_MESSAGE_TO_REXX_OBJECT)
+   fprintf(stderr, "//-->// %s %d %s: [%s] \\\\<--\\\\ \n", DLLNAME, __LINE__, __FUNCTION__, msg); fflush(stderr);
+#endif
+
         jthrowable j_rexxException=RgfCreateRexxException4Java(env, jobj,
                                                              NULL, // rtc,
                                                              NULL, // conditionObject
@@ -10101,9 +10115,9 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
         return NULL;
     }
 
-#if defined (INFO_ATTACH_THREAD)        // rgf, 2017-08-19
-    fprintf(stderr, "            ... _jniRexxSendMessageToRexxObject(),      count=[%8d], tid=[%6lu], rii_ID=[%p]->AttachThread(): done, rtc=[%p].\n",
-                    count, (unsigned long) RgfGetTID(), instance, rtc );
+#if defined (INFO_ATTACH_THREAD)  || defined (DEBUG_SEND_MESSAGE_TO_REXX_OBJECT)
+    fprintf(stderr, "            ... _jniRexxSendMessageToRexxObject(),      line #=[%d] count=[%8d], tid=[%6lu], rii_ID=[%p]->AttachThread(): done, rtc=[%p].\n",
+                    __LINE__, count, (unsigned long) RgfGetTID(), instance, rtc );
     fflush(stderr);
 #endif
 
@@ -10233,6 +10247,10 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
         {
             char *msg=new char[1024];
             snprintf( msg, 1024, "%.16s/routine/jniRexxSendMessageToRexxObject(), error 4b: argument SCOPE=[%s] does not resolve to an ooRexx class object", DLLNAME, c_scope);
+
+#if defined(DEBUG_SEND_MESSAGE_TO_REXX_OBJECT)
+   fprintf(stderr, "//-->// %s %d %s: [%s] \\\\<--\\\\ \n", DLLNAME, __LINE__, __FUNCTION__, msg); fflush(stderr);
+#endif
 
             jthrowable j_rexxException=RgfCreateRexxException4Java(env, jobj,
                                                                   NULL, // rtc,
@@ -10365,6 +10383,11 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
     {
         RexxDirectoryObject condObj=rtc->GetConditionInfo();
         char * msg=RgfCreateRexxlikeErrorInfo (rtc, condObj, "/routine/jniRexxSendMessageToRexxObject(), error 5");
+
+#if defined(DEBUG_SEND_MESSAGE_TO_REXX_OBJECT)
+   fprintf(stderr, "//-->// %s %d %s: [%s] \\\\<--\\\\ \n", DLLNAME, __LINE__, __FUNCTION__, msg); fflush(stderr);
+#endif
+
         jthrowable j_rexxException=RgfCreateRexxException4Java(env, jobj,
                                                              rtc, // rtc,
                                                              condObj, // conditionObject
@@ -10402,6 +10425,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
 
 
 #if defined(DEBUG_JNI) || defined (DEBUG_40) || defined (DEBUG_REXX_PROXY) || defined (DEBUG_SEND_MESSAGE_TO_REXX_OBJECT)
+    fprintf(stderr, "--- returning from: .._jniRexxSendMessageToRexxObject(...): result_obj=[%p]=[%s]\n",result_obj, result_obj!=NULL ? rtc->ObjectToStringValue(result_obj):"NULLOBJECT");fflush(stderr);
     fprintf(stderr, "<-- returning from: .._jniRexxSendMessageToRexxObject(...): thisTid=[%lu], everything o.k.\n",(unsigned long) thisTid);fflush(stderr);
 #endif
 

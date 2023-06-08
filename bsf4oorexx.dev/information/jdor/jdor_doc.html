@@ -28,6 +28,9 @@
                      - start to add the documentation for shapes and affinity transform
                        commands
     2023-01-09, rgf: - completing documentation (new sections for Shapes, Path2D)
+
+    2023-06-05, rgf: - add redirecting subkeywords in overview to address,
+                       document Area related commands
 -->
 
 
@@ -174,8 +177,9 @@ for creating the most challenging graphics (images) from Rexx.
 <!-- used IntelliJ to copy highlighted text to AOO swriter and saved as html; changed background
      and font-size (not sure why needed) -->
 <pre style="background: LemonChiffon; font-size: 75%">
-    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace"><FONT COLOR="#0033b3">call </FONT>addJdorHandler     <FONT COLOR="#8c8c8c"><I>-- load and add the Java Rexx command handler, default name: JDOR</I></FONT></FONT></FONT>
-    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace"><FONT COLOR="#0033b3">address </FONT>jdor            <FONT COLOR="#8c8c8c"><I>-- set default environment to the JDOR command handler</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace"><FONT COLOR="#0033b3">call </FONT>BsfCommandHandler <FONT COLOR="#067d17">&quot;add&quot;</FONT>, <FONT COLOR="#067d17">&quot;JDOR&quot;</FONT>, jdor   <FONT COLOR="#8c8c8c"><I>-- add the JDOR handler to ooRexx</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace"><FONT COLOR="#0033b3">address </FONT>JDOR            <FONT COLOR="#8c8c8c"><I>-- set default environment to the JDOR command handler</I></FONT></FONT></FONT>
+    <FONT COLOR="#8c8c8c">    <FONT FACE="IBM Plex Mono, monospace"><I>-- now we may use JDOR commands, executed by default by the JDOR command handler</I></FONT></FONT>
     <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">width <FONT COLOR="#cc3300">=</FONT><FONT COLOR="#1750eb">220              </FONT><FONT COLOR="#8c8c8c"><I>-- define width of image in pixels (there are 72 px to an inch)</I></FONT></FONT></FONT>
     <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">height<FONT COLOR="#cc3300">=</FONT><FONT COLOR="#1750eb">250              </FONT><FONT COLOR="#8c8c8c"><I>-- define height of image in pixels (there are 72 px to an inch)</I></FONT></FONT></FONT>
     <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">newImage width height   <FONT COLOR="#8c8c8c"><I>-- create new bitmap with currX=0, currY=0, width=220, height=250</I></FONT></FONT></FONT>
@@ -208,7 +212,7 @@ for creating the most challenging graphics (images) from Rexx.
     <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace"><FONT COLOR="#0033b3">do counter </FONT>c i<FONT COLOR="#cc3300">=</FONT><FONT COLOR="#1750eb">0 </FONT><FONT COLOR="#0033b3">to </FONT><FONT COLOR="#1750eb">30 </FONT><FONT COLOR="#0033b3">by </FONT>lineHeight   <FONT COLOR="#8c8c8c"><I>-- iterate over array of strings</I></FONT></FONT></FONT>
     <FONT COLOR="#080808"><FONT COLOR="#8c8c8c">   </FONT><FONT FACE="IBM Plex Mono, monospace">s</FONT><FONT COLOR="#cc3300"><FONT FACE="IBM Plex Mono, monospace">=</FONT></FONT><FONT FACE="IBM Plex Mono, monospace">text[c]            </FONT><FONT COLOR="#8c8c8c"><FONT FACE="IBM Plex Mono, monospace"><I>-- fetch the string to draw from array</I></FONT></FONT></FONT>
     <FONT COLOR="#080808"><FONT COLOR="#8c8c8c">   </FONT><FONT FACE="IBM Plex Mono, monospace">stringBounds s       </FONT><FONT COLOR="#8c8c8c"><FONT FACE="IBM Plex Mono, monospace"><I>-- get the bounding box dimensions for this string</I></FONT></FONT></FONT>
-    <FONT COLOR="#080808"><FONT COLOR="#8c8c8c">   </FONT><FONT COLOR="#0033b3"><FONT FACE="IBM Plex Mono, monospace">parse var </FONT></FONT><FONT FACE="IBM Plex Mono, monospace">rc . . w . </FONT><FONT COLOR="#8c8c8c"><FONT FACE="IBM Plex Mono, monospace"><I>-- parse the width of the string's bounding box</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT COLOR="#8c8c8c">   </FONT><FONT COLOR="#0033b3"><FONT FACE="IBM Plex Mono, monospace">parse var </FONT></FONT><FONT FACE="IBM Plex Mono, monospace">rc </FONT><FONT COLOR="#0033b3"><FONT FACE="IBM Plex Mono, monospace">. . </FONT></FONT><FONT FACE="IBM Plex Mono, monospace">w </FONT><FONT COLOR="#0033b3"><FONT FACE="IBM Plex Mono, monospace">. </FONT></FONT><FONT COLOR="#8c8c8c"><FONT FACE="IBM Plex Mono, monospace"><I>-- parse the width of the string's bounding box</I></FONT></FONT></FONT>
     <FONT COLOR="#080808"><FONT COLOR="#8c8c8c">   </FONT><FONT FACE="IBM Plex Mono, monospace">moveTo (width</FONT><FONT COLOR="#cc3300"><FONT FACE="IBM Plex Mono, monospace">-</FONT></FONT><FONT FACE="IBM Plex Mono, monospace">w)</FONT><FONT COLOR="#cc3300"><FONT FACE="IBM Plex Mono, monospace">/</FONT></FONT><FONT COLOR="#1750eb"><FONT FACE="IBM Plex Mono, monospace">2 </FONT></FONT><FONT FACE="IBM Plex Mono, monospace">(newY</FONT><FONT COLOR="#cc3300"><FONT FACE="IBM Plex Mono, monospace">+</FONT></FONT><FONT FACE="IBM Plex Mono, monospace">i)   </FONT><FONT COLOR="#8c8c8c"><FONT FACE="IBM Plex Mono, monospace"><I>-- calc x position to center this string, set y position</I></FONT></FONT></FONT>
     <FONT COLOR="#080808"><FONT COLOR="#8c8c8c">   </FONT><FONT FACE="IBM Plex Mono, monospace">color clrs[c]        </FONT><FONT COLOR="#8c8c8c"><FONT FACE="IBM Plex Mono, monospace"><I>-- fetch and use the color from the array</I></FONT></FONT></FONT>
     <FONT COLOR="#080808"><FONT COLOR="#8c8c8c">   </FONT><FONT FACE="IBM Plex Mono, monospace">drawString s         </FONT><FONT COLOR="#8c8c8c"><FONT FACE="IBM Plex Mono, monospace"><I>-- draw the string</I></FONT></FONT></FONT>
@@ -216,7 +220,8 @@ for creating the most challenging graphics (images) from Rexx.
     <FONT COLOR="#080808"><FONT COLOR="#0033b3">   </FONT><FONT COLOR="#8c8c8c"><FONT FACE="IBM Plex Mono, monospace"><I>-- save the current image</I></FONT></FONT></FONT>
     <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">saveImage <FONT COLOR="#067d17">&quot;jdor_doc_sample.png&quot;  </FONT><FONT COLOR="#8c8c8c"><I>-- save image to file &quot;jdor_doc_sample.png&quot;</I></FONT></FONT></FONT>
     <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">sleep <FONT COLOR="#1750eb">3.123             </FONT><FONT COLOR="#8c8c8c"><I>-- sleep for 3.123 seconds</I></FONT></FONT></FONT>
-    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace"><FONT COLOR="#0033b3">::requires </FONT><FONT COLOR="#067d17">&quot;jdor.cls&quot;   </FONT><FONT COLOR="#8c8c8c"><I>-- Rexx package that defines the public routine addJdorHandler()</I></FONT></FONT></FONT>
+    &nbsp;
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace"><FONT COLOR="#0033b3">::requires </FONT><FONT COLOR="#067d17">&quot;BSF.CLS&quot;    </FONT><FONT COLOR="#8c8c8c"><I>-- get ooRexx-Java bridge, contains JDOR Rexx command handler</I></FONT></FONT></FONT>
 </PRE>
 
 
@@ -260,11 +265,17 @@ will get rounded to integer values by <em>JDOR</em>.
        (i.e., its <em>WITH</em> subkeyword with the redirection definitions) has the following effects:
 <ul>
     <li>redirecting <em>INPUT</em>: all commands are taken and processed from the redirected
-        input.
-        <br><em>Note:</em> you need to supply at least one command (e.g. a comment command like
+        input, e.g., from the <em>.input</em> monitor (defaults to the <em>.stdin</em> stream):
+
+        <br><em>Hint</em>: to activate output of executed JDOR commands in canonized form one
+        can redirect like this:
+
+        <pre>ADDRESS JDOR WITH using input (.input) /* activate input redirection */ </pre>
+
+        <em>Note:</em> you need to supply at least one command (e.g. a comment command like
         <code><em>"-- some comment"</code></em>) to the command handler
         such that it gets invoked and becomes able to note that input is redirected, such
-        that it takes the commands from the redirected input.
+        that it takes the commands from the redirected input.<p>
 
     <li>redirecting <em>OUTPUT</em>: all processed commands will be put into the output target
         in canonical form, thereby standardizing the names and arguments of the commands. The
@@ -275,11 +286,18 @@ will get rounded to integer values by <em>JDOR</em>.
         a comment with information about the error or failure (in this case supplying more
         detailed information, like the exact location).
 
+        <br><em>Hint</em>: to activate output of executed JDOR commands in canonized form
+        one can redirect like this (the <em>.output</em> monitor defaults to the <em>.stdout</em>
+        stream):
+
+        <pre>ADDRESS JDOR WITH using output (.output) /* activate error redirection */ </pre>
+
     <li>redirecting <em>ERROR</em>: all commands causing an error or failure condition will
         supplied together with the kind of error or failure. In the case of a failure more
         detailed information gets supplied, like the exact location.
         <br><em>Hint</em>: while developing or changing <em>JDOR</em> programs one can get
-        the detailed error and failure information by redirecting like this:
+        the detailed error and failure information by redirecting like this (the <em>.error</em>
+        monitor defaults to the <em>.stderr</em> stream):
 
         <pre>ADDRESS JDOR WITH using error (.error) /* activate error redirection */ </pre>
 
@@ -289,9 +307,11 @@ will get rounded to integer values by <em>JDOR</em>.
         indicates a failure and <em>1</em> indicates an error).
         <br>Once all errors and failures got fixed, the production code may then remove
         error redirection by changing the above redirection statetement to:
-        <pre>ADDRESS&nbsp;JDOR /* all unqualified commands should go to this handler */ </pre>
+        <pre>ADDRESS&nbsp;JDOR /* all unqualified commands should go to this handler */<pre/>
 </ul>
 
+<p>The <em>ADDRESS</em> keyword instruction is documented in the ooRexx reference book
+(<em>rexxref.pdf</em>) in <em>"Chapter 2.  Keyword Instructions"</em>, section <em>"2.1 ADDRESS"</em>).
 
 
 <p>To Rexx programmers the following <em>JDOR</em> related materials may be helpful:
@@ -396,6 +416,8 @@ title to the definition list
                 and then submitting the quoted name of the Rexx variable, e.g., <em>&quot;dashArray&quot;</em>,
                 as array argument; the command handler will then fetch the array from the Rexx variable
                 (after fetching the Rexx variable by name from the command context).
+                <br><em>Note</em>: if output is redirected the executed JDOR command will use
+                the string representation in the canonized form.
         </ul>
     </dd>
 
@@ -487,6 +509,8 @@ title to the definition list
                 and then submitting the quoted name of the Rexx variable, e.g. <em>&quot;xPoints&quot;</em>,
                 as array argument; the command handler will then fetch the array from the Rexx variable
                 (after fetching the Rexx variable by name from the command context)
+                <br><em>Note</em>: if output is redirected the executed JDOR command will use
+                the string representation in the canonized form.
         </ul>
     </dd>
 
@@ -535,6 +559,108 @@ value.
     <th> Command
     <th> Argument(s)
     <th> Description
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdAreaAdd"> &quot;areaAdd&quot;
+        <br> &quot;areaUnion&quot;
+    <td colspan="3"> The <em>constructive area geometry (CAG)</em> &quot;<em>add</em>&quot;
+        operation, cf. <a href="https://docs.oracle.com/javase/tutorial/2d/advanced/complexshapes.html" target="_blank">Constructing
+        Complex Shapes from Geometry Primitives</a>.
+
+        The <em>shapeNickName</em> argument gets uppercased and used to look it up
+        in the shape registry or if not found from a Rexx variable of the same name
+        and uses that shape instead.
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> areaNickName shapeNickName
+    <td><em>areaNickName</em> the registered area shape that will be changed by adding the area of the
+        <em>shapeNickName</em> as the argument. If <em>shapeNickName</em> is not yet of type
+        <a href="https://google.com/search?q=javadoc+8+Area" target="_blank"><em>java.awt.geom.Area</em></a>
+        then an <em>Area</em> gets created from it and used as the argument.
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdAreaExclusiveOr"> &quot;areaExclusiveOr&quot;
+        <br> &quot;areaXor&quot;
+    <td colspan="3"> The <em>constructive area geometry (CAG)</em> &quot;<em>exclusiveOr</em>&quot;
+        operation, cf. <a href="https://docs.oracle.com/javase/tutorial/2d/advanced/complexshapes.html" target="_blank">Constructing
+        Complex Shapes from Geometry Primitives</a>.
+
+        The <em>shapeNickName</em> argument gets uppercased and used to look it up
+        in the shape registry or if not found from a Rexx variable of the same name
+        and uses that shape instead.
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> areaNickName shapeNickName
+    <td><em>areaNickName</em> the registered area shape that will be changed by applying the <em>exclusiveOr</em>
+        operation using the area of the <em>shapeNickName</em> as the argument. If <em>shapeNickName</em>
+        is not yet of type
+        <a href="https://google.com/search?q=javadoc+8+Area" target="_blank"><em>java.awt.geom.Area</em></a>
+        then an <em>Area</em> gets created from it and used as the argument.
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdAreaIntersect"> &quot;areaIntersect&quot;
+    <td colspan="3"> The <em>constructive area geometry (CAG)</em> &quot;<em>intersect</em>&quot;
+        operation, cf. <a href="https://docs.oracle.com/javase/tutorial/2d/advanced/complexshapes.html" target="_blank">Constructing
+        Complex Shapes from Geometry Primitives</a>.
+
+        The <em>shapeNickName</em> argument gets uppercased and used to look it up
+        in the shape registry or if not found from a Rexx variable of the same name
+        and uses that shape instead.
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> areaNickName shapeNickName
+    <td><em>areaNickName</em> the registered area shape that will be changed by applying the <em>intersect</em>
+        operation using the area of the <em>shapeNickName</em> as argument. If <em>shapeNickName</em>
+        is not yet of type
+        <a href="https://google.com/search?q=javadoc+8+Area" target="_blank"><em>java.awt.geom.Area</em></a>
+        then an <em>Area</em> gets created from it and used as the argument.
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdAreaSubtract"> &quot;areaSubtract&quot;
+    <td colspan="3"> The <em>constructive area geometry (CAG)</em> &quot;<em>subtract</em>&quot;
+        operation, cf. <a href="https://docs.oracle.com/javase/tutorial/2d/advanced/complexshapes.html" target="_blank">Constructing
+        Complex Shapes from Geometry Primitives</a>.
+
+        The <em>shapeNickName</em> argument gets uppercased and used to look it up
+        in the shape registry or if not found from a Rexx variable of the same name
+        and uses that shape instead.
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> areaNickName shapeNickName
+    <td><em>areaNickName</em> the registered area shape that will be changed by applying the <em>subtract</em>
+        operation using the area of the <em>shapeNickName</em> as argument. If <em>shapeNickName</em>
+        is not yet of type
+        <a href="https://google.com/search?q=javadoc+8+Area" target="_blank"><em>java.awt.geom.Area</em></a>
+        then an <em>Area</em> gets created from it and used as the argument.
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdAreaTransform"> &quot;areaTransform&quot;
+    <td colspan="3"> Transforms the area shape.
+
+        The <em>transformNickName</em> argument gets uppercased and used to look it up
+        in the transform registry or if not found from a Rexx variable of the same name
+        and uses that transform (an AffinityTransform) instead.
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> areaNickName transformNickName
+    <td>
+         Transforms the area shape stored under the <em>areaNickName</em> and applies the
+         transform stored under the <a href="#cmdTransform"><em>transformNickName</em></a> to it.
 
 
     <!-- -------------------------------------------------------- -->
@@ -2027,6 +2153,32 @@ value.
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
+    <td class="command">  &quot;winResizable&quot;
+    <td colspan="2"> Queries and optionally sets the value. If set to <em>.true</em>, the frame (window)
+        that displays the current image can be resized, by default this property is set to <em>.false</em>.
+
+        <br>Querying the current value (no argument supplied) will return it, setting
+        (changing) the value to a new value will return the old (previously set) value
+        via the Rexx variable <em>RC</em>.
+
+        <br>Cf. the Java documentation for the Java class <em>java.awt.Frame</em> and the
+        method <em>setResizable(...)</em></em>.
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> booleanValue
+    <td> optional <em>booleanValue</em> can be one of
+         <em>1</em>,
+         <em>&quot;.true&quot;</em>,
+         <em>&quot;true&quot;</em>,
+         <em>0</em>,
+         <em>&quot;.false&quot;</em> or
+         <em>&quot;false&quot;</em>.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
     <td class="command">  &quot;winScreenSize&quot;
     <td colspan="2"> Returns the blank delimited values of the current screen's
         <em>width</em> and <em>height</em> in pixels via the Rexx variable <em>RC</em>
@@ -2188,6 +2340,7 @@ and use them for constructing <em>Path2D</em> shapes,
 filling shapes and drawing shapes:
 
 <ul>
+    <li><a href="https://google.com/search?q=javadoc+8+Area" target="_blank"><em>java.awt.geom.Area</em></a>
     <li><a href="https://google.com/search?q=javadoc+8+Arc2D" target="_blank"><em>java.awt.geom.Arc2D</em></a>
     <li><a href="https://google.com/search?q=javadoc+8+CubicCurve2D" target="_blank"><em>java.awt.geom.CubicCurve2D</em></a>
     <li><a href="https://google.com/search?q=javadoc+8+Ellipse2D" target="_blank"><em>java.awt.geom.Ellipse2D</em></a>
@@ -2212,20 +2365,31 @@ The <em>Shape</em> related <em>JDOR</em> Rexx commands are:
 <ul>
     <li><a href="#cmdShape"><em>shape</em></a>
                          (can be used to create one of the following shapes:
-                        <em>Arc2D</em>, <em>CubicCurve2D</em>,
+                        <em>Area</em>, <em>Arc2D</em>, <em>CubicCurve2D</em>,
                         <em>Ellipse2D</em>, <em>Line2D</em>, <em>Path2D</em>,
                         <em>QuadCurve2D</em>,
                         <em>Rectangle2D</em>, <em>RoundRectangle2D</em>)
 
-    <li><a href="#cmdClipShape"><em>clipShape</em></a>
-    <li><a href="#cmdDrawShape"><em>drawShape</em></a>
-    <li><a href="#cmdFillShape"><em>fillShape</em></a>
+    <li><a href="#cmdClipShape"><em>clipShape (shapeClip)</em></a>
+    <li><a href="#cmdDrawShape"><em>drawShape (shapeDraw)</em></a>
+    <li><a href="#cmdFillShape"><em>fillShape (shapeFill)</em></a>
     <li><a href="#cmdPathIterator"><em>pathIterator</em></a>
     <li><a href="#cmdShapeBounds"><em>shapeBounds</em></a>
 
 </ul>
 
-The <em>Path2D</em> specific <em>JDOR</em> Rexx commands are:
+The <em>Area</em> shape specific <em>JDOR</em> Rexx commands are:
+
+<ul>
+    <li><a href="#cmdAreaAdd"><em>areaAdd</em></a>
+    <li><a href="#cmdAreaExclusiveOr"><em>areaExclusiveOr</em></a>
+    <li><a href="#cmdAreaIntersect"><em>areaIntersect</em></a>
+    <li><a href="#cmdAreaSubtract"><em>areaSubtract</em></a>
+    <li><a href="#cmdAreaTransform"><em>areaTransform</em></a>
+
+</ul>
+
+The <em>Path2D</em> shape specific <em>JDOR</em> Rexx commands are:
 
 <ul>
     <li><a href="#cmdPathAppend"><em>pathAppend</em></a>
@@ -2248,7 +2412,7 @@ referred to value will be supplied, if using a Rexx expression it will be evalua
 resulting value will be supplied to the Rexx command handler.
 
 <p>If you wish to supply the name of a Rexx variable to a command (e.g.  for the command
-<a href="#cmdAssingRC"><em>assignRC</em></a>), then make sure to <em>enquote</em> that
+<a href="#cmdAssignRC"><em>assignRC</em></a>), then make sure to <em>enquote</em> that
 variable name as otherwise its value gets supplied instead.
 
 <p>Commands need not be enquoted, unless their names collide with Rexx keyword names (which
@@ -2306,11 +2470,25 @@ resulting command with arguments to the Rexx command handler.
     <td> Creates a new <em>Shape</em> of type <em>typeName</em> using <em>args</em> arguments,
          registers and returns it.
          <table>
-             <th>typeName <th>args <th width="60%">Brief Description
+             <th>typeName <th>arg(s) <th width="60%">Brief Description
 
                  <!--  ----------------------------------- -->
               <tr>
-                  <td class="command">Ar | Arc | <a href="https://google.com/search?q=javadoc+8+Arc2D" target="_blank">Arc2D</a>
+                  <td class="command" id="cmdShapeArea"><a href="https://google.com/search?q=javadoc+8+Area" target="_blank">Area</a>
+                  <td class="argument">shapeNickName
+                  <td>
+                       Defines a new area shape for the supplied shape.
+                       Using an area shape as argument will create a new area shape
+                       (effectively a copy).
+
+                       <br>All area related commands start with the word <em>area</em>.
+
+              <tr><td colspan="3" style="border: 1px solid black;border-collapse: collapse;">
+
+
+                 <!--  ----------------------------------- -->
+              <tr>
+                  <td class="command">Arc | <a href="https://google.com/search?q=javadoc+8+Arc2D" target="_blank">Arc2D</a>
                   <td class="argument">x y width height start extent type
                   <td>
                        Defines an arc shape at position <em>x</em> and <em>y</em>
@@ -2325,7 +2503,7 @@ resulting command with arguments to the Rexx command handler.
                        or a line should get drawn between the starting point, the center point and
                        the ending point  of the arc (<em>PIE</em> or <em>2</em>).
 
-              <tr><td><td colspan="2" style="border: 1px solid black;border-collapse: collapse;">
+              <tr><td colspan="3" style="border: 1px solid black;border-collapse: collapse;">
 
                  <!--  ----------------------------------- -->
               <tr>
@@ -2349,7 +2527,7 @@ resulting command with arguments to the Rexx command handler.
 
                  <!--  ----------------------------------- -->
               <tr>
-                  <td class="command">Cu | CubicCurve | <a href="https://google.com/search?q=javadoc+8+CubicCurve2D" target="_blank">CubicCurve2D</a>
+                  <td class="command">Cubic | CubicCurve | <a href="https://google.com/search?q=javadoc+8+CubicCurve2D" target="_blank">CubicCurve2D</a>
                   <td class="argument">x1 y1 ctrlx1 ctrly1 ctrlx2 ctrly2 x2 y2
                   <td> Defines a cubic parametric curve shape between the points <em>x1/y1</em> and
                        <em>x2/y2</em> controlled by the two control points located
@@ -2359,7 +2537,7 @@ resulting command with arguments to the Rexx command handler.
 
                  <!--  ----------------------------------- -->
               <tr>
-                  <td class="command">El | Ellipse | <a href="https://google.com/search?q=javadoc+8+Ellipse2D" target="_blank">Ellipse2D</a>
+                  <td class="command">Elli | Ellipse | <a href="https://google.com/search?q=javadoc+8+Ellipse2D" target="_blank">Ellipse2D</a>
                   <td class="argument">x y width height
                   <td>
                        Defines an ellipse (oval) shape at position <em>x</em> and <em>y</em>
@@ -2371,7 +2549,7 @@ resulting command with arguments to the Rexx command handler.
 
                  <!--  ----------------------------------- -->
               <tr>
-                  <td class="command">li | line | <a href="https://google.com/search?q=javadoc+8+Line2D" target="_blank">Line2D</a>
+                  <td class="command">line | <a href="https://google.com/search?q=javadoc+8+Line2D" target="_blank">Line2D</a>
                   <td class="argument">x1 y1 x2 y2
                   <td>
                        Defines a line shape that will be drawn from position <em>x1/y1</em> to
@@ -2381,7 +2559,7 @@ resulting command with arguments to the Rexx command handler.
 
                  <!--  ----------------------------------- -->
               <tr>
-                  <td class="command">pa | path | <a href="https://google.com/search?q=javadoc+8+Path2D" target="_blank">Path2D</a>
+                  <td class="command">path | <a href="https://google.com/search?q=javadoc+8+Path2D" target="_blank">Path2D</a>
                   <td class="argument">[rule]
                   <td>Creates a <em>Path2D</em> shape. The optional <em>rule</em>
                       can be either <em>0</em> (<em>WIND_EVEN_ODD</em>) or
@@ -2391,7 +2569,7 @@ resulting command with arguments to the Rexx command handler.
 
                  <!--  ----------------------------------- -->
               <tr>
-                  <td class="command">po | polygon | <a href="https://google.com/search?q=javadoc+8+Polygon" target="_blank">Polygon</a>
+                  <td class="command"><a href="https://google.com/search?q=javadoc+8+Polygon" target="_blank">Polygon</a>
                   <td class="argument">xPoints-array yPoints-array nPoints
                   <td>Creates a <em>Polygon</em> shape consisting of <em>nPoints</em>
                       taken from the
@@ -2406,7 +2584,7 @@ resulting command with arguments to the Rexx command handler.
 
                  <!--  ----------------------------------- -->
               <tr>
-                  <td class="command">Qu | QuadCurve | <a href="https://google.com/search?q=javadoc+8+QuadCurve2D" target="_blank">QuadCurve2D</a>
+                  <td class="command">Quad | QuadCurve | <a href="https://google.com/search?q=javadoc+8+QuadCurve2D" target="_blank">QuadCurve2D</a>
                   <td class="argument">x1 y1 ctrlx ctrly x2 y2
                   <td> Defines a quadratic parametric curve shape between the points <em>x1/y1</em> and
                        <em>x2/y2</em> controlled by the control point located
@@ -2416,7 +2594,7 @@ resulting command with arguments to the Rexx command handler.
 
                  <!--  ----------------------------------- -->
               <tr>
-                  <td class="command">Re | Rectangle | <a href="https://google.com/search?q=javadoc+8+Rectangle2D" target="_blank">Rectangle2D</a>
+                  <td class="command">Rect | Rectangle | <a href="https://google.com/search?q=javadoc+8+Rectangle2D" target="_blank">Rectangle2D</a>
                   <td class="argument">x y width height
                   <td>
                        Defines a rectangular shape at position <em>x</em> and <em>y</em>
@@ -2429,7 +2607,7 @@ resulting command with arguments to the Rexx command handler.
 
                  <!--  ----------------------------------- -->
               <tr>
-                  <td class="command">Ro | RoundRectangle | <a href="https://google.com/search?q=javadoc+8+RoundRectangle2D" target="_blank">RoundRectangle2D</a>
+                  <td class="command">RoundRect | RoundRectangle | <a href="https://google.com/search?q=javadoc+8+RoundRectangle2D" target="_blank">RoundRectangle2D</a>
                   <td class="argument">x y width height arcWidth arcHeight
                   <td>
                        Defines a round rectangular shape at position <em>x</em> and <em>y</em>
@@ -2742,13 +2920,230 @@ resulting command with arguments to the Rexx command handler.
 
     </table>
 
+<p> <!-- rgf 20230603 -->
+<p>
+<hr width="75%">
+<p>
+
+
+<h2 id="h2AreaCommands"><em>Area</em> Related Related commands </h2>
+<nav>
+<a href="#purposeOfJDOR">Purpose</a> |
+<a href="#briefOverview">Brief Overview</a> |
+<a href="#synopsisOfJDOR">Synopsis JDOR</a> |
+<a href="#jdorShapes">JDOR Shapes</a> (<a href="#h2ShapeCommands">Shapes</a>, <a href="#h2PathCommands">Path2D</a>)
+</nav>
+
+<p>The <em>Area</em> (<a href="https://google.com/search?q=javadoc+8+Area" target="_blank"><em>java.awt.geom.Area</em></a>)
+   shape allows for creating (closed) areas from any kind of <em>Shape</em> and
+   allows for applying &quot;Constructive Area Geometry (CAG)&quot; operations.
+
+<p>Here the <em>JDOR</em> commands that are related to any <em>Area</em> <em>Shape</em>:
+
+<p>
+    <table>
+        <tr>
+    <tr class="TableHeader">
+    <th>
+    <th> Command
+    <th> Argument(s)
+    <th> Description
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPathAppend"> &quot;pathAppend&quot; TODO
+    <td colspan="3"> The named <em>Path2D</em> shape gets appended by the
+            named <em>Shape</em> or <em>PathIterator</em>.
+
+        <!-- -------------------------------------- -->
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> pNickName spNickName [connect=.true]
+    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
+         shape, <em>spNickName</em> either a
+         <em>Shape</em> or <em>PathIterator</em> that should be appended.
+         The optional <em>connect</em> argument controls whether
+         the appended shape should get connected with a line segment (default).
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPathClone"> &quot;pathClone&quot;
+    <td colspan="3"> The named <em>Path2D</em> shape gets cloned and returned.
+
+        <!-- -------------------------------------- -->
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> pNickName [clonedNickName]
+    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
+         shape, that gets cloned and returned. If the optional <em>cloneNickName</em>
+         is specified then the clone gets registered with the uppercased
+         <em>cloneNickName</em> as index.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPathClose"> &quot;pathClose&quot;
+    <td colspan="3"> The named <em>Path2D</em> shape will have its current segment
+        closed by drawing a straight line back to the last <em>pathMoveTo</em> position.
+
+        <!-- -------------------------------------- -->
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> pNickName
+    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
+         shape, of which the last segment gets closed by drawing a line
+         to the last <em>pathMoveTo</em> position.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPathCurrentPoint"> &quot;pathCurrentPoint&quot;
+    <td colspan="3"> Returns the current point (the position of the last <em>pathMoveTo</em>)
+        of the named <em>Path2D</em> shape.
+
+        <!-- -------------------------------------- -->
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> pNickName
+    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
+         shape, which current point gets returned.
+         <br>
+         <em>Note:</em> if no <em>pathMoveTo</em> was issued yet, then <em>.nil</em>
+                        gets returned, otherwise a blank delimited Rexx string in
+                        the form of: &quot;<em>x y</em>&quot;.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPathCurveTo"> &quot;pathCurveTo&quot;
+    <td colspan="3"> Creates a cubic parametric curve segment.
+
+        <!-- -------------------------------------- -->
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> pNickName ctrlx1 ctrly1 ctrlx2 ctrly2 x y
+    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
+         shape for which a cubic parametric curve segment gets
+         created between the points <em>currentPoint</em>
+         (cf. <em>pathCurrentPoint</em> command above)
+         and the point with the co-ordinate <em>x/y</em> controlled by the two control points located
+         at <em>ctrlx1/ctrly1</em> and <em>ctrlx2/ctrly2</em>.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPathLineTo"> &quot;pathLineTo&quot;
+    <td colspan="3"> Creates a line segment.
+
+        <!-- -------------------------------------- -->
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> pNickName x y
+    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
+         shape for which a line segment gets
+         created between the points <em>currentPoint</em>
+         (cf. <em>pathCurrentPoint</em> command above)
+         and the point with the co-ordinate <em>x/y</em>.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPathMoveTo"> &quot;pathMoveTo&quot;
+    <td colspan="3"> Adds a point to the path at the supplied position.
+
+        <!-- -------------------------------------- -->
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> pNickName x y
+    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
+         shape for which a point should get added at <em>x/y</em>
+         (making it the <em>currentPoint</em>, cf.
+         <em>pathCurrentPoint</em> command above).
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPathQuadTo"> &quot;pathQuadTo&quot;
+    <td colspan="3"> Creates a quadradic parametric curve segment.
+
+        <!-- -------------------------------------- -->
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> pNickName ctrlx ctrly x y
+    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
+         shape for which a quadradic parametric curve segment gets
+         created between the points <em>currentPoint</em>
+         (cf. <em>pathCurrentPoint</em> command above)
+         and the point with the co-ordinate <em>x/y</em> controlled by
+         the control point located at <em>ctrlx/ctrly</em>.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPathReset"> &quot;pathReset&quot;
+    <td colspan="3"> The named <em>Path2D</em> shape will be reset to
+        become empty.
+
+        <!-- -------------------------------------- -->
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> pNickName
+    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
+         shape, which gets reset to become empty.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPathTransform"> &quot;pathTransform&quot;
+    <td colspan="3"> The named <em>Path2D</em> shape gets transformed.
+
+        <!-- -------------------------------------- -->
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> pNickName tNickName
+    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
+         shape, that gets transformed as defined by <a href="#cmdTransform"><em>tNickName</em>
+         (an <em>AffineTransform</em>)</a> retrieved from the registry, and
+         if does not exist from a Rexx variable by that name.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdPathWindingRule"> &quot;pathWindingRule&quot;
+    <td colspan="3"> Queries or sets the <em>winding rule</em> of the named
+                     <em>Path2D</em> shape.
+
+        <!-- -------------------------------------- -->
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> pNickName [newValue]
+    <td> Returns or sets the <em>winding rule</em> of the <em>Path2D</em> shape
+         denoted by <em>pNickName</em>. If <em>newValue</em> is supplied, it
+         needs to be <em>WIND_EVEN_ODD</em> or <em>0</em>, alternatively
+         <em>WIND_NON_ZERO</em> or <em>1</em>.
+
+
+    </table>
+
 
 <p>
 <center>
 
    <hr width="75%">
     <small>
-       JDOC synopsis of commands, version: 100.20230122
+       JDOC synopsis of commands, version: 100.20230608
        <br>Acknowledgement: the author wishes to thank DI Walter Pachl
        <br>for his help in testing and proof reading
     </small>

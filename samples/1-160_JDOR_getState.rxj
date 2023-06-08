@@ -17,7 +17,7 @@
    Changes: 2022-10-31 - changed "goto" to "moveTo"
             2023-05-30 - added optional argument ? to show processed JDOR commands
                          in canonical form
-                       - creates and defines JDOR handler explicitly (not using "jdor.cls")
+                       - creates and defines JDOR handler explicitly
 
    last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
                 (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
