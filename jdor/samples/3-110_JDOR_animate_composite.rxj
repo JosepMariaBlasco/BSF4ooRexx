@@ -33,7 +33,7 @@
                          in canonical form for commands directed to "jdor" handler (not "sdor")
                        - creates and defines JDOR handler explicitly
                        - changed "new" to "newImage"
-            2023-06-08 - flashing text shows left flashing time
+            2023-06-08 - flashing text shows flashing time left
 
    license:
 

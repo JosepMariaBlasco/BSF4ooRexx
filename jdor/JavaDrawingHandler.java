@@ -146,7 +146,7 @@
                       redirected commands via redirected input
                     - now handleCommand() will have the triggering command processed when
                       executing redirected input
-
+                    - added synonyms "areaUnion" for "areaAdd" and "areaXor" for "areaExclusiveOr"
 */
 
 package org.oorexx.handlers.jdor;
@@ -5424,6 +5424,8 @@ enum EnumCommand {
          }
 
          // add synonyms         new name      enum type
+         upperCase2Command.put( "AREAUNION"  , AREA_ADD  ) ;    // 2023-06-08
+         upperCase2Command.put( "AREAXOR"    , AREA_EXCLUSIVE_OR  ) ;   // 2023-06-08
          upperCase2Command.put( "NEW"        , NEW_IMAGE ) ;    // 2023-01-18
          upperCase2Command.put( "CLEAR"      , RESET     ) ;
          upperCase2Command.put( "GOTO"       , MOVE_TO   ) ;
