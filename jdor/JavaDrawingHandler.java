@@ -314,7 +314,7 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     /* static definitions           */
 
     // default image sizes
-    static final public String version = "100.20230606";
+    static final public String version = "100.20230608";
     static final private int prefWidth  = 500;
     static final private int prefHeight = 500;
     static       private int prefImageType = BufferedImage.TYPE_INT_ARGB; // default with alpha (only png supported)

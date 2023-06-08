@@ -33,6 +33,7 @@
                          in canonical form for commands directed to "jdor" handler (not "sdor")
                        - creates and defines JDOR handler explicitly
                        - changed "new" to "newImage"
+            2023-06-08 - flashing text shows left flashing time
 
    license:
 
@@ -135,7 +136,11 @@ font f2 "Serif bolditalic 19" -- for final flashing, alternate definition of a f
 fontSize 18             -- change font size
 fontStyle Italic        -- change font style
 font f1 "Serif"         -- create and use the font
-str="We are done, goodbye! ('sleep 5' ...)"  -- string to show
+str="We are done, goodbye! (flashing 5 seconds)"  -- string to show
+flashTime=5
+str1="We are done, goodbye! (flashing"
+str2="seconds)"
+str=str1 flashTime str2
 stringBounds str        -- current font and current graphic context
 say "                           str:" pp(str)
 say "--> 'stringBounds str' returned rc:" pp(rc) "(in pixels)"
@@ -175,6 +180,9 @@ do while (.dateTime~new - dt0)~seconds < 5
       if bBold then font f1   -- now show in f1 (Serif italic 18)
                else font f2   -- now show in f2 (Serif bolditalic 19)
       bBold=\bBold      -- invert boolean value for next round
+
+str=str1 flashTime str2
+
       stringBounds str  -- uses current font and current graphic context
       parse var rc x1 y1 width1 height1   -- get fields
       x2=(w-width1)/2   -- horizontal center position
@@ -183,8 +191,10 @@ do while (.dateTime~new - dt0)~seconds < 5
       drawString str
    end
    bErase=\bErase       -- invert boolean value
+   flashTime-=0.3
    sleep 0.3            -- cause animation effect
 end
+sleep 0.3
 say "--> we are done."
 
 ::requires "BSF.CLS"    -- get ooRexx-Java bridge, contains JDOR Rexx command handler
