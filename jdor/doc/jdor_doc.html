@@ -177,8 +177,9 @@ for creating the most challenging graphics (images) from Rexx.
 <!-- used IntelliJ to copy highlighted text to AOO swriter and saved as html; changed background
      and font-size (not sure why needed) -->
 <pre style="background: LemonChiffon; font-size: 75%">
-    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace"><FONT COLOR="#0033b3">call </FONT>addJdorHandler     <FONT COLOR="#8c8c8c"><I>-- load and add the Java Rexx command handler, default name: JDOR</I></FONT></FONT></FONT>
-    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace"><FONT COLOR="#0033b3">address </FONT>jdor            <FONT COLOR="#8c8c8c"><I>-- set default environment to the JDOR command handler</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace"><FONT COLOR="#0033b3">call </FONT>BsfCommandHandler <FONT COLOR="#067d17">&quot;add&quot;</FONT>, <FONT COLOR="#067d17">&quot;JDOR&quot;</FONT>, jdor   <FONT COLOR="#8c8c8c"><I>-- add the JDOR handler to ooRexx</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace"><FONT COLOR="#0033b3">address </FONT>JDOR            <FONT COLOR="#8c8c8c"><I>-- set default environment to the JDOR command handler</I></FONT></FONT></FONT>
+    <FONT COLOR="#8c8c8c">    <FONT FACE="IBM Plex Mono, monospace"><I>-- now we may use JDOR commands, executed by default by the JDOR command handler</I></FONT></FONT>
     <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">width <FONT COLOR="#cc3300">=</FONT><FONT COLOR="#1750eb">220              </FONT><FONT COLOR="#8c8c8c"><I>-- define width of image in pixels (there are 72 px to an inch)</I></FONT></FONT></FONT>
     <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">height<FONT COLOR="#cc3300">=</FONT><FONT COLOR="#1750eb">250              </FONT><FONT COLOR="#8c8c8c"><I>-- define height of image in pixels (there are 72 px to an inch)</I></FONT></FONT></FONT>
     <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">newImage width height   <FONT COLOR="#8c8c8c"><I>-- create new bitmap with currX=0, currY=0, width=220, height=250</I></FONT></FONT></FONT>
@@ -211,7 +212,7 @@ for creating the most challenging graphics (images) from Rexx.
     <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace"><FONT COLOR="#0033b3">do counter </FONT>c i<FONT COLOR="#cc3300">=</FONT><FONT COLOR="#1750eb">0 </FONT><FONT COLOR="#0033b3">to </FONT><FONT COLOR="#1750eb">30 </FONT><FONT COLOR="#0033b3">by </FONT>lineHeight   <FONT COLOR="#8c8c8c"><I>-- iterate over array of strings</I></FONT></FONT></FONT>
     <FONT COLOR="#080808"><FONT COLOR="#8c8c8c">   </FONT><FONT FACE="IBM Plex Mono, monospace">s</FONT><FONT COLOR="#cc3300"><FONT FACE="IBM Plex Mono, monospace">=</FONT></FONT><FONT FACE="IBM Plex Mono, monospace">text[c]            </FONT><FONT COLOR="#8c8c8c"><FONT FACE="IBM Plex Mono, monospace"><I>-- fetch the string to draw from array</I></FONT></FONT></FONT>
     <FONT COLOR="#080808"><FONT COLOR="#8c8c8c">   </FONT><FONT FACE="IBM Plex Mono, monospace">stringBounds s       </FONT><FONT COLOR="#8c8c8c"><FONT FACE="IBM Plex Mono, monospace"><I>-- get the bounding box dimensions for this string</I></FONT></FONT></FONT>
-    <FONT COLOR="#080808"><FONT COLOR="#8c8c8c">   </FONT><FONT COLOR="#0033b3"><FONT FACE="IBM Plex Mono, monospace">parse var </FONT></FONT><FONT FACE="IBM Plex Mono, monospace">rc . . w . </FONT><FONT COLOR="#8c8c8c"><FONT FACE="IBM Plex Mono, monospace"><I>-- parse the width of the string's bounding box</I></FONT></FONT></FONT>
+    <FONT COLOR="#080808"><FONT COLOR="#8c8c8c">   </FONT><FONT COLOR="#0033b3"><FONT FACE="IBM Plex Mono, monospace">parse var </FONT></FONT><FONT FACE="IBM Plex Mono, monospace">rc </FONT><FONT COLOR="#0033b3"><FONT FACE="IBM Plex Mono, monospace">. . </FONT></FONT><FONT FACE="IBM Plex Mono, monospace">w </FONT><FONT COLOR="#0033b3"><FONT FACE="IBM Plex Mono, monospace">. </FONT></FONT><FONT COLOR="#8c8c8c"><FONT FACE="IBM Plex Mono, monospace"><I>-- parse the width of the string's bounding box</I></FONT></FONT></FONT>
     <FONT COLOR="#080808"><FONT COLOR="#8c8c8c">   </FONT><FONT FACE="IBM Plex Mono, monospace">moveTo (width</FONT><FONT COLOR="#cc3300"><FONT FACE="IBM Plex Mono, monospace">-</FONT></FONT><FONT FACE="IBM Plex Mono, monospace">w)</FONT><FONT COLOR="#cc3300"><FONT FACE="IBM Plex Mono, monospace">/</FONT></FONT><FONT COLOR="#1750eb"><FONT FACE="IBM Plex Mono, monospace">2 </FONT></FONT><FONT FACE="IBM Plex Mono, monospace">(newY</FONT><FONT COLOR="#cc3300"><FONT FACE="IBM Plex Mono, monospace">+</FONT></FONT><FONT FACE="IBM Plex Mono, monospace">i)   </FONT><FONT COLOR="#8c8c8c"><FONT FACE="IBM Plex Mono, monospace"><I>-- calc x position to center this string, set y position</I></FONT></FONT></FONT>
     <FONT COLOR="#080808"><FONT COLOR="#8c8c8c">   </FONT><FONT FACE="IBM Plex Mono, monospace">color clrs[c]        </FONT><FONT COLOR="#8c8c8c"><FONT FACE="IBM Plex Mono, monospace"><I>-- fetch and use the color from the array</I></FONT></FONT></FONT>
     <FONT COLOR="#080808"><FONT COLOR="#8c8c8c">   </FONT><FONT FACE="IBM Plex Mono, monospace">drawString s         </FONT><FONT COLOR="#8c8c8c"><FONT FACE="IBM Plex Mono, monospace"><I>-- draw the string</I></FONT></FONT></FONT>
@@ -219,7 +220,8 @@ for creating the most challenging graphics (images) from Rexx.
     <FONT COLOR="#080808"><FONT COLOR="#0033b3">   </FONT><FONT COLOR="#8c8c8c"><FONT FACE="IBM Plex Mono, monospace"><I>-- save the current image</I></FONT></FONT></FONT>
     <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">saveImage <FONT COLOR="#067d17">&quot;jdor_doc_sample.png&quot;  </FONT><FONT COLOR="#8c8c8c"><I>-- save image to file &quot;jdor_doc_sample.png&quot;</I></FONT></FONT></FONT>
     <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace">sleep <FONT COLOR="#1750eb">3.123             </FONT><FONT COLOR="#8c8c8c"><I>-- sleep for 3.123 seconds</I></FONT></FONT></FONT>
-    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace"><FONT COLOR="#0033b3">::requires </FONT><FONT COLOR="#067d17">&quot;jdor.cls&quot;   </FONT><FONT COLOR="#8c8c8c"><I>-- Rexx package that defines the public routine addJdorHandler()</I></FONT></FONT></FONT>
+    &nbsp;
+    <FONT COLOR="#080808"><FONT FACE="IBM Plex Mono, monospace"><FONT COLOR="#0033b3">::requires </FONT><FONT COLOR="#067d17">&quot;BSF.CLS&quot;    </FONT><FONT COLOR="#8c8c8c"><I>-- get ooRexx-Java bridge, contains JDOR Rexx command handler</I></FONT></FONT></FONT>
 </PRE>
 
 
@@ -3139,7 +3141,7 @@ resulting command with arguments to the Rexx command handler.
 
    <hr width="75%">
     <small>
-       JDOC synopsis of commands, version: 100.20230606
+       JDOC synopsis of commands, version: 100.20230608
        <br>Acknowledgement: the author wishes to thank DI Walter Pachl
        <br>for his help in testing and proof reading
     </small>

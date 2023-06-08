@@ -18,6 +18,7 @@
             2023-05-30 - added optional argument ? to show processed JDOR commands
                          in canonical form
                        - changed "new" to "newImage"
+            2023-06-08 - creates and defines JDOR handler explicitly
 
    last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
                 (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
@@ -41,7 +42,10 @@
     -----------------------------------------------------------------------------
 */
 
-call addJdorHandler     -- load and add the Java Rexx command handler, using default name: JDOR
+   -- create JDOR handler
+jdh=.bsf~new("org.oorexx.handlers.jdor.JavaDrawingHandler")
+   -- define "JDOR" address environment serviced by our JDOR handler
+call BsfCommandHandler "add", "JDOR", jdh -- add command handler
 
 bShowCommands=(arg(1)="?") -- ? supplied as argument, then show JDOR commands in canonical form
 -- set default environment to JDOR
@@ -73,4 +77,4 @@ drawString "Hello, world via JDOR ..."
 if \bShowCommands then say "'sleep 3' ..."
 sleep 3                 -- sleep for three seconds
 
-::requires "jdor.cls"   -- makes routine addJdorHandler([environmentName]) available
+::requires "BSF.CLS"    -- get ooRexx-Java bridge, contains JDOR Rexx command handler

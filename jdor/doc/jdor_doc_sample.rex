@@ -1,8 +1,10 @@
-call addJdorHandler     -- load and add the Java Rexx command handler, default name: JDOR
-address jdor            -- set default environment to the JDOR command handler
+jdor=.bsf~new("org.oorexx.handlers.jdor.JavaDrawingHandler")   -- create a JDOR handler
+call BsfCommandHandler "add", "JDOR", jdor   -- add the JDOR handler to ooRexx
+address JDOR            -- set default environment to the JDOR command handler
+    -- now we may use JDOR commands, executed by default by the JDOR command handler
 width =220              -- define width of image in pixels (there are 72 px to an inch)
 height=250              -- define height of image in pixels (there are 72 px to an inch)
-new width height        -- create new bitmap with currX=0, currY=0, width=220, height=250
+newImage width height   -- create new bitmap with currX=0, currY=0, width=220, height=250
 winShow                 -- show frame on screen
    -- draw two lines forming a big X
 drawLine (width-1) (height-1) -- from currX=0, currY=0
@@ -41,4 +43,4 @@ end
 saveImage "jdor_doc_sample.png"  -- save image to file "jdor_doc_sample.png"
 sleep 3.123             -- sleep for 3.123 seconds
 
-::requires "jdor.cls"   -- Rexx package that defines the public routine addJdorHandler()
+::requires "BSF.CLS"    -- get ooRexx-Java bridge, contains JDOR Rexx command handler

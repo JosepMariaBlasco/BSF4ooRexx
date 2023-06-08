@@ -19,7 +19,7 @@
             2022-11-27 - change current directory to source directory to allow access to png files
             2023-05-30 - added optional argument ? to show processed JDOR commands
                          in canonical form
-                       - creates and defines JDOR handler explicitly (not using "jdor.cls")
+                       - creates and defines JDOR handler explicitly
                        - changed "new" to "newImage"
 
    last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $

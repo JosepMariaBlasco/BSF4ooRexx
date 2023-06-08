@@ -4,9 +4,11 @@
    purpose:    make it easy for classic Rexx programmers to take advantage of
                the new dynamic loadable Rexx command handlers of ooRexx 5.0 made
                available by BSF4ooRexx850. They need to call/require this package
-               and thereafter can use the public routine "addJdorHandler([environmentnName])".
+               and thereafter can use the public routine "addJdorHandler([environmentName])"
+               to create a JDOR handler and register it with ooRexx using "environmentName",
+               if omitted, then "JDOR" will be used for "environmentName".
 
-               "jdor" stands for "JavaDrawing with ooRexx"
+               "JDOR" stands for "Java2D for ooRexx"
 
    author:     Rony G. Flatscher
    date:       2022-09-03
@@ -27,8 +29,6 @@
  *    limitations under the License.
  * -----------------------------------------------------------------------------
 */
-
-
 
 /** Creates a new command handler that will serve the environment by the name
  *  of the optional environmentName argument.

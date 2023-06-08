@@ -144,77 +144,6 @@
 
 */
 
-/* add support for Shape (done 2022-12-03)
-    shape      name [type args]
-    fillShape  name
-    drawShape  name
-    clipShape  name         ... uses current clip rectangle (getClipBounds()); if no clip set, then sets clip to shape!
-
-    type: (to decide: supply just significant letters or full word?)
-         A[rc2D]            Double(double x, double y, double w, double h, double start, double extent, int type)
-                            Double(Rectangle2D ellipseBounds, double start, double extent, int type)
-         C[ubicCurve2D]     Double(double x1, double y1, double ctrlx1, double ctrly1, double ctrlx2, double ctrly2, double x2, double y2)
-         E[llipse2D]        Double(double x, double y, double w, double h)
-         L[ine2D]           Double(double x1, double y1, double x2, double y2)
-         Path2D             ...
-         Pol[ygon2D]        Polygon(int[] xpoints, int[] ypoints, int npoints)
-         Q[uadCurve2D]      Double(double x1, double y1, double ctrlx, double ctrly, double x2, double y2)
-         Re[ctangle2D]      Double(double x, double y, double w, double h)
-         Ro[undRectangle2D  Double(double x, double y, double w, double h, double arcw, double arch)
-
-         TRANSFORM          [translateX translateY scaleX scaleY shearX shearY | reset | name [[translateX translateY scaleX scaleY shearX shearY] ]
-
-    command environment intentionally does not support directly (no real use seen):
-
-         Area, Point2D
-*/
-
-/*  Sample program in ooRexx (temporarily):
-
-        -- load and add the Java Rexx command handler, using default name: JDOR
-        call addJdorHandler
-        address jdor            -- change default address environment
-
-        signal on failure name any
-        signal on error   name any
-
-        new 500 500             -- create a new bitmap
-        winShow                 -- show it in a frame
-
-        goto 10 10
-        color orange
-        drawString "Hello at:" .dateTime~new
-        translate 10 490
-        color green
-        drawString "Hello at:" .dateTime~new
-        translate 490 10
-        color red
-        drawString "Hello at:" .dateTime~new
-        "translate -250 -250"   -- must be quoted (minus causes Rexx to try arithmetics)
-        color blue
-        drawString "Hello at:" .dateTime~new
-        color red
-        angle=30
-        do i=1 to 360/angle - 1
-           rotate angle
-           drawString "ooRexx at:" .dateTime~new
-        end
-
-        save "testTranslate.png"   -- save as png file
-        sleep 2500                 -- halts execution for 2 1/2 seconds
-        exit
-
-        any:  -- if command raise failure or error conditions, show them
-        co=condition('o')       -- get a directory with the condition infos
-           say ppCondition2(co) -- format and show the condition information
-           say "---"
-           raise propagate      -- now let ooRexx handle this condition
-
-        ::requires "jdor.cls"      -- makes routine addJdorHandler([environmentName]) available
-        ::requires "rgf_util2.rex" -- get access to ppCondition2()
-
-*/
-
 package org.oorexx.handlers.jdor;
 
 import java.awt.EventQueue;
@@ -3906,7 +3835,6 @@ if (al.size()<2) // blanks supplied
                         // create and store a Shape
                         String strShapeType=arrCommand[2];
                         EnumShape eShape=EnumShape.getShape(strShapeType);
-// System.err.println("# 3713 (SHAPE): cmd # "+nrCommand+":strShapeType=["+strShapeType+"], eShape=["+eShape+"], argNum=["+argNum+"]");
                         if (eShape==null)
                         {
                             String errMsg="Shape type \""+strShapeType+"\" is not supported";
@@ -4057,7 +3985,6 @@ if (al.size()<2) // blanks supplied
                                     break;
                                 }
 
-
                             case SHAPE_CUBIC_CURVE2D:   // Double(double x1, double y1, double ctrlx1, double ctrly1, double ctrlx2, double ctrly2, double x2, double y2)
                                 {
                                     if (argNum!=11)
@@ -4171,7 +4098,7 @@ if (al.size()<2) // blanks supplied
                                 }
 
                             case SHAPE_QUAD_CURVE2D:        //  Double(double x1, double y1, double ctrlx, double ctrly, double x2, double y2)
-                            case SHAPE_ROUND_RECTANGLE2D:   // Double(double x, double y, double w, double h, double arcw, double arch)
+                            case SHAPE_ROUND_RECTANGLE2D:   // Double(double x, double y, double w, double h, double arcWidth, double arcHeight)
                                 {
                                     if (argNum!=9)
                                     {
@@ -4510,7 +4437,6 @@ if (al.size()<2) // blanks supplied
                             {
                                 throw new IllegalArgumentException("this command needs exactly 1 or 2 arguments (the name of the Path2D shape), received "+(arrCommand.length-1)+" instead");
                             }
-
                         }
                         else if (arrCommand.length!=2)
                         {
@@ -4534,7 +4460,7 @@ if (al.size()<2) // blanks supplied
                         {
                             path.closePath();
                         }
-                        else if (cmd==EnumCommand.PATH_CLOSE)
+                        else if (cmd==EnumCommand.PATH_RESET)
                         {
                             path.reset();
                         }
@@ -4543,8 +4469,6 @@ if (al.size()<2) // blanks supplied
                             Point2D r2d=path.getCurrentPoint();
                             if (r2d == null)    // no current point?
                             {
-                                // resultValue="0 0";       // RC will be set to "0 0"
-                                // resultValue=null;        // RC will be set to "0" (false)
                                 resultValue=getNil(slot);   // get and assign .nil
                             }
                             else
@@ -5576,14 +5500,10 @@ enum EnumShape {
     SHAPE_ELLIPSE2D             ( "Ellipse2D"               ),
     SHAPE_LINE2D                ( "Line2D"                  ),
     SHAPE_PATH2D                ( "Path2D"                  ),
-    SHAPE_POLYGON               ( "Polygon"                 ),
+    SHAPE_POLYGON               ( "Polygon"                 ),  // no trailing "2D"
     SHAPE_QUAD_CURVE2D          ( "QuadCurve2D"             ),
     SHAPE_RECTANGLE2D           ( "Rectangle2D"             ),
     SHAPE_ROUND_RECTANGLE2D     ( "RoundRectangle2D"        ),
-
-
-    // as of 2022-12-04: intentionally not (yet?) implemented, let that known as a failure
-    SHAPE_POINT2D               ( "Point2D"                 ),
 
     NO_OP                       ( "noOp"                    )      // last element, doing nothing
     ;
@@ -5603,7 +5523,6 @@ enum EnumShape {
 
          // we allow shortening the shape type to the significant letters (at least 2 letters)
          // add synonyms      new name      enum type
-//         upperCase2Shape.put( "ARE"           , SHAPE_AREA              ) ; no abbreviation, would be ridiculous
          upperCase2Shape.put( "ARC"           , SHAPE_ARC2D             ) ;
          upperCase2Shape.put( "CUBIC"         , SHAPE_CUBIC_CURVE2D     ) ;
          upperCase2Shape.put( "CUBICCURVE"    , SHAPE_CUBIC_CURVE2D     ) ;
@@ -5611,7 +5530,6 @@ enum EnumShape {
          upperCase2Shape.put( "ELLIPSE"       , SHAPE_ELLIPSE2D         ) ;
          upperCase2Shape.put( "LINE"          , SHAPE_LINE2D            ) ;
          upperCase2Shape.put( "PATH"          , SHAPE_PATH2D            ) ;
-         upperCase2Shape.put( "POLYGON"       , SHAPE_POLYGON           ) ;
          upperCase2Shape.put( "QUAD"          , SHAPE_QUAD_CURVE2D      ) ;
          upperCase2Shape.put( "QUADCURVE"     , SHAPE_QUAD_CURVE2D      ) ;
          upperCase2Shape.put( "RECT"          , SHAPE_RECTANGLE2D       ) ;
