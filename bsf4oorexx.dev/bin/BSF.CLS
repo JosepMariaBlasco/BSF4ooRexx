@@ -20,6 +20,9 @@
 
    date:
 
+         2023-06-10, ---rgf, - rename routine i2x() to id2x() such that one can remember the
+                               purpose easily (id=IDentityHash values)and does not confuse
+                               "i" with "integer"
          2023-05-11, ---rgf, - corrected RexxDoc to only use "runLater" and "runLaterLatest"
          2023-03-12, ---rgf, - added new public routine "bsf.initRAJinstance" to initialize
                                RexxAndJava peer; allows to be called directly by RexxScriptEngine
@@ -942,7 +945,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="850.20230608" -- set version (date distribution got created)
+      .bsf4rexx~version="850.20230610" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -4282,10 +4285,10 @@ syntax: raise propagate
                     DBUS4ooRexx package which mandates UTF-8 strings (and checks them) */
    /* ---------------------------------------------------------------------------------------- */
    /* as of 2011-07-05 ooRexx from trunk does not support UTF-8, hence depending on BSF4ooRexx */
-/** The received Rexx string is rendered to a Java String object using the 'file.encoding' codepage
+/** The received Rexx string is rendered to a Java String object using the <em>file.encoding</em>  codepage
 *   and then translated to an UTF-8 encoded Rexx string.
 *
-* @param str the Rexx string encoded according to the 'file.encoding's codepage
+* @param str the Rexx string encoded according to the <em>file.encoding</em>'s codepage
 * @return the equivalent UTF-8-encoded Rexx string
 * @since 2012-02-11
 */
@@ -4296,27 +4299,27 @@ syntax: raise propagate
 
 /* ================================================================================================= */
    /* ---------------------------------------------------------------------------------------- */
-/** The received Java object's string value is rendered to a Rexx string according to 'file.encoding's
+/** The received Java object's string value is rendered to a Rexx string according to <em>file.encoding</em>'s
 *   codepage.
 *
 * @param obj the Java String object (JSO) or a Java object which string value is retrieved and worked upon,
 *            or an UTF-8 encoded Rexx string
-* @return a Rexx string encoded according to 'file.encoding's codepage
+* @return a Rexx string encoded according to <em>file.encoding</em>s codepage
 * @since 2012-02-11
 */
 ::routine bsf.utf8ToString public    -- needs BSF4ooRexx
   use arg str
 
   if str~isA(.bsf) then    -- any Java object, use its String value
-     return str~toString   -- this will do the translation from UTF-8 to file.encoding codepage
+     return str~toString   -- this will do the translation from Java string according to 'file.encoding' codepage
   else   -- a Rexx string? -- turn UTF-8 encoded Rexx string into Java string, recode the Java string using 'file.encoding's codepage and return it as a Rexx string
      return BsfRawBytes(.java.lang.String~new(bsfRawBytes(str),"UTF-8")~getBytes)
 
 
 /* ================================================================================================= */
    /* ---------------------------------------------------------------------------------------- */
-/** The received Rexx string consists of UTF-8 characters for which a Java string object gets
-*  created and returned, independent of the file.encoding codepage setting.
+/** The received Rexx string consists of UTF-8 characters for which a Java string object (JSO) gets
+*  created and returned, independent of the <em>file.encoding</em> codepage setting.
 *
 * @param str the Rexx string consisting of UTF-8 characters
 * @return a reference to the Java String object constructed from the Rexx string
@@ -4330,7 +4333,7 @@ syntax: raise propagate
 /* ================================================================================================= */
    /* ---------------------------------------------------------------------------------------- */
 /** The received Java String object (JSO) is rendered as an UTF-8 Rexx string, independent
-*   of the file.encoding codepage setting.
+*   of the <em>file.encoding</em> codepage setting.
 * @param obj the Java String object reference or a Java object which String value is retrieved and worked upon
 * @return a Rexx UTF-8 encoded string constructed from the Java String object
 * @since 2014-10-07
@@ -6340,7 +6343,7 @@ syntax:
     @since  2022-09-29
     @author Rony G. Flatscher
 */
-::routine i2x public       -- "pointer" to hexadecimal string: vonvert identityHash value to hexadecimal string
+::routine id2x public       -- "pointer" to hexadecimal string: convert identityHash value to hexadecimal string
   use strict arg argVal, deliString=("_")
 
   iDigits=.rexxinfo~internalDigits  -- get number of internal digits
@@ -6385,3 +6388,5 @@ syntax:
 ::method say            unguarded
 ::method lineOut        unguarded   -- implement abstract method
 ::method charOut        unguarded   -- implement abstract method
+
+

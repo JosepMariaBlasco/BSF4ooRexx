@@ -107,6 +107,9 @@ copy %javaSrc%\RexxStrictArgument.java        %path2engine%
 @rem 2021-08-04
 copy %javaSrc%\RexxCleanupRef.java            %path2engine%
 
+@rem 2023-06-10
+copy %javaSrc%\BsfSystemClipboard.java        %path2engine%
+
 
 @rem do the compilations
 
@@ -166,6 +169,9 @@ javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxCleanupRef.java            
 
 @rem 2022-04-21: needs Java 1.8 due to using Arrays.stream()
 javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxAnalyzeRegistry.java       && copy %javaSrc%\RexxAnalyzeRegistry*        %path2engine%
+
+@rem 2023-06-10
+javac %javacDefines% %javaBaseLine%    %javaSrc%\BsfSystemClipboard.java        && copy %javaSrc%\BsfSystemClipboard*         %path2engine%
 
 
 @rem 2022-10-03: adding JDOR command handler
