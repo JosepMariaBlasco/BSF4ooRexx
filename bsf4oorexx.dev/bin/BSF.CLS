@@ -19,7 +19,10 @@
           .BSF in .environment;
 
    date:
-
+         2023-06-11, ---rgf, - new class "BSF.ClipBoard" to allow copying images and strings
+                               to the system clipboard, fetch images and strings, querying
+                               whether empty, the renderings ("DataFlavor"s) available,
+                               clearing (emptying) it
          2023-06-10, ---rgf, - rename routine i2x() to id2x() such that one can remember the
                                purpose easily (id=IDentityHash values)and does not confuse
                                "i" with "integer"
@@ -945,7 +948,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="850.20230610" -- set version (date distribution got created)
+      .bsf4rexx~version="850.20230611" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -968,6 +971,8 @@ end
    call create_display.version_entry      -- create the display version entry .bsf4rexx~display.version
 
    call BSfShowErrorMessage .false  -- turn off displaying the Java exception message (leftover from the very early BSF4Rexx days)
+
+   .bsf.clipboard~loadPeerClass     -- makes sure to load the Java class object BsfSystemClipboard
 
 -- numeric digits 20 -- otherwise d2x may cause an error which is swallowed in destructors (uninit methods), but ends them
  -- .stderr~say("BSF.CLS - about to leave the PROLOG code, tid="pp(bsfGetTID()) ".bsf.rii_ID="pp(.bsf.rii_ID) ".bsf.primodalTID="pp(.bsf.primodalTID)  ".local~identityHash~d2x="pp(.local~identityHash~d2x(16)) ".bsf~identityhash~d2x="pp(.bsf~identityhash~d2x(16)) "<=== "~copies(5))
@@ -6388,5 +6393,177 @@ syntax:
 ::method say            unguarded
 ::method lineOut        unguarded   -- implement abstract method
 ::method charOut        unguarded   -- implement abstract method
+
+
+
+/* ================================================================================================= */
+/* ================================================================================================= */
+
+/* ------------------------------------------------------------------------ */
+/** A class that makes it easy for ooRexx programmers to set the
+*   system clipboard to a supplied image or string and to fetch
+*   an image or a string from the clipboard.
+*
+* @since 20230611
+*/
+::class BSF.ClipBoard public
+
+-- must be called from prolog code for proper initialisation
+/** Package private initialisation class method, loads the Java class
+*   peer.
+*/
+::method loadPeerClass package class  -- load the peer Java class now
+  expose thisClz
+  thisClz=bsf.loadClass("org.rexxla.bsf.engines.rexx.BsfSystemClipboard")
+
+/* ------------------------------------------------------------------------ */
+/** Get Java class object representing the system's clipboard.
+*@return the Java class object representing the system's clipboard
+*/
+::method clipboard  class  -- allow direct access to the Java class object
+  expose thisClz
+  return thisClz
+
+/* ------------------------------------------------------------------------ */
+/** Inspects the system clipboard.
+* @return <em>.true</em>, if empty, <em>.false</em> else
+*/
+::method isEmpty class
+  expose thisClz
+  return thisClz~isEmpty
+
+/* ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------------ */
+/** Getter method for current types available from the system clipboard.
+* @return an array of type <em>java.awt.datatransfer.DataFlavor</em>, use the <em>toString</em>
+*         method on its members
+*/
+::attribute dataFlavors get class   -- allow access with attribute semantics
+  forward message (getDataFlavors)
+
+/* ------------------------------------------------------------------------ */
+/** Getter method for current types available from the system clipboard.
+* @return an array of type <em>java.awt.datatransfer.DataFlavor</em>, use the <em>toString</em>
+*         method on its members
+*/
+::method getDataFlavors class
+  expose thisClz
+  return thisClz~getDataFlavors
+
+/* ------------------------------------------------------------------------ */
+/** Clears (empties) the system clipboard.
+*/
+::method clear class
+  expose thisClz
+  thisClz~clear
+
+/* ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------------ */
+/** Setter method to set the system clipboard to the supplied image.
+* @param img the image (<em>java.awt.Image</em>) that should be put into the system clipboard
+*/
+::attribute image set class
+  forward message (setImage)
+
+/* ------------------------------------------------------------------------ */
+/** Setter method to set the system clipboard to the supplied image.
+* @param img the image (<em>java.awt.Image</em>) that should be put into the system clipboard
+* @param bNoAlpha an optional boolean value, if <em>.true</em> makes sure that the image has no
+*                 trasnlucency (and if so that it is drawn with a white background), defaults
+*                 to <em>.false</em> which may yield image versions on the system clipboard that
+*                 are drawn on a black background
+*/
+::method setImage  class
+  expose thisClz
+  use strict arg img, bNoAlpha=.false
+  if bNoAlpha=.true then
+    thisClz~setImageWithoutAlpha(img)
+  else
+    thisClz~setImage(img)
+
+/* ------------------------------------------------------------------------ */
+/** Setter method to set the system clipboard to the supplied image.
+* @param img the image (<em>java.awt.Image</em>) that should be put into the system clipboard
+*            with no alpha (translucency) in the image
+*/
+::method setImageWithoutAlpha class
+  expose thisClz
+  use strict arg img
+  self~setImage(img,.true)
+
+/* ------------------------------------------------------------------------ */
+/**  Getter method to fetch an image from the system clipboard.
+*  @return image fetched from system clipboard or <em>.nil</em> if no image present
+*/
+::attribute image get class
+  forward message (getImage)
+
+/* ------------------------------------------------------------------------ */
+/**  Getter method to fetch an image from the system clipboard.
+*  @return image fetched from system clipboard or <em>.nil</em> if no image present
+*/
+::method getImage  class
+  expose thisClz
+  return thisClz~getImage
+
+/* ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------------ */
+/** Setter method to set the system clipboard to the supplied string.
+* <br>Note: if the Rexx string represents characters encoded in UTF-8 (like curl supplies),
+*     then use the routine "bsf.utf8stringAsJSO(string)" first to have that string
+*     created on the Java side correctly, fetching the "JSO" object (a Java String object)
+*     and supply that JSO object as the string value to set the system clipboard to.
+*
+* @param string the string that should be put into the system clipboard
+*/
+::attribute string set class
+  forward message (setString)
+
+/* ------------------------------------------------------------------------ */
+/** Setter method to set the system clipboard to the supplied string.
+* <br>Note: if the Rexx string represents characters encoded in UTF-8 (like curl supplies),
+*     then use the routine "bsf.utf8stringAsJSO(string)" first to have that string
+*     created on the Java side correctly, fetching the "JSO" object (a Java String object)
+*     and supply that JSO object as the string value to set the system clipboard to.
+*
+* @param string the string that should be put into the system clipboard
+*/
+::method setString  class
+  expose thisClz
+  use strict arg str
+  thisClz~setString(str)
+
+/* ------------------------------------------------------------------------ */
+/**  Getter method to fetch a string from the system clipboard.
+*    <br>Note: this version does not force a specific codepage to be used sucht
+*    that Java's standard codepage translation takes place.
+*
+*  @return string fetched from system clipboard or <em>.nil</em> if no string present
+*/
+::attribute string get class
+  forward message (getString)
+
+/* ------------------------------------------------------------------------ */
+/**  Getter method to fetch a string from the system clipboard encoded with the specified
+*    <em>codepage</em> (e.g., "UTF-8").
+*
+*  @return string fetched from system clipboard encoded according to <em>codepage</em> or
+*   <em>.nil</em> if no string present
+*/
+::method getString class
+  expose thisClz
+  use strict arg codepage=.nil
+  if codepage=.nil then
+     return thisClz~getString
+  else
+     return BsfRawBytes(thisClz~getString(codepage))
+
+/*
+/* ------------------------------------------------------------------------ */
+::method unknown class     -- forward unknown messages to Java class object
+  expose thisClz
+  use arg msgName, msgArgs
+  forward message (msgName) to (thisClz) arguments (msgArgs)
+*/
 
 

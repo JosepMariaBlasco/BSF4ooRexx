@@ -3,10 +3,15 @@
             to fetch (get) images and strings
    author:  Rony G. Flatscher
    date:    2023-06-10
-   version: 100.20230610
-   license: Apache license 2.0
+   version: 100.20230611
+   changes: - 20230611, rgf - inhibit ImageIOO.write() stacktrace when setting clipboard
+                              with an image that has alpha (JPG/JPEG filter seems to do that)
+                            - new method setImageWithoutAlpha(img) that will create a bitmap
+                              with white background when image has alpha (translucency)
+                              instead of (unlegible) black background used by ImageIOO.write()
 
-   license:
+
+   license: Apache license 2.0
 
     ------------------------ Apache Version 2.0 license -------------------------
        Copyright (C) 2023 Rony G. Flatscher
@@ -46,6 +51,10 @@ import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 
+
+import java.io.ByteArrayOutputStream;   // to intercept stack trace by ImageIIO when trying to write JPEG
+import java.io.PrintStream;
+
 /** This class employs the <em>java.awt.datatransfer.Clipboard</em> class and allows for
  *  setting (and getting from) the system clipboard Java images (<em>java.awt.Image</em>)
  *  and strings.
@@ -55,10 +64,11 @@ import java.io.IOException;
  */
 public class BsfSystemClipboard
 {
+    public static final String version = "100.20230611";
     private static final Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
 
-    // ------------
-    /** Tests whether the system clipboard is empty.
+
+    /** Tests whether the system clipboard is empty (if no data flavors are present).
      *  @return <em>true</em> if empty, <em>false</em> else
      */
     public static boolean isEmpty()
@@ -75,8 +85,27 @@ public class BsfSystemClipboard
         return (tdf==null ? true : tdf.length==0);
     }
 
-    // ------------
-    /** Clear (empty) the system clipboard.
+    /** Returns an array of <em>java.awt.datatransfer.DataFlavor</em>s (formats)
+     *  currently available on the system clipboard. If no data is availalbe the array
+     *  will have a length of <em>0</em> and the method {@link public static boolean isEmpty()}
+     *  will return <em>.true</em>.
+     *
+     * @return an array of type <em>java.awt.datatransfer.DataFlavor</em>
+     */
+    public static DataFlavor [] getDataFlavors()
+    {
+        try
+        {   // array of DataFlavors, if empty, then length==0
+            return clipboard.getContents(null).getTransferDataFlavors();
+        }
+        catch (IllegalStateException ise) {}    // if clipboard currently unavailable
+
+        return null;
+
+    }
+
+
+    /** Clears (empties) the system clipboard.
      */
     public static void clear()
     {
@@ -85,30 +114,99 @@ public class BsfSystemClipboard
 
     // ------------
     // we need to support from Java 8 on, images to clipboard will create a JPG which must
-    // not have transparency, so making sure to create a JPG compliant bitmap and have the
+    // not have translucency, so making sure to create a JPG compliant bitmap and have the
     // background painted white and then set the image on to it.
 
     /** This allows a <em>java.awt.Image</em> image to be copied as a JPG/JPEG (!) image to the
      *  system clipboard. The supplied image will therefore be transformed into a JPG/JPEG (with
      *  a white background).
      *
-     *  @param img the image to be copied as JPG/JPEG (with white background) to the clipboard
+     *  @see {@link public static void setImage(Image img)}
+     *  @param img the image to be copied (without alpha/translucency on white background) to the clipboard)
+     */
+    public static void setImageWithoutAlpha(Image img)
+    {
+        BufferedImage bufferedImage=(BufferedImage) img;
+        int imgType=bufferedImage.getType();
+        int tgtType=imgType;
+        switch (bufferedImage.getType())    // if alpha (translucenct), create non-alpha version
+        {
+            case BufferedImage.TYPE_4BYTE_ABGR     :
+            case BufferedImage.TYPE_4BYTE_ABGR_PRE :
+                tgtType=BufferedImage.TYPE_3BYTE_BGR;
+                break;
+
+            case BufferedImage.TYPE_INT_ARGB :
+            case BufferedImage.TYPE_INT_ARGB_PRE :
+                tgtType=BufferedImage.TYPE_INT_RGB;
+                break;
+        }
+        if (imgType!=tgtType)   // o.k., remove alpha, draw on white background
+        {
+            // make sure the image data can be written as JPG: write image to a RGB image with white background
+            BufferedImage jpgImg = new BufferedImage(img.getWidth(null), img.getHeight(null), tgtType);
+            Graphics2D g2d = jpgImg.createGraphics();
+            g2d.setColor(Color.WHITE);      // otherwise the background could be black!
+            g2d.fillRect(0, 0, jpgImg.getWidth(), jpgImg.getHeight());
+            g2d.drawImage(img, 0, 0, null); // without an ImageObserver
+            g2d.dispose();
+            setImage(jpgImg);
+            // clipboard.setContents(new TransferableImage(jpgImg), null);    // we do not supply an owner
+        }
+        else
+        {
+            setImage(img);
+        }
+    }
+
+
+        // used to intercept the possible stack trace from ImageIOO.write()
+        // in the case that an image with alpha is rendered to a JPG/JPEG
+    static ByteArrayOutputStream  baos = new ByteArrayOutputStream(2048);
+    static PrintStream ps = new PrintStream(baos);
+    /** This copies the received image to the clipboard.
+     *
+     *  <br>Note 1: if the image has an
+     *  alpha channel there will be a non catchable stack trace created by the default
+     *  ImageIIO writer when creating a JPG/JPEG rendering. In order to intercept
+     *  that stack trace, this method will temporarily reassign System.err to a PrintStream
+     *  that is to receive that output in order to hide it.
+     *
+     *  <br>Note 2: even if the JPG/JPEG is not created usually a "BITMAP" and a "GDI metafile"
+     *  get created in the Windows clipboard.
+     *
+     *  <br>Note 3: Use {@link public static void setImageNoAlpha(Image img)} to make
+     *  sure that the image does not have alpha (translucency) such that creating a JPG/JPEG
+     *  is possible in any case.
+     *
+     *  @see {@link public static void setImageWithoutAlpha(Image img)}
+     * @param img the image to copy to the clipboard
+     *
      */
     public static void setImage(Image img)
     {
-        // make sure the image data can be written as JPG: write image to a RGB image with white background
-        BufferedImage jpgImg = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_RGB);
-        Graphics2D g2d = jpgImg.createGraphics();
-        g2d.setColor(Color.WHITE);      // otherwise the background would be black!
-        g2d.fillRect(0, 0, jpgImg.getWidth(), jpgImg.getHeight());
-        g2d.drawImage(img, 0, 0, null); // without an ImageObserver
-        g2d.dispose();
-        clipboard.setContents(new TransferableImage(jpgImg), null);    // we do not supply an owner
+        // when copying an image to the clipboard that has alpha (translucency) the
+        // JPG/JPEG filter will cause an exception with a stacktrace that gets displayed
+        // and cannot be intercepted, hence trying to get that stack trace swallowed
+        PrintStream oldStream = System.err; // save current stream
+        baos.reset();       // reset byte array output stream
+        System.setErr(ps);  // replace System.err
+
+        try
+        {
+            clipboard.setContents(new TransferableImage(img), null);    // we do not supply an owner
+        }
+        catch (Throwable t) // intercept in case clipboard is not available
+        {}
+        System.setErr(oldStream);   // reset System.err
+        baos.reset();       // reset byte array output stream
     }
+
+
 
     /** Gets an image from the system clipboard and returns it.
      *
-     *  @return image from the system clipboard or <em>null</em> if none available
+     *  @return image from the system clipboard or <em>null</em> if no image available
      */
     public static Image getImage()
     {
@@ -123,20 +221,52 @@ public class BsfSystemClipboard
         return null;
     }
 
-    // ------------
+
+    /** Sets the supplied string to the system clipboard.
+     *  @str the string to put into the system clipboard
+     */
     public static void setString(String str)
     {
         clipboard.setContents(new StringSelection(str), null);      // we do not supply an owner
     }
 
+
+    /** Returns the string currently in the system clipboard.
+     *
+     *  @return the string currently in the system clipboard, <em>null</em> if no string available
+     */
     public static String getString()
     {
         if (clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor))
         {
-System.err.println("getString(): stringFlavor is available!");
             try
             {
                 return (String) clipboard.getData(DataFlavor.stringFlavor);
+            }
+            catch (Exception exc) {}    // just return null;
+        }
+        return null;
+    }
+
+    /** Returns the string currently in the system clipboard as a byte array encoded according to the
+     *  supplied <em>codepage</em>.
+     *
+     * *@param codepage the codepage to be used for creating the byte array, if <em>null</em> then defaults to "UTF-8"
+     *
+     *  @return the string currently in the system clipboard, <em>null</em> if no string available
+     */
+    public static byte[] getString(String codepage)
+    {
+        if (clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor))
+        {
+            if (codepage == null)
+            {
+                codepage="UTF-8";   // default to UTF-8 encoding
+            }
+            try
+            {
+                String str = (String) clipboard.getData(DataFlavor.stringFlavor);
+                return str.getBytes(codepage);  // return byte[] encoded according to codepage
             }
             catch (Exception exc) {}    // just return null;
         }
@@ -180,7 +310,7 @@ System.err.println("getString(): stringFlavor is available!");
 
 
     // 2023-10-10: https://stackoverflow.com/questions/18254808/how-to-clear-the-system-clipboard-in-java
-    /** Allows to transfer no content to the clipboard, causing the clipboard to be emptable.
+    /** Allows to transfer no content to the clipboard, causing the clipboard to be emptied.
      */
     static class ClearClipboardTransferable implements Transferable
     {
