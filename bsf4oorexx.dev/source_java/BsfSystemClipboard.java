@@ -9,6 +9,8 @@
                             - new method setImageWithoutAlpha(img) that will create a bitmap
                               with white background when image has alpha (translucency)
                               instead of (unlegible) black background used by ImageIOO.write()
+            - 20230612, rgf - setImageWithoutAlpha() now returns the image that was used to
+                              set the clipboard to
 
 
    license: Apache license 2.0
@@ -123,8 +125,9 @@ public class BsfSystemClipboard
      *
      *  @see {@link public static void setImage(Image img)}
      *  @param img the image to be copied (without alpha/translucency on white background) to the clipboard)
+     *  @return image that was used to set the clipboard
      */
-    public static void setImageWithoutAlpha(Image img)
+    public static Image setImageWithoutAlpha(Image img)
     {
         BufferedImage bufferedImage=(BufferedImage) img;
         int imgType=bufferedImage.getType();
@@ -151,11 +154,13 @@ public class BsfSystemClipboard
             g2d.drawImage(img, 0, 0, null); // without an ImageObserver
             g2d.dispose();
             setImage(jpgImg);
+            return jpgImg;
             // clipboard.setContents(new TransferableImage(jpgImg), null);    // we do not supply an owner
         }
         else
         {
             setImage(img);
+            return img;
         }
     }
 
