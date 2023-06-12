@@ -147,9 +147,14 @@
                     - now handleCommand() will have the triggering command processed when
                       executing redirected input
                     - added synonyms "areaUnion" for "areaAdd" and "areaXor" for "areaExclusiveOr"
+        2023-06-11: - added commands "clipboardGet" ("getClipboard"), "clipboardSet" ("setClipboard")
+        2023-06-12: - added command "clipboardSetWithoutAlpha" ("setClipboardWithoutAlpha")
+
 */
 
 package org.oorexx.handlers.jdor;
+
+import org.rexxla.bsf.engines.rexx.BsfSystemClipboard;  // 2023-06-11
 
 import java.awt.EventQueue;
 import java.awt.Graphics;
@@ -314,7 +319,7 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     /* static definitions           */
 
     // default image sizes
-    static final public String version = "100.20230608";
+    static final public String version = "100.20230612";
     static final private int prefWidth  = 500;
     static final private int prefHeight = 500;
     static       private int prefImageType = BufferedImage.TYPE_INT_ARGB; // default with alpha (only png supported)
@@ -1333,6 +1338,80 @@ if (bDebug)    System.err.println("[JavaDrawingHandler].handleCommand(slot, addr
                         // return res;
                         return resultValue;
                     }
+
+                case CLIPBOARD_GET:     // "clipboardGet [imgName]" ... save in hmImages, if no imgName then under "CLIPBOARD"
+                case CLIPBOARD_SET:     // "clipboardSet [imgName]" ... if imgName: get from hmImages, else from currImage
+                case CLIPBOARD_SET_WITHOUT_ALPHA: //   "clipboardSetWithoutAlpha [imgName]" ... if imgName: get from hmImages, else from currImage
+                    {
+                        if (arrCommand.length>2)
+                        {
+                            throw new IllegalArgumentException("this command needs either no or exactly 1 argument (image's nickname for lookup), received "+(arrCommand.length-1)+" instead");
+                        }
+                        BufferedImage tmpImage = null;
+                        String imgName = "CLIPBOARD";   // default for CLIPBOARD_GET
+                        if (arrCommand.length==2)
+                        {
+                            imgName=arrCommand[1];      // fetch imgName
+                            // show effective command
+                            if (isOR)
+                            {
+                                canonical = canonical+" "+imgName;
+                            }
+
+                            if (cmd!=EnumCommand.CLIPBOARD_GET) // one argument, get image from hmImages
+                            {
+                                tmpImage = hmImages.get(imgName.toUpperCase());
+                                if (tmpImage==null)
+                                {
+                                    try
+                                    {
+                                        tmpImage = (BufferedImage) getContextVariable(slot, imgName);   // try to get from a Rexx variable
+                                    }
+                                    catch (Throwable t) {}
+                                    if (tmpImage==null)
+                                    {
+                                        throw new IllegalArgumentException("image (must be a BufferedImage) with the name \""+imgName+"\" not found, you must first use \"loadImage "+imgName+" filename\" or \"pushImage "+imgName+"\" or assign a BufferedImage to a Rexx variable named \""+imgName+"\"");
+                                    }
+                                }
+                            }
+                        }
+                        else  // no argument
+                        {
+                            if (cmd!=EnumCommand.CLIPBOARD_GET) // no argument, use current image (bufImage)
+                            {
+                                tmpImage = bufImage;
+                            }
+                        }
+
+                        if (cmd!=EnumCommand.CLIPBOARD_GET) // no argument, use current image (bufImage)
+                        {
+                            if (cmd==EnumCommand.CLIPBOARD_SET)
+                            {
+                                BsfSystemClipboard.setImage(tmpImage);  // set clipboard to image
+                            }
+                            else
+                            {
+                                tmpImage=(BufferedImage) BsfSystemClipboard.setImageWithoutAlpha(tmpImage);  // set clipboard to image
+                            }
+                        }
+                        else
+                        {
+                            tmpImage=(BufferedImage) BsfSystemClipboard.getImage();
+                            if (tmpImage==null)
+                            {
+                                throw new IllegalArgumentException("could not fetch image from system clipboard");
+                            }
+                            hmImages.put(imgName,tmpImage);  // save in image Map
+                        }
+
+                        if (isOR)
+                        {
+                            writeOutput(slot, canonical);
+                        }
+
+                        return tmpImage;    // return image used to set clipboard
+                    }
+
 
                 case PRINT_IMAGE:       // "printImage [nickName]"
                     {
@@ -5391,8 +5470,9 @@ enum EnumCommand {
     // 2022-12-08
     PATH_CLONE                  ( "pathClone"                ) ,    //   "pathClone shapeName [newShapeName]"
     PATH_TRANSFORM              ( "pathTransform"            ) ,    //   "pathTransform shapeName atName"
-    CLIPBOARD_GET               ( "clipboardGet"             ) ,    //   "clipboardGet [imgName]" ... if imgName: save in hmImages
-    CLIPBOARD_SET               ( "clipboardSet"             ) ,    //   "clipboardSet [imgName]" ... if imgName: get from hmImages
+    CLIPBOARD_GET               ( "clipboardGet"             ) ,    //   "clipboardGet [imgName]" ... save in hmImages, if no imgName then under "CLIPBOARD"
+    CLIPBOARD_SET               ( "clipboardSet"             ) ,    //   "clipboardSet [imgName]" ... if imgName: get from hmImages, else from currImage
+    CLIPBOARD_SET_WITHOUT_ALPHA ( "clipboardSetWithoutAlpha" ) ,    //   "clipboardSetWithoutAlpha [imgName]" ... if imgName: get from hmImages, else from currImage
 
     // 2023-01-08
     ASSIGN_RC                   ( "assignRC"                 ) ,    //   "assignRC RexxVariable"
@@ -5423,19 +5503,23 @@ enum EnumCommand {
              upperCase2Command.put(it.upperCase, it);
          }
 
-         // add synonyms         new name      enum type
-         upperCase2Command.put( "AREAUNION"  , AREA_ADD  ) ;    // 2023-06-08
-         upperCase2Command.put( "AREAXOR"    , AREA_EXCLUSIVE_OR  ) ;   // 2023-06-08
-         upperCase2Command.put( "NEW"        , NEW_IMAGE ) ;    // 2023-01-18
-         upperCase2Command.put( "CLEAR"      , RESET     ) ;
-         upperCase2Command.put( "GOTO"       , MOVE_TO   ) ;
-         upperCase2Command.put( "LOCATION"   , MOVE_TO   ) ;    // 2022-10-23: new alias
-         upperCase2Command.put( "POS"        , MOVE_TO   ) ;    // 2022-10-29: new alias
-         upperCase2Command.put( "POSITION"   , MOVE_TO   ) ;    // 2022-10-26: new alias
-         upperCase2Command.put( "WINMOVETO"  , WIN_LOCATION ) ;
-         upperCase2Command.put( "SHAPECLIP"  , CLIP_SHAPE   ) ; // 2023-06-06
-         upperCase2Command.put( "SHAPEDRAW"  , DRAW_SHAPE   ) ; // 2023-06-06
-         upperCase2Command.put( "SHAPEFILL"  , FILL_SHAPE   ) ; // 2023-06-06
+         // add synonyms         new name        enum type
+         upperCase2Command.put( "AREAUNION"    , AREA_ADD  ) ;    // 2023-06-08
+         upperCase2Command.put( "AREAXOR"      , AREA_EXCLUSIVE_OR  ) ;   // 2023-06-08
+         upperCase2Command.put( "CLEAR"        , RESET     ) ;
+         upperCase2Command.put( "GETCLIPBOARD" , CLIPBOARD_GET) ; // 2023-06-11
+         upperCase2Command.put( "GOTO"         , MOVE_TO   ) ;
+         upperCase2Command.put( "LOCATION"     , MOVE_TO   ) ;    // 2022-10-23: new alias
+         upperCase2Command.put( "NEW"          , NEW_IMAGE ) ;    // 2023-01-18
+         upperCase2Command.put( "POS"          , MOVE_TO   ) ;    // 2022-10-29: new alias
+         upperCase2Command.put( "POSITION"     , MOVE_TO   ) ;    // 2022-10-26: new alias
+         upperCase2Command.put( "SETCLIPBOARD" , CLIPBOARD_SET) ; // 2023-06-11
+         upperCase2Command.put( "SETCLIPBOARDWITHOUTALPHA" , CLIPBOARD_SET_WITHOUT_ALPHA) ; // 2023-06-13
+
+         upperCase2Command.put( "SHAPECLIP"    , CLIP_SHAPE   ) ; // 2023-06-06
+         upperCase2Command.put( "SHAPEDRAW"    , DRAW_SHAPE   ) ; // 2023-06-06
+         upperCase2Command.put( "SHAPEFILL"    , FILL_SHAPE   ) ; // 2023-06-06
+         upperCase2Command.put( "WINMOVETO"    , WIN_LOCATION ) ;
     }
 
 

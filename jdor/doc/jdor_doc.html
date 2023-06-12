@@ -1272,6 +1272,25 @@ value.
         <em>Graphics[2D]</em> methods from an ooRexx program directly.
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em>.
 
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdGetClipboard">  &quot;getClipboard&quot; <br>
+        &quot;clipboardGet&quot;
+    <td colspan="2"> Gets the image from the system clipboard, stores it
+        in the internal image registry with a default <em>imageNickName</em>
+        of <em>&quot;CLIPBOARD&quot;</em> and returns the image via the Rexx variable
+        <em>RC</em>.
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> imageNickName
+    <td> optional <em>imageNickName</em> gets uppercased and is used to store
+         the clipboard image in the internal image registry; if omitted <em>JDOR</em>
+         will use <em>&quot;CLIPBOARD&quot;</em> as the default <em>imageNickName</em>
+
+
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
@@ -1835,6 +1854,47 @@ value.
     <td> <em>colorNickName</em> gets uppercased and is used to look up the internal
          color registry for the denoted color or stored in a Rexx variable
          which should be used from now on for <em>xorMode</em> processing.
+
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdSetClipboard">  &quot;setClipboard&quot; <br>
+        &quot;clipboardSet&quot;
+    <td colspan="2"> Sets the system clipboard to the current image unless
+        the optional <em>imageNickName</em> is supplied in which case the image
+        is retrieved from the internal image registry stored with an index matching
+        <em>imageNickName</em> in uppercase. The image used to set the system
+        clipboard gets returned via the Rexx variable <em>RC</em>.
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> imageNickName
+    <td> optional <em>imageNickName</em> gets uppercased and is used to retrieve
+         the image from the internal image registry
+
+    <!-- -------------------------------------------------------- -->
+    <tr class="CommandRowColumn"><!-- table row -->
+    <td class="cmdNr">
+    <td class="command" id="cmdSetClipboardWithoutAlpha">  &quot;setClipboardWithoutAlpha&quot; <br>
+        &quot;clipboardSetWithoutAlpha&quot;
+    <td colspan="2"> Sets the system clipboard to the current image unless
+        the optional <em>imageNickName</em> is supplied in which case the image
+        is retrieved from the internal image registry stored with an index matching
+        <em>imageNickName</em> in uppercase. The image used to set the system
+        clipboard gets returned via the Rexx variable <em>RC</em>.
+
+        <br>Note: images of type <em>TYPE_4BYTE_ABGR</em> or <em>TYPE_4BYTE_ABGR_PRE</em> are redrawn
+                  on white background on a new image of type <em>TYPE_3BYTE_BGR</em>,
+                  images of type <em>TYPE_INT_ARGB</em> or <em>TYPE_INT_ARGB_PRE</em> are redrawn
+                  on white background on a new image of type <em>TYPE_INT_RGB</em>.
+
+
+    <tr class="ArgumentRowColor"><td><!-- table row -->
+    <td>
+    <td class="argument"> imageNickName
+    <td> optional <em>imageNickName</em> gets uppercased and is used to retrieve
+         the image from the internal image registry
 
 
     <!-- -------------------------------------------------------- -->
@@ -3145,7 +3205,7 @@ resulting command with arguments to the Rexx command handler.
 
    <hr width="75%">
     <small>
-       JDOR synopsis of commands, version: 100.20230609
+       JDOR synopsis of commands, version: 100.20230612
        <br>Acknowledgement: the author wishes to thank DI Walter Pachl
        <br>for his help in testing and proof reading
     </small>
