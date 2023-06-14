@@ -19,6 +19,9 @@
           .BSF in .environment;
 
    date:
+         2023-06-14, ---rgf, - allow optional codepage argument for "BSF.ClipBoard" method
+                               setString
+
          2023-06-11, ---rgf, - new class "BSF.ClipBoard" to allow copying images and strings
                                to the system clipboard, fetch images and strings, querying
                                whether empty, the renderings ("DataFlavor"s) available,
@@ -845,7 +848,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     8.50 (20230612)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
+   version:     8.50 (20230614)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -948,7 +951,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="850.20230612" -- set version (date distribution got created)
+      .bsf4rexx~version="850.20230614" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -6413,8 +6416,20 @@ syntax:
 *   peer.
 */
 ::method loadPeerClass package class  -- load the peer Java class now
-  expose thisClz
+  expose thisClz defaultCodePage
   thisClz=bsf.loadClass("org.rexxla.bsf.engines.rexx.BsfSystemClipboard")
+  defaultCodePage=.java.lang.System~getProperty("native.encoding")   -- with Java 18
+  if defaultCodePage~isNil then
+     defaultCodePage=.java.lang.System~getProperty("file.encoding")
+
+/** This attribute determines which file encoding is used when converting
+*   strings to and from Java. It defaults to the <em>java.lang.System</em>
+*   property <em>&quot;file.encoding&quot;</em> and if <em>.nil</em> then
+*   <em>&quot;file.encoding&quot;</em>.
+*/
+-- https://docs.oracle.com/javase/8/docs/technotes/guides/intl/encoding.doc.html (2023-06-14)
+-- https://en.wikipedia.org/wiki/Code_page (2023-06-14)
+::attribute defaultCodePage  class
 
 /* ------------------------------------------------------------------------ */
 /** Get Java class object representing the system's clipboard.
@@ -6519,6 +6534,7 @@ syntax:
 ::attribute string set class
   forward message (setString)
 
+
 /* ------------------------------------------------------------------------ */
 /** Setter method to set the system clipboard to the supplied string.
 * <br>Note: if the Rexx string represents characters encoded in UTF-8 (like curl supplies),
@@ -6526,12 +6542,16 @@ syntax:
 *     created on the Java side correctly, fetching the "JSO" object (a Java String object)
 *     and supply that JSO object as the string value to set the system clipboard to.
 *
-* @param string the string that should be put into the system clipboard
+* @param string the Rexx string that should be put into the system clipboard
+* @param codepage optonal, a string denoting explicitly the codepage that was used to encode the Rexx string
 */
 ::method setString  class
-  expose thisClz
-  use strict arg str
-  thisClz~setString(str)
+  expose thisClz defaultCodePage
+  use strict arg str, ...
+  if arg(2,"exists") then
+     thisClz~setString(.java.lang.String~new(BSFRawBytes(str),arg(2)))
+  else
+     thisClz~setString(str)
 
 /* ------------------------------------------------------------------------ */
 /**  Getter method to fetch a string from the system clipboard.
@@ -6547,16 +6567,15 @@ syntax:
 /**  Getter method to fetch a string from the system clipboard encoded with the specified
 *    <em>codepage</em> (e.g., "UTF-8").
 *
+* @param codepage a string denoting the codepage to use to encode the Rexx string to return
+*
 *  @return string fetched from system clipboard encoded according to <em>codepage</em> or
 *   <em>.nil</em> if no string present
 */
 ::method getString class
-  expose thisClz
-  use strict arg codepage=.nil
-  if codepage=.nil then
-     return thisClz~getString
-  else
-     return BsfRawBytes(thisClz~getString(codepage))
+  expose thisClz defaultCodePage
+  use strict arg codepage=(defaultCodePage)
+  return BsfRawBytes(thisClz~getString(codepage))
 
 /*
 /* ------------------------------------------------------------------------ */

@@ -1,10 +1,10 @@
 #!/usr/bin/env rexx
 /*
-   Name:    "1-210_JDOR_area_cag.rxj"
+   Name:    "1-220_JDOR_area_cag.rxj"
 
-   Invoke:  "rexx 1-210_JDOR_area_cag.rxj [?]"
-            "rexxj 1-210_JDOR_area_cag.rxj [?]" (Windows)
-            "rexxj.sh 1-210_JDOR_area_cag.rxj [?]" (Unix)
+   Invoke:  "rexx 1-220_JDOR_area_cag.rxj [?]"
+            "rexxj 1-220_JDOR_area_cag.rxj [?]" (Windows)
+            "rexxj.sh 1-220_JDOR_area_cag.rxj [?]" (Unix)
 
             ? ... optional argument, if supplied displays processed JDOR commands
 
