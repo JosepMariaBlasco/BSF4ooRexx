@@ -1,0 +1,137 @@
+#!/usr/bin/env rexx
+/*
+   Name:    "1-250_JDOR_to_clipboard.rxj"
+
+   Invoke:  "rexx 1-250_JDOR_to_clipboard.rxj [1|true]"
+            "rexxj 1-250_JDOR_to_clipboard.rxj [1|true]" (Windows)
+            "rexxj.sh 1-250_JDOR_to_clipboard.rxj [1|true]" (Unix)
+
+   Purpose: creates an image and copies it to the system clipboard
+
+            if argument supplied is either '1' or 'true' the image gets
+            copied without translucency to the system clipboard
+
+   Date:    2023-06-17
+
+   Author:  Rony G. Flatscher, WU Vienna
+
+   Changes: ---
+
+   last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
+                (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2023 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+dtStart=.DateTime~new
+parse arg noAlpha .
+
+bNoAlpha=(noAlpha=1 | noAlpha~caselessEquals("true"))
+bDebug=.false        -- set to .true to show output
+
+clz=bsf.importClass("org.oorexx.handlers.jdor.JavaDrawingHandler")
+if bDebug=.true then
+   say "JDOR version:" clz~version
+jdh=clz~new
+call BsfCommandHandler "add", "jdor", jdh
+
+if bDebug then
+   address jdor with error using (.error) output using (.output)   -- set default environment to JDOR
+else
+   address jdor
+
+dtAfterRedirect=.DateTime~new
+
+newImage 250 250        -- create new bitmap
+dtAfterNI=.dateTime~new
+imageSize
+parse var RC imgWidth imgHeight
+
+if bDebug=.true then    -- show window in debug mode
+do
+   winShow              -- show frame
+   winTitle imgWidth"x"imgHeight
+end
+
+   -- draw two lines forming a big X
+shape l2d line2d 10 10 100 100
+drawShape l2d
+
+shape r2d rectangle2d 50 50 100 100
+color red
+drawShape r2d
+
+shape rr2d roundrectangle2d 70 75 125 125 45 45
+color c1 .1 .5 .75 .60
+fillShape rr2d
+color yellow
+drawShape rr2d
+
+stroke s3 3
+color black
+shape e2d ellipse2d 10 10 45 45
+color yellow
+drawShape e2d
+
+   -- place logos right-top, right-bottom, left-bottom, margin 10px
+size=50  -- size of logos on image
+m   =10  -- margin
+defs = ("oorexx_256.png"    , imgWidth-size-m, m               ), -
+       ("bsf4oorexx_256.png", imgWidth-size-m, imgHeight-size-m), -
+       ("oorexx4ooo_256.png", m              , imgHeight-size-m)
+do counter c def over defs
+   loadImage def[1] def[1]
+   moveTo    def[2] def[3]
+   drawImage def[1] size size
+end
+
+dtBeforeF=.dateTime~new
+font f18 "Serif 18"     -- this takes quite some time!
+dtAfterF=.dateTime~new
+str=.dateTime~new~string
+dtBeforeSB=.dateTime~new
+stringBounds str
+dtAfterSB=.dateTime~new
+parse var RC x y w h
+if bDebug=.true then
+   say "stringBounds (x y width height):" pp(RC)
+moveTo (imgWidth-w-x)/2 (imgHeight+h-y)/2
+color black
+dtBeforeDS=.dateTime~new
+drawString str
+dtAfterDS=.dateTime~new
+
+   -- copy image to clipboard
+if bNoAlpha then clipboardSetWithoutAlpha
+            else clipboardSet
+
+   -- for development & testing
+if bDebug=.true then
+do
+   say "total time     :" dtAfterDS-dtStart
+   say
+   say "init & redirect:" dtAfterRedirect-dtStart
+   say "   create image:" dtAfterNI-dtAfterRedirect
+   say "           font:" dtAfterF-dtBeforeF  "(the first time font gets used)"
+   say "   stringBounds:" dtAfterSB-dtBeforeSB
+   say "   drawString  :" dtAfterDS-dtBeforeDS
+   say "hit <enter> to continue..."
+   parse pull .
+end
+
+::requires BSF.CLS   -- get bidirectional ooRexx-Java bridge, includes JDOR
