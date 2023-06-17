@@ -1,0 +1,114 @@
+#!/usr/bin/env rexx
+/*
+   Name:    "1-250_windows_word_ole_clipbaord.rxj"
+
+   Invoke:  "rexx 1-250_windows_word_ole_clipbaord.rxj" (Windows only)
+            "rexxj 1-250_windows_word_ole_clipbaord.rxj" (Windows only)
+
+   Needs:   BSF4ooRexx850 and "1-250_JDOR_to_clipboard.rxj" from BSF4ooRexx850
+
+   Purpose: runs on Windows only as this uses OLE (object linking and embedding)
+            creates a Word document and demonstrates exploiting the .BSF.clipboard class
+            for copying UTF-8 encoded data to the clipboard and pasting it into the
+            document, then calls "1-250_JDOR_to_clipboard.rxj" which creates and copies
+            an image to the systme clipboard, which then gets pasted into the document.
+
+   Date:    2023-06-17
+
+   Author:  Rony G. Flatscher, WU Vienna
+
+   Changes: ---
+
+   last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
+                (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2023 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+parse source opSys . fullName  -- get source path
+if opSys[1]<>"W" then   -- we must run under Windows
+do
+   say "this program needs Windows, you are running:" pp(opSys)
+   exit -1
+end
+
+thisName=filespec("name",fullName)
+parse var thisName name '.'
+docName=name".docx"  -- name of Word document we create at the end
+
+word = .OLEObject~New("Word.Application") -- create a Word instance
+word~Visible = .true -- make Word visible
+document = word~documents~add -- add a new document
+selection = word~selection    -- get the selection object
+
+dtStart=.dateTime~new
+selection~TypeText("Hello, this is ooRexx started at:" dtStart"!")
+selection~TypeParagraph
+
+   -- define some characters, encoded as UTF-8
+female       ="e2 99 80"x
+male         ="e2 99 82"x
+ballot       ="e2 98 90"x
+ballot_x     ="e2 98 92"x
+ballot_check ="e2 98 91"x
+radioactive  ="e2 98 a2"x
+skullAndBones="e2 98 a0"x
+umbrellaRain ="e2 98 94"x
+smiley       ="e2 98 ba"x
+frowney      ="e2 98 b9"x
+smileyBlack  ="e2 98 bb"x
+peace        ="e2 98 ae"x
+yingYang     ="e2 98 af"x
+   -- create a blank delimited string of the UTF-8 characters
+utf8chars=female male ballot ballot_x ballot_check radioactive skullAndBones umbrellaRain -
+          smiley frowney smileyBlack peace yingYang
+
+selection~typeText("Hello from ooRexx again, setting system clipboard to our UTF-8 symbols ... ")
+selection~typeParagraph
+.bsf.clipboard~setString(utf8chars,"UTF-8")  -- indicate Rexx string is UTF-8 encoded (we know!)
+
+selection~typeText("About to paste the current clipboard content (UTF-8 encoded string): ")
+selection~typeParagraph
+selection~paste      -- we let Word paste string from the clipboard
+selection~typeParagraph
+
+-- create and copy image to system clipboard with JDOR, paste it into swriter
+dtBeforeImage=.dateTime~new
+selection~typeText("At:" dtBeforeImage", calling JDOR-program to create and copy an image to the system clipboard ... ")
+selection~typeParagraph
+   -- create image, copy to clipboard without alpha channel
+call "1-250_JDOR_to_clipboard.rxj" .true
+dtAfterImage=.dateTime~new
+selection~typeText("Returned from running JDOR program at:" dtAfterImage "(duration:" dtAfterImage-dtBeforeImage"). ")
+selection~typeParagraph
+
+selection~typeText("About to paste the current clipboard content (an image created with JDOR - Java2D for ooRexx, part of BSF4ooRexx850): ")
+selection~typeParagraph
+selection~paste
+selection~typeParagraph
+
+dtEnd=.dateTime~new
+selection~typeText("Done at:" dtEnd "(total duration:" dtStart-dtEnd")")
+selection~typeParagraph
+
+fileName = directory()"\"docName -- save in current directory
+say "fileName="pp(fileName)      -- show file name
+document~saveAs(fileName)        -- save document
+-- word~quit            -- quit (close) word
+
+::requires BSF.CLS   -- get bidirectional ooRexx-Java bridge

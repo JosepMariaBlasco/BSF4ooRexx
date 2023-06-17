@@ -1,0 +1,167 @@
+#!/usr/bin/env rexx
+/*
+   Name:    "1-250_windows_swriter_ole_clipbaord.rxj"
+
+   Invoke:  "rexx 1-250_windows_swriter_ole_clipbaord.rxj" (Windows only)
+            "rexxj 1-250_windows_swriter_ole_clipbaord.rxj" (Windows only)
+
+   Needs:   BSF4ooRexx850 and "1-250_JDOR_to_clipboard.rxj" from BSF4ooRexx850
+
+   Purpose: runs on Windows only as this uses OLE (object linking and embedding)
+            creates an OpenOffice or LibreOffice swriter document and demonstrates
+            exploiting the .BSF.clipboard class for copying UTF-8 encoded data to
+            the clipboard and pasting it into the document, then calls
+            "1-250_JDOR_to_clipboard.rxj" which creates and copies an
+            image to the systme clipboard, which then gets pasted into
+            the document.
+
+   Date:    2023-06-17
+
+   Author:  Rony G. Flatscher, WU Vienna
+
+   Changes: ---
+
+   last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
+                (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2023 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+parse source opSys . fullName  -- get source path
+if opSys[1]<>"W" then   -- we must run under Windows
+do
+   say "this program needs Windows, you are running:" pp(opSys)
+   exit -1
+end
+
+thisName=filespec("name",fullName)
+parse var thisName name '.'
+docName=name".odt"   -- name of swriter document we create at the end
+
+/* create a text document, demonstrate how to align paragraphs */
+serviceManager = .OLEObject~new('com.sun.star.ServiceManager')
+/* create text document */
+desktop  = serviceManager~createInstance('com.sun.star.frame.Desktop')
+noProps  = .array~new   /* empty array (no properties)   */
+document = desktop~loadComponentFromURL('private:factory/swriter', '_blank', 0, noProps)
+
+text = document~getText       -- get text object
+dtStart=.dateTime~new
+text~setString("Hello, this is ooRexx started at:" dtStart"!")
+cursor = text~createTextCursor
+cursor~gotoEnd(.false)
+
+ctlChars = getAsDirectory(serviceManager, "com.sun.star.text.ControlCharacter")  -- UNO_CONSTANT
+paraBreak = ctlChars~paragraph_break   -- get paragraph break constant
+text~insertControlCharacter(cursor, paraBreak, .false)
+
+dispatcher=serviceManager~createInstance("com.sun.star.frame.DispatchHelper")
+
+   -- define some characters, encoded as UTF-8
+female       ="e2 99 80"x
+male         ="e2 99 82"x
+ballot       ="e2 98 90"x
+ballot_x     ="e2 98 92"x
+ballot_check ="e2 98 91"x
+radioactive  ="e2 98 a2"x
+skullAndBones="e2 98 a0"x
+umbrellaRain ="e2 98 94"x
+smiley       ="e2 98 ba"x
+frowney      ="e2 98 b9"x
+smileyBlack  ="e2 98 bb"x
+peace        ="e2 98 ae"x
+yingYang     ="e2 98 af"x
+   -- create a blank delimited string of the UTF-8 symbols
+utf8chars=female male ballot ballot_x ballot_check radioactive skullAndBones umbrellaRain -
+          smiley frowney smileyBlack peace yingYang
+
+text~insertString(cursor, "Hello from ooRexx again, setting system clipboard to our UTF-8 symbols ... " ,.false)
+text~insertControlCharacter(cursor, paraBreak, .false)
+.bsf.clipboard~setString(utf8Chars,"utf-8")
+
+text~insertString(cursor, "About to paste the current clipboard content (UTF-8 encoded string): " ,.false)
+text~insertControlCharacter(cursor, paraBreak, .false)
+dispatcher~executeDispatch(desktop~currentFrame, '.uno:Paste', '', 0, noProps)
+text~insertControlCharacter(cursor, paraBreak, .false)
+
+-- create and copy image to system clipboard with JDOR, paste it into swriter
+dtBeforeImage=.dateTime~new
+text~insertString(cursor, "At:" dtBeforeImage", calling JDOR-program to create and copy an image to the system clipboard ... " ,.false)
+text~insertControlCharacter(cursor, paraBreak, .false)
+   -- create image, copy to clipboard without alpha channel
+call "1-250_JDOR_to_clipboard.rxj" .true
+dtAfterImage=.dateTime~new
+text~insertString(cursor, "Returned from running JDOR program at:" dtAfterImage "(duration:" dtAfterImage-dtBeforeImage"). " ,.false)
+text~insertControlCharacter(cursor, paraBreak, .false)
+
+text~insertControlCharacter(cursor, paraBreak, .false)
+text~insertString(cursor, "About to paste the current clipboard content (an image created with JDOR - Java2D for ooRexx, part of BSF4ooRexx850): " ,.false)
+text~insertControlCharacter(cursor, paraBreak, .false)
+
+dispatcher~executeDispatch(desktop~currentFrame, '.uno:Paste', '', 0, noProps)
+text~insertControlCharacter(cursor, paraBreak, .false)
+
+dtEnd=.dateTime~new
+text~insertString(cursor, "Done at:" dtEnd "(total duration:" dtStart-dtEnd")", .false)
+text~insertControlCharacter(cursor, paraBreak, .false)
+
+   -- create a proper file-URL for Windows (has three instead of two slashes at the beginning!)
+url="file:///" || qualify(directory()"\"docName)~changeStr("\","/")
+say "url:" pp(url)
+document~storeAsURL(url, .array~new)
+-- document~close(.false)
+
+::requires BSF.CLS   -- get bidirectional ooRexx-Java bridge
+
+/* Routine returns a Rexx directory containing all names and values of the supplied
+   UNO_CONSTANTS or UNO_ENUM class name (needs to be fully qualified).  */
+::routine getAsDirectory
+  use strict arg serviceManager, unoClzName
+
+  dir = .Directory~new              -- directory will get
+  dir~objectName = unoClzName       -- allows to show the uno class it represents
+
+  ctxt = serviceManager~defaultContext
+  tdm = ctxt~getValueByName("/singletons/com.sun.star.reflection.theTypeDescriptionManager")
+  reflClz= tdm~getByHierarchicalName(unoClzName)
+  if reflClz~isNil then return dir  -- return empty directory
+
+  typeClass = reflClz~getTypeClass
+  if typeClass = 30 then         -- UNO_CONSTANTS
+  do
+     dir~objectName = unoClzName "(UNO_CONSTANTS)" -- supply type info to name
+     do c over reflClz~getConstants -- iterate over constant fields
+        name = c~getName            -- fully qualified
+        name = name~substr(name~lastPos('.')+1) -- extract last word
+        dir[name] = c~getConstantValue -- store constant values with their names
+        -- say "name:" name "->" c~getConstantValue
+     end
+  end
+  else if typeClass = 15 then    -- UNO_ENUMERATION
+  do
+     dir~objectName = unoClzName "(UNO_ENUM)"   -- supply type info to name
+     enumNames = reflClz~getEnumNames     -- get all enumeration names
+     enumValues = reflClz~getEnumValues   -- get all enumeration values
+     do i=1 to enumNames~items
+        name = enumNames[i]
+        name = name~substr(name~lastPos('.')+1) -- extract last word
+        dir[name] = enumValues[i]   -- store enum values with their names
+        -- say "name:" name "->" enumValues[i]
+     end
+  end
+  return dir

@@ -7,7 +7,10 @@
             "rexxj.sh 1-230_ClipBoard.rxj" (Unix)
 
 
-   Purpose: demonstrate usage of ooRexx class Bsf.Clipboard
+   Purpose: demonstrate usage of ooRexx class Bsf.Clipboard for images and strings,
+            stressing the ability to supply codepage information, cf.:
+            - https://docs.oracle.com/javase/8/docs/technotes/guides/intl/encoding.doc.html (2023-06-15)
+            - https://en.wikipedia.org/wiki/Code_page (2023-06-15)
 
    Date:    2023-06-13
 
@@ -60,28 +63,34 @@ img1  =clzImageIO~read(file)  -- returns a BufferedImage
 say "4) setting clipboard to image:" pp(img1~toString)
 .bsf.clipboard~image=img1
 call showFormats
-say "   fetching image from clipboard, received:" pp(.bsf.clipBoard~image~toString)
 say
+say "5) fetching image from clipboard, received:" pp(.bsf.clipBoard~image~toString)
+say
+say "="~copies(79)
+say "hit <enter> to continue ..."
+parse pull .
 
 ------------------------------------------------------------
-say "---"
+say
 say "now samples with Rexx strings encoded as Cp437, Cp850, ISO-8859-1, UTF-8:"
 
--- https://docs.oracle.com/javase/8/docs/technotes/guides/intl/encoding.doc.html (2023-06-14)
--- https://en.wikipedia.org/wiki/Code_page (2023-06-14)
+-- the test sentence used, encoded in HTML (codepage neutral):
+--    "German: umlauts='&auml&ouml&uuml&Auml&Ouml&Uuml;', sharp s='&szlig;', Yen='&yen;'."
 
 -- the following four strings represent the same sentence encoded in different codepages
+-- the two vertical bars (||) point at the Yen symbol which in cp437 gets encoded as "9D"x
 --                                                                            Yen: "9d"x in cp437) ||
 cp437    ="4765726D616E3A20756D6C617574733D278494818E999A272C20736861727020733D27E1272C2059656E3D279D272E"x
 cp850    ="4765726D616E3A20756D6C617574733D278494818E999A272C20736861727020733D27E1272C2059656E3D27BE272E"x
-iso8859_1="4765726D616E3A20756D6C617574733D27E4F6FCC4D6DC272C20736861727020733D27DF272C2059656E3D27A5272E"x
+   -- 1252, a Windows codepage, based on iso_8859_1, but different in code point range 0x80-0x9F
+cp1252   ="4765726D616E3A20756D6C617574733D27E4F6FCC4D6DC272C20736861727020733D27DF272C2059656E3D27A5272E"x
+   -- UTF-8: one of the Unicode encodings
 utf8     ="4765726D616E3A20756D6C617574733D27C3A4C3B6C3BCC384C396C39C272C20736861727020733D27C39F272C2059656E3D27C2A5272E"x
---         4765726D616E3A20756D6C617574733D27C3A4C3B6C3BCC384C396C39C272C20736861727020733D27C39F272C2059656E3D27C2A5272E
 
--- -> requested UTF-8, but seems to be something different! :(
---         4765726D616E3A20756D6C617574733D27C383C2A4C383C2B6C383C2BCC383E2809EC383E28093C383C593272C20736861727020733D27C383C5B8272C2059656E3D27C382C2A5272E
-strings=cp437  , cp850  , iso8859_1   , utf8    -- strings encoded in different codepages
-cps    ="Cp437", "Cp850", "ISO-8859-1", "UTF-8" -- respective codepage names
+-- https://docs.oracle.com/javase/8/docs/technotes/guides/intl/encoding.doc.html (2023-06-15)
+-- https://en.wikipedia.org/wiki/Code_page (2023-06-15)
+strings=cp437  , cp850  , cp1252  , utf8    -- strings encoded in different codepages
+cps    ="Cp437", "Cp850", "Cp1252", "UTF-8" -- respective codepage names
 
 stdoutEncoding=.java.lang.System~getProperty("sun.stdout.encoding")  -- fetch current stdout encoding
 say "current stdout's encoding:" pp(stdoutEncoding)
@@ -91,24 +100,32 @@ say
 do counter c str over strings
    cp=cps[c]                                 -- get codepage used to encode str
    say "   #" c" Rexx string ""str"" got encoded as" pp(cps[c])":"
-   say "            str=" pp(str)
+   say "                 str:" pp(str) "(displayed with stdout codepage" pp(stdoutEncoding)")"
+   say "             str~c2x:" pp(str~c2x)"x"
+   say
    tmpStr=bsf.iconv(str,cp,stdoutEncoding)   -- translate to stdout's encoding
-   say "       ...  translated according to this stdout's codepage ["stdoutEncoding"]:"
-   say "           tmpStr="pp(tmpStr)
-   say '       .bsf.clipboard~setString(str,"'cp'")'
+   say "       ...  converting ""str"" from" pp(cps[c]) "to stdout's codepage" pp(stdoutEncoding) "->" "tmpStr=bsf.iconv(str,"pp(cps[c])","pp(stdoutEncoding)"):"
+--   say "              tmpStr=bsf.iconv(str,"pp(cps[c])","pp(stdoutEncoding)")"
+   say "              tmpStr:" pp(tmpStr)
+   say "          tmpStr~c2x:" pp(tmpStr~c2x)"x"
+   say
+   say '       .bsf.clipboard~setString(str,'pp(cp)')  /* set clipboard, "str" is encoded in 'pp(cps[c])' */'
    .bsf.clipboard~setString(str,cp)          -- set string with proper encoding information
    say
 end
 call showFormats
 say
 call showCPs
-say "---"
 
 say
-say "the current string in the system clipboard is usually encoded as Unicode, hence"
-say "supplying explicitly the codepage we want the Rexx string to be encoded in:"
+say "-"~copies(79)
+say "--- getting string from system clipboard:"
 say
-say "Asking string from clipboard encoded as ""sun.stdout.encoding"" ["stdoutEncoding"]:"
+say "the current string in the system clipboard is encoded as Unicode (we use the Java interface),"
+say "hence supplying explicitly the codepage we want the returned Rexx string to be encoded in:"
+say
+say "Asking string from clipboard encoded as ""sun.stdout.encoding"", i.e.," pp(stdoutEncoding)":"
+say '      .bsf.clipboard~getString('pp(stdoutEncoding)')  /* get string from clipboard, we need it encoded with 'pp(stdoutEncoding)' */'
 say "    " pp(.bsf.clipboard~getString(stdoutEncoding))
 
 
@@ -120,7 +137,7 @@ say "    " pp(.bsf.clipboard~getString(stdoutEncoding))
      say "   clipboard is empty"
      return
   end
-  say "clipboard contains the following data renderable to:"
+  say "clipboard currently contains the following data renderable to:"
   flavors=.bsf.clipboard~getDataFlavors
   w=flavors~items~length   -- get width of highest number
   do counter c flavor over flavors
@@ -135,3 +152,8 @@ say "    " pp(.bsf.clipboard~getString(stdoutEncoding))
   do counter c prop over props
      say "   #" c":" pp(prop)~left(30)":" pp(.java.lang.System~getProperty(prop))
   end
+  say "<---"
+
+::routine pp
+  parse arg a
+  return '"'a~changeStr('"','""')'"'

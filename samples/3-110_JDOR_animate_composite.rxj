@@ -122,7 +122,7 @@ do counter c loc over locations
       end
       moveTo x y           -- go to next position
       drawImage name size size   -- draw at new position
-      winUpdate .true      -- do not update window (frame)
+      winUpdate .true      -- update window (frame)
 
       if x>w | (x+size)<0 then leave
       if y>w | (y+size)<0 then leave
@@ -159,7 +159,7 @@ loop while x>x2
    composite src_over   -- re-establish writing src over destination
    moveTo x y2          -- go to next position
    drawString str       -- draw the string
-   winUpdate .true      -- do not update window (frame)
+   winUpdate .true      -- update window (frame)
    sleep 0.01           -- sleep causes animation effect
 end
 

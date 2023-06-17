@@ -236,7 +236,10 @@ example is to be expected:
         If supplying the argument <em>?</em> (question mark) on the command line
         the executed JDOR commands get written to <em>stdout</em> in a canonized form.
 
-    <dt><a href="1-210_jdor_area_cag.rxj">1-210_jdor_area_cag.rxj</a>
+    <dt><a href="1-200_listFonts.rxj">1-200_listFonts.rxj</a>
+    <dd>Lists all font families installed on the system.
+
+    <dt><a href="1-210_JDOR_area_cag.rxj">1-210_JDOR_area_cag.rxj</a>
     <dd>Demonstrates the use of JDOR for creating <em>Area</em> shapes
         from circles and the JDOR commands <em>areaAdd</em> (synonym: <em>areaUnion</em>),
         <em>areaIntersect</em>, <em>areaSubtract</em>, and <em>areaExclusiveOr</em>
@@ -244,16 +247,59 @@ example is to be expected:
         If supplying the argument <em>?</em> (question mark) on the command line
         the executed JDOR commands get written to <em>stdout</em> in a canonized form.
 
-    <dt><a href="1-220_jdor_area_cag.rxj">1-220_jdor_area_cag.rxj</a>
+    <dt><a href="1-220_JDOR_area_cag.rxj">1-220_JDOR_area_cag.rxj</a>
     <dd>Demonstrates the use of JDOR for combining two areas and have
         the resulting areas filled with colors to highlight them as well
         as drawing a border at the concluding area.
         If supplying the argument <em>?</em> (question mark) on the command line
         the executed JDOR commands get written to <em>stdout</em> in a canonized form.
 
-    <dt><a href="1-200_listFonts.rxj">1-200_listFonts.rxj</a>
-    <dd>Lists all font families installed on the system.
+    <dt><a href="1-230_show_clipBoard.rxj">1-230_show_clipBoard.rxj</a>
+    <dd>Demonstrates using the <em>.bsf.clipboard</em> class. This sample will
+        list all currently offered data flavors of the data in the system's
+        clipboard if it is not empty.
 
+    <dt><a href="1-240_Clipboard.rxj">1-240_Clipboard.rxj</a>
+    <dd>Demonstrates using the <em>.bsf.clipboard</em> class which allows for
+        interacting with the system clipboard, copying strings or images to it
+        and getting strings or images from it. This sample will concentrate on
+        demonstrating various string encodings which play an important role
+        when copying and pasting strings to and from the system clipboard.
+
+    <dt><a href="1-250_JDOR_to_clipboard.rxj">1-250_JDOR_to_clipboard.rxj</a>
+    <dd>This program creates an image and copies it to the system clipboard
+        using JDOR.
+
+    <dt><a href="1-250_swriter_bsf_clipboard.rxj">1-250_swriter_bsf_clipboard.rxj</a>
+    <dd>This program creates an OpenOffice/LibreOffice <em>swriter</em> document,
+        defines UTF-8 encoded symbols, copies them to the system clipboard and
+        pastes them into the document, then has an image created and copied to the
+        clipboard (by calling <em>1-250_JDOR_to_clipboard.rxj</em> above) which then
+        gets pasted into the document again.
+        <br><em>Note:</em> This program runs on all operating systems where Apache
+        OpenOffice or LibreOffice are installed together with BSF4ooRexx850's support
+        for them. If these applications were installed after BSF4ooRexx850 was installed,
+        then run <em>BSF4ooRexx850 -> Installation -> Reinstall BSF4ooRexx850</em> which
+        installs the necessary support.
+
+    <dt><a href="1-250_windows_swriter_ole_clipboard.rxj">1-250_windows_swriter_ole_clipboard.rxj</a>
+    <dd>This program creates an OpenOffice/LibreOffice <em>swriter</em> document,
+        defines UTF-8 encoded symbols, copies them to the system clipboard and
+        pastes them into the document, then has an image created and copied to the
+        clipboard (by calling <em>1-250_JDOR_to_clipboard.rxj</em> above) which then
+        gets pasted into the document again.
+        <br><em>Note:</em> This program runs on Windows only as it exploits <em>OLE</em>
+        (Object Linking and Embedding), Apache OpenOffice or LibreOffice need to be installed
+        on the system.
+
+    <dt><a href="1-250_windows_word_ole_clipboard.rxj">1-250_windows_word_ole_clipboard.rxj</a>
+    <dd>This program creates an OpenOffice/LibreOffice <em>swriter</em> document,
+        defines UTF-8 encoded symbols, copies them to the system clipboard and
+        pastes them into the document, then has an image created and copied to the
+        clipboard (by calling <em>1-250_JDOR_to_clipboard.rxj</em> above) which then
+        gets pasted into the document again.
+        <br><em>Note:</em> This program runs on Windows only as it exploits <em>OLE</em>
+        (Object Linking and Embedding), MS Word needs to be installed on the system.
 
     <dt><a href="2-010_demoJavaArrays.rxj">2-010_demoJavaArrays.rxj</a>
     <dd>Demonstrate how to create and use Java array objects.
@@ -623,6 +669,6 @@ example is to be expected:
 <p>
 <hr>
 <p style="font-size: 80%;">
-Rony G. Flatscher, 2010-08-22, ..., 2023-06-08, Wien/Vienna, Austria, Europe
+Rony G. Flatscher, 2010-08-22, ..., 2023-06-17, Wien/Vienna, Austria, Europe
 </body>
 

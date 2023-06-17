@@ -1,0 +1,56 @@
+#!/usr/bin/env rexx
+/*
+   Name:    "1-230_show_clipBoard.rxj"
+
+   Invoke:  "rexx 1-230_show_clipBoard.rxj"
+            "rexxj 1-230_show_clipBoard.rxj" (Windows)
+            "rexxj.sh 1-230_show_clipBoard.rxj" (Unix)
+
+   Purpose: demonstrate usage of new class .Bsf.ClipBoard to test whether
+            the system clipboard is currently empty, and if not, list all
+            offered data flavors
+
+   Date:    2023-06-17
+
+   Author:  Rony G. Flatscher, WU Vienna
+
+   Changes: ---
+
+   last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
+                (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2023 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+isEmpty=.bsf.clipboard~isEmpty
+if isEmpty then
+do
+   say "system clipboard is currently empty"
+   exit -1     -- indicate currently empty system clipboard
+end
+
+dfs=.bsf.clipboard~getDataFlavors
+say "system clipboard offers currently a total of" pp(dfs~items) "data flavor(s), namely:"
+len=dfs~items~length    -- determine maximum number of columns needed for right adjusting
+do counter c df over dfs
+   say "   " c~right(len)":" pp(df~toString)
+end
+-- .bsf.clipBoard~clear -- to empty clipboard
+
+::requires bsf.cls

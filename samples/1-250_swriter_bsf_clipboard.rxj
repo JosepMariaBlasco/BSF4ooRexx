@@ -1,0 +1,135 @@
+#!/usr/bin/env rexx
+/*
+   Name:    "1-250_swriter_bsf_clipbaord.rxj"
+
+   Invoke:  "rexx 1-250_swriter_bsf_clipbaord.rxj"
+            "rexxj 1-250_swriter_bsf_clipbaord.rxj" (Windows)
+            "rexxj.sh 1-250_swriter_bsf_clipbaord.rxj" (Unix)
+
+   Needs:   "1-250_JDOR_to_clipboard.rxj" from BSF4ooRexx850
+
+   Purpose: runs on all operating systems and creates an OpenOffice or
+            LibreOffice swriter document and demonstrates exploiting the
+            .BSF.clipboard class for copying UTF-8 encoded data to the
+            clipboard and pasting it into the document, then calls
+            "1-250_JDOR_to_clipboard.rxj" which creates and copies an
+            image to the systme clipboard, which then gets pasted into
+            the document.
+
+   Date:    2023-06-17
+
+   Author:  Rony G. Flatscher, WU Vienna
+
+   Changes: ---
+
+   last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
+                (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2023 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+parse source . . fullName  -- get source path
+thisName=filespec("name",fullName)  -- extract name
+parse var thisName name '.'         -- remove extension
+docName=name".odt"         -- name of swriter document we create at the end
+
+  /* create the Desktop object, we need its XComponentLoader interface to load a new document */
+xContext = UNO.connect()   /* connect to server and retrieve the XContext object */
+serviceManager = xContext~getServiceManager~XMultiServiceFactory
+-- XMsf     = serviceManager~XMultiServiceFactory   /* retrieve XMultiComponentFactory and XMultiServiceFactory */
+xDesktop = UNO.createDesktop(xContext)  /* get the UNO Desktop service object */
+xcl      = xDesktop~XComponentLoader       -- get XComponentLoader interface
+
+uri="private:factory/swriter"       -- new swriter document
+document=xcl~loadComponentFromURL(uri,"_blank",0,.uno~noProps)
+
+text=document~XTextDocument~getText -- get text object
+dtStart=.dateTime~new
+text~setString("Hello, this is ooRexx started at:" dtStart"!")
+cursor=text~createTextCursor  -- create the character based cursor
+cursor~gotoEnd(.false)
+
+ctlChars=.uno_constants~new("com.sun.star.text.ControlCharacter") -- UNO_CONSTANT
+paraBreak=ctlChars~paragraph_break  -- get paragraph break constant
+text~insertControlCharacter(cursor,paraBreak,.false)
+
+text~insertString(cursor,"This is a text sent to swriter using BSF4ooRexx850.",.false)
+text~insertControlCharacter(cursor,paraBreak,.false)
+
+   -- we want to use the dispatch interface, hence:
+sDispatchHelper=serviceManager~createInstance("com.sun.star.frame.DispatchHelper")
+dispatcher=sDispatchHelper~XDispatchHelper
+      -- note: the currentFrame needs to be queried here, otherwise it may be still .nil!
+currFrameXDP=xDesktop~currentFrame~XDispatchProvider  -- get XDispatchProvider functionality
+
+   -- define some characters, encoded as UTF-8
+female       ="e2 99 80"x
+male         ="e2 99 82"x
+ballot       ="e2 98 90"x
+ballot_x     ="e2 98 92"x
+ballot_check ="e2 98 91"x
+radioactive  ="e2 98 a2"x
+skullAndBones="e2 98 a0"x
+umbrellaRain ="e2 98 94"x
+smiley       ="e2 98 ba"x
+frowney      ="e2 98 b9"x
+smileyBlack  ="e2 98 bb"x
+peace        ="e2 98 ae"x
+yingYang     ="e2 98 af"x
+   -- create a blank delimited string of the UTF-8 encoded symbols
+utf8chars=female male ballot ballot_x ballot_check radioactive skullAndBones umbrellaRain -
+          smiley frowney smileyBlack peace yingYang
+
+text~insertString(cursor, "Hello from ooRexx again, setting system clipboard to our UTF-8 symbols ... " ,.false)
+text~insertControlCharacter(cursor, paraBreak, .false)
+.bsf.clipboard~setString(utf8Chars,"utf-8")
+
+text~insertString(cursor, "About to paste the current clipboard content (UTF-8 encoded string): " ,.false)
+text~insertControlCharacter(cursor, paraBreak, .false)
+dispatcher~executeDispatch(currFrameXDP, '.uno:Paste', '', 0, .uno~noProps)
+text~insertControlCharacter(cursor, paraBreak, .false)
+
+----- create and copy image to system clipboard with JDOR, paste it into swriter
+dtBeforeImage=.dateTime~new
+text~insertString(cursor, "At:" dtBeforeImage", calling JDOR-program to create and copy an image to the system clipboard ... " ,.false)
+text~insertControlCharacter(cursor, paraBreak, .false)
+   -- create image, copy to clipboard without alpha channel
+call "1-250_JDOR_to_clipboard.rxj" .true
+dtAfterImage=.dateTime~new
+text~insertString(cursor, "Returned from running JDOR program at:" dtAfterImage "(duration:" dtAfterImage-dtBeforeImage"). " ,.false)
+text~insertControlCharacter(cursor, paraBreak, .false)
+
+text~insertControlCharacter(cursor, paraBreak, .false)
+text~insertString(cursor, "About to paste the current clipboard content (an image created with JDOR - Java2D for ooRexx, part of BSF4ooRexx850): " ,.false)
+text~insertControlCharacter(cursor, paraBreak, .false)
+
+dispatcher~executeDispatch(currFrameXDP, '.uno:Paste', '', 0, .uno~noProps)
+text~insertControlCharacter(cursor, paraBreak, .false)
+
+dtEnd=.dateTime~new
+text~insertString(cursor, "Done at:" dtEnd "(total duration:" dtStart-dtEnd")", .false)
+text~insertControlCharacter(cursor, paraBreak, .false)
+
+   -- create a proper file-URL
+url=uno.convertToUrl(directory()"\"docName)
+say "url:" pp(url)         -- show URL
+document~XStorable~storeAsURL(url, .uno~noProps)   -- save to file system
+-- document~XCloseable~close(.false)
+
+::requires UNO.CLS   -- get UNO support
