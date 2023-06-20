@@ -55,7 +55,7 @@
 */
    -- make sure we change current directory to program's directory
 parse source . . s      -- get full path to this program
-call directory filespec('loc',s) -- change current dir to this program's source dir
+oldDir=directory(filespec('location',s))  -- change current dir to this program's source dir
 
 /* Cf. e.g. <https://docs.oracle.com/javase/tutorial/2d/advanced/compositing.html> */
 
@@ -196,5 +196,7 @@ str=str1 flashTime str2
 end
 sleep 0.3
 say "--> we are done."
+
+call directory oldDir   -- change current directory back to original directory
 
 ::requires "BSF.CLS"    -- get ooRexx-Java bridge, contains JDOR Rexx command handler

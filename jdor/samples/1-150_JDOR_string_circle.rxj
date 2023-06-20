@@ -42,7 +42,7 @@
 */
    -- make sure we change to program's directory to refer to images with unqualified filenames
 parse source . . s      -- get full path to this program
-call directory filespec('loc',s) -- change current dir to this program's source dir
+oldDir=directory(filespec('location',s))  -- change current dir to this program's source dir
 
    -- create JDOR handler
 jdh=.bsf~new("org.oorexx.handlers.jdor.JavaDrawingHandler")

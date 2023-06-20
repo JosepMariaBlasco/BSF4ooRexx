@@ -39,6 +39,11 @@
     -----------------------------------------------------------------------------
 */
 dtStart=.DateTime~new
+
+   -- make sure we change to program's directory to refer to images with unqualified filenames
+parse source . . s   -- get full path to this program
+oldDir=directory(filespec('location',s))  -- change current dir to this program's source dir
+
 parse arg noAlpha .
 
 bNoAlpha=(noAlpha=1 | noAlpha~caselessEquals("true"))
@@ -57,16 +62,13 @@ else
 
 dtAfterRedirect=.DateTime~new
 
-newImage 250 250        -- create new bitmap
+newImage 250 250     -- create new bitmap
 dtAfterNI=.dateTime~new
 imageSize
 parse var RC imgWidth imgHeight
 
-if bDebug=.true then    -- show window in debug mode
-do
-   winShow              -- show frame
-   winTitle imgWidth"x"imgHeight
-end
+winShow              -- show frame
+winTitle imgWidth"x"imgHeight
 
    -- draw two lines forming a big X
 shape l2d line2d 10 10 100 100
@@ -101,7 +103,7 @@ do counter c def over defs
 end
 
 dtBeforeF=.dateTime~new
-font f18 "Serif 18"     -- this takes quite some time!
+font f18 "Dialog bold"     -- this may take quite some time on Windows!
 dtAfterF=.dateTime~new
 str=.dateTime~new~string
 dtBeforeSB=.dateTime~new
@@ -133,5 +135,7 @@ do
    say "hit <enter> to continue..."
    parse pull .
 end
+
+call directory oldDir   -- change current directory back to original directory
 
 ::requires BSF.CLS   -- get bidirectional ooRexx-Java bridge, includes JDOR

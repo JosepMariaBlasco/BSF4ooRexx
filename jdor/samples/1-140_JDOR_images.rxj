@@ -41,9 +41,9 @@
        limitations under the License.
     -----------------------------------------------------------------------------
 */
-   -- make sure we change to program's directory to refer to images with unqualified filenames
+   -- make sure we change to program's directory to refer to images with unqualified filenames:
 parse source . . s      -- get full path to this program
-call directory filespec('loc',s) -- change current dir to this program's source dir
+oldDir=directory(filespec('location',s))  -- change current dir to this program's source dir
 
    -- create JDOR handler
 jdh=.bsf~new("org.oorexx.handlers.jdor.JavaDrawingHandler")
@@ -71,5 +71,6 @@ loadImage ooo_logo "oorexx4ooo_256.png"
 drawImage ooo_logo 100 100
 if \bShowCommands then say "'sleep 5' ..."
 sleep 5                 -- sleep for five seconds
+
 
 ::requires "BSF.CLS"    -- get ooRexx-Java bridge, contains JDOR Rexx command handler
