@@ -13,7 +13,7 @@
             document, then calls "1-250_JDOR_to_clipboard.rxj" which creates and copies
             an image to the systme clipboard, which then gets pasted into the document.
 
-   Date:    2023-06-17
+   Date:    2023-06-17/19
 
    Author:  Rony G. Flatscher, WU Vienna
 
@@ -48,6 +48,9 @@ do
 end
 
 thisName=filespec("name",fullName)
+   -- make sure we change to program's directory to refer to images with unqualified filenames
+oldDir=directory(filespec('location',fullName)) -- change current dir to this program's source dir
+
 parse var thisName name '.'
 docName=name".docx"  -- name of Word document we create at the end
 
@@ -102,6 +105,26 @@ selection~typeParagraph
 selection~paste
 selection~typeParagraph
 
+   -- now do charset related musings
+selection~typeParagraph
+selection~typeText("Here the current Java related encoding properties:")
+
+properties=.java.lang.System~getProperties
+propNames=properties~propertyNames
+do propName over propNames~makeArray~sort
+   if propName~caselessPos("encoding")>0 then
+   do
+      str="Java System property named" pp(propName)":" pp(.java.lang.System~getProperty(propName))
+      selection~typeText(str)
+      selection~typeText("0b"x)  -- Word's line break (VERTICAL TAB ASCII control character)
+   end
+end
+selection~typeParagraph
+
+
+   -- demonstrate bsf.iconv() to recode Rexx string according to defaultCodepage (native.encoding or file.encoding)
+call codePageMusings selection
+
 dtEnd=.dateTime~new
 selection~typeText("Done at:" dtEnd "(total duration:" dtStart-dtEnd")")
 selection~typeParagraph
@@ -111,4 +134,61 @@ say "fileName="pp(fileName)      -- show file name
 document~saveAs(fileName)        -- save document
 -- word~quit            -- quit (close) word
 
+call directory oldDir   -- change current directory back to original directory
+
 ::requires BSF.CLS   -- get bidirectional ooRexx-Java bridge
+
+
+
+   -- Demonstrate BSF.CLS' bsf.iconv(...) to recode Rexx strings for the codepage mostlikely assumed by OLE/target application
+::routine codePageMusings
+  -- use strict arg text, cursor, paraBreak, lineBreak
+  use strict arg selection
+  defaultCodepage=.bsf.clipboard~defaultCodepage
+
+  selection~typeText("Using .bsf.clipboard~defaultCodepage (in this run:" defaultCodePage") as target codepage for routine ""bsf.iconv(...)"". " )
+  selection~typeParagraph
+  selection~typeText("Code page musings (Rexx strings may be encoded using different codepages):")
+  selection~typeParagraph
+
+  html="German: umlauts='&auml&ouml&uuml&Auml&Ouml&Uuml;', sharp s='&szlig;', Yen='&yen;'."
+  selection~typeText("HTML encoded string that indicates the text encoded in different codepages:" pp(html))
+  selection~typeParagraph
+  selection~typeParagraph
+
+   -- the test sentence used, encoded in HTML (codepage neutral):
+   --     German: umlauts='&auml&ouml&uuml&Auml&Ouml&Uuml;', sharp s='&szlig;', Yen='&yen;'.
+
+   -- the following four strings represent the same sentence encoded in different codepages
+   -- the two vertical bars (||) point at the Yen symbol which in cp437 gets encoded as "9D"x
+   --                                                                            Yen: "9d"x in cp437) ||
+  cp437    ="4765726D616E3A20756D6C617574733D278494818E999A272C20736861727020733D27E1272C2059656E3D279D272E"x
+  cp850    ="4765726D616E3A20756D6C617574733D278494818E999A272C20736861727020733D27E1272C2059656E3D27BE272E"x
+      -- 1252, a Windows codepage, based on iso_8859_1, but different in code point range 0x80-0x9F
+  cp1252   ="4765726D616E3A20756D6C617574733D27E4F6FCC4D6DC272C20736861727020733D27DF272C2059656E3D27A5272E"x
+      -- UTF-8: one of the Unicode encodings
+  utf8     ="4765726D616E3A20756D6C617574733D27C3A4C3B6C3BCC384C396C39C272C20736861727020733D27C39F272C2059656E3D27C2A5272E"x
+  codePages=("cp437",cp437), ("cp850",cp850), ("cp1252",cp1252), ("utf8",utf8)
+
+  dLB="0b"x    -- direct LINEBREAK (VERTICAL TAB ASCII control character)
+  dPB="0d"x    -- direct PARABREAK (CARRIAGE RETURN ASCII control character)
+  tab="09"x
+  do cpArr over codePages
+     cp=cpArr[1];str=cpArr[2]
+     selection~typeText("Musings with string encoded with codepage" pp(cp)", str:"dLB||tab""pp(str)".")
+     selection~typeText(dLB)
+
+     selection~typeText('Converting encoded string using: bsf.iconv(str,"'cp'", "'defaultCodepage'"):'dLB||tab'[')
+     selection~typeText(bsf.iconv(str,cp,defaultCodepage))   -- Java-interface can deal with Unioode text :)
+     selection~typeText("]")
+     selection~typeText(dLB)
+
+     selection~typeText('Setting system clipboard with encoded string using: .bsf.clipboard~setString(str,"'cp'") and then pasting it into the document:'dLB||tab'[')
+     .bsf.clipboard~setString(str,cp)
+     selection~paste
+     selection~typeText("]")
+     selection~typeText(dLB)
+
+     selection~typeParagraph
+  end
+

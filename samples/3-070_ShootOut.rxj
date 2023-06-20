@@ -132,7 +132,7 @@ butAnswer~addActionListener(rp)
       -- read answers from file
 
 parse source . . thisScript   -- get fully qualified path of this script
-fn   =fileSpec("l",thisScript) || "ShootAnswers.txt"   -- turn into fully qualified path
+fn   =fileSpec("location",thisScript) || "ShootAnswers.txt" -- turn into fully qualified path
 answers = .stream~new(fn)~arrayin      /* read answers from file       */
 userData~answers = answers    -- save answers for later use
 

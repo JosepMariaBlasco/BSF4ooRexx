@@ -54,7 +54,7 @@
 */
    -- make sure we change current directory to program's directory
 parse source . . s      -- get full path to this program
-call directory filespec('loc',s) -- change current dir to this program's source dir
+oldDir=directory(filespec('location',s))  -- change current dir to this program's source dir
 
 jdor=.bsf~new("org.oorexx.handlers.jdor.JavaDrawingHandler")   -- create a JDOR handler
 call BsfCommandHandler "add", "JDOR", jdor   -- add the JDOR handler to ooRexx
@@ -244,6 +244,8 @@ else                   cmd = "xdg-open" quote(fileName)  -- default to Linux
 
 say "--> command for operating system:" pp(cmd)              -- show generated bitmap
 address system cmd      -- submit command to operating system
+
+call directory oldDir   -- change current directory back to original directory
 
 ::requires "BSF.CLS"    -- get ooRexx-Java bridge, contains JDOR Rexx command handler
 

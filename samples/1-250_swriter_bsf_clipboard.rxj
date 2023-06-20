@@ -16,7 +16,14 @@
             image to the systme clipboard, which then gets pasted into
             the document.
 
-   Date:    2023-06-17
+   Notes:   - this example was developed and tested with Apache OpenOffice (AOO)
+              on Windows and should work unchanged on other operating systems,
+              but may have issues (especially on macOS);
+            - the AOO fork LibreOffice seems to have started to drive away
+              from the AOO-APIs and the AOO runtime behavior (e.g. on macOS
+              XDesktop~getCurrentFrame may return .nil)
+
+   Date:    2023-06-17/19/20
 
    Author:  Rony G. Flatscher, WU Vienna
 
@@ -45,6 +52,9 @@
 */
 
 parse source . . fullName  -- get source path
+   -- make sure we change to program's directory to refer to images with unqualified filenames
+oldDir=directory(filespec('location',fullName)) -- change current dir to this program's source dir
+
 thisName=filespec("name",fullName)  -- extract name
 parse var thisName name '.'         -- remove extension
 docName=name".odt"         -- name of swriter document we create at the end
@@ -58,6 +68,10 @@ xcl      = xDesktop~XComponentLoader       -- get XComponentLoader interface
 
 uri="private:factory/swriter"       -- new swriter document
 document=xcl~loadComponentFromURL(uri,"_blank",0,.uno~noProps)
+   -- get UNO_CONSTANTs as a Rexx directory
+ctlChars=.uno_constants~new("com.sun.star.text.ControlCharacter") -- UNO_CONSTANT
+lineBreak=ctlChars~line_break       -- get line break ("1")
+paraBreak=ctlChars~paragraph_break  -- get paragraph break constant
 
 text=document~XTextDocument~getText -- get text object
 dtStart=.dateTime~new
@@ -65,8 +79,8 @@ text~setString("Hello, this is ooRexx started at:" dtStart"!")
 cursor=text~createTextCursor  -- create the character based cursor
 cursor~gotoEnd(.false)
 
-ctlChars=.uno_constants~new("com.sun.star.text.ControlCharacter") -- UNO_CONSTANT
-paraBreak=ctlChars~paragraph_break  -- get paragraph break constant
+text~insertControlCharacter(cursor, paraBreak, .false)
+text~insertString(cursor,"Using:" .bsf4rexx~display.version".",.false)
 text~insertControlCharacter(cursor,paraBreak,.false)
 
 text~insertString(cursor,"This is a text sent to swriter using BSF4ooRexx850.",.false)
@@ -122,14 +136,78 @@ text~insertControlCharacter(cursor, paraBreak, .false)
 dispatcher~executeDispatch(currFrameXDP, '.uno:Paste', '', 0, .uno~noProps)
 text~insertControlCharacter(cursor, paraBreak, .false)
 
+   -- now do charset related musings
+text~insertControlCharacter(cursor, paraBreak, .false)
+text~insertString(cursor, "Here the current Java related encoding properties:", .false)
+
+properties=.java.lang.System~getProperties
+propNames=properties~propertyNames
+do propName over propNames~makeArray~sort
+   if propName~caselessPos("encoding")>0 then
+   do
+      str="Java System property named" pp(propName)":" pp(.java.lang.System~getProperty(propName))
+      text~insertString(cursor, str, .false)
+      text~insertControlCharacter(cursor, lineBreak, .false)
+   end
+end
+text~insertControlCharacter(cursor, paraBreak, .false)
+
+   -- demonstrate bsf.iconv() to recode Rexx string according to defaultCodepage (native.encoding or file.encoding)
+call codePageMusings text, cursor, paraBreak, lineBreak
+
 dtEnd=.dateTime~new
 text~insertString(cursor, "Done at:" dtEnd "(total duration:" dtStart-dtEnd")", .false)
 text~insertControlCharacter(cursor, paraBreak, .false)
 
    -- create a proper file-URL
 url=uno.convertToUrl(directory()"\"docName)
-say "url:" pp(url)         -- show URL
+say "url:" pp(url)      -- show URL
 document~XStorable~storeAsURL(url, .uno~noProps)   -- save to file system
 -- document~XCloseable~close(.false)
 
-::requires UNO.CLS   -- get UNO support
+call directory oldDir   -- change current directory back to original directory
+
+::requires UNO.CLS      -- get UNO support
+
+
+   -- Demonstrate BSF.CLS' bsf.stringAsJSO(...) to translate codepage encoded Rexx strings to Java Unicode strings
+::routine codePageMusings
+  use strict arg text, cursor, paraBreak, lineBreak
+
+  text~insertString(cursor, "Code page musings (Rexx strings may be encoded using different codepages):" ,.false)
+  text~insertControlCharacter(cursor, paraBreak, .false)
+
+  html="German: umlauts='&auml&ouml&uuml&Auml&Ouml&Uuml;', sharp s='&szlig;', Yen='&yen;'."
+  text~insertString(cursor, "HTML encoded string that indicates the text encoded in different codepages:" pp(html), .false)
+  text~insertControlCharacter(cursor, paraBreak, .false)
+  text~insertControlCharacter(cursor, paraBreak, .false)
+
+   -- the test sentence used, encoded in HTML (codepage neutral):
+   --     German: umlauts='&auml&ouml&uuml&Auml&Ouml&Uuml;', sharp s='&szlig;', Yen='&yen;'.
+
+   -- the following four strings represent the same sentence encoded in different codepages
+   -- the two vertical bars (||) point at the Yen symbol which in cp437 gets encoded as "9D"x
+   --                                                                            Yen: "9d"x in cp437) ||
+  cp437    ="4765726D616E3A20756D6C617574733D278494818E999A272C20736861727020733D27E1272C2059656E3D279D272E"x
+  cp850    ="4765726D616E3A20756D6C617574733D278494818E999A272C20736861727020733D27E1272C2059656E3D27BE272E"x
+      -- 1252, a Windows codepage, based on iso_8859_1, but different in code point range 0x80-0x9F
+  cp1252   ="4765726D616E3A20756D6C617574733D27E4F6FCC4D6DC272C20736861727020733D27DF272C2059656E3D27A5272E"x
+      -- UTF-8: one of the Unicode encodings
+  utf8     ="4765726D616E3A20756D6C617574733D27C3A4C3B6C3BCC384C396C39C272C20736861727020733D27C39F272C2059656E3D27C2A5272E"x
+  codePages=("cp437",cp437), ("cp850",cp850), ("cp1252",cp1252), ("utf8",utf8)
+
+  dLB="0a"x    -- direct LINEBREAK (LINEFEED ASCII control character)
+  dPB="0d"x    -- direct PARABREAK (CARRIAGE RETURN ASCII control character)
+  tab="09"x
+  do cpArr over codePages
+     cp=cpArr[1];str=cpArr[2]
+     text~insertString(cursor, "Musings with string encoded with codepage" pp(cp)", str:"dLB||tab""pp(str)".", .false)
+     text~insertControlCharacter(cursor, lineBreak, .false)
+
+     text~insertString(cursor, 'Converting encoded string using bsf.stringAsJSO(str,"'cp'")'dLB||tab'[', .false)
+     text~insertString(cursor, bsf.stringAsJSO(str,cp), .false)   -- Java-interface can deal with Unioode text :)
+     text~insertString(cursor, "]", .false)
+     text~insertControlCharacter(cursor, lineBreak, .false)
+
+     text~insertControlCharacter(cursor, paraBreak, .false)
+  end

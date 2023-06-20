@@ -63,7 +63,7 @@ call syssleep .25
    title="US Capitals Quiz"
    fn   ="uscaps.txt"
    parse source . . thisScript   -- get fully qualified path of this script
-   fn   =fileSpec("l",thisScript) || fn   -- turn into fully qualified path
+   fn   =fileSpec("location",thisScript) || fn   -- turn into fully qualified path
    self~setupQuestions(fn)
 
       -- define button texts

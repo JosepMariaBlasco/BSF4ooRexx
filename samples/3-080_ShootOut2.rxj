@@ -165,7 +165,7 @@ mEdit~addActionListener(rp)
 
         /* read answers from file       */
 parse source . . thisScript   -- get fully qualified path of this script
-mainUserData~file.name=fileSpec("l",thisScript) || "ShootAnswers.txt"
+mainUserData~file.name=fileSpec("location",thisScript) || "ShootAnswers.txt"
 call readAnswersFromFile mainUserData
 
         /* pack the elements, show the window, bring it to the front    */

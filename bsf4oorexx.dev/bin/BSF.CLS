@@ -9,16 +9,20 @@
 
    last change: $Revision$ $Author$ $Date$
 
-   needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
-
-   TODO:  once BSF4ooRexx defines ooRexx 5.0 to be the minimal supported ooRexx version, then
-          its new features will be taken advantage of; one being ".context~package~local" to store
-          the class objects for bsf.import() and bsf.loadClass() instead of ".environment" (used to
-          be .local): such a change would ca
-          use changes in BSF4ooRexx as well, which tries to locate
-          .BSF in .environment;
+   needs: ooRexx 5.0.0 (cf. <http://www.ooRexx.org>) and Java 8 or higher
 
    date:
+
+         2023-06-19, ---rgf, - "BSF.ClipBoard": cater for java.lang.IllegalStateException and indicate
+                               success/failure with return values
+         2023-06-18, ---rgf, - changed class "NullDevice" to "Bsf.NullDevice", made it a singleton,
+                               creating and storing singleton as "dev.null" in .environment (defined
+                               by the class method activate): .dev.null can be used in ADDRESS...WITH
+                               for any input/output/error object/stream
+                             - new routines "bsf.asString" and "bsf.stringAsJSO" which allow supplying
+                               explicitly the codepage to use
+
+         2023-06-15, ---rgf, - BSF.Clipboard: defaultCodepage -> file.encoding, only gettable
          2023-06-14, ---rgf, - allow optional codepage argument for "BSF.ClipBoard" method
                                setString
 
@@ -848,7 +852,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     8.50 (20230614)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
+   version:     8.50 (20230620)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -951,7 +955,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="850.20230614" -- set version (date distribution got created)
+      .bsf4rexx~version="850.20230620" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -968,7 +972,6 @@ end
       .environment~slot.argument=.slot.argument -- putting in .environment to allow FindClass() to find it
 
       call getAndSetPathToIcons
-      .environment~nullDevice=.NullDevice~new   -- singleton to swallow SAY/LINEOUT/CHAROUT in redirected OUTPUT/ERROR targets
    end
 
    call create_display.version_entry      -- create the display version entry .bsf4rexx~display.version
@@ -4338,6 +4341,7 @@ syntax: raise propagate
    return .java.lang.String~new(BSFRawBytes(str),"UTF-8")
 
 
+
 /* ================================================================================================= */
    /* ---------------------------------------------------------------------------------------- */
 /** The received Java String object (JSO) is rendered as an UTF-8 Rexx string, independent
@@ -4362,6 +4366,47 @@ syntax: raise propagate
 syntax:
    raise propagate
 
+
+/* ================================================================================================= */
+   /* ---------------------------------------------------------------------------------------- */
+/** The received Rexx string consists of encoded characters for which a Java string object (JSO) gets
+*  created and returned. The default encoding assumed is defined as <em>.bsf.ClipBoard~defaultCodepage</em>
+*  and can be overruled by supplying the encoding explicitly as the second argument.
+*
+* @param str the Rexx string
+* @param codepage the codepage in which the Rexx string is encoded, defaults to <em>.bsf.ClipBoard~defaultCodepage</em>
+* @return a reference to the Java String object constructed from the Rexx string
+* @since 2023-06-18
+*/
+::routine bsf.stringAsJSO public
+   use strict arg str, codepage=(.bsf.clipBoard~defaultCodepage)
+   return .java.lang.String~new(BSFRawBytes(str),codepage)
+
+
+/* ================================================================================================= */
+   /* ---------------------------------------------------------------------------------------- */
+/** The received Java (String) object gets rendered as a Rexx string encoded according to
+  * the <em>.bsf.ClipBoard~defaultCodepage</em> codepage setting.
+
+* @param obj a Java String object (JSO) reference or a Java object which String value is retrieved and worked upon
+* @param codepage the codepage in which the return Rexx string is encoded, defaults to <em>.bsf.ClipBoard~defaultCodepage</em>
+* @return a Rexx string encoded according to the <em>codepage</em> constructed from the Java String object
+* @since 2023-06-18
+*/
+::routine bsf.asString public
+   use strict arg obj, codepage=(.bsf.clipBoard~defaultCodepage)
+
+   if obj~isA(.bsf) then      -- a Rexx proxy (to a Java object) in hand?
+   do
+      if obj~bsf.isA(.java.lang.String)=.false then   -- need to get String value from object?
+         obj=obj~bsf.invokeJSO('toString')            -- fetch String value as a Java String object (JSO)
+
+      return BSFRawBytes(obj~getBytes(codepage))       -- render String value to a Rexx string and return it
+   end
+   raise syntax 40.900 array ("BSF.CLS/routine/bsf.asString(): wrong argument, must be a Java String object (JSO) or a Java object which String value (result of sending it the 'toString' message) will be processed upon. Instead, received an ooRexx object ["obj"].")
+
+syntax:
+   raise propagate
 
 /* ================================================================================================= */
    /* ---------------------------------------------------------------------------------------- */
@@ -6368,7 +6413,6 @@ syntax:
 /** Routine that makes sure that a RexxAndJava (RexxEngine) instance gets initialized
 *   properly, even if the prolog code does not get executed (to be expected in future
 *   versions of ooRexx 5.x as of 2023-04,11)
-*
 */
 ::routine bsf.initRAJinstance public
   call bsf 'bsfPrefixReturnValue',1
@@ -6377,12 +6421,20 @@ syntax:
 
 /** This class swallows/intercepts the messages SAY, LINEOUT and CHAROUT and therefore
     can be used as an ooRexx "nul" (Windows) or "/dev/null" (Unix) target. A singleton
-    will be placed into .environment with the name "DEV.NULL" such that it can be always
-    used in redirected targets.
+    will be placed into .environment under the name "DEV.NULL" such that it can be always
+    used in <em>address ... with ...</em> as any redirected target referencing it with
+    the environment symbol <em>.DEV.NULL</em>.
+
     @since 2022-12-04
 */
-::class "NullDevice" subclass InputOutputStream
--- InputStream: raise notReady
+::class "Bsf.NullDevice" subclass InputOutputStream metaclass singleton
+::method activate       class       -- runs in setup phase after all class inits ran
+  .environment~dev.null=self~new    -- create an entry in .environment
+
+::method init
+  self~objectName="The NullDevice"  -- self documentary
+
+-- InputStream: raise notReady condition
 ::method charIn         unguarded   -- implement abstract method
    raise notReady
 ::method chars          unguarded   -- implement abstract method
@@ -6406,6 +6458,10 @@ syntax:
 /** A class that makes it easy for ooRexx programmers to set the
 *   system clipboard to a supplied image or string and to fetch
 *   an image or a string from the clipboard.
+*   <p><em>Note:</em> it may be the case that accessing the clipboard may not
+*   be successful as other applications may do that concurrently in which case
+*   the Java excepetion <em>java.lang.IllegalStateException</em> gets raised
+*   causing a syntax condition in ooRexx.
 *
 * @since 20230611
 */
@@ -6418,13 +6474,13 @@ syntax:
 ::method loadPeerClass package class  -- load the peer Java class now
   expose thisClz defaultCodePage
   thisClz=bsf.loadClass("org.rexxla.bsf.engines.rexx.BsfSystemClipboard")
-  defaultCodePage=.java.lang.System~getProperty("native.encoding")   -- with Java 18
-  if defaultCodePage~isNil then
+  defaultCodePage=.java.lang.System~getProperty("native.encoding")
+  if defaultCodePage~isNil then  -- not set, fall back to "file.encoding"
      defaultCodePage=.java.lang.System~getProperty("file.encoding")
 
 /** This attribute determines which file encoding is used when converting
 *   strings to and from Java. It defaults to the <em>java.lang.System</em>
-*   property <em>&quot;file.encoding&quot;</em> and if <em>.nil</em> then
+*   property <em>&quot;native.encoding&quot;</em> and if <em>.nil</em> then
 *   <em>&quot;file.encoding&quot;</em>.
 */
 -- https://docs.oracle.com/javase/8/docs/technotes/guides/intl/encoding.doc.html (2023-06-14)
@@ -6445,7 +6501,10 @@ syntax:
 */
 ::method isEmpty class
   expose thisClz
+  signal on syntax
   return thisClz~isEmpty
+synax:
+  return .nil     -- indicate a problem (java.lang.IllegalStateException) accessing system clipboard
 
 /* ------------------------------------------------------------------------ */
 /* ------------------------------------------------------------------------ */
@@ -6459,25 +6518,34 @@ syntax:
 /* ------------------------------------------------------------------------ */
 /** Getter method for current types available from the system clipboard.
 * @return an array of type <em>java.awt.datatransfer.DataFlavor</em>, use the <em>toString</em>
-*         method on its members
+*         method on its members, <em>.nil</em> if not successful
 */
-::method getDataFlavors class
+::method getDataFlavors class -- may cause java.lang.IllegalStateException
   expose thisClz
+  signal on syntax
   return thisClz~getDataFlavors
+synax:
+  return .nil     -- indicate a problem (java.lang.IllegalStateException) accessing system clipboard
 
 /* ------------------------------------------------------------------------ */
 /** Clears (empties) the system clipboard.
+*   @return <em>.true</em> if successful, <em>.false</em> else (e.g. java.lang.IllegalStateException)
 */
-::method clear class
+::method clear class    -- may cause java.lang.IllegalStateException
   expose thisClz
+  signal on syntax
   thisClz~clear
+  return .true
+syntax:
+  return .false   -- indicate a problem (java.lang.IllegalStateException) accessing system clipboard
 
 /* ------------------------------------------------------------------------ */
 /* ------------------------------------------------------------------------ */
 /** Setter method to set the system clipboard to the supplied image.
 * @param img the image (<em>java.awt.Image</em>) that should be put into the system clipboard
+*   @return <em>.true</em> if successful, <em>.false</em> else (e.g. java.lang.IllegalStateException)
 */
-::attribute image set class
+::attribute image set class   -- may cause java.lang.IllegalStateException
   forward message (setImage)
 
 /* ------------------------------------------------------------------------ */
@@ -6487,39 +6555,52 @@ syntax:
 *                 trasnlucency (and if so that it is drawn with a white background), defaults
 *                 to <em>.false</em> which may yield image versions on the system clipboard that
 *                 are drawn on a black background
+*   @return <em>.true</em> if successful, <em>.false</em> else (e.g. java.lang.IllegalStateException)
 */
-::method setImage  class
+::method setImage  class      -- may cause java.lang.IllegalStateException
   expose thisClz
   use strict arg img, bNoAlpha=.false
+  signal on syntax
   if bNoAlpha=.true then
     thisClz~setImageWithoutAlpha(img)
   else
     thisClz~setImage(img)
+  return .true
+syntax:
+  return .false   -- indicate a problem (java.lang.IllegalStateException) accessing system clipboard
 
 /* ------------------------------------------------------------------------ */
 /** Setter method to set the system clipboard to the supplied image.
 * @param img the image (<em>java.awt.Image</em>) that should be put into the system clipboard
 *            with no alpha (translucency) in the image
+*   @return <em>.true</em> if successful, <em>.false</em> else (e.g. java.lang.IllegalStateException)
 */
-::method setImageWithoutAlpha class
+::method setImageWithoutAlpha class -- may cause java.lang.IllegalStateException
   expose thisClz
   use strict arg img
+  signal on syntax
   self~setImage(img,.true)
+  return .true
+syntax:
+  return .false   -- indicate a problem (java.lang.IllegalStateException) accessing system clipboard
 
 /* ------------------------------------------------------------------------ */
 /**  Getter method to fetch an image from the system clipboard.
-*  @return image fetched from system clipboard or <em>.nil</em> if no image present
+*  @return image fetched from system clipboard or <em>.nil</em> if no image present or problem (e.g. java.lang.IllegalStateException)
 */
-::attribute image get class
+::attribute image get class         -- may cause java.lang.IllegalStateException
   forward message (getImage)
 
 /* ------------------------------------------------------------------------ */
 /**  Getter method to fetch an image from the system clipboard.
-*  @return image fetched from system clipboard or <em>.nil</em> if no image present
+*  @return image fetched from system clipboard or <em>.nil</em> if no image present or problem (e.g. java.lang.IllegalStateException)
 */
-::method getImage  class
+::method getImage  class            -- may cause java.lang.IllegalStateException
   expose thisClz
+  signal on syntax
   return thisClz~getImage
+syntax:
+  return .nil     -- indicate a problem (java.lang.IllegalStateException) accessing system clipboard
 
 /* ------------------------------------------------------------------------ */
 /* ------------------------------------------------------------------------ */
@@ -6531,7 +6612,7 @@ syntax:
 *
 * @param string the string that should be put into the system clipboard
 */
-::attribute string set class
+::attribute string set class        -- may cause java.lang.IllegalStateException
   forward message (setString)
 
 
@@ -6544,14 +6625,20 @@ syntax:
 *
 * @param string the Rexx string that should be put into the system clipboard
 * @param codepage optonal, a string denoting explicitly the codepage that was used to encode the Rexx string
+*   @return <em>.true</em> if successful, <em>.false</em> else (e.g. java.lang.IllegalStateException)
 */
-::method setString  class
+::method setString  class           -- may cause java.lang.IllegalStateException
   expose thisClz defaultCodePage
   use strict arg str, ...
+  signal on syntax
   if arg(2,"exists") then
      thisClz~setString(.java.lang.String~new(BSFRawBytes(str),arg(2)))
   else
      thisClz~setString(str)
+  return .true
+syntax:
+  return .false   -- indicate a problem (java.lang.IllegalStateException) accessing system clipboard
+
 
 /* ------------------------------------------------------------------------ */
 /**  Getter method to fetch a string from the system clipboard.
@@ -6560,7 +6647,7 @@ syntax:
 *
 *  @return string fetched from system clipboard or <em>.nil</em> if no string present
 */
-::attribute string get class
+::attribute string get class        -- may cause java.lang.IllegalStateException
   forward message (getString)
 
 /* ------------------------------------------------------------------------ */
@@ -6570,12 +6657,15 @@ syntax:
 * @param codepage a string denoting the codepage to use to encode the Rexx string to return
 *
 *  @return string fetched from system clipboard encoded according to <em>codepage</em> or
-*   <em>.nil</em> if no string present
+*   <em>.nil</em> if no string present or problem (e.g. java.lang.IllegalStateException)
 */
-::method getString class
+::method getString class            -- may cause java.lang.IllegalStateException
   expose thisClz defaultCodePage
   use strict arg codepage=(defaultCodePage)
+  signal on syntax
   return BsfRawBytes(thisClz~getString(codepage))
+syntax:
+  return .nil     -- indicate a problem (java.lang.IllegalStateException) accessing system clipboard
 
 /*
 /* ------------------------------------------------------------------------ */

@@ -43,7 +43,7 @@
 */
    -- make sure we change current directory to program's directory
 parse source . . s      -- get full path to this program
-call directory filespec('loc',s) -- change current dir to this program's source dir
+oldDir=directory(filespec('location',s))  -- change current dir to this program's source dir
 
    -- create JDOR handler
 jdh=.bsf~new("org.oorexx.handlers.jdor.JavaDrawingHandler")

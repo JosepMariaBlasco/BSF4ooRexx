@@ -5,8 +5,11 @@
             without any knowledge about Java installation issues)
    Author:  Rony G. Flatscher
    Date:    2006-01-07
-   Version: 1.43
+   Version: 1.44
    Changed:
+            2023-06-15, - fix type (count.0 to count) in determinePath2javaBinary() searching
+                          Java with matching bitness, testing with checkValidJavaExe()
+
             2022-12-23, - intercept syntax error on Windows if no Java entry in registry found
             2022-11-03, - add cmd.eHomeDir"/BSF4ooRexx/lib/" || "*" to classpath to pick up all jars there
 
@@ -2183,7 +2186,8 @@ syntax:     -- if no registry entry continue from here
        if pf="" then -- on 32-bit Windows
           pf=wProgramFiles    -- value("ProgramFiles",,"environment")
    end
-   searchPattern=pf"\Java\java.exe"
+   -- searchPattern=pf"\Java\java.exe"
+   searchPattern=pf"\java.exe"
    say "determinePath2javaBinary(), java.exe not found yet, looking in ["searchPattern"] and its subdirectories ..." "line #" pp(.line)
      -- try to locate java.exe, use the last one (assuming it is the newest)
    call SysFileTree searchPattern, "files.", "FSO"
@@ -2194,9 +2198,11 @@ syntax:     -- if no registry entry continue from here
        say "determinePath2javaBinary(), java.exe found in" count " places using ["searchPattern"], returning ["files.count"]." "line #" pp(.line)
    end
 
-   do i=1 to count.0
-       cmd.eJavaBinary=qw(files.count)
-       say "determinePath2javaBinary(), checking files."i"/"count.0" ["files.count"]." "line #" pp(.line)
+   do i=1 to count
+       cmd.eJavaBinary=qw(files.i)
+       if checkValidJavaExe(cmd.eJavaBinary)=.false then iterate
+
+       say "determinePath2javaBinary(), checking files."i"/"count.0" ["files.i"]." "line #" pp(.line)
        tmpJ.=getJavaProps(cmd.eJavaBinary)
           -- if Java and ooRexx do not match in bitness, look for another Java
        if tmpJ.sun.arch.data.model<>cmd.eBitness then
@@ -2505,3 +2511,20 @@ looking for Unix:    libjvm.so | libjvm.dylib | libjvm.sl
   if sysFileExists(homeDir) then return homeDir -- done
 
   return "$HOME"     -- not found, fall back to environment variable
+
+
+::routine checkValidJavaExe   -- test whether java.exe can be successfully run
+  use strict arg path2javaexe
+  signal on syntax
+
+  out=.array~new
+  command=path2javaexe "-version"
+  address system command with output using (out)
+  return (rc=0)   -- .true only, if RC=0
+syntax:
+  return .false
+
+
+
+
+

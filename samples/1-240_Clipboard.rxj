@@ -16,7 +16,8 @@
 
    Author:  Rony G. Flatscher, WU Vienna
 
-   Changes: ---
+   Changes: 2023-06-19, - define "file.encoding" as fallback for "sun.stdout.encoding"
+                        - change to source directory such that png files can be found
 
    last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
                 (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
@@ -39,6 +40,9 @@
        limitations under the License.
     -----------------------------------------------------------------------------
 */
+   -- make sure we change to program's directory to refer to images with unqualified filenames
+parse source . . s      -- get full path to this program
+oldDir=directory(filespec('location',s))  -- change current dir to this program's source dir
 
 say "1) starting up, checking clipboard:"
 call showFormats
@@ -93,8 +97,11 @@ strings=cp437  , cp850  , cp1252  , utf8    -- strings encoded in different code
 cps    ="Cp437", "Cp850", "Cp1252", "UTF-8" -- respective codepage names
 
 stdoutEncoding=.java.lang.System~getProperty("sun.stdout.encoding")  -- fetch current stdout encoding
-say "current stdout's encoding:" pp(stdoutEncoding)
+if stdoutEncoding=.nil then
+   stdoutEncoding=.java.lang.System~getProperty("file.encoding")  -- fallback
+
 if stdoutEncoding="cp65001" then stdoutEncoding="UTF-8"  -- Java does not accept Microsfot's proprietary "cp65001"
+say "current stdout's encoding:" pp(stdoutEncoding)
 say
 
 do counter c str over strings
@@ -128,6 +135,7 @@ say "Asking string from clipboard encoded as ""sun.stdout.encoding"", i.e.," pp(
 say '      .bsf.clipboard~getString('pp(stdoutEncoding)')  /* get string from clipboard, we need it encoded with 'pp(stdoutEncoding)' */'
 say "    " pp(.bsf.clipboard~getString(stdoutEncoding))
 
+call directory oldDir   -- change current directory back to original directory
 
 ::requires BSF.CLS      -- get bidiretional ooRexx-Java bridge
 
