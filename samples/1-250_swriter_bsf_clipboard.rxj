@@ -17,17 +17,16 @@
             the document.
 
    Notes:   - this example was developed and tested with Apache OpenOffice (AOO)
-              on Windows and should work unchanged on other operating systems,
-              but may have issues (especially on macOS);
-            - the AOO fork LibreOffice seems to have started to drive away
-              from the AOO-APIs and the AOO runtime behavior (e.g. on macOS
-              XDesktop~getCurrentFrame may return .nil)
+              on Windows and should work unchanged on other operating systems
 
-   Date:    2023-06-17/19/20
+   Date:    2023-06-17/19/20/21
 
    Author:  Rony G. Flatscher, WU Vienna
 
-   Changes: ---
+   Changes: 2023-06-21  - get XFrame from document's model, its current controller
+                          and its Frame in order to make sure that we can dispatch
+                          command urls properly via its XDispatchProvider interface
+                          (cf.: "currFrameXDP=document~XModel~getCurrentController~getFrame~XDispatchProvider")
 
    last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
                 (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
@@ -88,9 +87,13 @@ text~insertControlCharacter(cursor,paraBreak,.false)
 
    -- we want to use the dispatch interface, hence:
 sDispatchHelper=serviceManager~createInstance("com.sun.star.frame.DispatchHelper")
+   -- note: here a list of ".uno:" commands: <https://wiki.openoffice.org/wiki/Framework/Article/OpenOffice.org_2.x_Commands>
+   --       from LibreOffice: <https://wiki.documentfoundation.org/Development/DispatchCommands>
+   -- note: using dispatches to set and get strings to/from clipboard: <https://wiki.openoffice.org/wiki/The_OpenOffice.org_recorder_and_UNO_dispatch_calls>
 dispatcher=sDispatchHelper~XDispatchHelper
-      -- note: the currentFrame needs to be queried here, otherwise it may be still .nil!
-currFrameXDP=xDesktop~currentFrame~XDispatchProvider  -- get XDispatchProvider functionality
+
+   -- this way we get the XFrame related to this particular document for dispatching
+currFrameXDP=document~XModel~getCurrentController~getFrame~XDispatchProvider
 
    -- define some characters, encoded as UTF-8
 female       ="e2 99 80"x
