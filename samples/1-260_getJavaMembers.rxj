@@ -1,0 +1,262 @@
+#!/usr/bin/env rexx
+/*
+      name:    1-260_getJavaMembers.rxj
+      needs:   BSF4ooRexx
+      date:    2023-07-16
+      author:  Rony G. Flatscher
+      purpose: utility routines to dump Java members in sorted order to ease
+               analyzing the structure of a Java class; by default all
+               members and all superclass members that are reported by the
+               appropriate java.lang.Class methods get processed; if the
+               optional second argument to all routines is set to .false,
+               then only the class' members are processed, including all
+               non public members
+
+      usage:   from the command line: supply the fully qualified name of a Java class
+               from a Rexx program: require this package, e.g.
+                                    ::requires "1-260_getJavaMembers.rxj"
+
+      license: Apache License 2.0
+
+      ------------------------ Apache Version 2.0 license -------------------------
+         Copyright (C) 2023 Rony G. Flatscher
+
+         Licensed under the Apache License, Version 2.0 (the "License");
+         you may not use this file except in compliance with the License.
+         You may obtain a copy of the License at
+
+             http://www.apache.org/licenses/LICENSE-2.0
+
+         Unless required by applicable law or agreed to in writing, software
+         distributed under the License is distributed on an "AS IS" BASIS,
+         WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+         See the License for the specific language governing permissions and
+         limitations under the License.
+      -----------------------------------------------------------------------------
+*/
+
+   -- define constants for this program ("package")
+pkgLocal=.context~package~local
+pkgLocal~minLen=3       -- define minimal width for counter
+
+parse source . kind .
+if kind="REQUIRES" then return   -- we are done setting up
+
+parse arg javaClassName .  -- fetch Java class name, if any
+if javaClassName<>"" then
+do
+   clz=bsf.loadClass(javaClassName)
+   -- clz=.java.lang.String
+   say "get all public members, even inherited ones ..."
+   say
+   say getAllMembers(clz)  -- show public members (even inherited)
+   say
+   say "get all members that get declared in the class (no members from superclasses) ..."
+   say getAllMembers(clz , .false)  -- now show all, even non-public members of clz only
+end
+
+
+::requires "BSF.CLS"    -- get ooRexx-Java bridge
+
+/** Returns a formatted string that contains all members of the supplied
+*   Java class object.
+*
+*  @param clz the Java class object to anaylze
+*  @param bAllPublic optional argument that defaults to <em>.true</em> which will
+*                    cause only public members (also inherited ones) to be shown;
+*                    if set to <em>.false</em> then all declared members of the
+*                    <em>clz</em> will be shown (but not members of superclasses)
+*  @return a formatted string
+*/
+::routine getAllMembers      public
+  use arg clz, bAllPublic=.true
+
+  mb=.MutableBuffer~new
+  mb~append(.context~name,": class=",pp(clz~toString), .string~nl)
+  mb~append(getClasses(      clz, bAllPublic), .string~nl)
+  mb~append(getConstructors( clz, bAllPublic), .string~nl)
+  mb~append(getFields(       clz, bAllPublic), .string~nl)
+  mb~append(getMethods(      clz, bAllPublic), .string~nl)
+  mb~append("---", .string~nl)
+  return mb~string
+
+
+/** Returns a formatted string that contains all classes that get defined in
+*   the Java class object.
+*
+*  @param clz the Java class object to anaylze
+*  @return a formatted string
+*/
+::routine getClasses         public
+  use arg clz
+
+  tab="09"x
+  arr=clz~getClasses
+  items=arr~items
+  mb=.MutableBuffer~new
+  mb~append(.string~nl)
+  mb~append(tab, " ", .context~name,": class=",pp(clz~toString), " contains ", pp(items), " classes", .string~nl )
+  if items=0 then return mb~string
+
+  len=max(.minLen,items~length)  -- for right-adjusting
+  do counter c obj over arr
+     mb~append(tab, "    # ", c~right(len),": ", pp(obj~getName), .string~nl)
+  end
+  return mb~string
+
+/** Returns a formatted string that contains all constructors of the supplied
+*   Java class object.
+*
+*  @param clz the Java class object to anaylze
+*  @param bAllPublic optional argument that defaults to <em>.true</em> which will
+*                    cause only public members (also inherited ones) to be shown;
+*                    if set to <em>.false</em> then all declared members of the
+*                    <em>clz</em> will be shown (but not members of superclasses)
+*  @return a formatted string
+*/
+::routine getConstructors    public
+  use arg clz, bAllPublic=.true    -- by default get all members, not only public
+
+  tab="09"x
+  if bAllPublic=.true then arr=clz~getConstructors
+                      else arr=clz~getDeclaredConstructors
+  items=arr~items
+  mb=.MutableBuffer~new
+  mb~append(.string~nl)
+  mb~append(tab, " ", .context~name, ": class=", pp(clz~toString), " contains ", pp(items), bAllPublic~?(" public"," declared"), " constructors", .string~nl)
+  if items=0 then return mb~string
+
+  rel=.relation~new        -- index=class name, item=jObject
+  maxNameLen=0
+  do counter c obj over arr
+     name=obj~getName
+     maxNameLen=max(maxNameLen,name~length)
+     str=obj~getDeclaringClass~getName obj~getName obj~toString
+     rel[str]=obj
+  end
+
+  len=max(.minLen,items~length)  -- for right-adjusting
+  oldIdx           =""
+  oldDeclaringClass=""
+  do counter c idx over rel~allIndexes~sort
+     if oldIdx<>idx then
+     do
+        parse var idx declaringClass constructorName .
+        if oldDeclaringClass<>declaringClass then
+        do
+           mb~append(tab, "     ", " "~right(len),"  /// ", pp(declaringClass), " \\\", .string~nl)
+           oldDeclaringClass=declaringClass
+        end
+        bag=rel~allAt(idx)
+        oldIdx=idx
+        do counter c2 obj over bag
+           mb~append(tab, "    # ", (c+c2-1)~right(len),": ",  pp(obj~toString), .string~nl)
+        end
+     end
+  end
+  return mb~string
+
+
+/** Returns a formatted string that contains all fields of the supplied
+*   Java class object.
+*
+*  @param clz the Java class object to anaylze
+*  @param bAllPublic optional argument that defaults to <em>.true</em> which will
+*                    cause only public members (also inherited ones) to be shown;
+*                    if set to <em>.false</em> then all declared members of the
+*                    <em>clz</em> will be shown (but not members of superclasses)
+*  @return a formatted string
+*/
+::routine getFields          public
+  use arg clz, bAllPublic=.true    -- by default get all members, not only public
+
+  tab="09"x
+  if bAllPublic=.true then arr=clz~getFields
+                      else arr=clz~getDeclaredFields
+  items=arr~items
+  mb=.MutableBuffer~new
+  mb~append(.string~nl)
+  mb~append(tab, " ", .context~name,": class=",pp(clz~toString), " contains ", pp(items), bAllPublic~?(" public"," declared"), " fields", .string~nl)
+  if items=0 then return mb~string
+
+  rel=.relation~new        -- index=class name, item=jObject
+  maxNameLen=0
+  do counter c obj over arr
+     name=obj~getName
+     maxNameLen=max(maxNameLen,name~length)
+     str=obj~getDeclaringClass~getName obj~getName obj~toString
+     rel[str]=obj
+  end
+
+  len=max(.minLen,items~length)  -- for right-adjusting
+  oldIdx           =""
+  oldDeclaringClass=""
+  do counter c idx over rel~allIndexes~sort
+     if oldIdx<>idx then
+     do
+        parse var idx declaringClass fieldName .
+        if oldDeclaringClass<>declaringClass then
+        do
+           mb~append(tab, "     ", " "~right(len), "  /// ", pp(declaringClass), " \\\", .string~nl)
+           oldDeclaringClass=declaringClass
+        end
+        bag=rel~allAt(idx)
+        oldIdx=idx
+        do counter c2 obj over bag
+           mb~append(tab, "    # ", (c+c2-1)~right(len),": ",  fieldName~left(maxNameLen,'.'), " ", pp(obj~toString), .string~nl)
+        end
+     end
+  end
+  return mb~string
+
+
+/** Returns a formatted string that contains all methods of the supplied
+*   Java class object.
+*
+*  @param clz the Java class object to anaylze
+*  @param bAllPublic optional argument that defaults to <em>.true</em> which will
+*                    cause only public members (also inherited ones) to be shown;
+*                    if set to <em>.false</em> then all declared members of the
+*                    <em>clz</em> will be shown (but not members of superclasses)
+*  @return a formatted string
+*/
+::routine getMethods         public
+  use arg clz, bAllPublic=.true    -- by default get all members, not only public
+  tab="09"x
+  if bAllPublic=.true then arr=clz~getMethods
+                      else arr=clz~getDeclaredMethods
+  items=arr~items
+  mb=.MutableBuffer~new
+  mb~append(.string~nl)
+  mb~append(tab, " ", .context~name,": class=",pp(clz~toString), " contains ", pp(items), bAllPublic~?(" public"," declared"), " methods", .string~nl)
+  if items=0 then return mb~string
+
+  rel=.relation~new        -- index=class name, item=jObject
+  maxNameLen=0
+  do counter c obj over arr
+     name=obj~getName
+     maxNameLen=max(maxNameLen,name~length)
+     str=obj~getDeclaringClass~getName obj~getName obj~toString
+     rel[str]=obj
+  end
+
+  len=max(.minLen,items~length)  -- for right-adjusting
+  oldIdx           =""
+  oldDeclaringClass=""
+  do counter c idx over rel~allIndexes~sort
+     if oldIdx<>idx then
+     do
+        parse var idx declaringClass methodName .
+        if oldDeclaringClass<>declaringClass then
+        do
+           mb~append(tab, "     ", " "~right(len), "  /// ", pp(declaringClass), " \\\", .string~nl)
+           oldDeclaringClass=declaringClass
+        end
+        bag=rel~allAt(idx)
+        oldIdx=idx
+        do counter c2 obj over bag
+           mb~append(tab, "    # ", (c+c2-1)~right(len), ": ",  methodName~left(maxNameLen,'.'), " ", pp(obj~toString), .string~nl)
+        end
+     end
+  end
+  return mb~string
