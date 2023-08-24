@@ -11,10 +11,14 @@
  *              - Using PROCESS.CLS to start a process
  *              - Comparing two integer values
  *
+ * Changes:      - 202308-18, rgf: as it may be the case that a web server rejects a
+                                   request, the Java exception chain gets shown in full
+                                   to allow identifying the reason for a failure
+ *
  *  license:
  *
  *  ------------------------ Apache Version 2.0 license -------------------------
- *     Copyright (C) 2016 Adrian Baginski
+ *     Copyright (C) 2016 Adrian Baginski, 2023 Rony G. Flatscher
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -30,7 +34,7 @@
  *  -----------------------------------------------------------------------------
  */
 
-
+signal on syntax
 WebClient = .clr~new("System.Net.WebClient")    -- create a WebClient
    -- if an argument was supplied while starting this app AND this argument is a valid URL (starts with http at least)
 IF arg(1)~length > 0 & ABBREV(arg(1), "http")
@@ -66,6 +70,17 @@ ELSE IF html5count>0 THEN           -- html5 elements available?
 ELSE
    SAY pp(url)": ? Neither old HTML nor any HTML5 tags found, tsk!"
 
+exit
+
+syntax:
+   co=condition('object')        -- get all condition information in a Rexx directory
+   say ppJavaExceptionChain(co)  -- show Java exception chain
+   say "---"
+   link="https://stackoverflow.com/questions/2582036/an-existing-connection-was-forcibly-closed-by-the-remote-host"
+   say "Maybe this link is of help:"
+   say "   " link
+   say "---"
+   raise propagate               -- let ooRexx handle the condition in the usual way
 
 
 ::REQUIRES CLR.CLS   -- get ooRexx.NET (CLR, common language runtime) support
