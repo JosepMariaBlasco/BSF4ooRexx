@@ -34,6 +34,7 @@
                        - creates and defines JDOR handler explicitly
                        - changed "new" to "newImage"
             2023-06-08 - flashing text shows flashing time left
+            2023-07-18 - make sure that all non-JDOR output is a comment starting with "--"
 
    license:
 
@@ -88,6 +89,7 @@ b4r_x = 110             -- position of bsf4oorexx logo
 locations=.array~of( "bsf4oorexx_256.png" b4r_x b4r_x                 50 , -
                      "oorexx4ooo_256.png" (w-b4r_x)  (w-b4r_x)        50, -
                      "oorexx_256.png" trunc((w-75)/2) trunc((h-75)/2) 75)
+   /* note: output that starts with "--" will be treated as comment if feeded to jdor.rxj */
 say "--> fade in ..."
 do loc over locations   -- load and draw bitmaps
    say "--> processing:" pp(loc)
@@ -103,6 +105,7 @@ do loc over locations   -- load and draw bitmaps
    drawImage name size size   -- draw image with alpha 1.0
 end
 
+   /* note: output that starts with "--" will be treated as comment if feeded to jdor.rxj */
 say "--> Moving out ..."
 do counter c loc over locations
    parse var loc name x y size
@@ -142,7 +145,8 @@ str1="We are done, goodbye! (flashing"
 str2="seconds)"
 str=str1 flashTime str2
 stringBounds str        -- current font and current graphic context
-say "                           str:" pp(str)
+   /* note: output that starts with "--" will be treated as comment if feeded to jdor.rxj */
+say "-->                            str:" pp(str)
 say "--> 'stringBounds str' returned rc:" pp(rc) "(in pixels)"
 parse var rc x1 y1 width1 height1   -- get fields
 x2=(w-width1)/2         -- horizontal center position
@@ -164,6 +168,7 @@ loop while x>x2
 end
 
 -- flash for 5 seconds
+   /* note: output that starts with "--" will be treated as comment if feeded to jdor.rxj */
 say "--> flashing for 5 seconds ..."
 dt0=.dateTime~new
 bErase=.true

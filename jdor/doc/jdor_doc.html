@@ -292,7 +292,7 @@ will get rounded to integer values by <em>JDOR</em>.
         one can redirect like this (the <em>.output</em> monitor defaults to the <em>.stdout</em>
         stream):
 
-        <pre>ADDRESS JDOR WITH using output (.output) /* activate error redirection */ </pre>
+        <pre>ADDRESS JDOR WITH using output (.output) /* activate output redirection */ </pre>
 
     <li>redirecting <em>ERROR</em>: all commands causing an error or failure condition will
         supplied together with the kind of error or failure. In the case of a failure more
@@ -754,7 +754,7 @@ value.
     <!-- -------------------------------------------------------- -->
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
-    <td class="command" id="cmdColor">  &quot;color&quot;
+    <td class="command" id="cmdColor">  &quot;color&quot;<br> &quot;colour&quot;
     <td colspan="2"> Query, get and set, define and set the color.
         <br>Querying the current value (no argument supplied) will return it, setting
         (changing) the value to a new value will return the old (previously set) value
@@ -771,6 +771,9 @@ value.
             for the colors <em>red</em>, <em>green</em>, <em>blue</em>,
             and optionally <em>alpha</em>, a <em>java.awt.Color</em> of that type gets created, registered with
             the supplied <em>colorNickName</em> and then used for setting the new color.
+
+
+        <br>The command name <em>colour</em> is an alias, a synonym for this command.
 
         <br>Cf. the Java documentation for the Java class <em>Graphics[2D]</em> and the
         methods <em>getColor()</em>, <em>setColor(...)</em>, as well as the Java class
@@ -2982,222 +2985,6 @@ resulting command with arguments to the Rexx command handler.
 
     </table>
 
-<p> <!-- rgf 20230603 -->
-<p>
-<hr width="75%">
-<p>
-
-
-<h2 id="h2AreaCommands"><em>Area</em> Related Related commands </h2>
-<nav>
-<a href="#purposeOfJDOR">Purpose</a> |
-<a href="#briefOverview">Brief Overview</a> |
-<a href="#synopsisOfJDOR">Synopsis JDOR</a> |
-<a href="#jdorShapes">JDOR Shapes</a> (<a href="#h2ShapeCommands">Shapes</a>, <a href="#h2PathCommands">Path2D</a>)
-</nav>
-
-<p>The <em>Area</em> (<a href="https://google.com/search?q=javadoc+8+Area" target="_blank"><em>java.awt.geom.Area</em></a>)
-   shape allows for creating (closed) areas from any kind of <em>Shape</em> and
-   allows for applying &quot;Constructive Area Geometry (CAG)&quot; operations.
-
-<p>Here the <em>JDOR</em> commands that are related to any <em>Area</em> <em>Shape</em>:
-
-<p>
-    <table>
-        <tr>
-    <tr class="TableHeader">
-    <th>
-    <th> Command
-    <th> Argument(s)
-    <th> Description
-
-    <!-- -------------------------------------------------------- -->
-    <tr class="CommandRowColumn"><!-- table row -->
-    <td class="cmdNr">
-    <td class="command" id="cmdPathAppend"> &quot;pathAppend&quot; TODO
-    <td colspan="3"> The named <em>Path2D</em> shape gets appended by the
-            named <em>Shape</em> or <em>PathIterator</em>.
-
-        <!-- -------------------------------------- -->
-    <tr class="ArgumentRowColor"><td><!-- table row -->
-    <td>
-    <td class="argument"> pNickName spNickName [connect=.true]
-    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
-         shape, <em>spNickName</em> either a
-         <em>Shape</em> or <em>PathIterator</em> that should be appended.
-         The optional <em>connect</em> argument controls whether
-         the appended shape should get connected with a line segment (default).
-
-
-    <!-- -------------------------------------------------------- -->
-    <tr class="CommandRowColumn"><!-- table row -->
-    <td class="cmdNr">
-    <td class="command" id="cmdPathClone"> &quot;pathClone&quot;
-    <td colspan="3"> The named <em>Path2D</em> shape gets cloned and returned.
-
-        <!-- -------------------------------------- -->
-    <tr class="ArgumentRowColor"><td><!-- table row -->
-    <td>
-    <td class="argument"> pNickName [clonedNickName]
-    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
-         shape, that gets cloned and returned. If the optional <em>cloneNickName</em>
-         is specified then the clone gets registered with the uppercased
-         <em>cloneNickName</em> as index.
-
-
-    <!-- -------------------------------------------------------- -->
-    <tr class="CommandRowColumn"><!-- table row -->
-    <td class="cmdNr">
-    <td class="command" id="cmdPathClose"> &quot;pathClose&quot;
-    <td colspan="3"> The named <em>Path2D</em> shape will have its current segment
-        closed by drawing a straight line back to the last <em>pathMoveTo</em> position.
-
-        <!-- -------------------------------------- -->
-    <tr class="ArgumentRowColor"><td><!-- table row -->
-    <td>
-    <td class="argument"> pNickName
-    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
-         shape, of which the last segment gets closed by drawing a line
-         to the last <em>pathMoveTo</em> position.
-
-
-    <!-- -------------------------------------------------------- -->
-    <tr class="CommandRowColumn"><!-- table row -->
-    <td class="cmdNr">
-    <td class="command" id="cmdPathCurrentPoint"> &quot;pathCurrentPoint&quot;
-    <td colspan="3"> Returns the current point (the position of the last <em>pathMoveTo</em>)
-        of the named <em>Path2D</em> shape.
-
-        <!-- -------------------------------------- -->
-    <tr class="ArgumentRowColor"><td><!-- table row -->
-    <td>
-    <td class="argument"> pNickName
-    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
-         shape, which current point gets returned.
-         <br>
-         <em>Note:</em> if no <em>pathMoveTo</em> was issued yet, then <em>.nil</em>
-                        gets returned, otherwise a blank delimited Rexx string in
-                        the form of: &quot;<em>x y</em>&quot;.
-
-
-    <!-- -------------------------------------------------------- -->
-    <tr class="CommandRowColumn"><!-- table row -->
-    <td class="cmdNr">
-    <td class="command" id="cmdPathCurveTo"> &quot;pathCurveTo&quot;
-    <td colspan="3"> Creates a cubic parametric curve segment.
-
-        <!-- -------------------------------------- -->
-    <tr class="ArgumentRowColor"><td><!-- table row -->
-    <td>
-    <td class="argument"> pNickName ctrlx1 ctrly1 ctrlx2 ctrly2 x y
-    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
-         shape for which a cubic parametric curve segment gets
-         created between the points <em>currentPoint</em>
-         (cf. <em>pathCurrentPoint</em> command above)
-         and the point with the co-ordinate <em>x/y</em> controlled by the two control points located
-         at <em>ctrlx1/ctrly1</em> and <em>ctrlx2/ctrly2</em>.
-
-
-    <!-- -------------------------------------------------------- -->
-    <tr class="CommandRowColumn"><!-- table row -->
-    <td class="cmdNr">
-    <td class="command" id="cmdPathLineTo"> &quot;pathLineTo&quot;
-    <td colspan="3"> Creates a line segment.
-
-        <!-- -------------------------------------- -->
-    <tr class="ArgumentRowColor"><td><!-- table row -->
-    <td>
-    <td class="argument"> pNickName x y
-    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
-         shape for which a line segment gets
-         created between the points <em>currentPoint</em>
-         (cf. <em>pathCurrentPoint</em> command above)
-         and the point with the co-ordinate <em>x/y</em>.
-
-
-    <!-- -------------------------------------------------------- -->
-    <tr class="CommandRowColumn"><!-- table row -->
-    <td class="cmdNr">
-    <td class="command" id="cmdPathMoveTo"> &quot;pathMoveTo&quot;
-    <td colspan="3"> Adds a point to the path at the supplied position.
-
-        <!-- -------------------------------------- -->
-    <tr class="ArgumentRowColor"><td><!-- table row -->
-    <td>
-    <td class="argument"> pNickName x y
-    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
-         shape for which a point should get added at <em>x/y</em>
-         (making it the <em>currentPoint</em>, cf.
-         <em>pathCurrentPoint</em> command above).
-
-
-    <!-- -------------------------------------------------------- -->
-    <tr class="CommandRowColumn"><!-- table row -->
-    <td class="cmdNr">
-    <td class="command" id="cmdPathQuadTo"> &quot;pathQuadTo&quot;
-    <td colspan="3"> Creates a quadradic parametric curve segment.
-
-        <!-- -------------------------------------- -->
-    <tr class="ArgumentRowColor"><td><!-- table row -->
-    <td>
-    <td class="argument"> pNickName ctrlx ctrly x y
-    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
-         shape for which a quadradic parametric curve segment gets
-         created between the points <em>currentPoint</em>
-         (cf. <em>pathCurrentPoint</em> command above)
-         and the point with the co-ordinate <em>x/y</em> controlled by
-         the control point located at <em>ctrlx/ctrly</em>.
-
-
-    <!-- -------------------------------------------------------- -->
-    <tr class="CommandRowColumn"><!-- table row -->
-    <td class="cmdNr">
-    <td class="command" id="cmdPathReset"> &quot;pathReset&quot;
-    <td colspan="3"> The named <em>Path2D</em> shape will be reset to
-        become empty.
-
-        <!-- -------------------------------------- -->
-    <tr class="ArgumentRowColor"><td><!-- table row -->
-    <td>
-    <td class="argument"> pNickName
-    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
-         shape, which gets reset to become empty.
-
-
-    <!-- -------------------------------------------------------- -->
-    <tr class="CommandRowColumn"><!-- table row -->
-    <td class="cmdNr">
-    <td class="command" id="cmdPathTransform"> &quot;pathTransform&quot;
-    <td colspan="3"> The named <em>Path2D</em> shape gets transformed.
-
-        <!-- -------------------------------------- -->
-    <tr class="ArgumentRowColor"><td><!-- table row -->
-    <td>
-    <td class="argument"> pNickName tNickName
-    <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
-         shape, that gets transformed as defined by <a href="#cmdTransform"><em>tNickName</em>
-         (an <em>AffineTransform</em>)</a> retrieved from the registry, and
-         if does not exist from a Rexx variable by that name.
-
-
-    <!-- -------------------------------------------------------- -->
-    <tr class="CommandRowColumn"><!-- table row -->
-    <td class="cmdNr">
-    <td class="command" id="cmdPathWindingRule"> &quot;pathWindingRule&quot;
-    <td colspan="3"> Queries or sets the <em>winding rule</em> of the named
-                     <em>Path2D</em> shape.
-
-        <!-- -------------------------------------- -->
-    <tr class="ArgumentRowColor"><td><!-- table row -->
-    <td>
-    <td class="argument"> pNickName [newValue]
-    <td> Returns or sets the <em>winding rule</em> of the <em>Path2D</em> shape
-         denoted by <em>pNickName</em>. If <em>newValue</em> is supplied, it
-         needs to be <em>WIND_EVEN_ODD</em> or <em>0</em>, alternatively
-         <em>WIND_NON_ZERO</em> or <em>1</em>.
-
-
-    </table>
 
 
 <p>
@@ -3205,7 +2992,7 @@ resulting command with arguments to the Rexx command handler.
 
    <hr width="75%">
     <small>
-       JDOR synopsis of commands, version: 100.20230612
+       JDOR synopsis of commands, version: 100.20230718
        <br>Acknowledgement: the author wishes to thank DI Walter Pachl
        <br>for his help in testing and proof reading
     </small>

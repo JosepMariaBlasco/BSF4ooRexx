@@ -16,15 +16,26 @@
             rotating and briefly sleeping, such that the top right window gets animated
             (approximately 30 times per second).
 
+            Note: when recording the JDOR commands and later replaying them then at
+                  replay time the same image and window will be addressed, therefore
+                  a) pushing (saving) the built image with the nickname "jImage"
+                     to become able to address it in the drawImage command while replaying
+                  b) use "moveTo 0 0" before rotating such that for replay the left
+                     upper hand corner is reset (building and drawing the image will
+                     be done on the same instance in replay mode)
+
    Date:    2022-10-30
 
    Author:  Rony G. Flatscher, WU Vienna
 
-   Changes: 2022-11-27 - change current directory to source directory to allow access to png files
-   Changes: 2023-05-31 - added optional argument ? to show processed JDOR commands
-                         in canonical form for commands directed to "jdor" handler (not "sdor")
-                       - creates and defines JDOR handler explicitly
-                       - changed "new" to "newImage"
+   Changes: - 2022-11-27 - change current directory to source directory to allow access to png files
+            - 2023-05-31 - added optional argument ? to show processed JDOR commands
+                           in canonical form for commands directed to "jdor" handler (not "sdor")
+                         - creates and defines JDOR handler explicitly
+                         - changed "new" to "newImage"
+            - 2023-07-18 - push image with nickname "jImage" to allow fetching it at
+                           replay time; make sure that at replay time the origin is moved
+                           to left upperhand corner ("moveTo 0 0")
 
    last change: Revision: $Revision: 951 $ $Author: orexx $ $Date: 2022-08-10 18:06:25 +0200 (Mi., 10 Aug 2022) $
                 (svn hint: use 'propset svn:keywords "Author Date Revision" filename')
@@ -63,6 +74,7 @@ if bShowCommands then
 do
       -- redirect output, show extended error messages if any
    address jdor with output using (.stdout) error using (.error)
+   /* note: output that starts with "--" will be treated as comment if feeded to jdor.rxj */
    say "--> JDOR commands directed at the 'jdor' handler will get displayed ..."
 end
 else
@@ -73,20 +85,38 @@ h=400                   -- height
 center=w/2 h/2          -- center of image (used in rotate command below)
 newImage w h            -- create new bitmap
 
-address sdor new w h    -- create new bitmap with the same dimension
-address sdor winFrame .false  -- remove frame
+if bShowCommands then
+do
+   address sdor new w h         with output using (.stdout) error using (.error) -- create new bitmap with the same dimension
+   address sdor winFrame .false with output using (.stdout) error using (.error) -- remove frame
+end
+else
+do
+   address sdor new w h         -- create new bitmap with the same dimension
+   address sdor winFrame .false -- remove frame
+end
 
 winShow                 -- show frame
 winAlwaysOnTop .true    -- make sure frame is always on top
 winMoveTo 0 0           -- move to left upper hand corner of screen
 
-address sdor winShow    -- show window (without frame)
+address sdor winShow with output using (.stdout) error using (.error)   -- show window (without frame)
 
 winScreenSize           -- query current screen's size
 parse var rc scrW scrH
-address sdor winMoveTo (scrW-w) 0   -- move frameless window to upper right hand corner
-address sdor winAlwaysOnTop .true   -- make sure window remains on top of all other windows
 
+if bShowCommands then
+do
+   address sdor winMoveTo (scrW-w) 0   with output using (.stdout) error using (.error)-- move frameless window to upper right hand corner
+   address sdor winAlwaysOnTop .true   with output using (.stdout) error using (.error)-- make sure window remains on top of all other windows
+end
+else
+do
+   address sdor winMoveTo (scrW-w) 0   -- move frameless window to upper right hand corner
+   address sdor winAlwaysOnTop .true   -- make sure window remains on top of all other windows
+end
+
+   /* note: output that starts with "--" will be treated as comment if feeded to jdor.rxj */
 say "--> the two windows are set to be always on top of all other windows"
 
 loadImage b4r_logo "bsf4oorexx_256.png"   -- load the bsf4oorexx bitmap
@@ -103,24 +133,43 @@ moveTo orxX orxY        -- center
 loadImage orx_logo "oorexx_256.png"
 drawImage orx_logo 75 75
 
+   /* note: output that starts with "--" will be treated as comment if feeded to jdor.rxj */
 say "--> fetching the current image from the left window ..."
 image                   -- query current image, command return value in variable "RC"
 say "--> image returned in variable ""RC"":" pp(rc)
 jImage=rc               -- save image in Rexx variable named "jImage"
-say "--> image~toString:" pp(jImage~toString)
+say "--> jImage~toString:" pp(jImage~toString)
+
+pushImage "jImage"      -- push with nickName to have image available upon replay as well
 say
+
+moveTo 0 0              -- when redirecting and replaying we make sure to reset current origin
    -- note the name of a Rexx variable needs to be quoted, otherwise its value gets used
-address sdor drawImage "jImage" -- use image from Rexx variable named "jImage"
+if bShowCommands then
+   address sdor drawImage "jImage" with output using (.stdout) error using (.error)-- use image from Rexx variable named "jImage"
+else
+   address sdor drawImage "jImage" -- use image from Rexx variable named "jImage"
+
 sleep 1.5               -- sleep (wait) a bit
 
 sleepTime=1/30          -- appr. 30 updates per second
+   /* note: output that starts with "--" will be treated as comment if feeded to jdor.rxj */
 say "--> animate rotating image on the right (frameless) window ..."
 round=0
 do i=0 to 360+90 by 5   -- rotate 1 1/4 rounds ...
   round+=1
-  address sdor rotate i center   -- rotate transform
-  address sdor drawImage "jImage"  -- draw image referred to by the Rexx variable "jImage"
-  address sdor sleep sleepTime      -- sleeping causes animation effect
+  if bShowCommands then
+  do
+     address sdor rotate i center      with output using (.stdout) error using (.error)-- rotate transform
+     address sdor drawImage "jImage"   with output using (.stdout) error using (.error)-- draw image referred to by the Rexx variable "jImage"
+     address sdor sleep sleepTime      with output using (.stdout) error using (.error)-- sleeping causes animation effect
+  end
+  else
+  do
+     address sdor rotate i center      -- rotate transform
+     address sdor drawImage "jImage"   -- draw image referred to by the Rexx variable "jImage"
+     address sdor sleep sleepTime      -- sleeping causes animation effect
+  end
 end
 say "--> finished after" pp(round) "rotations"
 
