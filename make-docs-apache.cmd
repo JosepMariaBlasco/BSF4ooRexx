@@ -18,10 +18,12 @@ rem set docs_bsf4rexx_dir=docs.bsf4oorexx
 rem set docs_apache_dir=docs.apache.bsf
 
 
-set javadoc_scope=-package
+set javadoc_scope=-protected
+rem set javadoc_scope=-package
 rem set javadoc_scope=-private
 
-set doc_date=%runDate%
+rem set doc_date=%runDate%
+set doc_date=%doc_date%
 
 set doc_release_version=%releaseVersion%
 if not "%doc_release_version%"=="" goto set_doc_date
@@ -29,7 +31,7 @@ set doc_release_version=v850
 
 :set_doc_date
 if not "%doc_date%"=="" goto continue
-set doc_date=20220920
+set doc_date=20230924
 
 :continue
 set docs_header=-header "%doc_date%, rgf"

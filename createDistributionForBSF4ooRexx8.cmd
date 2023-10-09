@@ -36,9 +36,9 @@ set CLASSPATH=%CLASSPATH%;%ooo_classes%\unoil.jar;%ooo_classes%\ridl.jar;%ooo_cl
 @echo adding javax.servlet.jsp and javax.servlet.http to CLASSPATH
 set CLASSPATH=%CLASSPATH%;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet.jsp.jar;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet-3.0.0.v201112011016.jar
 
-set releaseDate=20230621
-set runDate=20230621
-set doc_date=20230621
+set releaseDate=20230718
+set runDate=20230924
+set doc_date=20230718
 
 @rem values to use for creating the BSF jarfile
 @rem set bsfDate=20090910
@@ -359,6 +359,11 @@ del samples\OOo\*.jpg
 del samples\OOo\*.pdf
 xcopy samples\*                         bsf4oorexx\samples\   /s/e/i/r/k/y
 @rem 2009-02-11, rgf
+
+@rem 2023-07-18, rgf: make "jdor.cls" available via PATH (too many "escaped" JDOR-samples that use it)
+@rem                  and remove it from installation's bsf4oorexx\samples
+copy samples\jdor.cls                   bsf4oorexx
+del  bsf4oorexx\samples\jdor.cls
 
 del %releaseInstallZip%.zip
 zip -9r %releaseInstallZip% bsf4oorexx/*

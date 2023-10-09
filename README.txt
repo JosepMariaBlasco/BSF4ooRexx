@@ -23,10 +23,15 @@ Ad possible new features:
 - whenever ooRexx-RFEs linked to BSF4ooRexx get realized by the ooRexx team, apply them in the BSF4ooRexx package (especially the feature where one could learn that the Rexx interpreter is in shutdown mode, such that no callbacks from Java to Rexx are passed on).
 
 - whenever ooRexx gets debug and profile APIs, make them available, such that Java based SDKs for ooRexx can be created,
- 
+
 - maybe add JSR-223 support (can be implemented using a generic BSF 2.4 wrapper), if users would need it.
 
 Pleae feel free to add to this document.
 
 2011-04-05, Rony G. Flatscher
+
+
+For debugging JavaFX (rgf, 20230930):
+
+    set BSF4Rexx_JavaStartupOptions=-Djavafx.verbose=true
 

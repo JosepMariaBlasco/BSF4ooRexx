@@ -11,7 +11,7 @@
 
    author:  Rony G. Flatscher
    date:    2022-09-05/2022-10-05
-   version: 100.20230606
+   version: 100.20230718
    license: Apache license 2.0
 
    license:
@@ -149,6 +149,9 @@
                     - added synonyms "areaUnion" for "areaAdd" and "areaXor" for "areaExclusiveOr"
         2023-06-11: - added commands "clipboardGet" ("getClipboard"), "clipboardSet" ("setClipboard")
         2023-06-12: - added command "clipboardSetWithoutAlpha" ("setClipboardWithoutAlpha")
+        2023-07-18: - fixed pushImage(): if argument given and output redirected now supplies imageNickName
+                      if supplied
+                    - add "COLOUR" as synonym for "COLOR"
 
 */
 
@@ -319,7 +322,7 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
     /* static definitions           */
 
     // default image sizes
-    static final public String version = "100.20230612";
+    static final public String version = "100.20230718";
     static final private int prefWidth  = 500;
     static final private int prefHeight = 500;
     static       private int prefImageType = BufferedImage.TYPE_INT_ARGB; // default with alpha (only png supported)
@@ -3827,14 +3830,22 @@ if (al.size()<2) // blanks supplied
                         {
                             BufferedImage img = copyImage(bufImage);
                             adImageStack.push(img); // save current image
+                            String nickName = "";
                             if (arrCommand.length>1)    // nickName supplied, store image in HashMap
                             {
-                                String nickName = arrCommand[1];
+                                nickName=arrCommand[1];
                                 hmImages.put(nickName.toUpperCase(),img);   // save in HashMap
                             }
                             if (isOR)
                             {
-                                writeOutput(slot, canonical);
+                                if (arrCommand.length>1)
+                                {
+                                    writeOutput(slot, canonical+" "+nickName);
+                                }
+                                else
+                                {
+                                    writeOutput(slot, canonical);
+                                }
                             }
                             return img;     // return pushed (copy) image
                         }
@@ -5507,6 +5518,7 @@ enum EnumCommand {
          upperCase2Command.put( "AREAUNION"    , AREA_ADD  ) ;    // 2023-06-08
          upperCase2Command.put( "AREAXOR"      , AREA_EXCLUSIVE_OR  ) ;   // 2023-06-08
          upperCase2Command.put( "CLEAR"        , RESET     ) ;
+         upperCase2Command.put( "COLOUR"       , COLOR     ) ;
          upperCase2Command.put( "GETCLIPBOARD" , CLIPBOARD_GET) ; // 2023-06-11
          upperCase2Command.put( "GOTO"         , MOVE_TO   ) ;
          upperCase2Command.put( "LOCATION"     , MOVE_TO   ) ;    // 2022-10-23: new alias

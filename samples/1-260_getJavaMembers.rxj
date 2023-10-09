@@ -2,15 +2,17 @@
 /*
       name:    1-260_getJavaMembers.rxj
       needs:   BSF4ooRexx
-      date:    2023-07-16
+      date:    2023-07-18
       author:  Rony G. Flatscher
       purpose: utility routines to dump Java members in sorted order to ease
-               analyzing the structure of a Java class; by default all
-               members and all superclass members that are reported by the
-               appropriate java.lang.Class methods get processed; if the
-               optional second argument to all routines is set to .false,
-               then only the class' members are processed, including all
-               non public members
+               analyzing the structure of a Java class;
+
+               by default all PUBLIC members and all superclass members that
+               are reported by the appropriate java.lang.Class methods get
+               processed;
+               if the optional second argument gets set to .false, then only
+               the DECLARED class' members are processed, including all
+               non-public members (superclass members are not looked up in this case)
 
       usage:   from the command line: supply the fully qualified name of a Java class
                from a Rexx program: require this package, e.g.
@@ -46,13 +48,13 @@ parse arg javaClassName .  -- fetch Java class name, if any
 if javaClassName<>"" then
 do
    clz=bsf.loadClass(javaClassName)
-   -- clz=.java.lang.String
-   say "get all public members, even inherited ones ..."
+   say "get all members that get *declared in the class* (no members from superclasses) ..."
+   say
+   say getAllMembers(clz , .false)  -- now show all, even non-public members of clz only
+   say
+   say "get all *public members* (even inherited from superclasses) ..."
    say
    say getAllMembers(clz)  -- show public members (even inherited)
-   say
-   say "get all members that get declared in the class (no members from superclasses) ..."
-   say getAllMembers(clz , .false)  -- now show all, even non-public members of clz only
 end
 
 
@@ -72,12 +74,13 @@ end
   use arg clz, bAllPublic=.true
 
   mb=.MutableBuffer~new
-  mb~append(.context~name,": class=",pp(clz~toString), .string~nl)
-  mb~append(getClasses(      clz, bAllPublic), .string~nl)
-  mb~append(getConstructors( clz, bAllPublic), .string~nl)
-  mb~append(getFields(       clz, bAllPublic), .string~nl)
-  mb~append(getMethods(      clz, bAllPublic), .string~nl)
-  mb~append("---", .string~nl)
+  mb~append(.context~name,": class=",pp(clz~toString))
+  mb~append(getAnnotations(  clz, bAllPublic))
+  mb~append(getClasses(      clz, bAllPublic))
+  mb~append(getConstructors( clz, bAllPublic))
+  mb~append(getFields(       clz, bAllPublic))
+  mb~append(getMethods(      clz, bAllPublic))
+  mb~append("---")
   return mb~string
 
 
@@ -147,6 +150,52 @@ end
            mb~append(tab, "     ", " "~right(len),"  /// ", pp(declaringClass), " \\\", .string~nl)
            oldDeclaringClass=declaringClass
         end
+        bag=rel~allAt(idx)
+        oldIdx=idx
+        do counter c2 obj over bag
+           mb~append(tab, "    # ", (c+c2-1)~right(len),": ",  pp(obj~toString), .string~nl)
+        end
+     end
+  end
+  return mb~string
+
+
+/** Returns a formatted string that contains all annotations of the supplied
+*   Java class object.
+*
+*  @param clz the Java class object to anaylze
+*  @param bAllPublic optional argument that defaults to <em>.true</em> which will
+*                    cause only public members (also inherited ones) to be shown;
+*                    if set to <em>.false</em> then all declared members of the
+*                    <em>clz</em> will be shown (but not members of superclasses)
+*  @return a formatted string
+*/
+::routine getAnnotations    public
+  use arg clz, bAllPublic=.true    -- by default get all members, not only public
+
+  tab="09"x
+  if bAllPublic=.true then arr=clz~getAnnotations
+                      else arr=clz~getDeclaredAnnotations
+  items=arr~items
+  mb=.MutableBuffer~new
+  mb~append(.string~nl)
+  mb~append(tab, " ", .context~name, ": class=", pp(clz~toString), " contains ", pp(items), bAllPublic~?(" public"," declared"), " annotations", .string~nl)
+  if items=0 then return mb~string
+
+  rel=.relation~new        -- index=class name, item=jObject
+  maxNameLen=0
+  do counter c obj over arr
+     name=obj~annotationType~getTypeName
+     maxNameLen=max(maxNameLen,name~length)
+     str=name
+     rel[str]=obj
+  end
+
+  len=max(.minLen,items~length)  -- for right-adjusting
+  oldIdx           =""
+  do counter c idx over rel~allIndexes~sort
+     if oldIdx<>idx then
+     do
         bag=rel~allAt(idx)
         oldIdx=idx
         do counter c2 obj over bag
