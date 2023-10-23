@@ -36,6 +36,16 @@ remarks:
 
 inline jint impl_jniRexxHaltInterpreterInstance (JNIEnv *env, jobject jobj, jstring j_rii_ID)
 
+    2023-10-23, rgf: - silence some warnings when configuring JVM with "-Xcheck:jni";
+                       needle used: "// rgf, 20231023"
+                       NOTE: Java itself (e.g. awt) does not always
+                       check for exceptions, such that JNI warnings get generated; as long
+                       as a pending Java exception gets handled one way (in native code) or
+                       another (in Java code)
+
+    2023-10-22, rgf: - correct wrong upcalls (changed return type on Java side, but was not
+                       adjusted on native side)
+
     2023-02-25, rgf: - remove fprintf() format warning (%lu -> %zu)
     2022-10-16, rgf: - resolve asterisk (*) wildcard character in CLASSPATH/java.class.path,
                        needed if Java gets loaded by Rexx as the JVM does not resolve it
@@ -1112,21 +1122,21 @@ thread_id_t  RgfGetTID();
 
 #if defined (BSF4REXX_32_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20230225 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20231023 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20230225 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20231023 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #elif defined (BSF4REXX_64_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20230225 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20231023 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20230225 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20231023 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #else
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20230225 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20231023 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20230225 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20231023 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #endif
 
@@ -2672,6 +2682,13 @@ inline jstring RgfStoreRexxProxyInBsfRegistry(JNIEnv *env, jobject rajo, jobject
         env->CallObjectMethod(proxy,
                               defaultJVM->mid_RexxProxy_setBsfRegistryKey,
                               j_keyValueWithoutPrefix);
+        // rgf, 20231023
+        if ( env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+        {
+            env->ExceptionDescribe();
+            env->ExceptionClear();
+        }
+
     }
 
     if (bReturnWithPrefix==1)
@@ -2687,7 +2704,8 @@ inline jstring RgfStoreRexxProxyInBsfRegistry(JNIEnv *env, jobject rajo, jobject
     // allows to unregister a bean from the BSFRegistry
 inline jint RgfUnregisterBean(JNIEnv *env, jobject rajo, jobject beanName)
 {
-    jint refCount=env->CallBooleanMethod(rajo,
+   // jint refCount=env->CallBooleanMethod(rajo,
+   jint refCount=env->CallIntMethod(rajo,
                                   defaultJVM->mid_RexxAndJava_unregisterBean,
                                   beanName);
     return refCount;
@@ -2716,6 +2734,13 @@ inline jobject RgfCreateRexxProxy (JNIEnv *env, jobject rajo,
     jobject j_rexxEngine=env->CallObjectMethod(rajo,
                                              defaultJVM->mid_RexxAndJava_getRexxEngine,
                                              NULL);
+    // rgf, 20231023
+    if ( env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+    {
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+    }
+
 
     CSTRING c_objID         =RgfAddProxyObject(rtc, robj, rpo);     // add to OREXX registry, save ID string
 
@@ -2949,6 +2974,12 @@ inline jobject RgfProcessReturnValue4Java(JNIEnv *env, jobject rajo,
         jobject   jobj=env->CallObjectMethod(rajo,
                                              defaultJVM->mid_RexxAndJava_convFromJNI,
                                              j_returnType, jStringValue);  // do the conversion
+        // rgf, 20231023
+        if ( env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+        {
+            env->ExceptionDescribe();
+            env->ExceptionClear();
+        }
 
         env->DeleteLocalRef(jStringValue);
         return jobj;
@@ -2969,14 +3000,15 @@ inline jobject RgfProcessReturnValue4Java(JNIEnv *env, jobject rajo,
         jobject   jobj=env->CallObjectMethod(rajo,
                                              defaultJVM->mid_RexxAndJava_convFromRexx,
                                              jbeanName);  // invoke toString()
-        env->DeleteLocalRef(jbeanName);
-
-        // TODO: check whether clearing exception is truly o.k.
+        // rgf, 20231023
         if ( env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
         {
             env->ExceptionDescribe();
             env->ExceptionClear();
         }
+
+        env->DeleteLocalRef(jbeanName);
+
         return jobj;
     }
 
@@ -3064,6 +3096,13 @@ inline RexxObjectPtr RgfJavaObject2RexxObject (JNIEnv *env, jobject rajo,     //
         jstring j_obj_ID=(jstring) env->CallObjectMethod(j_obj,
                                                defaultJVM->mid_RexxProxy_getRexxObjectID,
                                                NULL); // get obj_ID
+        // rgf, 20231023
+        if ( env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+        {
+            env->ExceptionDescribe();
+            env->ExceptionClear();
+        }
+
 
         tmpStr=(char *) JNU_GetStringNativeChars(env, j_obj_ID);    // convert to native string
 
@@ -3090,6 +3129,13 @@ inline RexxObjectPtr RgfJavaObject2RexxObject (JNIEnv *env, jobject rajo,     //
         if (env->IsInstanceOf(j_obj, defaultJVM->clz_NetRexx)==JNI_TRUE)
         {
             j_obj=env->CallObjectMethod(j_obj, defaultJVM->mid_NetRexx_toString);
+            // rgf, 20231023
+            if ( env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+            {
+                env->ExceptionDescribe();
+                env->ExceptionClear();
+            }
+
         }
     }
 #endif
@@ -3122,6 +3168,13 @@ inline RexxObjectPtr RgfJavaObject2RexxObject (JNIEnv *env, jobject rajo,     //
         jstring j_beanName = (jstring) env->CallObjectMethod(rajo,
                                            defaultJVM->mid_RexxAndJava_registerBean4JNI,
                                            j_obj);
+        // rgf, 20231023
+        if ( env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+        {
+            env->ExceptionDescribe();
+            env->ExceptionClear();
+        }
+
 
             // get char* beanName, do a bsf.wrap() if available; return that result
         CSTRING c_beanName    = env->GetStringUTFChars(j_beanName, JNI_FALSE);
@@ -3367,6 +3420,12 @@ if (rtc->CheckCondition())
             jstring j_obj_ID=(jstring) env->CallObjectMethod(jobj,
                                                    defaultJVM->mid_RexxProxy_getRexxObjectID,
                                                    NULL); // get obj_ID
+            // rgf, 20231023
+            if ( env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+            {
+                env->ExceptionDescribe();
+                env->ExceptionClear();
+            }
 
                 // turn into Rexx string, lookup and return the Rexx object
             char * tmpStr= JNU_GetStringNativeChars(env, j_obj_ID);    // convert to native string
@@ -3417,6 +3476,12 @@ if (rtc->CheckCondition())
                 jstring j_beanName = (jstring) env->CallObjectMethod(rajo,
                                                    defaultJVM->mid_RexxAndJava_registerBean4JNI,
                                                    jobj);
+                // rgf, 20231023
+                if ( env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+                {
+                    env->ExceptionDescribe();
+                    env->ExceptionClear();
+                }
 
                     // get char* beanName, do a bsf.wrap() if available; return that result
                 CSTRING c_beanName    = env->GetStringUTFChars(j_beanName, JNI_FALSE);
@@ -4299,6 +4364,13 @@ inline RexxStringObject RgfCreateRexxSyntaxConditionWithJavaThrowable (
                                        defaultJVM->mid_RexxAndJava_registerBean4JNI,
                                        jo);
 
+    // rgf, 20231023
+    if ( param->env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+    {
+        param->env->ExceptionDescribe();
+        param->env->ExceptionClear();
+    }
+
     // get char* beanName, do a bsf.wrap() if available; return that result
     CSTRING          c_beanName = param->env->GetStringUTFChars(j_beanName, JNI_FALSE);
     RexxStringObject r_beanName = rtc->String(c_beanName);    // create Rexx string
@@ -4503,6 +4575,13 @@ inline RexxStringObject RgfCreateRexxSyntaxConditionWithJavaThrowable_temp_debug
     jstring j_beanName = (jstring) param->env->CallObjectMethod(param->rajo,
                                        defaultJVM->mid_RexxAndJava_registerBean4JNI,
                                        jo);
+    // rgf, 20231023
+    if ( param->env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+    {
+        param->env->ExceptionDescribe();
+        param->env->ExceptionClear();
+    }
+
 
     // get char* beanName, do a bsf.wrap() if available; return that result
     CSTRING          c_beanName = param->env->GetStringUTFChars(j_beanName, JNI_FALSE);
@@ -4666,6 +4745,13 @@ inline jobject RgfRexxObject2JavaObject(
                 jresult=param->env->CallObjectMethod(param->rajo,
                                        defaultJVM->mid_RexxAndJava_lookupBean4JNI,
                                        jstr);
+                // rgf, 20231023
+                if ( param->env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+                {
+                    param->env->ExceptionDescribe();
+                    param->env->ExceptionClear();
+                }
+
                 param->env->DeleteLocalRef(jstr);
             }
             else    // any other Rexx object, wrap it up as a (Java) RexxProxy
@@ -6973,7 +7059,14 @@ RexxRoutine2(RexxObjectPtr, BsfRawBytes, RexxObjectPtr, data, OPTIONAL_size_t, l
                     jstring j_beanName = (jstring) param.env->CallObjectMethod(param.rajo,
                                                        defaultJVM->mid_RexxAndJava_registerBean4JNI,
                                                        jba);
-
+/*-- activate to silence -Xcheck:jni a little bit */
+                    // rgf, 20231023
+                    if ( param.env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+                    {
+                        param.env->ExceptionDescribe();
+                        param.env->ExceptionClear();
+                    }
+/* -- */
                     // get char* beanName, do a bsf.wrap() if available; return that result
                     CSTRING          c_beanName=param.env->GetStringUTFChars(j_beanName, JNI_FALSE);
                     RexxStringObject r_beanName=context->String(c_beanName);    // create Rexx string
@@ -7002,6 +7095,15 @@ RexxRoutine2(RexxObjectPtr, BsfRawBytes, RexxObjectPtr, data, OPTIONAL_size_t, l
                                                   defaultJVM->mid_RexxAndJava_lookupBean4JNI,
                                                   jObjectName
                                                   );
+/*-- activate to silence -Xcheck:jni a little bit */
+                    // rgf, 20231023
+                    if ( param.env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+                    {
+                        param.env->ExceptionDescribe();
+                        param.env->ExceptionClear();
+                    }
+/* -- */
+
         param.env->DeleteLocalRef(jObjectName);
 
         if (jba==NULL)     // no bean found by the given beanName
@@ -7607,6 +7709,13 @@ RexxRoutine2(RexxObjectPtr, BsfJavaException, OPTIONAL_CSTRING, option, OPTIONAL
                                                    defaultJVM->mid_RexxAndJava_lookupBean4JNI,
                                                    j_beanNameOrMsg
                                                    );
+        // rgf, 20231023
+        if ( param.env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+        {
+            param.env->ExceptionDescribe();
+            param.env->ExceptionClear();
+        }
+
         param.env->DeleteLocalRef(j_beanNameOrMsg);
 
         if (jobj==NULL)     // no bean found by the given beanName
@@ -7972,9 +8081,16 @@ RexxRoutine1(size_t, BsfUninit4JavaBean, RexxObjectPtr, bean)
     }
 
     jstring jstrBeanName=JNU_CreateJavaString(jenv, context->threadContext, rso);
-    refCount=jenv->CallStaticBooleanMethod(defaultJVM->clz_RexxAndJava,
+    // refCount=jenv->CallStaticBooleanMethod(defaultJVM->clz_RexxAndJava,
+    refCount=jenv->CallStaticIntMethod(defaultJVM->clz_RexxAndJava,
                                  defaultJVM->mid_RexxAndJava_unregisterBean4JNI,
                                  jstrBeanName);
+    // rgf, 20231023
+    if ( jenv->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+    {
+        jenv->ExceptionDescribe();
+        jenv->ExceptionClear();
+    }
 
     jenv->DeleteLocalRef(jstrBeanName);
 
@@ -8170,6 +8286,13 @@ RexxRoutine3(RexxObjectPtr, BsfCommandHandler, CSTRING, option, OPTIONAL_CSTRING
     jobject j_rexxConfiguration=param.env->CallObjectMethod(param.rajo,
                                              defaultJVM->mid_RexxAndJava_getRexxConfiguration,
                                              NULL);
+    // rgf, 20231023
+    if ( param.env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+    {
+        param.env->ExceptionDescribe();
+        param.env->ExceptionClear();
+    }
+
 
     if (mode==0)    // adding a new command handler
     {
@@ -8183,6 +8306,13 @@ RexxRoutine3(RexxObjectPtr, BsfCommandHandler, CSTRING, option, OPTIONAL_CSTRING
                                                    defaultJVM->mid_RexxAndJava_lookupBean4JNI,
                                                    j_beanName
                                                    );
+        // rgf, 20231023
+        if ( param.env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+        {
+            param.env->ExceptionDescribe();
+            param.env->ExceptionClear();
+        }
+
         param.env->DeleteLocalRef(j_beanName);
 
         // error: no bean found by the given beanName or object not a RexxCommandHandler
@@ -8213,6 +8343,13 @@ RexxRoutine3(RexxObjectPtr, BsfCommandHandler, CSTRING, option, OPTIONAL_CSTRING
                                     jName,                // < 250 chars!
                                     jobj
                                     );
+        // rgf, 20231023
+        if ( param.env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+        {
+            param.env->ExceptionDescribe();
+            param.env->ExceptionClear();
+        }
+
         param.env->DeleteLocalRef(jName);
         param.env->DeleteLocalRef(jobj);
 
@@ -8229,6 +8366,13 @@ RexxRoutine3(RexxObjectPtr, BsfCommandHandler, CSTRING, option, OPTIONAL_CSTRING
     else            // get the list (string array) of currently defined Java command handlers
     {
         jobjectArray jarr=(jobjectArray) param.env->CallObjectMethod(j_rexxConfiguration, defaultJVM->mid_RexxConfiguration_getCommandHandlersAsStringArray);
+        // rgf, 20231023
+        if ( param.env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+        {
+            param.env->ExceptionDescribe();
+            param.env->ExceptionClear();
+        }
+
         if (jarr==NULL || param.env->GetArrayLength(jarr)==0)
         {
             ropResult=context->NewArray(0);     // define an empty Rexx array
@@ -12354,8 +12498,13 @@ RexxObjectPtr RexxEntry rexx_command_handler_worker(RexxExitContext *context, Re
 
         struRii->rexxconf=param.env->CallObjectMethod(struRii->rajo,
                                     defaultJVM->mid_RexxAndJava_getRexxConfiguration);
+        // rgf, 20231023
+        if ( param.env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+        {
+            param.env->ExceptionDescribe();
+            param.env->ExceptionClear();
+        }
     }
-
 
         // get Java command handler object, if any
     jstring jaddress=param.env->NewStringUTF(context->CString(address));
@@ -12469,14 +12618,20 @@ RexxObjectPtr RexxEntry rexx_command_handler_worker(RexxExitContext *context, Re
     }
 
         // public abstract Object handleCommand(Object slot, String address, String command);
-    jobject jresult=NULL;
+    jobject jresult =NULL;
 
-    jstring jcommand=param.env->NewStringUTF(context->CString(command));
+    jstring jcommand=NULL;
+    jmethodID jmid = NULL;
 
-    jmethodID jmid=param.env->GetMethodID(param.env->GetObjectClass(jhandler),
-                                          CONFIG_REXX_COMMAND_HANDLER_NAME,
-                                          CONFIG_REXX_COMMAND_HANDLER_SIGNATURE
-                                         );
+    if (! param.env->ExceptionCheck())
+    {
+        jcommand=param.env->NewStringUTF(context->CString(command));
+
+        jmid=param.env->GetMethodID(param.env->GetObjectClass(jhandler),
+                                              CONFIG_REXX_COMMAND_HANDLER_NAME,
+                                              CONFIG_REXX_COMMAND_HANDLER_SIGNATURE
+                                             );
+    }
 
     if (param.env->ExceptionCheck())
     {
