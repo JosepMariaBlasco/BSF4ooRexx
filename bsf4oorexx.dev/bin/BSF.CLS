@@ -13,6 +13,18 @@
 
    date:
 
+         2023-10-30, ---rgf, - rework parseJavaOptions() to behave like:
+                               - processes @file options (since JDK 17)
+                               - shows duplicate option names
+                               - process environment variable JDK_JAVA_OPTIONS first
+                               - process environment variable BSF4Rexx_JavaStartupOptions next
+                               - if no classpath argument process environment variable CLASSPATH
+                                 - if multiple classpath arguments, then process and collect the
+                                   denoted files and create a unified classpath argument (like
+                                   java.exe behaves)
+                              - if BSFLoadJava() raises a condition, then show the arguments
+                                supplied to it by Rexx to ease debugging
+
          2023-06-19, ---rgf, - "BSF.ClipBoard": cater for java.lang.IllegalStateException and indicate
                                success/failure with return values
          2023-06-18, ---rgf, - changed class "NullDevice" to "Bsf.NullDevice", made it a singleton,
@@ -927,15 +939,16 @@ end
 
    if BsfInvokedBy()=0 then   -- JVM not yet loaded
    do
-         -- process Java runtime args, if any
-      jso=value('BSF4Rexx_JavaStartupOptions', ,"ENVIRONMENT")
+         -- define hard-coded startup values for Java here
+      jso=""                  -- default to none
 
       if opsys="MACOSX" then  -- as of 2010-02-20: if loading Java via Rexx, awt-event thread does not work
          jso=(jso "-Djava.awt.headless=true")~strip   -- make sure that Java hints at the cause of the problem
 
       arr=parseJavaOptions(jso)  -- will also add -Djava.class.path with exploded CLASSPATH (exploding asterisks '*' if any)
-
-      .routines["XBSFLOADJAVA"]~callWith(arr)
+      signal on syntax name syntax_load_java       -- if potential errors in options, display them
+      res=.routines["XBSFLOADJAVA"]~callWith(arr)  -- load JVM with the supplied startup values
+      signal on syntax
    end
 
    -- since 2008-06-22 (rgf) this forces RexxAndJava to prepend type indicators!
@@ -955,7 +968,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="850.20230718" -- set version (date distribution got created)
+      .bsf4rexx~version="850.20231030" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -987,7 +1000,15 @@ end
 syntax:
    raise propagate
 
-
+syntax_load_java: -- show options in case Java or BSF4ooRexx850 could not be initialized successfully
+   tab="09"x
+   .error~say(tab "error initializing Java and BSF4ooRexx850, options supplied to Java:")
+   len=arr~items~length
+   do counter c option over arr
+      .error~say(tab "#" c~right(len)":" pp(option) )
+   end
+   say "---"
+   raise propagate      -- let Rexx create the standard error message
 
 
 -- ::requires "rgf_util2.rex"    -- 20180106, rgf, temporarily because of BSF's unknown usage
@@ -1449,146 +1470,388 @@ syntax:
 ::routine  escapeQuotes
      return '"'||changestr('"', arg(1), '""')||'"'
 
+
+
 /* ================================================================================================= */
 /*
    parse Java startup options which can be given via the operating system environment
    variable named 'BSF4Rexx.JavaStartupOptions'; returns an array with each option
-   stored in its own slot
+   stored in its own slot; version as of 2023-10-30
+
+   - options can be combined from JDK_JAVA_OPTIONS plus BSF4Rexx_JavaStartupOptions;
+     if no classpath got set, use CLASSPATH environment variable if any
+
+     - classpath can be given as:
+
+        - "-Djava.class.path=", "-cp", "--class-path", "--classpath"
+          - multiple classpath options will be combined
+        - if not seen use CLASSPATH
+
+   - since JDK 17: @jvmoptions ... jvmoptions path to file
+
+   - values can have '...' or "...",
+     also entire argument may be quoted like: "-Dsome=o h" or '-Dthing=a b'
+
+*/
+/** Parses any supplied options and returns an array in which each option has its own
+    entry. This version will process the startup option values in the following order:
+    <ol>
+    <li>from the environment variable <code>JDK_JAVA_OPTIONS</code>,
+    <li>from the environment variable <code>BSF4Rexx_JavaStartupOptions</code>, and
+    <li>from the directly supplied argument, if any.
+    </ol>
+    If no classpath related startup option gets supplied, the environment variable
+    <code>CLASSPATH</code> gets used, if present.
+
+    @param val a string or an array of startup options
+    @return an array in which each startup option is stored separately
 */
 ::routine parseJavaOptions public
-  parse arg options
-  a=.array~new
-  i=0
-  deli=" '" || '"'         -- delimiters for options/option-values
-  cpPropertyNeedle="-Djava.class.path="  -- rgf, 2021-02-16
-  cpPropertySeen? =.false
+  use strict arg val=.nil     -- can be omitted, a string or an array of strings
 
-  do mainLoop=0 while options<>""
-     pos=pos("-", options)
-     if pos=0 then         -- no more options available?
-     do
-        if i=0 then
-        do
-           i=1             -- first (and only) entry
-           a[i]=options    -- remainder of value for previous option
-        end
-        else
-           a[i]=a[i] || options  -- remainder of value for previous option
-
-        cpPropertySeen? = cpPropertySeen? | abbrev(a[i],cpPropertyNeedle)
-        leave mainLoop
-     end
-
-     preVal=substr(options, 1, pos-1)  -- get string before dash, if any
-
-     if preVal<>"" then
-     do
-        if preVal~length>1 then  -- more left than the delimiting blank char?
-        do                    -- this value belongs to previous or first (?) option
-           tmpVal=substr(preVal,1,length(preVal)-1)
-           if i=0 then
-           do
-              i=1
-              a[i]=tmpVal     -- some unknown first option?
-           end
-           else
-              a[i]=a[i] || tmpVal   -- add to previous option's value
-
-           cpPropertySeen? = cpPropertySeen? | abbrev(a[i],cpPropertyNeedle)
-        end
-     end
-
-     -- new option to deal with
-     tmpPos=pos
-     i=i+1
-     do findNextSwitch=1 while .true
-        nextSwitchPos=pos(" -", options, tmpPos+1) -- get position of next switch
-        if nextSwitchPos<>0 then             -- a new switch found ?
-        do
-           begQuot=pos('"', options, tmpPos+1)
-           if begQuot<nextSwitchPos then     -- a quote, check whether " -" is part of it
-           do
-              endQuot=pos('"', options, begQuot+1)
-              if endQuot>nextSwitchPos then  -- oops, " -" is part of string, ignore it
-              do
-                 tmpPos=endQuot              -- define new start for looking for next switch
-                 iterate findNextSwitch      -- try to find next switch
-              end
-           end
-
-           a[i]=substr(options, pos, nextSwitchPos-pos)
-           cpPropertySeen? = cpPropertySeen? | abbrev(a[i],cpPropertyNeedle)
-
-           options=substr(options, nextSwitchPos+1)
-           iterate mainLoop
-        end
-
-        if nextSwitchPos=0 then  -- last option in hand
-        do
-           a[i]=substr(options, pos)
-           cpPropertySeen? = cpPropertySeen? | abbrev(a[i],cpPropertyNeedle)
-           leave mainLoop
-        end
-     end
-
-  end
-
-  -- if java.class.path not defined, use CLASSPATH (remove duplicates, explode trailing asterisks '*';
-  -- in Java 6 explosion of asterisks was done, at least starting with Java 8 we need to do that!)
-  if cpPropertySeen?=.false then
+  q=.queue~new          -- allows to push environment variables to front
+  if \val~isNil then    -- if .nil then CLASSPATH environment variable, if set gets processed
   do
-     processedCP=get_processed_classpath()
-     if processedCP<>"" then  -- if CLASSPATH was set, use it in the processed form
-        a~append(cpPropertyNeedle || processedCP)
+     if val~isA(.string) then q~queue(val)      -- append string
+                         else q~appendAll(val)  -- append all string elements of array
   end
-  return a
 
-/*
-   2021-02-16: make sure we explode trailing asterisks (*) to individual paths to contained jar/JAR files,
-   cf. <https://docs.oracle.com/javase/7/docs/technotes/tools/windows/classpath.html>;
-   this routine will remove duplicates and non-existing paths, and replace '*' with the jar/JAR files
-   in that directory
+  -- .context~package~local~bDebug=.true  -- uncomment: will cause initialization error due to classpath options
+  .context~package~local~bHints=.true  -- show user hints and warnings on .error
+
+  bDebug=(.bDebug=.true)   -- test just once, whether debug is set
+
+  if bDebug then .error~say( .context~name"/".line":" "q="pp(q) "q~items="pp(q~items) )
+
+  if bDebug then
+  do
+     jjo="--module-path=tgt/testrgf.jar --add-modules=testrgf.module -Xcheck:jni"
+     b4r=" -cp . --class-path .. --module-path=tgt/testrgf.jar --add-modules=testrgf.module -Xcheck:jni",
+         "-classpath . -Djava.class.path .. "  -- classpath will not list BSF4ooRexx jar, hence an error when loading 'org/rexxla/bsf/engines/rexx/Java4Rexx'
+     q~push(b4r)
+     q~push(jjo)
+     str=.dateTime~new "BSF.CLS"
+     if .bHints=.true then
+     do
+        .error~say(str "NOTE: Picked up 'JDK_JAVA_OPTIONS':" pp(jjo))
+        .error~say(str "NOTE: Picked up 'BSF4Rexx_JavaStartupOption':" pp(b4r))
+     end
+  end
+  else   -- make sure processing is JDK_JAVA_OPTIONS -> Bsf4Rexx_JavaStartupOption -> supplied arguments, if any
+  do
+      B4R_JSOptions    = value("BSF4Rexx_JavaStartupOptions",,"ENVIRONMENT")
+      if B4R_JSOptions<>"" then q~push(B4R_JSOptions)
+
+      JDK_JAVA_OPTIONS = value("JDK_JAVA_OPTIONS"          ,,"ENVIRONMENT")
+      if JDK_JAVA_OPTIONS<>"" then q~push(JDK_JAVA_OPTIONS)
+
+      if .bHints=.true then
+      do
+         str=.dateTime~new "BSF.CLS"
+         if JDK_JAVA_OPTIONS<>"" then .error~say(str "NOTE: Picked up 'JDK_JAVA_OPTIONS':" pp(JDK_JAVA_OPTIONS))
+         if B4R_JSOptions<>""    then .error~say(str "NOTE: Picked up 'BSF4Rexx_JavaStartupOptions':" pp(B4R_JSOptions))
+      end
+  end
+
+  if bDebug then .error~say( .context~name"/".line":" "q~items="pp(q~items) "q~allitems:" pp(q~allitems~toString('L','/\')) )
+
+  tokens     = makeTokens(q~allItems)  -- parse all arguments into tokens
+  arrStartup = makeArgArray(tokens)    -- create individual startup options from tokens
+
+  if bDebug then
+  do
+     say "--> "~copies(10)
+     say "arrStartup:" pp(arrStartup~toString('L', "|"'0d0a'x))
+     say "<-- "~copies(10)
+  end
+
+  return arrStartup                 -- return Rexx array with JVM startup options for loading Java
+
+
+/* Tokenize argument string, return tokens without enclosing quotes in array, keep trailing equal signs if any. */
+makeTokens: procedure
+  use strict arg arr
+
+  bDebug=(.bDebug=.true)   -- test just once, whether debug is set
+
+  tokens=.array~new
+  do counter c str over arr   -- iterate over all startup arguments
+    if bDebug then .error~say( .context~name"/".line":" "round #" c"/"arr~items "| str="pp(str) )
+    nextPos=verify(str, ' ', 'N')   -- get position of first non-blank
+    len    =length(str)
+
+    if bDebug then .error~say( .context~name"/".line":" "round #" c"/"arr~items "| nextPos="pp(nextPos) "len="pp(len) )
+
+    do while nextPos<>0, nextPos<=len
+       ch=str[nextPos]      -- get character
+       if bDebug then .error~say( .context~name"/".line":" "round #" c"/"arr~items "| top of while," "nextPos="pp(nextPos) "ch="pp(ch) "(str[nextPos])" )
+       if pos(ch,'"''')>0 then    -- we have an enquoted value, remove quotes, place result in array
+       do
+          nextPos2=pos(ch, str, nextPos+1)
+
+          if bDebug then .error~say( .context~name"/".line":" "quote" pp(ch) "nextPos="pp(nextPos) "nextPos2="pp(nextPos2) )
+          if nextPos2=0 then   -- error, quote not closed!
+          do
+             tokens~append("error: quote" pp(ch) "not closed in" pp(str) )
+             if bDebug then .error~say( .context~name"/".line":" " ... last appended token:" pp(tokens~lastItem) )
+             return tokens
+          end
+          -- tokens~append(str~substr(nextPos+1, nextPos2-nextPos-1))
+          tokens~append(str~substr(nextPos+1, nextPos2-nextPos-1))
+          if bDebug then .error~say( .context~name"/".line":" " ... last appended token:" pp(tokens~lastItem) )
+
+          nextPos=verify(str, ' ', 'N', nextPos2+1)   -- find next non-blank
+          iterate
+       end
+       else if ch<>"-" then    -- not a switch, but a value
+       do
+          nextPos2=pos(" ", str, nextPos+1)  -- find next blank
+          if nextPos2=0 then  -- no blanks, hence everything left is token, we are done
+          do
+             tokens~append(substr(str,nextPos))
+             if bDebug then .error~say( .context~name"/".line":" " ... last appended token:" pp(tokens~lastItem) )
+             nextPos=0        -- we are done
+             iterate
+          end
+
+          tmpStr=substr(str, nextPos, nextPos2-nextPos)
+          if tmpStr="" then
+          do
+             nextPos=0        -- we are donde
+             iterate
+          end
+          tokens~append(tmpStr)
+          if bDebug then .error~say( .context~name"/".line":" " ... last appended token:" pp(tokens~lastItem) )
+
+          nextPos=nextPos2+1
+       end
+       else -- a switch starting either with "-" or "--"
+       do
+          nextPos2=verify(str, " '""=", "M", nextPos+1)   -- find next blank or quote
+          if nextPos2=0 then  -- no blank or quote, hence everything left is token, we are done
+          do
+             tokens~append(substr(str,nextPos))
+             if bDebug then .error~say( .context~name"/".line":" " ... last appended token:" pp(tokens~lastItem) )
+             nextPos=0        -- we are done
+             iterate
+          end
+          ch=str[nextPos2]    -- get character, a blank or quote
+          if ch='=' then      -- separate switch including equal sign as a token, remainder is value
+          do
+              tokens~append(str~substr(nextPos, nextPos2-nextPos+1))
+              if bDebug then .error~say( .context~name"/".line":" " ... last appended token:" pp(tokens~lastItem) )
+              nextPos=nextPos2+1 -- should be a value, can be enquoted
+              iterate
+          end
+
+          if ch=' ' then      -- switch ended
+          do
+              tokens~append(str~substr(nextPos, nextPos2-nextPos))
+              if bDebug then .error~say( .context~name"/".line":" " ... last appended token:" pp(tokens~lastItem) )
+              nextPos=verify(str, " ", "N", nextPos2+1)  -- get next non-blank
+              iterate
+          end
+          else -- find closing quote
+          do
+              nextPos3=pos(ch, str, nextPos2+1)
+              if nextPos3=0 then    -- error, no matching closing quote!
+              do
+                 tokens~append("error: quote" pp(ch) "not closed in" pp(str) )
+                 if bDebug then .error~say( .context~name"/".line":" " ... last appended token:" pp(tokens~lastItem) )
+                 return tokens
+              end
+
+              -- is there a blank or quote left?
+              if bDebug then .error~say( .context~name"/".line":" "switch seeking closing quote, nextPos3="pp(nextPos3) "(closing quote present)" )
+              tokens~append(str~substr(nextPos2, nextPos3-nextPos2))
+              if bDebug then .error~say( .context~name"/".line":" " ... last appended token:" pp(tokens~lastItem) )
+              nextPos=verify(str," ","N",nextPos3+1)  -- find next non-blank character
+              iterate
+          end
+
+          tokens~append(substr(nextPos, nextPos2-nextPos-1))
+          if bDebug then .error~say( .context~name"/".line":" " ... last appended token:" pp(tokens~lastItem) )
+          nextPos=nextPos2+1
+       end
+    end
+    if bDebug then
+    do
+        .error~say
+        .error~say( .context~name"/".line":" "#" c "- worked on string :" pp(str) )
+        .error~say( .context~name"/".line":" "      -> current tokens:" pp(tokens~toString('L','|')) )
+        .error~say
+    end
+ end
+ if bDebug then
+ do
+    .error~say
+    .error~say( .context~name"/".line":" "DONE! arr   :" pp(arr   ~toString('L','|')) )
+    .error~say
+    if bDebug then .error~say( .context~name"/".line":" "DONE! tokens:" pp(tokens~toString('L','|')) )
+ end
+
+ return tokens
+
+
+/* create Rexx array with startup-options from supplied tokens;
+   if classpath is not among the options the environment variable CLASSPATH
+   will get honored if present
 */
-get_processed_classpath: procedure
-   newCP=""                      -- exploded (new) CLASSPATH
-   pathSep=.file~pathSeparator   -- get system's path separator
-   currCP=value("CLASSPATH",,"ENVIRONMENT")  -- get current value
-   val=currCP
-   if val~pos('*')>0 then     -- explode asterisks
-   do
-      processed =.set~new     -- paths to jar/JAR/zip already processed
-      do until val=""
-         parse var val path (pathSep) val
-         if path="" | path="*" then iterate  -- skip empty paths or paths that consist of the asterisk only
+makeArgArray: procedure
+   use strict arg tokens   -- array of tokens from which arguments get built
+   arr=.array~new          -- Rexx array with each element containing a Java startup option
 
-         if processed~hasIndex(path) then iterate  -- already processed (a dupe), skip it
-         processed~put(path)  -- memorize that we processed this
+   cpSeen?  =.false        -- CLASSPATH supplied with startup arguments?
+   cpItems  =.array~new    -- collect all files in case there are multiple classpath arguments (behave like java itself)
+   cpSeen   =.set~new      -- collect all files that got added already
+   seen     =.set~new      -- used to maintain processed/seen options
+   cpOptions="-Djava.class.path -cp --class-path -classpath"   -- various argument names for CLASSPATH argument
 
-         if path~right(1)="*" then   -- explode
+   bDebug=(.bDebug=.true)   -- test just once, whether debug is set
+
+   -- options: -Xcheck:jni -Xfuture --add-reads --add-opens
+   max=tokens~items
+   do i=1 to max
+      str=tokens[i]        -- get string
+      if str[1]='-' then      -- expected option in hand
+      do
+          trailingEqual?= str~right(1)='='
+          if trailingEqual? then
+             key=left(str, length(str)-1) -- remove trailing equal sign (gets appended later)
+          else
+             key=str
+
+          if bDebug then .error~say( .context~name"/".line":" "key -->" pp(key) "| cpOptions="pp(cpOptions) "wordpos(key, cpOptions)="pp( wordpos(key, cpOptions) ) )
+
+          cpInHand?=wordpos(key, cpOptions)>0 -- a classpath option?
+
+          if bDebug, cpInHand? then
+             .error~say( .context~name"/".line":" "CLASSPATH in hand:" pp(str) "cpSeen?" pp(cpSeen?) )
+
+          if cpInHand? then      -- a classpath argument in hand?
+          do
+             if cpSeen? then     -- classpath already processed?
+                say .dateTime~new "BSF.CLS" "WARNING: CLASSPATH argument already processed, another classpath argument encountered:" pp(str) "with the value:" pp(tokens[i+1])
+             else
+                cpSeen?=.true
+          end
+
+          if key~pos(':')>0 then    -- if option contains colon, extract option only
+             parse var key key ':' .
+
+          bDuplicate?=seen~hasindex(key)  -- option already supplied and processed?
+          seen~put(key)             -- remember option
+
+          if bDuplicate? then
+              say .dateTime~new "BSF.CLS" "WARNING: duplicate key" pp(key) "in startup options"
+
+         -- possible to have a token as:
+         --         -Dabc.de "aljdld", if original was enquoted like '-Dabc.de "aljdld"'
+         --         -Dabc.de="aljdld", if original was enquoted like '-Dabc.de="aljdld"'
+         if str[2]="D", \trailingEqual? then
          do
-             dir=path~left(path~length-1)   -- remove trailing asterisk
-             if sysFileExists(dir)=.false then iterate   -- non-existing path, skip it
-             do ext over .array~of('.jar', '.JAR') -- get and add the jar/JAR files found
-                pattern=path || ext
-                call sysfiletree pattern, "files.", "fo"
-                do i=1 to files.0   -- add all found jar files
-                   if processed~hasIndex(files.i) then iterate -- already on new CLASSPATH, skip
-                   processed~put(files.i)
-                   if newCP="" then newCP=files.i
-                               else newCP=newCP || pathSep || files.i
+            pos=verify(str," '""", 'M')  -- does the token contain a blank or quotes, then value already present
+            if pos>0 then
+            do
+               arr~append(str)
+               iterate
+            end
+         end
+
+            -- if next token is a value, supply it, make sure that option is followed by an equal sign
+          if i<max then
+          do
+             nextVal=tokens[i+1]
+             ch=nextVal~strip~left(1)
+             if pos(ch,"-@")=0 then -- add value
+             do
+                if cpInHand? then   -- explode classpath value if necessary
+                do
+                   if bDebug then .error~say( .context~name"/".line":" "cpInHand?=1, nextVal="pp(nextVal) "tokens[i+1]="pp(tokens[i+1]) )
+                   call processClassPath nextVal, cpItems, cpSeen
+                   i+=1
+                   iterate
+                end
+                arr~append(str || trailingEqual?~?("","=") || nextVal)
+                i+=1
+                iterate
+             end
+          end
+          arr~append(str)     -- just the option
+      end
+      else  -- plain value
+      do
+          arr~append(str)     -- just the option
+      end
+   end
+
+   if \cpSeen? then     -- no classpath set, use CLASSPATH environment variable, if set
+   do
+      cp="-Djava.class.path="
+      cpValue=value('CLASSPATH',,'ENVIRONMENT')
+      if cpValue<>"" then
+      do
+         if bDebug then .error~say(.dateTime~new "BSF.CLS" "NOTE: Picked up 'CLASSPATH':" pp(cpValue))
+         call processClassPath cpValue, cpItems, cpSeen
+         arr~append("-Djava.class.path="cpItems~toString('L', .rexxInfo~pathSeparator))
+      end
+   end
+   else  -- create classpath argument
+   do
+       arr~append("-Djava.class.path="cpItems~toString('L', .rexxInfo~pathSeparator))
+   end
+
+ if bDebug then .error~say( .context~name"/".line":" "DONE! makeArgArray:" pp(arr~toString('L',"|"'0d0a'x)) )
+
+   return arr
+
+/* Process CLASSPATH values, explode paths that have a single '*' (use all jar and zip files
+   in that directory; remove/ignore possible duplicate values
+*/
+processClassPath: procedure
+   use strict arg cpValue, cpItems, cpSeen
+
+   bDebug=(.bDebug=.true)   -- test just once, whether debug is set
+
+   if bDebug then .error~say( .context~name"/".line":" "cpValue="pp(cpValue) )
+
+   ps=.rexxInfo~pathSeparator       -- ; (Windows) or : (Unix)
+   ds=.rexxInfo~directorySeparator  -- \ (windows) or / (Unix)
+   asterisk=ds||'*'
+
+   do while cpValue<>""
+      parse var cpValue file (ps) cpValue
+      if sysFileExists(file) then
+      do
+         if \cpSeen~hasIndex(file) then -- honor, if not processed yet
+         do
+            cpSeen~put(file)
+            cpItems~append(file)
+         end
+      end
+      else  -- if non-existent file has a trailing asterisk, explode it, otherwise ignore
+      do
+         if file~right(2)=asterisk then  -- \* or /*
+         do
+             do ext over ".jar", ".zip"   -- seek .jar and .zip files only!
+                call sysFileTree strip(file,"T")||ext, 'files.', 'FO'    -- files only, fully qualified
+                do i=1 to files.0         -- append all found files
+                   cpItems~append(files.i)
                 end
              end
          end
-         else  -- just append
-         do
-             if sysFileExists(path)=.false then iterate   -- non-existing path, skip it
-             if newCP="" then newCP=path
-                         else newCP=newCP || pathSep || path
-         end
       end
    end
-   if newCP="" then return currCP
-   return newCP
+
+   if bDebug then      -- show
+   do
+      .error~say( .context~name"/".line":" )
+      len=cpItems~items~length
+      do counter c fn over cpItems
+         .error~say( "   #" c~right(len)":" pp(fn) )
+      end
+   end
+   return
 
 
 /* ================================================================================================= */
@@ -1600,7 +1863,6 @@ get_processed_classpath: procedure
 ::routine iif  public
   if arg(1)=.true then return arg(2)
   return arg(3)
-
 
 
 /* ================================================================================================= */
