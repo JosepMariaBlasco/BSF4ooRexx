@@ -487,6 +487,7 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
         predefinedColors.put("PLUM"                 , new Color( (int) 221, (int) 160, (int) 221            )); // #DDA0DD cf. JavaFX' Color
         predefinedColors.put("POWDERBLUE"           , new Color( (int) 176, (int) 224, (int) 230            )); // #B0E0E6 cf. JavaFX' Color
         predefinedColors.put("PURPLE"               , new Color( (int) 128, (int)   0, (int) 128            )); // #800080 cf. JavaFX' Color
+        predefinedColors.put("REBECCAPURPLE"        , new Color( (int) 102, (int)  51, (int) 153            )); // #663399 cf. JavaFX' Color
         predefinedColors.put("RED"                  ,  Color.RED          );    // java.awt.Color
         predefinedColors.put("ROSYBROWN"            , new Color( (int) 188, (int) 143, (int) 143            )); // #BC8F8F cf. JavaFX' Color
         predefinedColors.put("ROYALBLUE"            , new Color( (int)  65, (int) 105, (int) 225            )); // #4169E1 cf. JavaFX' Color
