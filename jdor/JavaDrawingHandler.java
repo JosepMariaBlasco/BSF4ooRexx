@@ -11,7 +11,7 @@
 
    author:  Rony G. Flatscher
    date:    2022-09-05/2022-10-05
-   version: 100.20230718
+   version: 100.20231114
    license: Apache license 2.0
 
    license:
@@ -152,7 +152,8 @@
         2023-07-18: - fixed pushImage(): if argument given and output redirected now supplies imageNickName
                       if supplied
                     - add "COLOUR" as synonym for "COLOR"
-
+        2023-11-14: - define and pregister all javafx.scene.paint.Color constants such that they
+                      can be immediately used (extended from the original predefined java.awt.Color constants)
 */
 
 package org.oorexx.handlers.jdor;
@@ -362,20 +363,159 @@ public class JavaDrawingHandler implements RexxRedirectingCommandHandler
 
     static {
         // ----------------------------------------------------------------------
-        // Color
-        predefinedColors.put("BLACK"        ,  Color.BLACK        );
-        predefinedColors.put("BLUE"         ,  Color.BLUE         );
-        predefinedColors.put("CYAN"         ,  Color.CYAN         );
-        predefinedColors.put("DARK_GRAY"    ,  Color.DARK_GRAY    );
-        predefinedColors.put("GRAY"         ,  Color.GRAY         );
-        predefinedColors.put("GREEN"        ,  Color.GREEN        );
-        predefinedColors.put("LIGHT_GRAY"   ,  Color.LIGHT_GRAY   );
-        predefinedColors.put("MAGENTA"      ,  Color.MAGENTA      );
-        predefinedColors.put("ORANGE"       ,  Color.ORANGE       );
-        predefinedColors.put("PINK"         ,  Color.PINK         );
-        predefinedColors.put("RED"          ,  Color.RED          );
-        predefinedColors.put("WHITE"        ,  Color.WHITE        );
-        predefinedColors.put("YELLOW"       ,  Color.YELLOW       );
+        // Color, includes the javafx.scene.paint.Color constants (web color names)
+        predefinedColors.put("ALICEBLUE"            , new Color( (int) 240, (int) 248, (int) 255            )); // #F0F8FF cf. JavaFX' Color
+        predefinedColors.put("ANTIQUEWHITE"         , new Color( (int) 250, (int) 235, (int) 215            )); // #FAEBD7 cf. JavaFX' Color
+        predefinedColors.put("AQUA"                 , new Color( (int)   0, (int) 255, (int) 255            )); // #00FFFF cf. JavaFX' Color
+        predefinedColors.put("AQUAMARINE"           , new Color( (int) 127, (int) 255, (int) 212            )); // #7FFFD4 cf. JavaFX' Color
+        predefinedColors.put("AZURE"                , new Color( (int) 240, (int) 255, (int) 255            )); // #F0FFFF cf. JavaFX' Color
+        predefinedColors.put("BEIGE"                , new Color( (int) 245, (int) 245, (int) 220            )); // #F5F5DC cf. JavaFX' Color
+        predefinedColors.put("BISQUE"               , new Color( (int) 255, (int) 228, (int) 196            )); // #FFE4C4 cf. JavaFX' Color
+        predefinedColors.put("BLACK"                , new Color( (int)   0, (int)   0, (int)   0            )); // #000000 cf. JavaFX' Color
+        predefinedColors.put("BLACK"                ,  Color.BLACK        );    // java.awt.Color
+        predefinedColors.put("BLANCHEDALMOND"       , new Color( (int) 255, (int) 235, (int) 205            )); // #FFEBCD cf. JavaFX' Color
+        predefinedColors.put("BLUE"                 , new Color( (int)   0, (int)   0, (int) 255            )); // #0000FF cf. JavaFX' Color
+        predefinedColors.put("BLUE"                 ,  Color.BLUE         );    // java.awt.Color
+        predefinedColors.put("BLUEVIOLET"           , new Color( (int) 138, (int)  43, (int) 226            )); // #8A2BE2 cf. JavaFX' Color
+        predefinedColors.put("BROWN"                , new Color( (int) 165, (int)  42, (int)  42            )); // #A52A2A cf. JavaFX' Color
+        predefinedColors.put("BURLYWOOD"            , new Color( (int) 222, (int) 184, (int) 135            )); // #DEB887 cf. JavaFX' Color
+        predefinedColors.put("CADETBLUE"            , new Color( (int)  95, (int) 158, (int) 160            )); // #5F9EA0 cf. JavaFX' Color
+        predefinedColors.put("CHARTREUSE"           , new Color( (int) 127, (int) 255, (int)   0            )); // #7FFF00 cf. JavaFX' Color
+        predefinedColors.put("CHOCOLATE"            , new Color( (int) 210, (int) 105, (int)  30            )); // #D2691E cf. JavaFX' Color
+        predefinedColors.put("CORAL"                , new Color( (int) 255, (int) 127, (int)  80            )); // #FF7F50 cf. JavaFX' Color
+        predefinedColors.put("CORNFLOWERBLUE"       , new Color( (int) 100, (int) 149, (int) 237            )); // #6495ED cf. JavaFX' Color
+        predefinedColors.put("CORNSILK"             , new Color( (int) 255, (int) 248, (int) 220            )); // #FFF8DC cf. JavaFX' Color
+        predefinedColors.put("CRIMSON"              , new Color( (int) 220, (int)  20, (int)  60            )); // #DC143C cf. JavaFX' Color
+        predefinedColors.put("CYAN"                 ,  Color.CYAN         );    // java.awt.Color
+        predefinedColors.put("DARKBLUE"             , new Color( (int)   0, (int)   0, (int) 139            )); // #00008B cf. JavaFX' Color
+        predefinedColors.put("DARKCYAN"             , new Color( (int)   0, (int) 139, (int) 139            )); // #008B8B cf. JavaFX' Color
+        predefinedColors.put("DARKGOLDENROD"        , new Color( (int) 184, (int) 134, (int)  11            )); // #B8860B cf. JavaFX' Color
+        predefinedColors.put("DARKGRAY"             , new Color( (int) 169, (int) 169, (int) 169            )); // #A9A9A9 cf. JavaFX' Color
+        predefinedColors.put("DARKGREEN"            , new Color( (int)   0, (int) 100, (int)   0            )); // #006400 cf. JavaFX' Color
+        predefinedColors.put("DARKGREY"             , new Color( (int) 169, (int) 169, (int) 169            )); // #A9A9A9 cf. JavaFX' Color
+        predefinedColors.put("DARKKHAKI"            , new Color( (int) 189, (int) 183, (int) 107            )); // #BDB76B cf. JavaFX' Color
+        predefinedColors.put("DARKMAGENTA"          , new Color( (int) 139, (int)   0, (int) 139            )); // #8B008B cf. JavaFX' Color
+        predefinedColors.put("DARKOLIVEGREEN"       , new Color( (int)  85, (int) 107, (int)  47            )); // #556B2F cf. JavaFX' Color
+        predefinedColors.put("DARKORANGE"           , new Color( (int) 255, (int) 140, (int)   0            )); // #FF8C00 cf. JavaFX' Color
+        predefinedColors.put("DARKORCHID"           , new Color( (int) 153, (int)  50, (int) 204            )); // #9932CC cf. JavaFX' Color
+        predefinedColors.put("DARKRED"              , new Color( (int) 139, (int)   0, (int)   0            )); // #8B0000 cf. JavaFX' Color
+        predefinedColors.put("DARKSALMON"           , new Color( (int) 233, (int) 150, (int) 122            )); // #E9967A cf. JavaFX' Color
+        predefinedColors.put("DARKSEAGREEN"         , new Color( (int) 143, (int) 188, (int) 143            )); // #8FBC8F cf. JavaFX' Color
+        predefinedColors.put("DARKSLATEBLUE"        , new Color( (int)  72, (int)  61, (int) 139            )); // #483D8B cf. JavaFX' Color
+        predefinedColors.put("DARKSLATEGRAY"        , new Color( (int)  47, (int)  79, (int)  79            )); // #2F4F4F cf. JavaFX' Color
+        predefinedColors.put("DARKSLATEGREY"        , new Color( (int)  47, (int)  79, (int)  79            )); // #2F4F4F cf. JavaFX' Color
+        predefinedColors.put("DARKTURQUOISE"        , new Color( (int)   0, (int) 206, (int) 209            )); // #00CED1 cf. JavaFX' Color
+        predefinedColors.put("DARKVIOLET"           , new Color( (int) 148, (int)   0, (int) 211            )); // #9400D3 cf. JavaFX' Color
+        predefinedColors.put("DARK_GRAY"            ,  Color.DARK_GRAY    );    // java.awt.Color
+        predefinedColors.put("DEEPPINK"             , new Color( (int) 255, (int)  20, (int) 147            )); // #FF1493 cf. JavaFX' Color
+        predefinedColors.put("DEEPSKYBLUE"          , new Color( (int)   0, (int) 191, (int) 255            )); // #00BFFF cf. JavaFX' Color
+        predefinedColors.put("DIMGRAY"              , new Color( (int) 105, (int) 105, (int) 105            )); // #696969 cf. JavaFX' Color
+        predefinedColors.put("DIMGREY"              , new Color( (int) 105, (int) 105, (int) 105            )); // #696969 cf. JavaFX' Color
+        predefinedColors.put("DODGERBLUE"           , new Color( (int)  30, (int) 144, (int) 255            )); // #1E90FF cf. JavaFX' Color
+        predefinedColors.put("FIREBRICK"            , new Color( (int) 178, (int)  34, (int)  34            )); // #B22222 cf. JavaFX' Color
+        predefinedColors.put("FLORALWHITE"          , new Color( (int) 255, (int) 250, (int) 240            )); // #FFFAF0 cf. JavaFX' Color
+        predefinedColors.put("FORESTGREEN"          , new Color( (int)  34, (int) 139, (int)  34            )); // #228B22 cf. JavaFX' Color
+        predefinedColors.put("FUCHSIA"              , new Color( (int) 255, (int)   0, (int) 255            )); // #FF00FF cf. JavaFX' Color
+        predefinedColors.put("GAINSBORO"            , new Color( (int) 220, (int) 220, (int) 220            )); // #DCDCDC cf. JavaFX' Color
+        predefinedColors.put("GHOSTWHITE"           , new Color( (int) 248, (int) 248, (int) 255            )); // #F8F8FF cf. JavaFX' Color
+        predefinedColors.put("GOLD"                 , new Color( (int) 255, (int) 215, (int)   0            )); // #FFD700 cf. JavaFX' Color
+        predefinedColors.put("GOLDENROD"            , new Color( (int) 218, (int) 165, (int)  32            )); // #DAA520 cf. JavaFX' Color
+        predefinedColors.put("GRAY"                 ,  Color.GRAY         );    // java.awt.Color
+        predefinedColors.put("GREEN"                ,  Color.GREEN        );    // java.awt.Color
+        predefinedColors.put("GREENYELLOW"          , new Color( (int) 173, (int) 255, (int)  47            )); // #ADFF2F cf. JavaFX' Color
+        predefinedColors.put("GREY"                 , new Color( (int) 128, (int) 128, (int) 128            )); // #808080 cf. JavaFX' Color
+        predefinedColors.put("HONEYDEW"             , new Color( (int) 240, (int) 255, (int) 240            )); // #F0FFF0 cf. JavaFX' Color
+        predefinedColors.put("HOTPINK"              , new Color( (int) 255, (int) 105, (int) 180            )); // #FF69B4 cf. JavaFX' Color
+        predefinedColors.put("INDIANRED"            , new Color( (int) 205, (int)  92, (int)  92            )); // #CD5C5C cf. JavaFX' Color
+        predefinedColors.put("INDIGO"               , new Color( (int)  75, (int)   0, (int) 130            )); // #4B0082 cf. JavaFX' Color
+        predefinedColors.put("IVORY"                , new Color( (int) 255, (int) 255, (int) 240            )); // #FFFFF0 cf. JavaFX' Color
+        predefinedColors.put("KHAKI"                , new Color( (int) 240, (int) 230, (int) 140            )); // #F0E68C cf. JavaFX' Color
+        predefinedColors.put("LAVENDER"             , new Color( (int) 230, (int) 230, (int) 250            )); // #E6E6FA cf. JavaFX' Color
+        predefinedColors.put("LAVENDERBLUSH"        , new Color( (int) 255, (int) 240, (int) 245            )); // #FFF0F5 cf. JavaFX' Color
+        predefinedColors.put("LAWNGREEN"            , new Color( (int) 124, (int) 252, (int)   0            )); // #7CFC00 cf. JavaFX' Color
+        predefinedColors.put("LEMONCHIFFON"         , new Color( (int) 255, (int) 250, (int) 205            )); // #FFFACD cf. JavaFX' Color
+        predefinedColors.put("LIGHTBLUE"            , new Color( (int) 173, (int) 216, (int) 230            )); // #ADD8E6 cf. JavaFX' Color
+        predefinedColors.put("LIGHTCORAL"           , new Color( (int) 240, (int) 128, (int) 128            )); // #F08080 cf. JavaFX' Color
+        predefinedColors.put("LIGHTCYAN"            , new Color( (int) 224, (int) 255, (int) 255            )); // #E0FFFF cf. JavaFX' Color
+        predefinedColors.put("LIGHTGOLDENRODYELLOW" , new Color( (int) 250, (int) 250, (int) 210            )); // #FAFAD2 cf. JavaFX' Color
+        predefinedColors.put("LIGHTGRAY"            , new Color( (int) 211, (int) 211, (int) 211            )); // #D3D3D3 cf. JavaFX' Color
+        predefinedColors.put("LIGHTGREEN"           , new Color( (int) 144, (int) 238, (int) 144            )); // #90EE90 cf. JavaFX' Color
+        predefinedColors.put("LIGHTGREY"            , new Color( (int) 211, (int) 211, (int) 211            )); // #D3D3D3 cf. JavaFX' Color
+        predefinedColors.put("LIGHTPINK"            , new Color( (int) 255, (int) 182, (int) 193            )); // #FFB6C1 cf. JavaFX' Color
+        predefinedColors.put("LIGHTSALMON"          , new Color( (int) 255, (int) 160, (int) 122            )); // #FFA07A cf. JavaFX' Color
+        predefinedColors.put("LIGHTSEAGREEN"        , new Color( (int)  32, (int) 178, (int) 170            )); // #20B2AA cf. JavaFX' Color
+        predefinedColors.put("LIGHTSKYBLUE"         , new Color( (int) 135, (int) 206, (int) 250            )); // #87CEFA cf. JavaFX' Color
+        predefinedColors.put("LIGHTSLATEGRAY"       , new Color( (int) 119, (int) 136, (int) 153            )); // #778899 cf. JavaFX' Color
+        predefinedColors.put("LIGHTSLATEGREY"       , new Color( (int) 119, (int) 136, (int) 153            )); // #778899 cf. JavaFX' Color
+        predefinedColors.put("LIGHTSTEELBLUE"       , new Color( (int) 176, (int) 196, (int) 222            )); // #B0C4DE cf. JavaFX' Color
+        predefinedColors.put("LIGHTYELLOW"          , new Color( (int) 255, (int) 255, (int) 224            )); // #FFFFE0 cf. JavaFX' Color
+        predefinedColors.put("LIGHT_GRAY"           ,  Color.LIGHT_GRAY   );    // java.awt.Color
+        predefinedColors.put("LIME"                 , new Color( (int)   0, (int) 255, (int)   0            )); // #00FF00 cf. JavaFX' Color
+        predefinedColors.put("LIMEGREEN"            , new Color( (int)  50, (int) 205, (int)  50            )); // #32CD32 cf. JavaFX' Color
+        predefinedColors.put("LINEN"                , new Color( (int) 250, (int) 240, (int) 230            )); // #FAF0E6 cf. JavaFX' Color
+        predefinedColors.put("MAGENTA"              ,  Color.MAGENTA      );    // java.awt.Color
+        predefinedColors.put("MAROON"               , new Color( (int) 128, (int)   0, (int)   0            )); // #800000 cf. JavaFX' Color
+        predefinedColors.put("MEDIUMAQUAMARINE"     , new Color( (int) 102, (int) 205, (int) 170            )); // #66CDAA cf. JavaFX' Color
+        predefinedColors.put("MEDIUMBLUE"           , new Color( (int)   0, (int)   0, (int) 205            )); // #0000CD cf. JavaFX' Color
+        predefinedColors.put("MEDIUMORCHID"         , new Color( (int) 186, (int)  85, (int) 211            )); // #BA55D3 cf. JavaFX' Color
+        predefinedColors.put("MEDIUMPURPLE"         , new Color( (int) 147, (int) 112, (int) 219            )); // #9370DB cf. JavaFX' Color
+        predefinedColors.put("MEDIUMSEAGREEN"       , new Color( (int)  60, (int) 179, (int) 113            )); // #3CB371 cf. JavaFX' Color
+        predefinedColors.put("MEDIUMSLATEBLUE"      , new Color( (int) 123, (int) 104, (int) 238            )); // #7B68EE cf. JavaFX' Color
+        predefinedColors.put("MEDIUMSPRINGGREEN"    , new Color( (int)   0, (int) 250, (int) 154            )); // #00FA9A cf. JavaFX' Color
+        predefinedColors.put("MEDIUMTURQUOISE"      , new Color( (int)  72, (int) 209, (int) 204            )); // #48D1CC cf. JavaFX' Color
+        predefinedColors.put("MEDIUMVIOLETRED"      , new Color( (int) 199, (int)  21, (int) 133            )); // #C71585 cf. JavaFX' Color
+        predefinedColors.put("MIDNIGHTBLUE"         , new Color( (int)  25, (int)  25, (int) 112            )); // #191970 cf. JavaFX' Color
+        predefinedColors.put("MINTCREAM"            , new Color( (int) 245, (int) 255, (int) 250            )); // #F5FFFA cf. JavaFX' Color
+        predefinedColors.put("MISTYROSE"            , new Color( (int) 255, (int) 228, (int) 225            )); // #FFE4E1 cf. JavaFX' Color
+        predefinedColors.put("MOCCASIN"             , new Color( (int) 255, (int) 228, (int) 181            )); // #FFE4B5 cf. JavaFX' Color
+        predefinedColors.put("NAVAJOWHITE"          , new Color( (int) 255, (int) 222, (int) 173            )); // #FFDEAD cf. JavaFX' Color
+        predefinedColors.put("NAVY"                 , new Color( (int)   0, (int)   0, (int) 128            )); // #000080 cf. JavaFX' Color
+        predefinedColors.put("OLDLACE"              , new Color( (int) 253, (int) 245, (int) 230            )); // #FDF5E6 cf. JavaFX' Color
+        predefinedColors.put("OLIVE"                , new Color( (int) 128, (int) 128, (int)   0            )); // #808000 cf. JavaFX' Color
+        predefinedColors.put("OLIVEDRAB"            , new Color( (int) 107, (int) 142, (int)  35            )); // #6B8E23 cf. JavaFX' Color
+        predefinedColors.put("ORANGE"               ,  Color.ORANGE       );    // java.awt.Color
+        predefinedColors.put("ORANGERED"            , new Color( (int) 255, (int)  69, (int)   0            )); // #FF4500 cf. JavaFX' Color
+        predefinedColors.put("ORCHID"               , new Color( (int) 218, (int) 112, (int) 214            )); // #DA70D6 cf. JavaFX' Color
+        predefinedColors.put("PALEGOLDENROD"        , new Color( (int) 238, (int) 232, (int) 170            )); // #EEE8AA cf. JavaFX' Color
+        predefinedColors.put("PALEGREEN"            , new Color( (int) 152, (int) 251, (int) 152            )); // #98FB98 cf. JavaFX' Color
+        predefinedColors.put("PALETURQUOISE"        , new Color( (int) 175, (int) 238, (int) 238            )); // #AFEEEE cf. JavaFX' Color
+        predefinedColors.put("PALEVIOLETRED"        , new Color( (int) 219, (int) 112, (int) 147            )); // #DB7093 cf. JavaFX' Color
+        predefinedColors.put("PAPAYAWHIP"           , new Color( (int) 255, (int) 239, (int) 213            )); // #FFEFD5 cf. JavaFX' Color
+        predefinedColors.put("PEACHPUFF"            , new Color( (int) 255, (int) 218, (int) 185            )); // #FFDAB9 cf. JavaFX' Color
+        predefinedColors.put("PERU"                 , new Color( (int) 205, (int) 133, (int)  63            )); // #CD853F cf. JavaFX' Color
+        predefinedColors.put("PINK"                 ,  Color.PINK         );    // java.awt.Color
+        predefinedColors.put("PLUM"                 , new Color( (int) 221, (int) 160, (int) 221            )); // #DDA0DD cf. JavaFX' Color
+        predefinedColors.put("POWDERBLUE"           , new Color( (int) 176, (int) 224, (int) 230            )); // #B0E0E6 cf. JavaFX' Color
+        predefinedColors.put("PURPLE"               , new Color( (int) 128, (int)   0, (int) 128            )); // #800080 cf. JavaFX' Color
+        predefinedColors.put("RED"                  ,  Color.RED          );    // java.awt.Color
+        predefinedColors.put("ROSYBROWN"            , new Color( (int) 188, (int) 143, (int) 143            )); // #BC8F8F cf. JavaFX' Color
+        predefinedColors.put("ROYALBLUE"            , new Color( (int)  65, (int) 105, (int) 225            )); // #4169E1 cf. JavaFX' Color
+        predefinedColors.put("SADDLEBROWN"          , new Color( (int) 139, (int)  69, (int)  19            )); // #8B4513 cf. JavaFX' Color
+        predefinedColors.put("SALMON"               , new Color( (int) 250, (int) 128, (int) 114            )); // #FA8072 cf. JavaFX' Color
+        predefinedColors.put("SANDYBROWN"           , new Color( (int) 244, (int) 164, (int)  96            )); // #F4A460 cf. JavaFX' Color
+        predefinedColors.put("SEAGREEN"             , new Color( (int)  46, (int) 139, (int)  87            )); // #2E8B57 cf. JavaFX' Color
+        predefinedColors.put("SEASHELL"             , new Color( (int) 255, (int) 245, (int) 238            )); // #FFF5EE cf. JavaFX' Color
+        predefinedColors.put("SIENNA"               , new Color( (int) 160, (int)  82, (int)  45            )); // #A0522D cf. JavaFX' Color
+        predefinedColors.put("SILVER"               , new Color( (int) 192, (int) 192, (int) 192            )); // #C0C0C0 cf. JavaFX' Color
+        predefinedColors.put("SKYBLUE"              , new Color( (int) 135, (int) 206, (int) 235            )); // #87CEEB cf. JavaFX' Color
+        predefinedColors.put("SLATEBLUE"            , new Color( (int) 106, (int)  90, (int) 205            )); // #6A5ACD cf. JavaFX' Color
+        predefinedColors.put("SLATEGRAY"            , new Color( (int) 112, (int) 128, (int) 144            )); // #708090 cf. JavaFX' Color
+        predefinedColors.put("SLATEGREY"            , new Color( (int) 112, (int) 128, (int) 144            )); // #708090 cf. JavaFX' Color
+        predefinedColors.put("SNOW"                 , new Color( (int) 255, (int) 250, (int) 250            )); // #FFFAFA cf. JavaFX' Color
+        predefinedColors.put("SPRINGGREEN"          , new Color( (int)   0, (int) 255, (int) 127            )); // #00FF7F cf. JavaFX' Color
+        predefinedColors.put("STEELBLUE"            , new Color( (int)  70, (int) 130, (int) 180            )); // #4682B4 cf. JavaFX' Color
+        predefinedColors.put("TAN"                  , new Color( (int) 210, (int) 180, (int) 140            )); // #D2B48C cf. JavaFX' Color
+        predefinedColors.put("TEAL"                 , new Color( (int)   0, (int) 128, (int) 128            )); // #008080 cf. JavaFX' Color
+        predefinedColors.put("THISTLE"              , new Color( (int) 216, (int) 191, (int) 216            )); // #D8BFD8 cf. JavaFX' Color
+        predefinedColors.put("TOMATO"               , new Color( (int) 255, (int)  99, (int)  71            )); // #FF6347 cf. JavaFX' Color
+        predefinedColors.put("TRANSPARENT"          , new Color( (int)   0, (int)   0, (int)   0 , (int)   0)); // #00000000 cf. JavaFX' Color
+        predefinedColors.put("TURQUOISE"            , new Color( (int)  64, (int) 224, (int) 208            )); // #40E0D0 cf. JavaFX' Color
+        predefinedColors.put("VIOLET"               , new Color( (int) 238, (int) 130, (int) 238            )); // #EE82EE cf. JavaFX' Color
+        predefinedColors.put("WHEAT"                , new Color( (int) 245, (int) 222, (int) 179            )); // #F5DEB3 cf. JavaFX' Color
+        predefinedColors.put("WHITE"                ,  Color.WHITE        );    // java.awt.Color
+        predefinedColors.put("WHITESMOKE"           , new Color( (int) 245, (int) 245, (int) 245            )); // #F5F5F5 cf. JavaFX' Color
+        predefinedColors.put("YELLOW"               ,  Color.YELLOW       );    // java.awt.Color
+        predefinedColors.put("YELLOWGREEN"          , new Color( (int) 154, (int) 205, (int)  50            )); // #9ACD32 cf. JavaFX' Color
 
         // ----------------------------------------------------------------------
         // BufferedImage
