@@ -35,3 +35,22 @@ For debugging JavaFX (rgf, 20230930):
 
     set BSF4Rexx_JavaStartupOptions=-Djavafx.verbose=true
 
+--> will be prepended (20231012, https://docs.oracle.com/en/java/javase/11/tools/java.html#GUID-3B1CE181-CD30-4178-9602-230B800D4FAE)
+
+    JDK_JAVA_OPTIONS
+
+
+--> module system, creating a module and class with main(), 20231017:
+
+    https://dev.java/learn/modules/building/   (<-- very good!)
+
+? For FFM/JNI starting with Java 22 (rgf, 20231009, https://openjdk.org/jeps/454#Safety), set
+BSF4Rexx_JavaStartupOptions to: ?
+
+        --enable-native-access=ALL-UNNAMED
+
+--> sehr interessant! https://dev.java/learn/modules/add-modules-reads/
+
+    --add-modules=a,b,c   ALL-DEFAULT/ALL-SYSTEM/ALL-MODULE-PATH (includes automatic module jars)
+    --add-reads=a,b,c     ALL-UNNAMED (on classpath)
+
