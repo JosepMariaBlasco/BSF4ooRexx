@@ -257,6 +257,7 @@ copy ScriptProviderForooRexx.oxt                   bsf4oorexx\install\
 copy %path2dev%\bin\add*.r*                        bsf4oorexx\
 copy %path2dev%\bin\BSF*                           bsf4oorexx\
 copy %path2dev%\bin\rexxj2*                        bsf4oorexx\
+copy %path2dev%\bin\rexxjh*                        bsf4oorexx\
 copy %path2dev%\bin\rexxcUtil.rex                  bsf4oorexx\
 copy %path2dev%\bin\rgf_util2.rex                  bsf4oorexx\
 copy %path2dev%\bin\libBS*                         bsf4oorexx\

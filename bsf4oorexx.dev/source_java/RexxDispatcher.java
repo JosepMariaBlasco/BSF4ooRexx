@@ -23,11 +23,14 @@ import java.io.*;
  * ----------------------------------------------------------------------------- </pre>
  *
  * @author   Rony G. Flatscher
- * @version  403.20161105
+ * @version  404.20231031
  */
 
  /*
      last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+
+     2023-10-31, ---rgf: - do not do a gc() and runFinalization() which may become obsolete
+                           in the future
 
      2021-08-04, ---rgf: - Object.finalize() is slated to be removed from a future version of Java,
                            possibly also System.runFinalization(), cater for it
@@ -62,7 +65,7 @@ public class RexxDispatcher {
         /** Version string indicating version of this class (majorVersion*100+minorVersion
          *  concatenated with a dot and the sorted date of last change.
          */
-        static final public String version = "403.20161105";
+        static final public String version = "403.20231031";
 
         /** Key for storing the received args-String array in the BSF registry for Rexx to
          *  get at it.
@@ -158,6 +161,7 @@ public class RexxDispatcher {
                     System.exit(-1);
                 }
                     // execute Rexx script
+// System.err.println("*** RexxDispatcher: # 161, before apply() of ["+file.getCanonicalPath()+"] ...");
                 Object obj =ap_rexx.apply( file.getCanonicalPath(),
                                         0,
                                         0,
@@ -166,6 +170,7 @@ public class RexxDispatcher {
                                         vArgs
                                       );
 
+// System.err.println("*** RexxDispatcher: # 170, after apply() ...");
             }
             catch (Throwable t)
             {
@@ -181,22 +186,27 @@ public class RexxDispatcher {
             {
                 try
                 {
+/* --
                     // it may be the case that at this point in time there are still Rexx threads
                     // executing; once could sleep to allow them to end, but this is not acceptable
                     // for a general purpose dispatcher; a sleep statement may look like:
                     // try { Thread.sleep(750); } catch (Exception e) {}
+System.err.println("*** RexxDispatcher: # 190, after before gc() ...");
                     System.gc();    // run the garbage collector, such that Java objects with finalizers get a chance to run
 
                     try // at 2021-08-04: Object.finalize() is planned to be removed in the future, possibly also runFinalization(), cater for it
                     {
+System.err.println("*** RexxDispatcher: # 195, after before runFinalization() ...");
                         System.runFinalization();   // run outstanding finalizers (e.g. from RexxProxy objects), if any
                     }
                     catch (NoSuchMethodError nsme)
                     {
                         // System.err.println(nsme);
                     }
-
+-- */
+// System.err.println("*** RexxDispatcher: # 202, before ap_rexx.terminate() ...");
                     ap_rexx.terminate();    // wait for termination of the Rexx instance
+// System.err.println("*** RexxDispatcher: # 204, after ap_rexx.terminate() ...");
                 }
                 catch (Throwable t2)
                 {
@@ -208,6 +218,7 @@ public class RexxDispatcher {
                 }
             }
 
+// System.err.println("*** RexxDispatcher: # 215, before exit() ...");
             System.exit(0); // make sure JVM does not crash (there was a bug, if using JNI)
 	}
 }

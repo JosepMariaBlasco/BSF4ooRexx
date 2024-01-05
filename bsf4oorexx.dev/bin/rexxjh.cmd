@@ -3,7 +3,7 @@ rem   Purpose: load and run Rexx script via Java, allow for supplying arguments 
 rem            if JAVA_HOME is defined try to use its java.exe, fallback: java.exe (without path)
 rem   Author:  Rony G. Flatscher
 rem   Date:    2022-08-03
-rem   Changed: --
+rem   Changed: 2024-01-04 rgf, give feedback to user as to which java.exe gets employed
 rem   Remark:  Rexx script can retrieve all arguments as passed to Java via the BSFRegistry, including
 rem            the name of the Rexx script to be invoked/dispatched
 rem
@@ -13,7 +13,7 @@ rem            ooRexx: args=.bsf~bsf.lookupBean("allCommandLineArguments")
 
 rem   license:
 rem   ------------------------ Apache Version 2.0 license -------------------------
-rem      Copyright 2022 Rony G. Flatscher
+rem      Copyright 2022-2024 Rony G. Flatscher
 
 rem      Licensed under the Apache License, Version 2.0 (the "License");
 rem      you may not use this file except in compliance with the License.
@@ -44,16 +44,19 @@ if not "%JAVA_HOME%" == "" (
    set jexe=!JAVA_HOME!\bin\java.exe
    if exist "!jexe!"  (
      set java_binary=!jexe!
+     echo ... using environment variable JAVA_HOME: [!JAVA_BINARY!]
    ) else (
       set jexe=!JAVA_HOME!\jre\bin\java.exe
       if exist "!jexe!" (
         set java_binary=!jexe!
+        echo ... using environment variable JAVA_HOME: [!JAVA_BINARY!]
       )
    )
 )
 @rem if original java.exe is not present anymore use just java as a last resort
 if not exist "%JAVA_BINARY%" set JAVA_BINARY=java
 
+echo command: "%JAVA_BINARY%"  %BSF4Rexx_JavaStartupOptions% org.rexxla.bsf.RexxDispatcher %*
 "%JAVA_BINARY%"  %BSF4Rexx_JavaStartupOptions% org.rexxla.bsf.RexxDispatcher %*
 
 :end

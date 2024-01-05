@@ -43,6 +43,8 @@ inline jint impl_jniRexxHaltInterpreterInstance (JNIEnv *env, jobject jobj, jstr
                        as a pending Java exception gets handled one way (in native code) or
                        another (in Java code)
 
+                     - change JNI version interface to JNI_VERSION_1_8
+
     2023-10-22, rgf: - correct wrong upcalls (changed return type on Java side, but was not
                        adjusted on native side)
 
@@ -1109,7 +1111,8 @@ char * RgfCreateRexxlikeErrorInfo (RexxThreadContext *rtc, RexxDirectoryObject c
     // creation of the RexxProxy() defining an UNKNOWN method for that passed-in code
 #define REXX_PROXY_STUB_PROGRAM "BSF_OnTheFly.cls"  // name of Rexx program to use for creating ad hoc RexxProxy object
 
-#define USE_DEFINED_JNI_VERSION JNI_VERSION_1_6     // minimum JNI interface, we are basing on Java 1.6/6.0
+// #define USE_DEFINED_JNI_VERSION JNI_VERSION_1_6     // minimum JNI interface, we are basing on Java 1.6/6.0
+#define USE_DEFINED_JNI_VERSION JNI_VERSION_1_8     // minimum JNI interface, we are basing on Java 1.8/8.0
 
 
 // typedef jint (JNICALL *rgf_AttachCurrentThread)  (JavaVM  *, void **, void *);
@@ -1240,7 +1243,7 @@ logical_t bsfDoUnregisterRexxObject=true; // false;
 
 // ----------------------------------------------------------------------------
 // Allow serializing access to JVM_structure, RIIs or ooRexx REGISTRY related functions, hence
-// argument can be on of: "JVM_setup_lock", "RII_lock", "REGISTRY_lock"
+// argument can be one of: "JVM_setup_lock", "RII_lock", "REGISTRY_lock"
 inline void  RgfAcquireLock2(
     #ifdef WINDOWS
         HANDLE

@@ -1,5 +1,16 @@
 ---
 
+2023-12-19: JavaFX-related (in OpenJDK):
+        - allow any script language in type-attribute for event scripts such that many can be used in the same FXML
+        - use FFM to create a JavaScript engine
+        - add any Java script language to HTML class
+        - add a concrete Application class for scripts (setUp, run, tearDown)
+        - allow Java script applications in jpackage (allow multi-platform support if necessary?)
+
+
+
+---
+
 2022-08-03
 
         - remove rexxj-32.sh and rexxj-64.sh, JVMs 64-bit almost everywhere
