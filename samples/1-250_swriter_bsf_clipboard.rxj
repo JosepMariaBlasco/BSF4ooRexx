@@ -7,6 +7,7 @@
             "rexxj.sh 1-250_swriter_bsf_clipbaord.rxj" (Unix)
 
    Needs:   "1-250_JDOR_to_clipboard.rxj" from BSF4ooRexx850
+            UNO.CLS
 
    Purpose: runs on all operating systems and creates an OpenOffice or
             LibreOffice swriter document and demonstrates exploiting the
