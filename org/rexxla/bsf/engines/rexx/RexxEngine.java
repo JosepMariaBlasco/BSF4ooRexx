@@ -549,7 +549,7 @@ if (bDebug)
 
 
     // for debugging purposes only, comment out if not needed anymore
-    static final private boolean bDebugTermination = true; // false; // true;
+    static final private boolean bDebugTermination = false; // true;
     // Rexx engine counter used for creating the ID value (a number).
     static private long id_counter=0;
     // Rexx engine instance id.

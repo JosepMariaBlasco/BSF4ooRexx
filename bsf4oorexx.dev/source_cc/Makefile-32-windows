@@ -4,7 +4,7 @@
 
 #/*----------------------------------------------------------------------------*/
 #/*                                                                            */
-#/* Copyright (c) 2008-2022 Rexx Language Association. All rights reserved.    */
+#/* Copyright (c) 2008-2024 Rexx Language Association. All rights reserved.    */
 #/*                                                                            */
 #/* This program and the accompanying materials are made available under       */
 #/* the terms of the Common Public License v1.0 which accompanies this         */
@@ -43,6 +43,13 @@
 # This is a Visual C++, nMake compatible make file for the myData example.
 #
 #
+
+# Define RELEASE on the command line, or here, to build a non-debug version.  By
+# default debug versions are built.  I.e. nMake RELEASE=1
+# RELEASE = 1
+
+# rgf --->
+
 # The compiler needs to be able to find the ooRexx native API headers and
 # libraries. If REXX_HOME is set on the system, the correct directory will be
 # automatically added to the LIB and INCLUDE environment variables by this make
@@ -55,21 +62,16 @@
 # On a build system for ooRexx, you can set REXX_HOME to point to Win32Dbg or
 # Win32Rel, as appropriate, in your build directory.  For this to work, you
 # will have to have built the interpreter.
-
 #REXX_HOME = C:\work.ooRexx\wc\main\Win32Dbg   # For example
-REXX_HOME = F:\work\svn\bsf4oorexx\trunk\bsf4oorexx.dev\source_cc\rexxapi.win\win32
+# REXX_HOME = F:\work\svn\bsf4oorexx\trunk\bsf4oorexx.dev\source_cc\rexxapi.win\win32
+REXX_HOME = rexxapi.win\win32
 
-# Define RELEASE on the command line, or here, to build a non-debug version.  By
-# default debug versions are built.  I.e. nMake RELEASE=1
-# RELEASE = 1
-
-# rgf --->
 # need access to "org_rexxla_bsf_engines_rexx_RexxAndJava.h", created from "RexxAndJava" with "javah"
 # also use JDK include path for "win32"
 
 # if no JAVA_HOME defined in environment, define it manually
-# rgf, 20220803
-JAVA_HOME = E:\jdk\jdk-08u333-full-32
+# rgf, 20240106
+JAVA_HOME = E:\jdk\jdk-08u362-full-32
 
 INC_PATH	=  .;$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;java_include\win_include_8\include;java_include\win_include_8\include\win32;
 INCLUDE = $(INCLUDE);$(INC_PATH)
@@ -90,7 +92,6 @@ BLD_PATH = tmp
 # directory to copy generated lib to
 TGT_LIB_DIR     = .\lib
 
-
 BSF_SRC	        = BSF4ooRexx.cc
 BSF_OBJ_ORX     = $(BLD_PATH)\BSF4ooRexx850-32-x86.obj
 BSF_ORX_TARGET  = $(BLD_PATH)\BSF4ooRexx850.dll-32-x86
@@ -100,13 +101,15 @@ BSF4REXX	= $(BLD_PATH)\BSF4ooRexx850.dll
 # <--- rgf
 
 
-!IF DEFINED(REXX_HOME)
+# REXX_HOME is always defined in here! :)
+# !IF DEFINED(REXX_HOME)
 INCLUDE = $(INCLUDE);$(REXX_HOME)\api
 LIB = $(LIB);$(REXX_HOME)\api
-!ENDIF
+# !ENDIF
 
 # fallback: the directory the 32-bit ooRexx API files are located locally (e.g. if REXX_HOME points to 64-bit ooRexx or is not available at all)
-REXX_API_DIR = .\rexxapi.win\win32\api
+# REXX_API_DIR = .\rexxapi.win\win32\api
+REXX_API_DIR = $(REXX_HOME)\api
 INCLUDE = $(REXX_API_DIR);$(INCLUDE)
 LIB = $(REXX_API_DIR);$(LIB)
 REXX_LIBS = rexx.lib rexxapi.lib
@@ -144,12 +147,16 @@ $(BSF4REXX) : $(BSF_OBJ_ORX)
     $(copy_cmd) $(BSF_ORX_TARGET) $(BSF4REXX)
     $(copy_cmd) $(BSF_ORX_TARGET) $(TGT_LIB_DIR)
 
+# copy debug version to current dir together with its pdb file
+!IF !DEFINED(RELEASE)
+    @echo DEBUG version
+    $(copy_cmd) $(BSF_ORX_TARGET) .\$(@B).dll
+    $(copy_cmd) $(BLD_PATH)\*pdb .
 
-# rgf's developer test installation on Windows as of 2017-01-08: just remove the following two statement(s)
-     $(copy_cmd)  $(BSF4REXX)  ..\..\bsf4oorexx\BSF4ooRexx.dll
-     $(copy_cmd)  $(BSF4REXX)  ..\..\BSF4ooRexx.dll
+# copy debug version into temporary install directory of BSF4ooRexx850 home directory (created by createDistributionForBSF4ooRexx8.cmd)
+    $(copy_cmd) $(BSF_ORX_TARGET) ..\..\bsf4oorexx\$(@B).dll
+!ENDIF
 
-    $(copy_cmd) $(BSF4REXX) .
  @echo "done."
 
 
