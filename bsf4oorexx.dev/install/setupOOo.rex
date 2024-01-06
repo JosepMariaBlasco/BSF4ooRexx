@@ -104,6 +104,7 @@
                                              change: "cmd.eUseSymbolicLink?=.false" below
                                            - little cleanup of code
             2022-08-29, ---rgf, - changed BSF4ooRexx to BSF4ooRexx850
+            2024-01-05  - use .rexxinfo~architecture, remove getRexxBitness()
 
 
    last svn check-in: $Revision: 916 $ $Author: Administrator $ $Date: 2010-08-24 16:30:15 +0200 (Tue, 24 Aug 2010) $
@@ -111,7 +112,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2006-2022 Rony G. Flatscher
+       Copyright (C) 2006-2024 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -134,7 +135,7 @@ cmd.eIsUnix=(pos(s, "WO")=0)     /* neither Windows nor OS/2, hence Unix */
 parse upper source s +1  -- get operating system name in uppercase
 cmd.eIsMacOSX=(s="D" | s="M")      -- determine whether running on "MACOSX" replaced by "DARWIN"
 
-cmd.eBitness=getRexxBitness()    -- can be "0" if not determinable, else "32" or "64"
+cmd.eBitness=.rexxInfo~architecture -- ooRexx >= 5.0
 
 if cmd.eIsUnix=0 then
 do
@@ -233,7 +234,6 @@ do
    else
    do
       say '   example: rexx setupOOo /opt/openoffice.org.3'
-      say '            rexx setupOOo /usr/lib/openoffice'
    end
    exit -1
 end
@@ -995,7 +995,7 @@ syntax:
   return ""
 
 
-
+/* --
 ::routine getOOoHomeDirWindows_Original
   key="Software\OpenOffice.org\UNO\InstallPath\"
   wsh=.OleObject~new("WScript.Shell")
@@ -1009,7 +1009,7 @@ syntax1:
 
 syntax2:                   -- no OOo-entry
   return ""
-
+-- */
 
 
 /* Look for "soffice" on environment variable PATH. If a link, find link's target.
@@ -1125,22 +1125,6 @@ syntax2:                   -- no OOo-entry
       return "runas /env /user:"wnw~ComputerName"\Administrator"
    end
 
-
--- return bitness of Rexx interpreter (e.g. 32, 64, etc.)
-::routine getRexxBitness
-   -- starting with ooRexx 4.2.0 we can get the bitness information out of the version string
-  parse version '_'version'(' '_' bitness '-'
-  if version>="4.2", bitness<>"" then
-     return bitness
-
-  -- do not use ADDRESS CMD as on Linux this causes an error :(
-  "rexx -v 2>&1 | rxqueue"
-   bitness=0
-  do while queued()>0           -- make sure we process entire queue (to empty it)
-     parse pull hint ":" val .
-     if hint="Addressing Mode" then bitness=val
-  end
-  return bitness
 
 /* Unix: returns the group name to be used in 'chown' command:
    - if "staff" present in "/etc/group" use it (Linux: full rights to "/usr/local")

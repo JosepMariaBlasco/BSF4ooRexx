@@ -5,8 +5,9 @@
             without any knowledge about Java installation issues)
    Author:  Rony G. Flatscher
    Date:    2006-01-07
-   Version: 1.44
+   Version: 1.46
    Changed:
+            2024-01-05  - use .rexxinfo~architecture, remove getRexxBitness()
             2023-06-15, - fix type (count.0 to count) in determinePath2javaBinary() searching
                           Java with matching bitness, testing with checkValidJavaExe()
 
@@ -263,7 +264,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2006-2022 Rony G. Flatscher
+       Copyright (C) 2006-2024 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -306,7 +307,7 @@ parse upper source cmd.eOperatingSystem . /* get name of operating system     */
 cmd.eIsWindows=(cmd.eOperatingSystem~left(1)="W")
 cmd.eIsUnix   =\cmd.eIsWindows   /* if not Windows, it's a Unix dialect       */
 
-cmd.eBitness=getRexxBitness()    -- can be "0" if not determinable, else "32" or "64"
+cmd.eBitness=.rexxInfo~architecture -- ooRexx >= 5.0
 
    -- setting file and path separators manually
 if cmd.eIsWindows=.true then
@@ -1037,7 +1038,7 @@ createInstallScript: procedure expose j. cmd. path.
      call lineout fn, cmd.eEcho qc("adding BSF4ooRexx850 scripts to" cmd.eBinDir "...")
      call lineout ui, cmd.eEcho qc("removing BSF4ooRexx850 scripts from" cmd.eBinDir "...")
 
-     files2userBin=.array~of("../BSF.CLS", "../BSF_OnTheFly.cls", "../rexxj.sh", "../rexxj2.sh", "../rgf_util2.rex", "../rexxj2.sh", "rexxpaws.rex")
+     files2userBin=.array~of("../BSF.CLS", "../BSF_OnTheFly.cls", "../rexxj.sh", "../rexxj2.sh", "../rexxjh.sh", "../rgf_util2.rex", "../rexxj2.sh", "rexxpaws.rex")
      do binFile over files2userBin
          tmpTgt=cmd.eBinDir || "/" || filespec('name',binFile)
          srcFn = qualify(directory()"/"||binFile)  -- get fully qualified path
@@ -1940,7 +1941,8 @@ usage:
   end
   else
   do
-     say "           - will use /usr/bin/java"
+     say "           - will use any ""java"" executable found in one of the directories of the"
+     say "             environment variable ""PATH"""
      say "             if no java binary is found, then execute ""rexx setupJava.rex"", which"
      say "             will create the necessary symbolic links to an installed Java."
      say "             (will also link 'libjvm.so' to '/opt/BSF4ooRexx850')"
@@ -1949,13 +1951,13 @@ usage:
 
   if cmd.eIsWindows=.true then
   do
-     say "           rexx setupBSF E:\jdk1.6\jre\bin\java.exe D:\windows\system32"
+     say "           rexx setupBSF E:\jdk\jdk-08u362-full-64\jre\bin\java.exe D:\windows\system32"
      say "           - will use ""java.exe"" from the given first argument"
      say "           - will copy the BSF4ooRexx850-support-files to the Windows system directory"
   end
   else
   do
-     say "           rexx setupBSF /usr/lib/jvm/java-6-openjdk/jre/bin /usr/local/bin"
+     say "           rexx setupBSF /usr/lib/jvm/java-8-openjdk/jre/bin /usr/local/bin"
      say "           - will use the binary ""java"" from the given first argument"
      say "           - will copy the BSF4ooRexx850-support-files to /usr/local/bin"
   end
@@ -2250,27 +2252,6 @@ syntax:
 
 
 
--- return bitness of Rexx interpreter (e.g. 32, 64, etc.)
-::routine getRexxBitness
-   -- starting with ooRexx 4.2.0 we can get the bitness information out of the version string
-  parse version '_'version'(' '_' bitness '-'
-  if version>="4.2", bitness<>"" then
-  do
-     return bitness
-  end
-
-  -- do not use ADDRESS CMD as on Linux this causes an error :(
-  "rexx -v 2>&1 | rxqueue"
-   bitness=0
-  do while queued()>0           -- make sure we process entire queue (to empty it)
-     parse pull hint ":" val .
-     if hint="Addressing Mode" then bitness=val
-  end
-
-  return bitness
-
-
-
 
 -- return "runas" command for this PC's local Administrator, rgf, 2010-03-07, 2014-05-25
 ::routine getRunAsCmd public
@@ -2308,7 +2289,7 @@ syntax:
   end
 
 
-
+/* --
 -- 2012-02-12, rgf: new logic - use cmd.eBitness and then look for "librexx.so" and
 --                  copy appropriate "libBSF4ooRexx" to the same location
 ::routine unixDetermineTargetLibDirs_from_20120212
@@ -2334,8 +2315,9 @@ syntax:
          cmd.eTgtLib64="/usr/lib64"
   end
   return
+-- */
 
-
+/* --
 ::routine unixDetermineTargetLibDirsOriginal      -- determine which /usr/lib* to use for the different architectures and distributions
   use arg cmd.
 
@@ -2407,7 +2389,7 @@ syntax:
      end
   end
   return
-
+-- */
 
 ::routine setChmod   -- on Unix systems make sure that we set the file flags accordingly
    use strict arg cmd., bAllFiles=.true

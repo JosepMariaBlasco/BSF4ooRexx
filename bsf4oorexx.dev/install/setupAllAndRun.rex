@@ -2,7 +2,7 @@
 /*
    author:  Rony G. Flatscher
    date:    2010-08-05,14,18
-   version: 1.12
+   version: 1.13
    name:    setupAllAndRun.rex
    purpose: installer to install or reinstall the BSF4ooRexx package
 
@@ -85,13 +85,15 @@
             2021-07-17, rgf   - little cleanup of code
             2022-08-29, rgf   - changing BSF4ooRexx to BSF4ooRexx850
             2022-08-19, rgf   - corrected "queue()" to "queue()>0"
+            2024-01-05, rgf   - on Unix will use "env | sort -f" to display environment variables
+                              - use .rexxinfo~architecture, remove getRexxBitness()
 
    remark:  ---
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2010-2022 Rony G. Flatscher
+       Copyright (C) 2010-2024 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -137,7 +139,8 @@ do
    cmd.eRedirect2LogFile=">>" cmd.eLogFileName "2>&1" -- works on Linux and Windows XP
 end
 
-cmd.eRexxBitness=getRexxBitness()-- get Rexx bitness
+cmd.eRexxBitness=.rexxInfo~architecture -- ooRexx >= 5.0
+
 parse arg v
 cmd.eParseArg=v                  -- save arguments given
 
@@ -273,7 +276,8 @@ do
 
    cmd.eMkDir755 = "mkdir -v -m u=rwx,go=rx"   /* verbose, created directories have umask 755 */
 
-   cmd.eShowEnvironment=""             -- not defined for Unix-variants (TODO: research shell-related commands)
+   -- cmd.eShowEnvironment=""             -- not defined for Unix-variants (TODO: research shell-related commands)
+   cmd.eShowEnvironment="env | sort -f"   -- Linux, MacOSX: ignore case (fold to uppercase)
    cmd.eShowOperatingSystemVersion="uname -a"   -- Linux, MacOSX
    cmd.eRmDir="rm -rf"
 -- 'id rony | rxqueue' ; parse pull 'gid=' . '(' gname ')';
@@ -901,18 +905,6 @@ exit 0
 ::routine pp
   parse arg description, val
   return description~left(25,'.') "["val"]"
-
-
--- return bitness of Rexx interpreter (e.g. 32, 64, etc.)
-::routine getRexxBitness
-  -- do not use ADDRESS CMD as on Linux this causes an error :( | on ooRexx 5 one could use 'ADDRESS ""' or 'ADDRESS SYSTEM' instead
-   "rexx -v 2>&1 | rxqueue"
-   bitness=.nil                  -- default value
-   do while queued()>0           -- make sure we process entire queue (to empty it)
-      parse pull hint ":" val .
-      if hint~caselessEquals("Addressing Mode") then bitness=val
-   end
-   return bitness
 
 
 ::routine setChmod   -- on Unix systems make sure that we set the file flags accordingly
