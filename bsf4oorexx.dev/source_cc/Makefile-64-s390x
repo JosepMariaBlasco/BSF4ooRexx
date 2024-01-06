@@ -1,19 +1,18 @@
 # make -f Makefile-64-s390x rebuild
 #-------------------------------------------------------------------------
-# Makefile-64-linux: makefile to build libBSF4ooRexx850.so-64-amd64
+# Makefile-64-linux: makefile to build libBSF4ooRexx850.so-64-s390x
 #
-# ooRexx 5.x, 2005-06-07, 2009-09-08, 2017-01-08, 2022-09-21
+# ooRexx 4.x, 2005-06-07, 2009-09-08, 2017-01-08, 2021-08-23
 #
 # make -f Makefile-64-s390x [ all | clean | clean_dll | rebuild ]
 #-------------------------------------------------------------------------
 
 # changes:
 # 	20210823, rgf: define RPATH at link time to look up: $ORIGIN:$ORIGIN/../lib:/usr/local/lib64:/usr/lib64:/usr/local/lib:/usr/lib:/opt/ooRexx/lib
-#       20220921, rgf: use JAVA_HOME, rename to *BSF4ooRexx850*
 #
 
 # ------------------------ Apache Version 2.0 license -------------------------
-#    Copyright (C) 2001-2022 Rony G. Flatscher, 2016 Paul Dunkley
+#    Copyright (C) 2001-2021 Rony G. Flatscher, 2016 Paul Dunkley
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -44,8 +43,9 @@ TGT_LIB_DIR     = ./lib
 # 2016-04-05
 #JDK_BASE = /opt/ibm/java-s390x-80
 # JDK_BASE = /opt/ibm/ibm-java-s390x-80
-# use JAVA_HOME
-JDK_BASE = $(JAVA_HOME)
+
+# 2024-01-06
+JDK_BASE = /usr/lib/jvm/java-8-openjdk-s390x
 
 #INC_PATH = -I. -I/usr/local/include -I$(JDK_BASE)/include -I$(JDK_BASE)/include/linux -I/usr/include
 INC_PATH = -I.  -I./include -I/usr/local/include -I$(JDK_BASE)/include -I$(JDK_BASE)/include/linux -I/usr/include
@@ -84,7 +84,11 @@ CFLAGS_ORX      = -DUSE_OREXX
 
 # LINK_FLAGS      = -shared -rdynamic -lpthread $(JDK_BASE)/jre/lib/i386/client/libjvm.so -lc  -lm
 # LINK_FLAGS      = --export-dynamic -shared -rdynamic -lpthread $(JDK_BASE)/jre/bin/classic/libjvm.so -lc  -lm
-LINK_FLAGS      =  -shared -rdynamic -lpthread $(JDK_BASE)/jre/lib/s390x/j9vm/libjvm.so -lc  -lm
+# LINK_FLAGS      =  -shared -rdynamic -lpthread $(JDK_BASE)/jre/lib/s390x/j9vm/libjvm.so -lc  -lm
+
+# 2024-01-06, rgf: both work
+# LINK_FLAGS      =  -shared -rdynamic -lpthread $(JDK_BASE)/jre/lib/s390x/server/libjvm.so -lc  -lm
+LINK_FLAGS      =  -shared -rdynamic -lpthread -lc  -lm
 
 # rgf, 2017-01-26: "-lrexxutil" not needed
 # LINK_ORX_FLAGS  = -lrexx -lrexxapi -lrexxutil
