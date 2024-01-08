@@ -2,7 +2,7 @@ Some information on the OpenOffice/LibreOffice support   August 2022 (GA refresh
 ======================================================   ========================
 
 The ooRexx Apache OpenOffice.org (OOo/AOO)/LibreOffice (LO, a fork of AOO) support
-is based on BSF4ooRexx as it uses the Java interfaces to and from OOo.
+is based on BSF4ooRexx850 as it uses the Java interfaces to and from OOo.
 After installation of the OOo support the branches from the OOo-menu "Tools -> Macros"
 will contain an entry "ooRexx" indicating that it is now possible to create and
 run OOo macros implemented in ooRexx.
@@ -63,17 +63,17 @@ and use all of Java's classes and objects.
 Files and Archives
 ==================
 
-readmeBSF4ooRexx.txt ... text file, outlining the installation of BSF4ooRexx
+readmeBSF4ooRexx850.txt ... text file, outlining the installation of BSF4ooRexx850
 
-readmeBSF4ooRexx_next.txt ... this text file, explaining BSF4ooRexx and its installation
+readmeBSF4ooRexx850_next.txt ... this text file, explaining BSF4ooRexx850 and its installation
 
 readmeOOo.txt        ... text file, outlining the installation of the OpenOffice support
 
 readmeOOo_next.txt   ... text file, explaining the OpenOffice.org/Staroffice
                          support and its installation
 
-BSF4ooRexx_install.zip ... Archive that contains the binary distribution of, the
-                         sources of and the samples for BSF4ooRexx (including
+BSF4ooRexx850_install_v850_*.zip ... Archive that contains the binary distribution of, the
+                         sources of and the samples for BSF4ooRexx850 (including
                          OpenOffice.org samples), the setup scripts for Unix
                          and Windows
 
@@ -88,7 +88,7 @@ ApacheLicense2.0.txt ... Apache license 2.0 text
 
 BSF4ooRexx_sources.zip ... Archive that contains the C++ and Java sources
 
-docs_bsf4rexx.zip    ... Archive that contains the documentation of the BSF4ooRexx
+docs_bsf4rexx.zip    ... Archive that contains the documentation of the BSF4ooRexx850
                          Java programs, including add-ons
 
 docs_apache_bsf.zip  ... Archive that contains the documentation of Apache's BSF
@@ -108,10 +108,10 @@ ScriptProviderForooRexx.jar ...  Java archive containing the glue code between
 Installation
 ============
 
-Install BSF4ooRexx
-==================
+Install BSF4ooRexx850
+=====================
 
-   Cf. "readmeBSF4ooRexx.txt" for instructions.
+   Cf. "readmeBSF4ooRexx850.txt" for instructions.
 
 
 Get and install OpenOffice.org (OOo) / StarOffice (SO)
@@ -155,7 +155,7 @@ Install the AOO/LO support
 
     Quite a few Linux distributions preinstall OpenOffice.org in a configuration that
     does not have the standardized Java-based scripting framework. Therefore, if you
-    are not able to install and utilize the OOo support of BSF4ooRexx, then please
+    are not able to install and utilize the OOo support of BSF4ooRexx850, then please
     use the official Linux-Distribution of OpenOffice by downloading it from
 
         https://www.OpenOffice.org
@@ -242,8 +242,8 @@ Testing the installation
 
 
 
-Further information/documentation on Automating OOo/SO with BSF4ooRexx
-======================================================================
+Further information/documentation on Automating OOo/SO with BSF4ooRexx850
+=========================================================================
 
    - Information resources at the WU (Wirtschaftsuniversitaet Wien): point your browser
      to <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/> and locate all entries having
@@ -251,7 +251,7 @@ Further information/documentation on Automating OOo/SO with BSF4ooRexx
      and ooRexx nutshell examples should work with the current UNO.CLS ooRexx module (earlier
      work was dependent on the outdated ooRexx module OOO.CLS).
 
-     The nutshell examples from the following two papers are part of the BSF4ooRexx
+     The nutshell examples from the following two papers are part of the BSF4ooRexx850
      distribution and stored in subdirectories of "samples/OOo":
 
      Andreas Ahammer: "OpenOffice.org Automation: Object Model, Scripting Languages,
@@ -340,8 +340,8 @@ configuration from scratch, the next time one gets invoked.
 
 ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---
 
-Further information on the BSF4ooRexx support for OpenOffice.org
-================================================================
+Further information on the BSF4ooRexx850 support for OpenOffice.org
+===================================================================
 
         - International Rexx Symposia, cf. <http://www.RexxLA.org>, look for
           "OpenOffice" or "OOo" (should yield presentations and articles)
@@ -353,4 +353,6 @@ Further information on the BSF4ooRexx support for OpenOffice.org
 
         - <news:comp.lang.rexx>
 
+        Consider to become a member of RexxLA (no fees) and enjoy support from
+        the developers there: <https://www.rexxla.org/members/index.rsp?action=join>.
 

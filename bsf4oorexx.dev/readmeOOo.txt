@@ -1,9 +1,9 @@
-The ooRexx OpenOffice.org Support (Using BSF4ooRexx)     August 2022 (GA refresh)
-====================================================     ========================
+The ooRexx OpenOffice.org Support (Using BSF4ooRexx)     January 2024 (Beta)
+====================================================     ===================
 
 This adds support for interfacing with OpenOffice/StarOffice/LibreOffice using
-BSF4ooRexx, which therefore must be installed already. Please note: by default the
-BSF4ooRexx installer will install the OOo-support, if OOo or LO is installed on the
+BSF4ooRexx850, which therefore must be installed already. Please note: by default the
+BSF4ooRexx850 installer will install the OOo-support, if OOo or LO is installed on the
 machine.
 
 Please see also the text file "changesOOo.txt" which contains important

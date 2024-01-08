@@ -137,6 +137,9 @@ cmd.eIsMacOSX=(s="D" | s="M")      -- determine whether running on "MACOSX" repl
 
 cmd.eBitness=.rexxInfo~architecture -- ooRexx >= 5.0
 
+cmd.eDateTime=.dateTime~new~string
+cmd.eDateTimeEdited=cmd.eDateTime~changeStr(":","-")
+
 if cmd.eIsUnix=0 then
 do
    cmd.eIsUnix=0                 /* Windows/OS2 style       */
@@ -358,11 +361,11 @@ do
 
       /* prolog and epilog used for ".bashrc" to make sure that CLASSPATH gets only extended, if
          "/etc/profile" has not run yet (and set CLASSPATH already to our needs) */
-   cmd.eAdd2BashRcProlog = "if [ -z `echo $CLASSPATH | grep ""jurt.jar""` ] ; then" "#" cmd.eInstallationNeedle
+   cmd.eAdd2BashRcProlog = "if [ -z `echo $CLASSPATH | grep ""jurt.jar""` ] ; then" "#"cmd.eInstallationNeedle "(created:" q(cmd.eDateTimeEdited) "by user" cmd.eUser || ")"
    cmd.eAdd2BashRcEpilog = "fi" "#" cmd.eInstallationNeedle
 
    cmd.eAdd2setEnvironment.0 = 2
-   cmd.eAdd2setEnvironment.1 = "    #" cmd.eInstallationNeedle "(created by" cmd.eUser || ")"
+   cmd.eAdd2setEnvironment.1 = "    #" cmd.eInstallationNeedle "(created:" q(cmd.eDateTimeEdited) "by user" cmd.eUser || ")"
 
    cmd.eAdd2setEnvironment.2="if [ -f" cmd.eSetEnvironmentScriptName "];" -
                      "then ." cmd.eSetEnvironmentScriptName "; fi #" cmd.eInstallationNeedle

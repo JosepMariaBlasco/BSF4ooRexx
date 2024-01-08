@@ -1,8 +1,8 @@
-BSF4ooRexx - Installation Directions for Windows         August 2022 (GA refresh)
-================================================         ========================
+BSF4ooRexx - Installation Directions for Windows         January 20240104 (beta)
+================================================         =======================
 Home: <http://sourceforge.net/projects/bsf4oorexx/>
 
-BSF4ooRexx adds support to the ooRexx scripting language to camouflage
+BSF4ooRexx850 adds support to the ooRexx scripting language to camouflage
 Java objects as Rexx objects.
 
 It lets ooRexx programmers take full advantage of Java objects, but with
@@ -15,9 +15,9 @@ All such ooRexx programs work on all operating systems supporting ooRexx!
 Prerequisites
 =============
 
-[1] Java Runtime Environment (JRE) 1.6 or higher installed on your computer.
-    Usually the JRE gets installed with your web browser to allow for running
-    Java applets from the Internet.
+[1] JRE (Java runtime environment) or JDK (Java development kit, includes JRE)
+    1.8/8 or higher installed on your computer.
+
     Sometimes it is possible to run Java from the commandline. To check, open
     a command line window and enter: "java -version"
 
@@ -36,28 +36,28 @@ Prerequisites
 
 
 [2] ooRexx 5.0.0 or newer from its home: <https://sourceforge.net/projects/oorexx/files/oorexx/>.
-    (The current BSF4ooRexx baseline for ooRexx is version 4.1.0, so this
+    (The current BSF4ooRexx850 baseline for ooRexx is version 5.0.0, so this
     version of ooRexx and later versions are supported.)
 
-[3] optional: OpenOffice.org (OOo) from <http://download.openoffice.org> or its fork
+[3] optional: Apache OpenOffice.org (OOo/AOO) from <http://download.openoffice.org> or
               LibreOffice (LO) from <https://www.libreoffice.org/download/download/>
 
-[4] Uninstall any previously installed version of BSF4[oo]Rexx, if any.
+[4] Uninstall any previously installed version of BSF4[oo]Rexx850, if any.
 
     Prerequisite: close all instances of OpenOffice/LibreOffice, also the quickstarter!
 
-    Choose the menu "Applications -> BSF4ooRexx ->  Installation -> Uninstall BSF4ooRexx"
+    Choose the menu "Applications -> BSF4ooRexx[850] ->  Installation -> Uninstall BSF4ooRexx[850]"
 
     [To manually uninstall, try to locate the following two scripts and execute
      them in the following sequence:
 
         Windows                                 Comment
         -------                                 -------
-        In C:\Program Files (x86)\ or
-        in C:\Program Files\
+        In C:\Program Files (x86)\ or           32-bit installation
+        in C:\Program Files\                    64-bit installation
 
-           BSF4ooRexx\install\uninstallOOo.cmd  run, if the OOo support was installed
-           BSF4ooRexx\install\uninstallBSF.cmd  uninstalls the previous BSF4[oo]Rexx support]
+           BSF4ooRexx[850]\install\uninstallOOo.cmd  run, if the OOo support was installed
+           BSF4ooRexx[850]\install\uninstallBSF.cmd  uninstalls the previous BSF4[oo]Rexx[850] support]
 
 
 Installation
@@ -65,18 +65,18 @@ Installation
 
         Step [1] Close all instances of OpenOffice/LibreOffice including the quickstarter
 
-        Step [2] Download the archive "BSF4ooRexx_install_v641-YYYYMMDD.zip" and unzip it
+        Step [2] Download the archive "BSF4ooRexx850_install_v850-YYYYMMDD.zip" and unzip it
 
         Step [3] Open a command line window and change into the unzipped directory into
                  "bsf4oorexx\install\windows"
 
         Step [4] Run the batch script "install.cmd" which will copy
-                 everything to "C:\Program Files\BSF4ooRexx" (64 bit) or
-                 "C:\Program Files (x86)\BSF4ooRexx" (32 bit),
-                 create the installation and uninstall scripts in "BSF4ooRexx\install" and
+                 everything to "C:\Program Files\BSF4ooRexx850" (64 bit) or
+                 "C:\Program Files (x86)\BSF4ooRexx850" (32 bit),
+                 create the installation and uninstall scripts in "BSF4ooRexx850\install" and
                  runs the install scripts
 
-        Step [5] Open the menu "BSF4ooRexx" and start "GUI Rexxtry Program (ooRexxTry.rxj)"
+        Step [5] Open the menu "BSF4ooRexx850" and start "GUI Rexxtry Program (ooRexxTry.rxj)"
                  to test the installation (you can enter Rexx statements and execute them
                  in this window)
 
@@ -93,6 +93,14 @@ P.S.: Support is given either via the newsgroup <news:comp.lang.rexx> or the
 
       In addition check out the mailing lists and forums on the BSF4ooRexx
       home at <http://sourceforge.net/projects/bsf4oorexx/>.
+
+      Consider to become a member of RexxLA (no fees) and enjoy support from
+      the developers there: <https://www.rexxla.org/members/index.rsp?action=join>.
+
+      Students' works at the "WU" (Wirtschaftsuniversitaet Wien, Austria),
+      look for "BSF4ooRexx[850]" and "OpenOffice" ("OOo"), cf.
+
+             <http://wi.wu.ac.at/rgf/diplomarbeiten/>
 
 
 

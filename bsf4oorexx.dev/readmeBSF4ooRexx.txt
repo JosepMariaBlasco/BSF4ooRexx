@@ -1,5 +1,5 @@
-BSF4ooRexx, 6.41                                         August 2022 (GA refresh)
-================                                         ========================
+BSF4ooRexx850                                            January 2024 (Beta)
+=============                                            ===================
 
 This is a package that creates a bridge between ooRexx and Java. For that
 reason Java must be installed on your machine as well, which is easy and
@@ -25,13 +25,11 @@ a one click away.
 
    See box below for an important information.
 
-PLEASE NOTE: this version of BSF4ooRexx is for Java 1.6/6, 1.7/7, 1.8/8
-             and Java 9.0 (introduced the module system) and newer
-
+PLEASE NOTE: this version of BSF4ooRexx is for Java 1.8/8 and newer
 
 *IMPORTANT* !
 
-    *AFTER DOWNLOADING* the installation zip-archive (e.g.  BSF4ooRexx_install_*zip)
+    *AFTER DOWNLOADING* the installation zip-archive (e.g.  BSF4ooRexx850_install_*zip)
     but *BEFORE UNZIPPING* make sure that no "security" attributes are attached to it.
 
     On *WINDOWS*: right mouse click on the zip-file and choose "Unblock" from the
@@ -71,11 +69,11 @@ PLEASE NOTE: this version of BSF4ooRexx is for Java 1.6/6, 1.7/7, 1.8/8
 ===============================================================================
 
 
-1) If there is a previous version of BSF4Rexx or BSF4ooRexx installed on your
+1) If there is a previous version of BSF4Rexx or BSF4ooRexx850 installed on your
    system, please deinstall it first! (Make sure all instances of OpenOffice or
    LibreOffice are closed, including the quickstarter!)
 
-   Best use the menu "BSF4ooRexx -> Installation -> Uninstall BSF4ooRexx".
+   Best use the menu "BSF4ooRexx850 -> Installation -> Uninstall BSF4ooRexx850".
 
            [A fallback, manual deinstallation, would be to locate the path to the
            installation directory "bsf4oorexx", named "path2-bsf4oorexx" in the
@@ -85,12 +83,12 @@ PLEASE NOTE: this version of BSF4ooRexx is for Java 1.6/6, 1.7/7, 1.8/8
            - "sudo path2-bsf4oorexx/install/uninstallBSF.sh" (Linux)
            ]
 
-2) Download the software (ooRexx, Java, BSF4ooRexx)
+2) Download the software (ooRexx, Java, BSF4ooRexx850)
 
    - on MacOS and Windows: remove the security/quarantine attributes as described
      above!
 
-3) Unzip the downloaded installation archive "BSF4ooRexx_install-*.zip" (this
+3) Unzip the downloaded installation archive "BSF4ooRexx850_install-*.zip" (this
    will also unzip the Apache OpenOffice/LibreOffice scripting-support for ooRexx)
 
 4) change into the unzipped subdirectory "bsf4oorexx/install/windows" or

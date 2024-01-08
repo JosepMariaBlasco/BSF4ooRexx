@@ -5,8 +5,12 @@
             without any knowledge about Java installation issues)
    Author:  Rony G. Flatscher
    Date:    2006-01-07
-   Version: 1.46
+   Version: 1.48
    Changed:
+            2024-01-07  - use $HOME and %USERPROFILE% for determining user's home directory
+                          in CLASSPATH
+            2024-01-07  - Unix: fix error in determining home directory from user name
+                          (moved determination of cmd.eRealUserName right before determineHomeDir)
             2024-01-05  - use .rexxinfo~architecture, remove getRexxBitness()
             2023-06-15, - fix type (count.0 to count) in determinePath2javaBinary() searching
                           Java with matching bitness, testing with checkValidJavaExe()
@@ -288,9 +292,9 @@ say "parse source  s: s="pp(s)
 
 parse version '-' name '_' val '(' . level .
 
-minVersion="4.1.0"
+minVersion="5.0.0"
 
-if val<minVersion | level<6.03 then    -- make sure we use ooRexx 4.1.0 or higher !
+if val<minVersion | level<6.03 then    -- make sure we use ooRexx 5.0.0 or higher !
 do
    say "PANIC: need ooRexx ["minVersion"] or higher, found only version ["val"]!"
    exit -1
@@ -396,6 +400,15 @@ cmd.eIsMacOSX=(s="D" | s="M")    -- determine whether running on "MACOSX" replac
 
 if cmd.eIsUnix then  -- get home directory
 do
+   -- get and save logName and sudoUser-Name
+   cmd.eLogName  = value('LOGNAME',    ,'ENVIRONMENT')  -- get current logname, could be 'root' if sudo'ing
+   cmd.eSudoUser = value('SUDO_USER',  ,'ENVIRONMENT')  -- maybe sudo'ing, then who is the sudo user
+
+   if cmd.eLogName="root", cmd.eSudoUser<>"" then
+      cmd.eRealUserName=cmd.eSudoUser
+   else
+      cmd.eRealUserName=cmd.eLogName
+
    cmd.eHomeDir      = determineHomeDir(cmd.eRealUserName, cmd.eIsMacOSX)  -- find for Unix (Darwin, Linux, etc.)
 end
 else
@@ -415,7 +428,7 @@ if cmd.eIsWindows then
 else
    cmd.eSetBSF4OOREXX_HOME='[ "$BSF4OOREXX_HOME" = "" ] && BSF4OOREXX_HOME='cmd.eSuperDir
 
-if cmd.eRexxMajorVersion>= 5 then   /* .RexxInfo available, use itfor rexxj.{cmd|sh}   */
+if cmd.eRexxMajorVersion>= 5 then   /* .RexxInfo available, use it for rexxj.{cmd|sh}   */
 do
    -- if OOREXX_LIB_HOME is not defined, assign default value
    if cmd.eIsWindows then
@@ -493,7 +506,8 @@ end
    -- add current directory (new: 2022-11-03) followed by "homedir/lib/*" to pick up all jars there
 if cmd.eIsUnix=.true then
 do
-   tmpHomeDirLib=":"cmd.eHomeDir"/BSF4ooRexx/lib/" || "*"   -- 2022-11-03: allow user's lib to be used as jar collection
+   -- tmpHomeDirLib=":"cmd.eHomeDir"/BSF4ooRexx/lib/" || "*"   -- 2022-11-03: allow user's lib to be used as jar collection
+   tmpHomeDirLib=":$HOME/BSF4ooRexx/lib/" || "*"   -- 2024-01-08: allow user's lib to be used as jar collection
 
    if right(cmd.eSetCP,1)="=" then
       cmd.eSetCP=cmd.eSetCP || "."  || tmpHomeDirLib || "$TMPCP"
@@ -502,7 +516,8 @@ do
 end
 else
 do
-   tmpHomeDirLib=";"cmd.eHomeDir"\BSF4ooRexx\lib\*"   -- 2022-11-03: allow user's lib to be used as jar collection
+   -- tmpHomeDirLib=";"cmd.eHomeDir"\BSF4ooRexx\lib\*"   -- 2022-11-03: allow user's lib to be used as jar collection
+   tmpHomeDirLib=";%USERPROFILE%\BSF4ooRexx\lib\*" -- 2024-01-08: allow user's lib to be used as jar collection
    if right(cmd.eSetCP,1)="=" then
       cmd.eSetCP=cmd.eSetCP                     || "." || tmpHomeDirLib || ";%CLASSPATH%"
    else
@@ -521,7 +536,7 @@ cmd.eSupportInfos=qc("Support: Internet newsgroup <news:comp.lang.rexx> or via <
 
 -- cmd.eIsUnix=.true -- for debugging only
 -- 2010-03-19: create a unique needle (e.g. to allow deleting lines with sed from profiles later)
-cmd.eInstallationNeedle="BSF4ooRexx850Needle"   -- .dateTime~new~string
+cmd.eInstallationNeedle="BSF4ooRexx850Needle"
 cmd.eHintString="created:" q(cmd.eDateTimeEdited) "by user" q(j.["USER.NAME"]) -- q(j.user.name)
 
 if cmd.eIsUnix then
@@ -530,18 +545,8 @@ do
    -- by default set to .true as on systems with multiple versions of Java installed this link
    -- will control which libjvm.so to use
    cmd.bCreateLinkInB4RHome?=.true  -- create a link to libjvm.so from install time to /opt/BSF4ooRexx from where the JVM gets picked up
-   suname=value("SUDO_USER",,"ENVIRONMENT") -- fetch environment value, if available
-   if suname<>"" then
-      cmd.eHintString="created:" q(cmd.eDateTimeEdited) "by sudo user" q(suname)
 
-   -- get and save logName and sudoUser-Name
-   cmd.eLogName  = value('LOGNAME',    ,'ENVIRONMENT')  -- get current logname, could be 'root' if sudo'ing
-   cmd.eSudoUser = value('SUDO_USER',  ,'ENVIRONMENT')  -- maybe sudo'ing, then who is the sudo user
-
-   if cmd.eLogName="root", cmd.eSudoUser<>"" then
-      cmd.eRealUserName=cmd.eSudoUser
-   else
-      cmd.eRealUserName=cmd.eLogName
+   cmd.eHintString="created:" q(cmd.eDateTimeEdited) "by sudo user" q(cmd.eRealUserName)
 
    cmd.eChownUserGroup = cmd.eRealUserName":"determineGroupName(cmd.eRealUserName)
 
@@ -617,17 +622,15 @@ do
                                              supported by the Linux distribution;
                                              if .false, install into user's profile ~/.bashrc else */
 
-   -- TODO: remove done above: cmd.eHomeDir      = determineHomeDir(cmd.eRealUserName, cmd.eIsMacOSX)  -- find for Unix (Darwin, Linux, etc.)
-
    cmd.eAdd2BashRc   = cmd.eHomeDir"/.bashrc"   /* logon user's bash profile to add entry to       */
    cmd.eAdd2Profile  = "/etc/profile"     /* system wide setting                       */
    cmd.eAdd2Zshenv   = cmd.eHomeDir"/.zshenv"   /* user's zsh environment for all sessions   */
 
-
-
       /* prolog and epilog used for ".bashrc" to make sure that CLASSPATH gets only extended, if
          "/etc/profile" has not run yet (and set CLASSPATH already to our needs) */
-   cmd.eAdd2BashRcProlog = "if [ -z `echo $CLASSPATH | grep ""bsf4ooRexx-.*-bin\.jar""` ] ; then" "#" cmd.eInstallationNeedle
+   -- cmd.eAdd2BashRcProlog = "if [ -z `echo $CLASSPATH | grep ""bsf4ooRexx-.*-bin\.jar""` ] ; then" "#" cmd.eInstallationNeedle "("cmd.eHintString")"
+   -- rgf, 2024-01-08
+   cmd.eAdd2BashRcProlog = "if [ -z `echo $CLASSPATH | grep ""BSF4ooRexx850\lib""` ] ; then" "#" cmd.eInstallationNeedle "("cmd.eHintString")"
    cmd.eAdd2BashRcEpilog = "fi" "#" cmd.eInstallationNeedle
 
    cmd.eAdd2setEnvironment.0 = 2
@@ -677,16 +680,17 @@ do
          end
          when cmd.eBitness=64    then
          do
-            if j.os.arch='s390x'    then cmd.eDll.sourcePath="lib/libBSF4ooRexx850.so-64-s390x"
+            if j.os.arch='s390x'    then
+               cmd.eDll.sourcePath="lib/libBSF4ooRexx850.so-64-s390x"
             else if j.os.arch='arm' | j.os.arch='aarch64' | j.os.arch='arm64' then    -- Linux
-                                    do
-                                       if sysFileExists("lib/libBSF4ooRexx850.so-64-aarch64") then
-                                          cmd.eDll.sourcePath="lib/libBSF4ooRexx850.so-64-aarch64"
-                                       else
-                                          cmd.eDll.sourcePath="lib/libBSF4ooRexx850.so-64-arm64"
-                                    end
-                                    else -- Intel/AMD
-                                       cmd.eDll.sourcePath="lib/libBSF4ooRexx850.so-64-amd64"
+            do
+               if sysFileExists("lib/libBSF4ooRexx850.so-64-aarch64") then
+                  cmd.eDll.sourcePath="lib/libBSF4ooRexx850.so-64-aarch64"
+               else
+                  cmd.eDll.sourcePath="lib/libBSF4ooRexx850.so-64-arm64"
+            end
+            else -- Intel/AMD
+               cmd.eDll.sourcePath="lib/libBSF4ooRexx850.so-64-amd64"
          end
 
          when j.os.arch~caselessAbbrev('aix') then
@@ -898,8 +902,8 @@ createInstallScript: procedure expose j. cmd. path.
      bWriteProlog=.false  -- for "/etc/profile" no epilog/prolog, for .bashrc: yes!
 
      do tmpTgt over .array~of(cmd.eAdd2Profile, cmd.eAdd2BashRc, cmd.eAdd2Zshenv)
-        -- if cmd.eIsMacOSX, tmpTgt=cmd.eAdd2BashRc then     -- on MacOSX do not create .bashrc
-        --   iterate
+        if cmd.eIsMacOSX, tmpTgt=cmd.eAdd2BashRc then     -- on MacOSX do not create .bashrc
+           iterate
 
         bWriteProlog=(tmpTgt=cmd.eAdd2BashRc)   -- write pro/epilog if .bashrc
 
@@ -1623,10 +1627,11 @@ createEnvironmentScript: procedure expose j. cmd. path.
      call lineout fn, cmd.eLineComment "setting the PATH environment variable..."
      call lineout fn, cmd.eSetPath        /* set PATH             */
 
+/* --
      call lineout fn, ""
-     call lineout fn, cmd.eSetDLLPath
+     call lineout fn, cmd.eSetDLLPath     /* set PATH, make sure also ooRexx dir is in PATH for Java */
+-- */
 
-     call lineout fn, ""
      call lineout fn, cmd.eEcho qe(".")
      call lineout fn, cmd.eEcho cmd.eSupportInfos
      call lineout fn, ""

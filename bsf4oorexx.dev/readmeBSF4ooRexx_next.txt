@@ -1,38 +1,41 @@
-Additional information on BSF4ooRexx that may be interesting August 2022 (GA refresh)
-============================================================ ========================
+Additional information on BSF4ooRexx that may be interesting January 2024 (Beta)
+============================================================ ===================
 
-BSF4ooRexx is an extension to Rexx and ooRexx, consisting of an external Rexx
-function package ("BSF4ooRexx.dll", "libBSF4ooRexx") and a set of Java classes
-stored in a Java archive.
+BSF4ooRexx850 is an extension to Rexx and ooRexx, consisting of an external Rexx
+function package ("BSF4ooRexx850.dll", "libBSF4ooRexx850.{so|dylib}") and a set
+of Java classes stored in a Java archive.
 
 BSF allows Java programs to call (invoke) script programs written in languages
 other than Java.  Such script programs may also be able to call back into Java
 and use all of Java's classes and objects.  (cf. <http://jakarta.apache.org/bsf>)
 
-- With "BSF4ooRexx" any Java application can use Open Object Rexx (ooRexx) as
-  a scripting language.
+- With "BSF4ooRexx850" any Java application can use Open Object Rexx (ooRexx) as
+  a scripting language by merely supplying the name "rexx" to the Java scripting
+  framework's ScriptEngineManager.
 
 - Open Object Rexx (ooRexx) can use Java as a huge, operating system independent
   function library.  The special ooRexx support enabled by requiring "BSF.CLS"
-  makes Java appear like a huge Object Rexx class library!
+  makes Java appear like a huge Object Rexx class library, turning Java into an
+  easy to use message based dynamic language! :)
 
 At the International Rexx Symposium in May 2009 an outlining talk was given about
 "BSF4Rexx 4.0" which now has been renamed to "BSF4ooRexx 4.0", cf. the symposia
-pages at <https://www.RexxLA.org>.
+pages at <https://www.RexxLA.org>. You will find further presentations from newer
+International Rexx symposiae.
 
 All Rexx programs using BSF4ooRexx are per se fully portable, ie.  to any system
 which possesses Java and a Rexx interpreter, provided that the JNI DLL/shared
 library is ported to that platform (the source file to be ported/compiled is
 "BSF4ooRexx.cc").  Out of the box the following operating systems are currently
-supported: Linux (x86, amd64, arm32, s390x), MacOSX (32- and 64-bit) and Windows
-(32- and 64-bit).
+supported: Linux (x86, amd64, arm32, s390x), MacOSX (amd64, arm64) and Windows (x86,
+amd64).
 
 
 
 Files and Archives
 ==================
 
-By convention BSF4ooRexx scripts carry the extension ".rxj" (Rexx-Java),
+By convention BSF4ooRexx850 scripts carry the extension ".rxj" (Rexx-Java),
 scripts that drive OpenOffice.org carry the extension ".rxo" (Rexx-OpenOffice).
 
 
@@ -45,8 +48,8 @@ readmeOOo.txt        ... text file, outlining the installation of the OpenOffice
 readmeOOo_next.txt   ... text file, explaining the OpenOffice.org/Staroffice
                          support and its installation
 
-BSF4ooRexx_install.zip ... Archive that contains the binary distribution of, the
-                         sources of and the samples for BSF4ooRexx (including
+        BSF4ooRexx_install_v850*.zip ... Archive that contains the binary distribution of, the
+                         sources of and the samples for BSF4ooRexx850 (including
                          OpenOffice.org samples), the setup scripts for Linux
                          and Windows
 
@@ -71,12 +74,12 @@ Installation
 ============
 
 
-!!!  IF YOU HAVE ALREADY AN OLDER VERSION OF BSF4Rexx OR BSF4ooRexx INSTALLED, PLEASE
+!!!  IF YOU HAVE ALREADY AN OLDER VERSION OF BSF4Rexx OR BSF4ooRexx[850] INSTALLED, PLEASE
 UNINSTALL AND REMOVE IT FROM YOUR SYSTEM BEFORE INSTALLING THIS VERSION  !!!!
 
 
-Archive 'BSF4ooRexx_install.zip'
-==============================
+Archive 'BSF4ooRexx_install_v805.zip'
+=====================================
 
    - after running "setupBSF.rex" the following files get created, tailored
      to your installation; the file names differ in their file extension:
@@ -114,10 +117,10 @@ Archive 'BSF4ooRexx_install.zip'
 
 
 
-Testing your BSF4ooRexx installation
-====================================
+Testing your BSF4ooRexx850 installation
+=======================================
 
-   a) Issue one of the following commands from the command line in the "install"
+   a) Issue one of the following commands from the command line in the "BSF4ooRexx850/install"
       directory (this will load Rexx via Java):
 
         Windows:
@@ -152,15 +155,12 @@ Testing your BSF4ooRexx installation
 Next steps
 ==========
 
- - Run all the sample programs in "bsf4oorexx/samples/" and study them.
+ - Run all the sample programs in "BSF4ooRexx850/samples/" and study them.
 
- - To study the new features introduced with "BSF4ooRexx 4.0" run and study all
-   the programs in "bsf4oorexx/samples/version4" and its subdirectories.
-
- - Study the programs in "bsf4oorexx/utilities/".
+ - Study the programs in "BSF4ooRexx850/utilities/".
 
  - If interested in scripting OpenOffice.org (the examples can be found in
-   "bsf4oorexx/samples/OOo" and its subdirectories), then please follow the
+   "BSF4ooRexx850/samples/OOo" and its subdirectories), then please follow the
    instructions in 'readmeOOo.txt' to install the specific OpenOffice support
    which makes it very easy to program/script OOo with ooRexx in an openplatform
    fashion.
@@ -168,6 +168,10 @@ Next steps
 
 Support, questions and discussion
 =================================
+
+
+   Consider to become a member of RexxLA (no fees) and enjoy support from
+   the developers there: <https://www.rexxla.org/members/index.rsp?action=join>.
 
    Please use the main Rexx newsgroup to post questions, example code etc.:
 
@@ -279,4 +283,6 @@ Further information on BSF4ooRexx
 
         - <news:comp.lang.rexx>
 
+        Consider to become a member of RexxLA (no fees) and enjoy support from
+        the developers there: <https://www.rexxla.org/members/index.rsp?action=join>.
 
