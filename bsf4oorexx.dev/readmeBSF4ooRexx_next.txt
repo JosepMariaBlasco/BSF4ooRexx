@@ -28,7 +28,7 @@ which possesses Java and a Rexx interpreter, provided that the JNI DLL/shared
 library is ported to that platform (the source file to be ported/compiled is
 "BSF4ooRexx.cc").  Out of the box the following operating systems are currently
 supported: Linux (x86, amd64, arm32, s390x), MacOSX (amd64, arm64) and Windows (x86,
-amd64).
+amd64, arm64).
 
 
 
@@ -169,21 +169,15 @@ Next steps
 Support, questions and discussion
 =================================
 
-
    Consider to become a member of RexxLA (no fees) and enjoy support from
    the developers there: <https://www.rexxla.org/members/index.rsp?action=join>.
 
-   Please use the main Rexx newsgroup to post questions, example code etc.:
+   Support is given either via the e-mail list of the non-profit Rexx Language
+   Association, the owner of ooRexx and BSF4ooRexx850, at <https://www.rexxla.org>
+   where you meet a good many helping experts! Membership is free.
 
-        <news:comp.lang.rexx>
-
-   or Google's interface to this netnews group:
-
-        <http://groups.google.at/group/comp.lang.rexx/topics>
-
-   Alternatively, enroll as a member to the non-profit organization "Rexx Language
-   Asssociation" (<http://www.RexxLA.org>) and use the members only listserver list
-   there.
+   In addition check out the mailing lists and forums on the BSF4ooRexx850
+   home at <http://sourceforge.net/projects/bsf4oorexx/>.
 
    OpenOffice-only related questions (other than the Rexx support itself) should be
    posted on the respective listserver lists at <http://www.OpenOffice.org> (e.g.
@@ -271,18 +265,28 @@ Installing ooRexx
 Further information on BSF4ooRexx
 =================================
 
-        - International Rexx Symposia, cf. <http://www.RexxLA.org>, look for
-          "BSF" (should yield presentations and articles), especially:
+      Various presentations at the International Rexx Symposiae, cf.
+      <http://www.RexxLA.org>, look for "BSF" (should yield presentations
+      and articles), especially:
 
-             <http://wi.wu.ac.at/rgf/rexx/orx20/2009_orx20_BSF4Rexx-20091031-article.pdf>
+      Flatscher R.G.: "The 2009 Edition of BSF4Rexx", url:
+         <https://research.wu.ac.at/ws/portalfiles/portal/19790427/2009_orx20_BSF4Rexx-20091031-article.pdf>
 
-        - Students' works at the "WU" (Wirtschaftsuniversitaet Wien, Austria),
-          look for "BSF", cf.
+Support
+=======
+
+      Support is given either via the e-mail list of the non-profit Rexx Language
+      Association, the owner of ooRexx and BSF4ooRexx850, at <https://www.rexxla.org>
+      where you meet a good many helping experts! Membership is free.
+
+      In addition check out the mailing lists and forums on the BSF4ooRexx850
+      home at <http://sourceforge.net/projects/bsf4oorexx/>.
+
+      Consider to become a member of RexxLA (no fees) and enjoy support from
+      the developers there: <https://www.rexxla.org/members/index.rsp?action=join>.
+
+      Students' works at the "WU" (Wirtschaftsuniversitaet Wien, Austria),
+      look for the keywords "BSF4ooRexx[850]" and "OpenOffice" ("OOo"), cf.
 
              <http://wi.wu.ac.at/rgf/diplomarbeiten/>
-
-        - <news:comp.lang.rexx>
-
-        Consider to become a member of RexxLA (no fees) and enjoy support from
-        the developers there: <https://www.rexxla.org/members/index.rsp?action=join>.
 

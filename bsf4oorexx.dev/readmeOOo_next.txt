@@ -343,16 +343,22 @@ configuration from scratch, the next time one gets invoked.
 Further information on the BSF4ooRexx850 support for OpenOffice.org
 ===================================================================
 
-        - International Rexx Symposia, cf. <http://www.RexxLA.org>, look for
-          "OpenOffice" or "OOo" (should yield presentations and articles)
+      International Rexx Symposia, cf. <http://www.RexxLA.org>, look for
+      the keywords "OpenOffice" or "OOo" (should yield presentations and articles)
 
-        - Students' works at the "WU" (Wirtschaftsuniversitaet Wien, Austria),
-          look for "OpenOffice" or "OOo", cf.
+      Support is given either via the e-mail list of the non-profit Rexx Language
+      Association, the owner of ooRexx and BSF4ooRexx850, at <https://www.rexxla.org>
+      where you meet a good many helping experts! Membership is free.
+
+      In addition check out the mailing lists and forums on the BSF4ooRexx850
+      home at <http://sourceforge.net/projects/bsf4oorexx/>.
+
+      Consider to become a member of RexxLA (no fees) and enjoy support from
+      the developers there: <https://www.rexxla.org/members/index.rsp?action=join>.
+
+      Students' works at the "WU" (Wirtschaftsuniversitaet Wien, Austria),
+      look for the keywords "BSF4ooRexx[850]" and "OpenOffice" ("OOo"), cf.
 
              <http://wi.wu.ac.at/rgf/diplomarbeiten/>
 
-        - <news:comp.lang.rexx>
-
-        Consider to become a member of RexxLA (no fees) and enjoy support from
-        the developers there: <https://www.rexxla.org/members/index.rsp?action=join>.
 

@@ -7,6 +7,7 @@
    Date:    2006-01-07
    Version: 1.48
    Changed:
+            2024-01-09  - removed news group from text hinting at support
             2024-01-07  - use $HOME and %USERPROFILE% for determining user's home directory
                           in CLASSPATH
             2024-01-07  - Unix: fix error in determining home directory from user name
@@ -507,7 +508,8 @@ end
 if cmd.eIsUnix=.true then
 do
    -- tmpHomeDirLib=":"cmd.eHomeDir"/BSF4ooRexx/lib/" || "*"   -- 2022-11-03: allow user's lib to be used as jar collection
-   tmpHomeDirLib=":$HOME/BSF4ooRexx/lib/" || "*"   -- 2024-01-08: allow user's lib to be used as jar collection
+   --    note: using explicit concatenation for "*" otherwise a begin of block comment would be defined
+   tmpHomeDirLib=":$HOME/BSF4ooRexx/lib/" || "*"  -- 2024-01-08: will use all jar- and zip-files in the user's home dir in addition
 
    if right(cmd.eSetCP,1)="=" then
       cmd.eSetCP=cmd.eSetCP || "."  || tmpHomeDirLib || "$TMPCP"
@@ -517,7 +519,7 @@ end
 else
 do
    -- tmpHomeDirLib=";"cmd.eHomeDir"\BSF4ooRexx\lib\*"   -- 2022-11-03: allow user's lib to be used as jar collection
-   tmpHomeDirLib=";%USERPROFILE%\BSF4ooRexx\lib\*" -- 2024-01-08: allow user's lib to be used as jar collection
+   tmpHomeDirLib=";%USERPROFILE%\BSF4ooRexx\lib\*" -- 2024-01-08: will use all jar- and zip-files in the user's home dir in addition
    if right(cmd.eSetCP,1)="=" then
       cmd.eSetCP=cmd.eSetCP                     || "." || tmpHomeDirLib || ";%CLASSPATH%"
    else
@@ -532,7 +534,10 @@ else
 
 cmd.eInstallDirectory=directory() || j.file.separator -- save this directory
 
-cmd.eSupportInfos=qc("Support: Internet newsgroup <news:comp.lang.rexx> or via <http://www.RexxLA.org>")
+tmpTxt="Support: mailing list of <https://www.RexxLA.org> (free membership!)"
+tmpTxt=tmpTxt "(<https://sourceforge.net/projects/bsf4oorexx/support>"
+tmpTxt=tmpTxt")"
+cmd.eSupportInfos=qc(tmpTxt)
 
 -- cmd.eIsUnix=.true -- for debugging only
 -- 2010-03-19: create a unique needle (e.g. to allow deleting lines with sed from profiles later)

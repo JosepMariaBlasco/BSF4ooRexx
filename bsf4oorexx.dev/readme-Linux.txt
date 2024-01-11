@@ -88,9 +88,9 @@ Have fun!
 Rony G. Flatscher, Vienna, Austria, Europe
 
 
-P.S.: Support is given either via the newsgroup <news:comp.lang.rexx> or the
-      private e-mail list of the non-profit Rexx Language Association
-      <http://www.rexxla.org> where you meet a good many helping experts!
+P.S.: Support is given either via the e-mail list of the non-profit Rexx Language
+      Association, the owner of ooRexx and BSF4ooRexx850, at <https://www.rexxla.org>
+      where you meet a good many helping experts! Membership is free.
 
       In addition check out the mailing lists and forums on the BSF4ooRexx850
       home at <http://sourceforge.net/projects/bsf4oorexx/>.
@@ -99,7 +99,7 @@ P.S.: Support is given either via the newsgroup <news:comp.lang.rexx> or the
       the developers there: <https://www.rexxla.org/members/index.rsp?action=join>.
 
       Students' works at the "WU" (Wirtschaftsuniversitaet Wien, Austria),
-      look for "BSF4ooRexx[850]" and "OpenOffice" ("OOo"), cf.
+      look for the keywords "BSF4ooRexx[850]" and "OpenOffice" ("OOo"), cf.
 
              <http://wi.wu.ac.at/rgf/diplomarbeiten/>
 

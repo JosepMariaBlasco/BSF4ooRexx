@@ -105,6 +105,7 @@
                                            - little cleanup of code
             2022-08-29, ---rgf, - changed BSF4ooRexx to BSF4ooRexx850
             2024-01-05  - use .rexxinfo~architecture, remove getRexxBitness()
+            2024-01-09  - removed news group from text hinting at support
 
 
    last svn check-in: $Revision: 916 $ $Author: Administrator $ $Date: 2010-08-24 16:30:15 +0200 (Tue, 24 Aug 2010) $
@@ -277,7 +278,11 @@ call parsePath
 cp=value("CLASSPATH", , "ENVIRONMENT") /* try to get the CLASSPATH value   */
 say "CLASSPATH in effect:   ["cp"]"
 
-cmd.eSupportInfos=qc("Support: Internet newsgroup <news:comp.lang.rexx>, <http://www.OpenOffice.org> or via <http://www.RexxLA.org>")
+tmpTxt="Support: mailing list of <https://www.RexxLA.org> (free membership!)"
+tmpTxt=tmpTxt "(<https://sourceforge.net/projects/bsf4oorexx/support>"
+tmpTxt=tmpTxt", <http://www.OpenOffice.org>"
+tmpTxt=tmpTxt")"
+cmd.eSupportInfos=qc(tmpTxt)
 
 -- 2010-03-19: create a unique needle (e.g. to allow deleting lines with sed from profiles later)
 cmd.eInstallationNeedle="BSF4ooRexx850Needle - OpenOffice support" -- .dateTime~new~string
