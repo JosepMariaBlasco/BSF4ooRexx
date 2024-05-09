@@ -36,6 +36,7 @@ remarks:
 
 inline jint impl_jniRexxHaltInterpreterInstance (JNIEnv *env, jobject jobj, jstring j_rii_ID)
 
+    2024-05-09, rgf: - on Unix prepend [DY]LD_LIBRARY_PATH for java.library.path
     2023-10-23, rgf: - silence some warnings when configuring JVM with "-Xcheck:jni";
                        needle used: "// rgf, 20231023"
                        NOTE: Java itself (e.g. awt) does not always
@@ -1125,21 +1126,21 @@ thread_id_t  RgfGetTID();
 
 #if defined (BSF4REXX_32_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20240106 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20240509 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20240106 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20240509 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #elif defined (BSF4REXX_64_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20240106 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20240509 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20240106 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20240509 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #else
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20240106 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20240509 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20240106 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20240509 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #endif
 
@@ -5832,10 +5833,37 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
     if ( bJLPdefined==FALSE )    // "java.library.path" not given in Rexx arguments
     {
         // create option for setting "java.library.path" to typical library paths on Unix
+
+        // honor [DY]LD_LIBRARY_PATH when set
+        char *lp_env=NULL;      // get value of environment variable if any
+        size_t lp_env_length=0;
+
+   #if defined( __APPLE__ )
+        lp_env=getenv("DYLD_LIBRARY_PATH");
+   #else
+        lp_env=getenv("LD_LIBRARY_PATH");
+   #endif
+
+        if (lp_env!=NULL)
+        {
+            lp_env_length=strlen(lp_env);
+        }
+
+        // directories for Java to look through
         char strJLP[] = "/opt/BSF4ooRexx850:/usr/lib:/usr/lib64:/usr/local/lib:/usr/local/lib64:.";
-        size_t bufLen=strlen(strJLP)+needleLength+2;
+
+        size_t bufLen=strlen(strJLP)+(lp_env_length==0 ? 0 : lp_env_length+1)+needleLength+2;
+
         options[m].optionString = (char *) malloc(bufLen+1);    // get needed memory
-        snprintf( options[m].optionString, bufLen+1, "%s%s", jvlpNeedle, strJLP);
+
+        if (lp_env_length>0)    // prepend [DY]LD_LIBRARY_PATH
+        {
+            snprintf( options[m].optionString, bufLen+1, "%s%s:%s",jvlpNeedle, lp_env, strJLP);
+        }
+        else
+        {
+            snprintf( options[m].optionString, bufLen+1, "%s%s", jvlpNeedle, strJLP);
+        }
 
         options[m].extraInfo=NULL;
         m++;                        // increase counter to reflect number of available options
