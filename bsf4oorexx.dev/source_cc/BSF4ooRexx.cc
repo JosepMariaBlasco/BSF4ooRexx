@@ -36,6 +36,9 @@ remarks:
 
 inline jint impl_jniRexxHaltInterpreterInstance (JNIEnv *env, jobject jobj, jstring j_rii_ID)
 
+    2024-05-10, rgf: - on Apple fall back to LD_LBRARY_PATH, if no DYLD_LIBRARY_PATH present,
+                       then on all Unixes if no LD_LIBRARY_PATH present fall back to
+                       PREPEND_LIBRARY_PATH (set by BSF4ooRexx850 scripts)
     2024-05-09, rgf: - on Unix prepend [DY]LD_LIBRARY_PATH for java.library.path
     2023-10-23, rgf: - silence some warnings when configuring JVM with "-Xcheck:jni";
                        needle used: "// rgf, 20231023"
@@ -1126,21 +1129,21 @@ thread_id_t  RgfGetTID();
 
 #if defined (BSF4REXX_32_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20240509 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20240510 org/rexxla/bsf/engines/rexx_DEBUG 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20240509 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20240510 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #elif defined (BSF4REXX_64_BIT)
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20240509 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20240510 org/rexxla/bsf/engines/rexx_DEBUG 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20240509 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20240510 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #else
     #if defined (BSF4REXX_DEBUG_VERSION)
-        #define BSF_VERSION     "850.20240509 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20240510 org/rexxla/bsf/engines/rexx_DEBUG n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #else
-        #define BSF_VERSION     "850.20240509 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+        #define BSF_VERSION     "850.20240510 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
     #endif
 #endif
 
@@ -5829,7 +5832,7 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
         m++;                        // increase counter to reflect number of available options
     }
 
-#if defined( UNIX )     // java.library.path
+#if defined( UNIX )     // java.library.path (on Windows PATH gets used)
     if ( bJLPdefined==FALSE )    // "java.library.path" not given in Rexx arguments
     {
         // create option for setting "java.library.path" to typical library paths on Unix
@@ -5839,10 +5842,18 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
         size_t lp_env_length=0;
 
    #if defined( __APPLE__ )
-        lp_env=getenv("DYLD_LIBRARY_PATH");
-   #else
-        lp_env=getenv("LD_LIBRARY_PATH");
+        lp_env=getenv("DYLD_LIBRARY_PATH");	// Apple specific, prevails
    #endif
+
+        if (lp_env==NULL)       // also fall back for Apple, in case LD_LIBRARY_PATH is defined (some BSF4ooRexx850 scripts do that on Apple too)
+        {
+            lp_env=getenv("LD_LIBRARY_PATH");
+
+            if (lp_env==NULL)   // fall back, BSF4ooRexx850 generated scripts create PREPEND_LIBRARY_PATH
+            {
+                lp_env=getenv("PREPEND_LIBRARY_PATH");
+            }
+        }
 
         if (lp_env!=NULL)
         {
