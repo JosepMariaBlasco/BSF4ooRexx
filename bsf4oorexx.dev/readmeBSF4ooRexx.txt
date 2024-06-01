@@ -1,5 +1,5 @@
-BSF4ooRexx850                                            January 2024 (Beta)
-=============                                            ===================
+BSF4ooRexx850                                            2024-03-04 (GA)
+=============                                            ===============
 
 This is a package that creates a bridge between ooRexx and Java. For that
 reason Java must be installed on your machine as well, which is easy and

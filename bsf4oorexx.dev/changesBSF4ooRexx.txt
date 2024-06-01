@@ -1,4 +1,139 @@
 
+-------------------------------------- 2024-03-04 ----------------------------------
+
+- releasing BSF4ooRexx850 as "GA" (general available) while the International
+  2024 Rexx Symposium takes place in Brisbane, Australia
+
+-------------------------------------- 2024-01-08 ----------------------------------
+
+- macOS: Packages850 gui installer updated
+
+- BSF4ooRexx.cc: - Windows: honors JAVA_HOME first on Windows,
+                                   %JAVA_HOME%\bin\server\jvm.dll
+                                   %JAVA_HOME%\jre\bin\server\jvm.dll
+                                   jvm
+
+        [remark: there would be bin\client\jvm.dll]
+
+                 - on Apple/Linux: first /opt/BSF4ooRexx850/libjvm.{dylib|so}
+                                   $JAVA_HOME/lib/server/libjvm.{dylib|so}
+                                   $JAVA_HOME/jre/lib/server/libjvm.{dylib|so}
+                                   libjvm.{dylib|so} (without path)
+
+- new rexxjh.{sh|cmd}: honors JAVA_HOME first
+
+        %JAVA_HOME%\bin\java.exe
+        %JAVA_HOME%\jre\bin\java.exe
+        java
+
+        ---> "%JAVA_BINARY%"  %BSF4Rexx_JavaStartupOptions% org.rexxla.bsf.RexxDispatcher %*
+
+-------------------------------------- 2023-10-30 ----------------------------------
+
+- BSF.CLS: Cater for JDK_JAVA_OPTIONS environment variable, inform user if it gets
+  picked up (like Java does), also (new!) notify user if BSF4Rexx_JavaStartupOptions
+  gets picked up as well.
+
+-------------------------------------- 2023-10-23 ----------------------------------
+
+- BSF4ooRexx.cc: Fix two wrong upcalls (got only changed on the Java side);
+  silence '-Xcheck:jni' by invoking ExceptionCheck(), even if not really necessary
+  (cf. Java's use in awt)
+
+-------------------------------------- 2023-07-16 ----------------------------------
+
+- Add a utility-like example that lists members of a Java class.
+ (samples/1-260_getJavaMembers.rxj)
+
+
+-------------------------------------- 2023-07-06 ----------------------------------
+
+- samples/JavaFX/fxml_02: Added (simplified) Chinese, placed character arrow at the other
+  side for RTL languages (Arabian, Hebrew)
+
+-------------------------------------- 2023-07-03 ----------------------------------
+
+-  samples/JavaFX/fxml_02: add Spanish, French, Israelian/Hebrew, Indian/Hindi,
+   Italian and Japanese properties files. Add Arabian, Bulgarian, Czeck, Finnish,
+   Greek, Hungarian, Letvian, Lithuanian, Dutch, Norwegian, Polish, Romanian,
+   Russian, Swedish, Turkish and Ukrainian.
+
+-------------------------------------- 2023-06-14 ----------------------------------
+
+- New sample '1-230_ClipBoard.rxj'.
+
+-------------------------------------- 2023-06-12 ----------------------------------
+
+- Complete JDOR with clipboard commands.
+
+-------------------------------------- 2023-06-11 ----------------------------------
+
+- Make system clipboard accessible. (BSF.CLS: new BSF.ClipBoard class)
+
+-------------------------------------- 2023-06-10 ----------------------------------
+
+- rename i2c() to id2c() to convey more meaning, add support for system
+  clipboard (BsfSystemClipboard.java) for images and strings.
+
+-------------------------------------- 2023-04-12 ----------------------------------
+
+- Add and use new initialisation routine 'bsf.initRAJinstance' to allow
+  RexxScriptEngine to initialize the RexxAndJava peer to add prefixes.
+
+-------------------------------------- 2023-03-03 ----------------------------------
+
+- Add RPATH for MacOS and Linux.
+
+-------------------------------------- 2023-02-25 ----------------------------------
+
+- CMakeLists.txt file (and supplementary files) for creating the BSF4ooRexx850
+  library with CMake.
+
+
+-------------------------------------- 2022-12-04 ----------------------------------
+
+- Add support for Shapes (intentionally no command support for Area, Point2D,
+  Path2D which can be used in BSF4ooRexx programs directly).
+
+- Add '.dev.null' to .environment; purpose: null device target for redirected
+  commands (ooRexx 5.0' ADDRESS...WITH), an instance of the singleton class .bsf.nulldevice
+
+-------------------------------------- 2022-11-03 ----------------------------------
+
+- Add 'user.home/BSF4ooRexx/lib/*' to CLASSPATH; this allows to copy jar-files to
+  it and be able to immediately access them afterwards
+
+-------------------------------------- 2022-10-16 ----------------------------------
+
+- We need to resolve wildcard asterisk (*) in CLASSPATH if loading Java from Rexx.
+
+
+
+-------------------------------------- 2022-10-03 ----------------------------------
+
+- Add JavaDrawingHandler (JDOR). JDOR samples.
+
+-------------------------------------- 2022-09-29 ----------------------------------
+
+- Add i2x() routine which converts an identityHash numeric value to a hexadecimal
+  string. On 64-bit systems the hexadecimal string gets an underscore inserted after the
+  eight' character to ease legibility by default.
+
+-------------------------------------- 2022-08-25 ----------------------------------
+
+- Added new sample that configures a Rexx instances with command handlers and
+  invokes a Rexx program that uses them. Also a pure Rexx solution doing 1:1 the same as
+  the Java program is supplied.
+-------------------------------------- 2022-08-24 ----------------------------------
+
+- Adjust to new name of the dll/so/dylib: 'BSF4ooRexx850'.
+
+====================================================================================
+
+- above from here: major changes for BSF4ooRexx850 only
+
+====================================================================================
+
 -------------------------------------- 2022-08-23 ----------------------------------
 -  Branches/850/bsf4oorexx.dev/bin/BSF.CLS
    Branches/850/bsf4oorexx.dev/source_cc/BSF4ooRexx.cc

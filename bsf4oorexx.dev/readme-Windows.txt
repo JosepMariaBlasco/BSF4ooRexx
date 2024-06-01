@@ -1,5 +1,5 @@
-BSF4ooRexx - Installation Directions for Windows         January 20240104 (beta)
-================================================         =======================
+BSF4ooRexx - Installation Directions for Windows         20240304 (GA)
+================================================         =============
 Home: <http://sourceforge.net/projects/bsf4oorexx/>
 
 BSF4ooRexx850 adds support to the ooRexx scripting language to camouflage

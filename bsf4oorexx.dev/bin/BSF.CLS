@@ -13,6 +13,8 @@
 
    date:
 
+         2024-05-24, ---rgf, - .bsf.quiet: if set to .true, inhibits informal output
+                             - add bsf.isArray: returns .true if a BSF_ARRAY_REFERENCE, .false else
          2023-10-30, ---rgf, - rework parseJavaOptions() to behave like:
                                - processes @file options (since JDK 17)
                                - shows duplicate option names
@@ -968,7 +970,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="850.20240109" -- set version (date distribution got created)
+      .bsf4rexx~version="850.20240524" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -1516,10 +1518,11 @@ syntax:
                          else q~appendAll(val)  -- append all string elements of array
   end
 
-  -- .context~package~local~bDebug=.true  -- uncomment: will cause initialization error due to classpath options
-  .context~package~local~bHints=.true  -- show user hints and warnings on .error
+  -- allow ooRexxShell to inhibit infor output
+  .context~package~local~bHints= (.bsf.quiet<>.true)
 
-  bDebug=(.bDebug=.true)   -- test just once, whether debug is set
+   -- .context~package~local~bDebug=.true  -- uncomment: will cause initialization error due to classpath options
+   bDebug=(.bDebug=.true)   -- test just once, whether debug is set
 
   if bDebug then .error~say( .context~name"/".line":" "q="pp(q) "q~items="pp(q~items) )
 
@@ -2488,6 +2491,9 @@ syntax:
      .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
+/* ------------------------------------------------------------------------------------------------- */
+::METHOD bsf.isArray   unguarded -- rgf, 20240524
+  return self~isA(.bsf_array_reference)
 
 /* ------------------------------------------------------------------------------------------------- */
 ::METHOD bsf.getFieldValue   guarded

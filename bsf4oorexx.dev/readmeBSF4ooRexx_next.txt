@@ -1,5 +1,5 @@
-Additional information on BSF4ooRexx that may be interesting January 2024 (Beta)
-============================================================ ===================
+Additional information on BSF4ooRexx that may be interesting 2024-03-04 (GA)
+============================================================ ===============
 
 BSF4ooRexx850 is an extension to Rexx and ooRexx, consisting of an external Rexx
 function package ("BSF4ooRexx850.dll", "libBSF4ooRexx850.{so|dylib}") and a set

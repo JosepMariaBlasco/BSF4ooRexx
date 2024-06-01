@@ -107,6 +107,15 @@
 
                   2018-09-30  - ppCondition2(): test whether the class .BSF (from BSF4ooRexx) is present before
                                 using it in the isA(.bsf) test
+                  2024-04-25  - add Jean Louis Faucher's changes to rgf_util2 to make it
+                                compatible on ooRexx 5.x
+                              - added private class "someRexxInfo" with the getter method
+                                "internalDigits" which returns 9 for 32-bit (default) and
+                                18 for 64-bit
+                              - new id2x(number) routine to create a hexadecimal rendering
+                                of the ~identityHash value to make it better legible,
+                                comprehensible
+                  2024-04-26  - do not use ~?() as  not available in ooRexx 4.2, use "if" instead
 
 
       purpose:    set of 3.2 utilities to ease programming of 3.2.0, e.g. offer sort2()- and
@@ -151,6 +160,25 @@
 .environment~rgf.alphanumeric=.rgf.alpha  || .rgf.digits
 
 .environment~rgf.symbol.chars=".!_?"
+
+::routine interpreter_extended public
+    -- In Executor
+    --     The tokenizer has been modified to split a symbol of the form <number><after number> in two distinct tokens.
+    --     0a is the number 0 followed by the symbol a. If a=0 then 0a is (0 "" 0) = "00"
+    -- In Official ooRexx, 0a is parsed as "0A" and is not impacted by the value of the variable a.
+    a = 0
+    return 0a == "00"
+
+::routine procedural_extended public
+    -- Will be true if "procedural/dispatcher.cls" has been loaded (for example by ooRexxShell).
+    -- rgf_util2 does not need to (and should not) directly load "procedural/dispatcher.cls".
+    return .ExtensionDispatcher~isA(.Class)
+
+::routine rgf_util_extended public
+  -- Used internally to route the pretty print to Executor or to ExtensionDispatcher.
+  -- Used externally to test if the extended version of rgf_util2.rex is loaded
+  -- (dump2 and pp2 takes more arguments in this extended version).
+    return interpreter_extended() | procedural_extended()
 
 
    -- 2008-02-19, rgf:   abbrev      info, string [, n-length]
@@ -1281,7 +1309,7 @@ syntax:
   raise propagate
 
 pp:
-  if arg(1)=.nil then return ""
+  if .nil=arg(1) then return ""
                  else return "," arg(1)
 
 
@@ -1716,6 +1744,19 @@ syntax:              -- propagate condition
 
 
 /* ======================================================================= */
+/*
+   Helper to display the shape of an array.
+*/
+
+::routine shape private
+    use arg coll, separator=""
+    -- Extended
+    if coll~hasMethod("shapeToPrettyString") then return coll~shapeToPrettyString(separator)
+    if .ExtensionDispatcher~isA(.Class), .ExtensionDispatcher~hasMethod(coll, "shapeToPrettyString") then return .ExtensionDispatcher~shapeToPrettyString(coll, separator)
+    return ""
+
+
+/* ======================================================================= */
 /* Dump collection or supplier. */
 /*
     dumpArray2(--coll--[,-title-]-)
@@ -1725,22 +1766,53 @@ syntax:              -- propagate condition
       comparator ... the comparator to use in sorting
 */
 ::routine dump2 public
-  use arg coll, title=("type: The" coll~class~id "class"), comparator=.nil
+  if rgf_util_extended() then
+  do
+    -- JLF:
+    -- I prefer a notation closer to the standard notation "a String" or "an Array"
+    -- add surroundItemByQuotes, surroundIndexByQuotes
+    -- add action, to let do something for each item
+    numeric digits -- stop any propagated settings, to have the default value for digits()
+    use arg coll, title=(/*"type: The" coll~class~id "class"*/ coll~defaultName), comparator=.nil, iterateOverItem=.false, surroundItemByQuotes=.true, surroundIndexByQuotes=.true, maxCount=(9~copies(digits())) /*no limit*/, action=.nil
+    doer = .nil
+    if .nil <> action then
+    do
+      if interpreter_extended() then doer = action~doer
+    end
+  end
+  else
+  do
+    use arg coll, title=("type: The" coll~class~id "class"), comparator=.nil
+    maxcount = (9~copies(digits())) -- no limit
+  end
 
   if .nil=comparator, title~isA(.comparator) then
   do
      comparator=title
-     title=("type: The" coll~class~id "class")
+     if rgf_util_extended() then title=(/*"type: The" coll~class~id "class"*/ coll~defaultName)
+                            else title=("type: The" coll~class~id "class")
   end
 
+
+  if .ExtensionDispatcher~isA(.Class) then coll_isA_Collection = .ExtensionDispatcher~isA(coll, .Collection)
+                                      else coll_isA_Collection =  coll~isA(.Collection)
 
   if coll~isA(.supplier) then
   do
      s=coll
      len=5  -- define an arbitrary high width
-     say title
+     if rgf_util_extended() then
+     do
+        availability = ""
+        if \s~available then availability = "(nothing available)"
+        if .nil <> title then say title availability
+     end
+     else
+     do
+        say title
+     end
   end
-  else if \coll~isA(.Collection) then   -- make sure we have a Collection else
+  else if \coll_isA_Collection then   -- make sure we have a Collection else
   do
      if arg(2,"E") then    -- title omitted !
         say title
@@ -1749,49 +1821,136 @@ syntax:              -- propagate condition
      say "                       type:" pp2(coll~class)
      say "       default string value:" pp2(coll)
      -- .ArgUtil~validateClass("collection", coll, .Collection) -- must be of type Collection
-     return
+     return .false -- nothing displayed
   end
   else      -- a collection in hand
   do
-     say title": ("coll~items "items)"
-     len=length(coll~items)
+     if rgf_util_extended() then
+     do
+        shape = shape(coll, ", ")
+        items = coll~items -- calculate once, can be long for big array
+        if .nil <> title then say title" ("shape || items "items)"
+        len=length(items)
+     end
+     else
+     do
+        say title": ("coll~items "items)"
+        len=length(coll~items)
+     end
   end
 
-  say
+  if \ rgf_util_extended() then say
   count=0
 
 
-  if coll~isA(.Collection) then
+  if coll_isA_Collection then
   do
-     s=makeSortedSupplier(coll, comparator)
+     s=makeSortedSupplier(coll, comparator, maxCount)
   end
 
    -- determine maximum length of "pretty printed" index-value
   maxWidth=0
   s2=s~copy
-  do while s2~available
-     maxWidth=max(maxWidth,length(ppIndex2(s2~index)))
+  do maxCount while s2~available
+     if rgf_util_extended() then maxWidth=max(maxWidth,(ppIndex2(s2~index, surroundIndexByQuotes)~length))
+                            else maxWidth=max(maxWidth,length(ppIndex2(s2~index)))
      s2~next
   end
 
   count=0
   do while s~available
      count=count+1
-     say "   " "#" right(count,len)":" "index="ppIndex2(s~index)~left(maxWidth) "-> item="pp2(s~item)
+     if count > maxCount then
+     do
+         say "..."
+         return .false -- truncated
+     end
+     if rgf_util_extended() then call displayCurrentItem
+                            else say "   " "#" right(count,len)":" "index="ppIndex2(s~index)~left(maxWidth) "-> item="pp2(s~item)
      s~next
   end
-  say "-"~copies(50)
-  return
+  if \ rgf_util_extended() then say "-"~copies(50)
+  return .true -- not truncated
+
+
+/* A different way to display the current item (when rgf_util_extended) */
+displayCurrentItem:
+         if s~item~isa(.array) & iterateOverItem then
+         do
+             -- one line per subitem
+             /*
+             REMEMBER 1
+             Keep the sort in "s~item~sort" below.
+             Yes it's an array, so should keep the order.
+             BUT this is needed by ooRexxShell for the query "methods".
+             REMEMBER 2
+             Display only s~index for the index. Don't try to be smart and add subindex.
+             Again, this is needed by ooRexxShell for the query "methods".
+             The collection is a Relation between method names and the class names implementing them.
+             See makeSortedSupplier below, and its special treatment for the collections wich understand the message 'allAt'.
+             For one method name, an array of class names will be associated to the method name, in a Set collection.
+             The goal is to display:
+                method1     class1
+                method1     class2
+                method1     class3
+                method2     class1
+                etc...
+             where the class names are indeed sorted in alphabetic order.
+             */
+             do subitem over s~item~sort
+                say ppIndex2(s~index, surroundIndexByQuotes)~left(maxWidth) ":" pp2(subitem, surroundItemByQuotes)
+                if .nil <> doer then
+                do
+                  if doer~hasMethod("doWithNamedArguments") then doer~doWithNamedArguments("item", subitem, "index", s~index)
+                  else doer~call(subitem, s~index) -- only routine is supported
+                end
+             end
+         end
+         else
+         do
+             -- shorter output
+             -- say "   " "#" right(count,len)":" "index="ppIndex2(s~index)~left(maxWidth) "-> item="pp2(s~item)
+             say ppIndex2(s~index, surroundIndexByQuotes)~left(maxWidth) ":" pp2(s~item, surroundItemByQuotes)
+             if .nil <> doer then
+             do
+                  if doer~hasMethod("doWithNamedArguments") then doer~doWithNamedArguments("item", s~item, "index", s~index)
+                  else doer~call(s~item, s~index) -- only routine is supported
+             end
+         end
+         return
 
 
 /* Sort a collection considering its type and return a sorted supplier object. */
 makeSortedSupplier: procedure
-  use arg coll, comparator=.nil
+  numeric digits -- stop any propagated settings, to have the default value for digits()
+  use arg coll, comparator=.nil, maxCount=(9~copies(digits()))
 
-  if coll~isA(.OrderedCollection) then    -- don't sort, just return the supplier
-     return coll~supplier
+  if .ExtensionDispatcher~isA(.Class) then
+  do
+      coll_isA_OrderedCollection = .ExtensionDispatcher~isA(coll, .OrderedCollection)
+      coll_isA_SetCollection = .ExtensionDispatcher~isA(coll, .SetCollection)
+      coll_isA_Array = .ExtensionDispatcher~isA(coll, .Array)
+  end
+  else
+  do
+      coll_isA_OrderedCollection =  coll~isA(.OrderedCollection)
+      coll_isA_SetCollection =  coll~isA(.SetCollection)
+      coll_isA_Array =  coll~isA(.Array)
+  end
 
-  if coll~isA(.SetCollection) then        -- use items part, sort it and return it as a supplier
+  if coll_isA_OrderedCollection then
+  do  -- don't sort, just return the supplier
+     if coll_isA_Array then
+     do
+         if interpreter_extended() then
+             return coll~supplier(maxCount+1) -- +1 to let display the ellipsis
+         else
+             return coll~supplier -- maxCount not supported
+     end
+     return coll~supplier -- optional argument maxCount not yet implemented
+  end
+
+  if coll_isA_SetCollection then          -- use items part, sort it and return it as a supplier
   do
      arr=coll~allItems                    -- get array representation
      call sortArray arr, comparator       -- sort elements
@@ -1810,7 +1969,7 @@ makeSortedSupplier: procedure
         if tmp~items=1 then
            arr2[i]=tmp~at(1)              -- save single item to show
         else
-           arr2[i]=coll~allAt(arr[i])     -- save collection of associated items
+           arr2[i]=tmp                    -- save collection of associated items
      end
 
      return .supplier~new(arr2, arr)
@@ -1831,10 +1990,10 @@ makeSortedSupplier: procedure
 sortArray: procedure
   use arg arr, comparator=.nil
 
-  if comparator=.nil, \arr[1]~hasMethod('compareTo') then   -- no comparator available, use string renderings
+  if .nil=comparator, \arr[1]~hasMethod('compareTo') then   -- no comparator available, use string renderings
      comparator=.MessageComparator~new("string", .true)
 
-  if comparator<>.nil then
+  if .nil<>comparator then
      arr~stableSortWith(comparator)
   else
      arr~stableSort
@@ -2281,7 +2440,7 @@ syntax:     -- propagate syntax exception, if any
      return (left-right)~sign    -- returns -1 (left<right), +1 (left>right), 0 (left=right)
   end
 
-  return stringComparator~compare(left,right) -- rgf, 20090520
+  return stringComparator~compare(left~string,right~string) -- rgf, 20090520
 
 
 ::method compareWithNonNumbersDescending  -- used by StringComparator as well !
@@ -2297,7 +2456,7 @@ syntax:     -- propagate syntax exception, if any
      return -((left-right)~sign) -- returns -1 (left<right), +1 (left>right), 0 (left=right)
   end
 
-  return stringComparator~compare(left,right) -- rgf, 20090520
+  return stringComparator~compare(left~string,right~string) -- rgf, 20090520
 
 
 
@@ -2558,14 +2717,31 @@ createCodeSnippet: procedure
    If non-string object, then show its string value and hash-value.
 */
 ::routine pp2 public       -- rgf, 20091214
-  use strict arg a1
+  use strict arg a1, surroundByQuotes=.true
 
-  if \a1~isA(.string) then
+  -- JLF to rework: surroundByQuotes is supported only by String~ppString
+  -- Can't pass a named argument, to remain compatible with official ooRexx.
+  -- Extended
+  if a1~hasMethod("ppString") then return a1~ppString(surroundByQuotes)
+  if .ExtensionDispatcher~isA(.Class), .ExtensionDispatcher~hasMethod(a1, "ppString") then return .ExtensionDispatcher~ppString(a1, surroundByQuotes)
+
+  if .ExtensionDispatcher~isA(.Class) then
   do
-     if a1~isA(.Collection) then
-        return "["a1~string "("a1~items "items)" "id#_" || (a1~identityHash)"]"
+      a1_isA_String = .ExtensionDispatcher~isA(a1, .String)
+      a1_isA_Collection = .ExtensionDispatcher~isA(a1, .Collection)
+  end
+  else
+  do
+      a1_isA_String =  a1~isA(.String)
+      a1_isA_Collection =  a1~isA(.Collection)
+  end
+
+  if \a1_isA_String then
+  do
+     if a1_isA_Collection then
+        return "["a1~string "("a1~items "items)" "id#_" || id2x(a1~identityHash)"]"
      else
-        return "["a1~string "id#_" || (a1~identityHash)"]"
+        return "["a1~string "id#_" || id2x(a1~identityHash)"]"
   end
 
   return "["escape2(a1)"]"
@@ -2578,11 +2754,28 @@ createCodeSnippet: procedure
    Formats Index-values.
 */
 ::routine ppIndex2 public  -- rgf, 20091214
-  use strict arg a1
+  use strict arg a1, surroundByQuotes=.true
 
-  if \a1~isA(.string) then
+  -- JLF to rework: surroundByQuotes is supported only by String~ppString
+  -- Can't pass a named argument, to remain compatible with official ooRexx.
+  -- Extended
+  if a1~hasMethod("ppString") then return a1~ppString(surroundByQuotes)
+  if .ExtensionDispatcher~isA(.Class), .ExtensionDispatcher~hasMethod(a1, "ppString") then return .ExtensionDispatcher~ppString(a1, surroundByQuotes)
+
+  if .ExtensionDispatcher~isA(.Class) then
   do
-     if a1~isA(.array), a1~dimension=1 then
+      a1_isA_String = .ExtensionDispatcher~isA(a1, .String)
+      a1_isA_Array = .ExtensionDispatcher~isA(a1, .Array)
+  end
+  else
+  do
+      a1_isA_String =  a1~isA(.String)
+      a1_isA_Array =  a1~isA(.Array)
+  end
+
+  if \a1_isA_String then
+  do
+     if a1_isA_Array, a1~dimension=1 then
      do
         -- if a1~dimension=1 then   -- create comma-delimited list of index-values?
         do
@@ -2605,13 +2798,13 @@ createCodeSnippet: procedure
            end
            if a1~items>maxElements then
            do
-              tmpStr=", ..."
+              tmpStr=tmpStr", ..."
            end
            return "["tmpStr"]"
         end
      end
 
-     return "["a1~string "id#_" || (a1~identityHash)"]"
+     return "["a1~string "id#_" || id2x(a1~identityHash)"]"
   end
 
   return pp2(a1)     -- rgf, 20091228
@@ -3337,3 +3530,52 @@ listCollection: procedure
         mb~~append(indent) ~~append(pp2(idx)) ~~append(lf)
   end
   return mb~string
+
+
+
+/** This routine creates a hexadecimal value from the identityHash number returned by .Object's
+    identityHash method taking the bitness of the ooRexx interpreter into account.
+    If running on a 64-bit interpreter the hexadeciimal value will be 16 characters
+    long, if running on a 32-bit interpreter it will be 8 characters long.
+
+    @param argVal the identityHash number returned by .Object's identityHash method
+    @param deliString on 64-bit systems: optional delimiter string for grouping eight hex digit
+                characters, defaults to underscore (_)
+    @return hexadecimal value
+    @since  2024-04-25
+    @author Rony G. Flatscher
+*/
+::routine id2x public       -- "pointer" to hexadecimal string: convert identityHash value to hexadecimal string
+  use strict arg argVal, deliString=("_")
+
+  iDigits=.someRexxInfo~internalDigits  -- get number of internal digits
+  numeric digits iDigits
+  val=argVal~d2x(iDigits)  -- convert to a hexadecimal string
+  if iDigits=9 then len=8  -- hex string length
+               else len=16
+  hexval = val~right(len)  -- extract the hex digits representing 32 or 64 bit value
+  if iDigits=18, deliString<>"" then   -- insert delimiter into hexadecimal string
+     hexVal=hexVal~insert(deliString,8)
+  return hexVal
+
+/** Just parse the version once, then cache internalDigits */
+::class someRexxinfo    -- a private class
+
+/** Just parse the version once to determine size of internalDigigs,
+    then cache internalDigits. Defaults to 9 digits (32-bit), 18 digits
+    if 64-bit.
+*/
+::method init class
+  expose internalDigits
+  internalDigits=9      -- default: 32-bit
+  parse version version
+  if version~pos("64-bit") <> 0 then
+     internalDigits=18
+
+/** Getter method for internalDigits.
+*  @return internalDigits which is 9 for 32-bit and 18 for 64-bit ooRexx
+*/
+::method internalDigits class
+  expose internalDigits
+  return internalDigits
+

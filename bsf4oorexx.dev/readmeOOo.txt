@@ -1,5 +1,5 @@
-The ooRexx OpenOffice.org Support (Using BSF4ooRexx)     January 2024 (Beta)
-====================================================     ===================
+The ooRexx OpenOffice.org Support (Using BSF4ooRexx)     2024-03-04 (GA)
+====================================================     ===============
 
 This adds support for interfacing with OpenOffice/StarOffice/LibreOffice using
 BSF4ooRexx850, which therefore must be installed already. Please note: by default the
