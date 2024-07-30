@@ -7,6 +7,16 @@ public class Settings {
     private boolean includePackage;
     private boolean includeVariableReferences;
 
+    public Settings(boolean includePublic, boolean includePrivate, boolean includePackage, boolean includeVariableReferences) {
+        this.includePublic = includePublic;
+        this.includePrivate = includePrivate;
+        this.includePackage = includePackage;
+        this.includeVariableReferences = includeVariableReferences;
+    }
+
+    public Settings() {
+    }
+
     public boolean isIncludePublic() {
         return includePublic;
     }

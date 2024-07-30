@@ -9,7 +9,7 @@
     <extensions defaultExtensionNs="com.intellij">
         <lang.foldingBuilder language="ooRexx" implementationClass="org.oorexx.ide.intellij.folding.FoldingBuilder"/>
         <colorSettingsPage implementation="org.oorexx.ide.intellij.highlighting.OoRexxColorSettingPage"/>
-        <lang.syntaxHighlighterFactory key="ooRexx"
+        <lang.syntaxHighlighterFactory language="ooRexx"
                                        implementationClass="org.oorexx.ide.intellij.highlighting.OoRexxSyntaxHighlighterFactory"/>
         <additionalTextAttributes scheme="Default" file="colorSchemes/ooRexxColors.xml"/>
 

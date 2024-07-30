@@ -45,7 +45,6 @@ import static com.intellij.psi.TokenType.*;
     private boolean commentStart = false;
     private boolean isMinus;
     private boolean isConcatinationWhiteSpace = false;
-    private int yychar;
     private boolean allowSpecialChars = false;
     private static java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(".*(\\u0040|\\u0023|\\u00A2|\\u0024).*", java.util.regex.Pattern.CASE_INSENSITIVE);
 

@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
     <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">-->
 
-    <title>ooRexxDoc - ${title}</title>
+    <title>ooRexxDoc - ${fillContext.ooRexxDocGenerationContext.title}</title>
 
     <style type="text/css">
         body { padding-top: 70px; }
@@ -41,8 +41,8 @@
                     <input type="text" id="search" class="form-control" placeholder="Search" id="test" data-provide="typeahead" autocomplete=off>
                 </div>
                 <span class="navbar-right">
-                    <#list header?keys as key>
-                        <span class="label label-info">${key}: ${header[key]}</span>
+                    <#list fillContext.ooRexxDocGenerationContext.headers as key, value>
+                        <span class="label label-info">${key}: ${filler.evaluate(value)}</span>
                     </#list>
                 </span>
             </form>
@@ -56,14 +56,14 @@
         <div class="col-md-offset-3 col-md-6 content">
             <div class="panel panel-default">
                 <div class="panel-body">
-                    <#if overview??>
-                        ${overview}
+                    <#if fillContext.ooRexxDocGenerationContext.overview??>
+                        ${fillContext.ooRexxDocGenerationContext.overview}
                         <#else>
                         Welcome
                     </#if>
 
                     <hr width="99%"/>
-                    <#list packages as package>
+                    <#list fillContext.ooRexxPackages as package>
                         <a href="packages/${package.name}.html">${package.name}</a>
                         <ul>
                             <#if package.routines?size != 0>
@@ -113,6 +113,7 @@
                             </#if>
                         </ul>
                         <hr width="99%"/>
+                        ${filler.fill(fillContext, "package.ftl", "./packages/${package.name}.html", package)}
                     </#list>
                 </div>
             </div>
@@ -122,7 +123,7 @@
 <script src="js/jquery.min.js"></script>
 <script src="js/typeahead-bootstrap.js"></script>
 <script src="js/bootstrap.min.js"></script>
-<script src="js/search-data.js"></script>
+<script src="./js/search-data.js"></script>
 <script>
     $(document).ready(function() {
         $('#search').typeahead({
@@ -148,3 +149,5 @@
 
 </body>
 </html>
+
+${filler.fill(fillContext, "search-data-template.ftl", "./js/search-data.js", null)}

@@ -190,11 +190,8 @@ public class OoRexxCompletionContributor extends CompletionContributor {
 
     private List<String> getCompletions(String path) {
         InputStream resourceAsStream = OoRexxCompletionContributor.class.getResourceAsStream(path);
-        try {
-            return IOUtils.readLines(resourceAsStream, "UTF-8");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+
+        return IOUtils.readLines(resourceAsStream, "UTF-8");
     }
 
     private boolean shouldStop(CompletionParameters parameters, ProcessingContext context, CompletionResultSet resultSet) {

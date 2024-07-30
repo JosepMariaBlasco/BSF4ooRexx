@@ -4,11 +4,11 @@ import java.time.LocalDate
 plugins {
     id 'org.jetbrains.intellij' version '1.10.0'
     id 'idea'
-    id 'org.jetbrains.grammarkit' version '2021.2.2'
-    id 'org.jetbrains.kotlin.jvm' version '1.7.20'
+    id 'org.jetbrains.grammarkit' version '2022.3.2.2'
+    id 'org.jetbrains.kotlin.jvm' version '1.9.23'
 }
 
-def intelliJBuildVersion = 'IC-222.4345.14'
+def intelliJBuildVersion = 'IC-2024.1'
 
 allprojects {
     apply plugin: 'java'
@@ -18,7 +18,7 @@ allprojects {
     apply plugin: 'org.jetbrains.kotlin.jvm'
 
     group 'org.oorexx.idea'
-    version '2.2.0-GA'
+    version '2.3.0-GA'
 
     sourceCompatibility = 1.17
     targetCompatibility = 1.17
@@ -30,10 +30,14 @@ allprojects {
     intellij {
         version = intelliJBuildVersion
         sandboxDir = project.projectDir.getAbsolutePath() + ' /sandbox'
-        plugins.set(["PsiViewer:222-SNAPSHOT"])
+        plugins.set(["PsiViewer:241-SNAPSHOT"])
 
         prepareSandbox {
             pluginName = 'ooRexxPlugin'
+        }
+
+        runIde {
+            args += "-DooRexxDoc.templatesDir=/Users/alex/IdeaProjects/ooRexxIDEAPlugin/oorexxdoc/src/main/resources/ooRexxDoc-templates"
         }
     }
 
@@ -46,11 +50,15 @@ allprojects {
             generatedSourceDirs += file('src/main/gen')
         }
     }
+    dependencies {
+
+    }
 }
 
 project(':lang') {
 
     dependencies {
+        compileOnly("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.7")
         testImplementation "junit:junit:4.12"
     }
 
@@ -64,15 +72,15 @@ project(':lang') {
     }
 
     generateLexer {
-        source = "src/main/resources/ooRexx.flex"
-        targetDir = "src/main/gen/org/oorexx/ide/lexer"
+        sourceFile = new File("src/main/resources/ooRexx.flex")
+        targetOutputDir = new File("src/main/gen/org/oorexx/ide/lexer")
         targetClass = "OoRexxLexer"
         purgeOldFiles = true
     }
 
     generateParser {
-        source = "src/main/resources/ooRexx.bnf"
-        targetRoot = 'src/main/gen'
+        sourceFile = new File("src/main/resources/ooRexx.bnf")
+        targetRootOutputDir = new File('src/main/gen')
         pathToParser = '/org/oorexx/ide/lang/OoRexxParser.java'
         pathToPsiRoot = "/org/oorexx/ide/lang"
         purgeOldFiles = true
@@ -101,6 +109,9 @@ project(':oorexxdoc') {
         implementation "org.apache.commons:commons-text:1.9"
         implementation "commons-io:commons-io:2.6"
         implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-xml', version: '2.11.0'
+        implementation group: 'com.google.code.gson', name: 'gson', version: '2.11.0'
+
+
 
         testImplementation "org.junit.jupiter:junit-jupiter-api:5.7.2"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.7.2"
@@ -192,7 +203,7 @@ project(':plugin') {
 
     tasks {
         patchPluginXml {
-            sinceBuild.set("222")
+            sinceBuild.set("241")
             untilBuild.set("444.*")
         }
     }

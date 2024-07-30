@@ -23,6 +23,7 @@ public class OoRexxDocGenerationContextFactory {
         ooRexxDocGenerationContext.getSettings().setIncludePublic(ooRexxDocXml.getSettings().isIncludePublic());
         ooRexxDocGenerationContext.getSettings().setIncludePackage(ooRexxDocXml.getSettings().isIncludePackage());
         ooRexxDocGenerationContext.getSettings().setIncludeVariableReferences(ooRexxDocXml.getSettings().isIncludeVariableReferences());
+        ooRexxDocGenerationContext.setTemplateName(ooRexxDocXml.getTemplateName());
 
         return ooRexxDocGenerationContext;
     }
@@ -39,6 +40,7 @@ public class OoRexxDocGenerationContextFactory {
         ooRexxDocGenerationContext.getSettings().setIncludePublic(command.isIncludePublic());
         ooRexxDocGenerationContext.getSettings().setIncludePackage(command.isIncludePackage());
         ooRexxDocGenerationContext.getSettings().setIncludeVariableReferences(command.isIncludeVariableReferences());
+        ooRexxDocGenerationContext.setTemplateName(command.getTemplateName());
 
         return ooRexxDocGenerationContext;
     }

@@ -26,12 +26,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.project.ProjectManager;
-import com.intellij.openapi.util.Computable;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiFile;
-import com.intellij.psi.PsiFileFactory;
 import freemarker.cache.FileTemplateLoader;
 import freemarker.cache.StringTemplateLoader;
 import freemarker.template.Configuration;
@@ -49,10 +44,10 @@ import org.oorexx.doc.input.model.OoRexxDocGenerationContextFactory;
 import org.oorexx.doc.input.model.xml.OoRexxDocXml;
 import org.oorexx.doc.util.IdGenerator;
 import org.oorexx.ide.file.OoRexxFile;
-import org.oorexx.ide.file.OoRexxFileType;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
+@Deprecated
 public abstract class DocGeneratorBase {
 
     protected static final File localFile = new File(new File(System.getProperty("user.dir")), "/templates");
@@ -80,7 +75,7 @@ public abstract class DocGeneratorBase {
             FileUtils.copyDirectory(new File(localFile, "js"), jsDestination);
         } else {
             try {
-                copyFromJar("templates/js", Paths.get(jsDestination.getPath()));
+                copyFromJar("templates/classic/js", Paths.get(jsDestination.getPath()));
             } catch (Exception e) {
                 File resourceFile = new File(DocGeneratorBase.class.getClassLoader().getResource("/templates").getFile());
                 copyFromJar(resourceFile.getAbsolutePath(), Paths.get(jsDestination.getPath()));
@@ -94,9 +89,9 @@ public abstract class DocGeneratorBase {
     protected abstract AstUtilBase getAstUtil();
 
     protected List<OoRexxPackage> getOoRexxPackages() {
-        List<AstWrapper> psiFiles = getAstUtil().getAbstractSyntaxTrees(ooRexxDocGenerationContext.getInputs());
-
-        return psiFiles.parallelStream()
+        return getAstUtil()
+                .getAbstractSyntaxTrees(ooRexxDocGenerationContext.getInputs())
+                .parallelStream()
                        .map(psiFile -> {
                            final OoRexxPackage[] ooRexxPackage = new OoRexxPackage[1];
                            ApplicationManager.getApplication().runReadAction(() -> {
@@ -109,18 +104,6 @@ public abstract class DocGeneratorBase {
                        .filter(OoRexxPackage::hasElements)
                        .sorted(Comparator.comparing(o -> o.getName().toLowerCase()))
                        .collect(Collectors.toList());
-    }
-
-    private PsiFile getPsiFile(File file) {
-        Project defaultProject = ProjectManager.getInstance().getDefaultProject();
-        final PsiFileFactory factory = PsiFileFactory.getInstance(defaultProject);
-        return ApplicationManager.getApplication().runReadAction((Computable<PsiFile>) () -> {
-            try {
-                return factory.createFileFromText(file.getName(), OoRexxFileType.INSTANCE, FileUtils.readFileToString(file, "utf-8"));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
     }
 
     private void fillTemplates(List<OoRexxPackage> ooRexxPackages) throws Exception {

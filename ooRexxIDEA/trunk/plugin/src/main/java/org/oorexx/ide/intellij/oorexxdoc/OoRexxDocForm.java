@@ -26,6 +26,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.AddEditRemovePanel;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
+import org.oorexx.doc.generate.v2.TemplateRegistry;
 import org.oorexx.doc.input.intellij.IntelliJGenerationCommand;
 import org.oorexx.ide.file.OoRexxFileType;
 import org.oorexx.ide.intellij.oorexxdoc.model.FileNotFoundException;
@@ -50,6 +51,7 @@ public class OoRexxDocForm {
     private JCheckBox modifierPackage;
     private JCheckBox variableReferences;
     private JCheckBox openDocumentationAfterCreation;
+    private JComboBox templateNames;
     private IntelliJGenerationCommand intelliJGenerationCommand = new IntelliJGenerationCommand();
 
     public OoRexxDocForm(Project project, IntelliJGenerationCommand intelliJGenerationCommand) {
@@ -169,6 +171,10 @@ public class OoRexxDocForm {
         modifierPackage.setSelected(intelliJGenerationCommand.isIncludePackage());
         modifierPrivate.setSelected(intelliJGenerationCommand.isIncludePrivate());
         variableReferences.setSelected(intelliJGenerationCommand.isIncludeVariableReferences());
+        for (String templateName : TemplateRegistry.Companion.getTemplateNames()) {
+            templateNames.addItem(templateName);
+        }
+        templateNames.setSelectedItem(intelliJGenerationCommand.getTemplateName());
 
     }
 
@@ -202,6 +208,7 @@ public class OoRexxDocForm {
         intelliJGenerationCommand.setIncludePublic(modifierPublic.isSelected());
         intelliJGenerationCommand.setIncludePackage(modifierPackage.isSelected());
         intelliJGenerationCommand.setIncludeVariableReferences(variableReferences.isSelected());
+        intelliJGenerationCommand.setTemplateName((String) templateNames.getSelectedItem());
 
         return intelliJGenerationCommand;
     }

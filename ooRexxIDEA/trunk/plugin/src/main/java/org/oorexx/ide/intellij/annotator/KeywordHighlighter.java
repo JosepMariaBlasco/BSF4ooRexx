@@ -27,6 +27,8 @@ import org.oorexx.ide.lang.psi.OoRexxNumericExpr;
 import org.oorexx.ide.lexer.token.OoRexxTokenType;
 
 import static org.oorexx.ide.intellij.highlighting.OoRexxSyntaxHighlighter.OOREXX_KEYWORD;
+import static org.oorexx.ide.intellij.highlighting.OoRexxSyntaxHighlighter.OOREXX_NUMBER;
+import static org.oorexx.ide.intellij.highlighting.OoRexxSyntaxHighlighter.OOREXX_STRINGS;
 
 
 public class KeywordHighlighter implements Annotator {
@@ -39,25 +41,44 @@ public class KeywordHighlighter implements Annotator {
             PsiElement directiveStart = psiElement.getFirstChild();
             PsiElement directiveHeader = PsiTreeUtil.findChildOfType(psiElement, DirectiveHeader.class);
 
-            annotationHolder.createInfoAnnotation(directiveStart.getNode(), null).setTextAttributes(OoRexxSyntaxHighlighter.OOREXX_KEYWORD);
+            annotationHolder.newAnnotation(HighlightSeverity.TEXT_ATTRIBUTES, "")
+                    .textAttributes(OOREXX_KEYWORD)
+                    .range(directiveStart.getNode()).create();
 
             if (directiveHeader != null) {
-                annotationHolder.createInfoAnnotation(directiveHeader.getFirstChild().getNode(), null).setTextAttributes(OoRexxSyntaxHighlighter.OOREXX_KEYWORD);
+                annotationHolder.newAnnotation(HighlightSeverity.TEXT_ATTRIBUTES, "")
+                        .textAttributes(OOREXX_KEYWORD)
+                        .range(directiveHeader.getFirstChild().getNode()).create();
             }
 
         } else if (psiElement instanceof OoRexxBuiltInFunctions) {
             TextRange textRange = psiElement.getNode().getFirstChildNode().getFirstChildNode().getTextRange();
             annotate(annotationHolder, textRange, OoRexxSyntaxHighlighter.OOREXX_BUILT_IN);
         } else if (psiElement instanceof OoRexxDirectiveResourceData) {
-            annotationHolder.createInfoAnnotation(psiElement.getNode(), null).setTextAttributes(OoRexxSyntaxHighlighter.OOREXX_STRINGS);
+            annotationHolder.newAnnotation(HighlightSeverity.TEXT_ATTRIBUTES, "")
+                    .textAttributes(OOREXX_STRINGS)
+                    .range(psiElement.getNode()).create();
+
         } else if (psiElement instanceof OoRexxNumericExpr) {
-            annotationHolder.createInfoAnnotation(psiElement.getNode(), null).setTextAttributes(OoRexxSyntaxHighlighter.OOREXX_NUMBER);
+            annotationHolder.newAnnotation(HighlightSeverity.TEXT_ATTRIBUTES, "")
+                    .textAttributes(OOREXX_NUMBER)
+                    .range(psiElement.getNode()).create();
+
         } else if (psiElement instanceof OoRexxNegativeNumericExpr) {
-            annotationHolder.createInfoAnnotation(psiElement.getNode(), null).setTextAttributes(OoRexxSyntaxHighlighter.OOREXX_NUMBER);
+            annotationHolder.newAnnotation(HighlightSeverity.TEXT_ATTRIBUTES, "")
+                    .textAttributes(OOREXX_NUMBER)
+                    .range(psiElement.getNode()).create();
+
         } else if (psiElement instanceof OoRexxDirectiveResourceEnd) {
-            annotationHolder.createInfoAnnotation(psiElement.getNode(), null).setTextAttributes(OoRexxSyntaxHighlighter.OOREXX_KEYWORD);
+            annotationHolder.newAnnotation(HighlightSeverity.TEXT_ATTRIBUTES, "")
+                    .textAttributes(OOREXX_KEYWORD)
+                    .range(psiElement.getNode()).create();
+
         } else if (psiElement instanceof OoRexxEnvironment) {
-            annotationHolder.createInfoAnnotation(psiElement.getNode(), null).setTextAttributes(OoRexxSyntaxHighlighter.OOREXX_KEYWORD);
+            annotationHolder.newAnnotation(HighlightSeverity.TEXT_ATTRIBUTES, "")
+                    .textAttributes(OOREXX_KEYWORD)
+                    .range(psiElement.getNode()).create();
+
         } else {
             IElementType iElementType = PsiUtilCore.getElementType(psiElement);
             if (iElementType instanceof OoRexxTokenType) {
@@ -68,7 +89,9 @@ public class KeywordHighlighter implements Annotator {
                         || ooRexxTokenType.getTokenName().equalsIgnoreCase("SELF")
                         || (!(psiElement.getParent() instanceof OoRexxKeywordList)))) {
                     if (keywordList.contains(ooRexxTokenType.getTokenName())) {
-                        annotationHolder.createInfoAnnotation(psiElement.getNode(), null).setTextAttributes(OOREXX_KEYWORD);
+                        annotationHolder.newAnnotation(HighlightSeverity.TEXT_ATTRIBUTES, "")
+                                .textAttributes(OOREXX_KEYWORD)
+                                .range(psiElement.getNode()).create();
                     }
                 }
             }

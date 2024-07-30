@@ -20,4 +20,5 @@
         <includePackage>true</includePackage>
         <includeVariableReferences>true</includeVariableReferences>
     </settings>
+    <templateName>classic</templateName>
 </OoRexxDocXml>

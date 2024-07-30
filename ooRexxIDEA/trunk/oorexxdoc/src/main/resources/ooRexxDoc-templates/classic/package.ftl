@@ -1,3 +1,4 @@
+<#assign package = fillContext.current>
 <html lang="en">
 
 <head>
@@ -8,7 +9,7 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
     <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">-->
 
-    <title>ooRexxDoc - ${title} - ${package.name}</title>
+    <title>ooRexxDoc - ${fillContext.ooRexxDocGenerationContext.title} - ${package.name}</title>
 
     <style type="text/css">
         body { padding-top: 70px; }
@@ -74,8 +75,8 @@
                     <input type="text" id="search" class="form-control" placeholder="Search" id="test" data-provide="typeahead" autocomplete=off>
                 </div>
                 <span class="navbar-right">
-                    <#list header?keys as a>
-                        <span class="label label-info">${a}: ${header[a]}</span>
+                    <#list fillContext.ooRexxDocGenerationContext.headers as key, value>
+                        <span class="label label-info">${key}: ${filler.evaluate(value)}</span>
                     </#list>
                 </span>
             </form>
@@ -88,7 +89,7 @@
             <div class="panel panel-default">
                 <div class="panel-heading">Packages</div>
                 <div class="panel-body" style="max-height: 420px;overflow-y: scroll;">
-                    <#list packages as navPackage>
+                    <#list fillContext.ooRexxPackages as navPackage>
                         <a href="${navPackage.id}.html">${navPackage.name}</a>
                         <hr width="99%"/>
                     </#list>

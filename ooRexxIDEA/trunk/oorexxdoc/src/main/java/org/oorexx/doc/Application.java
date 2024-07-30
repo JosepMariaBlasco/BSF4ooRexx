@@ -1,8 +1,14 @@
 package org.oorexx.doc;
 
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import org.apache.commons.io.FileUtils;
 import org.oorexx.doc.generate.DocGeneratorBase;
 import org.oorexx.doc.generate.StandaloneDocGenerator;
+import org.oorexx.doc.generate.v2.StandaloneGenerator;
+import org.oorexx.doc.generate.v2.TemplateBundle;
+import org.oorexx.doc.generate.v2.TemplateRegistry;
+import org.oorexx.doc.input.model.OoRexxDocGenerationContext;
+import org.oorexx.doc.input.model.OoRexxDocGenerationContextFactory;
 import org.oorexx.doc.input.model.xml.OoRexxDocXml;
 import org.oorexx.doc.input.xml.legacy.XmlParser;
 
@@ -25,6 +31,7 @@ public class Application {
                 try {
                     generateXml(file);
                     printSuccess();
+                    System.exit(0);
                 } catch (Exception e) {
                     e.printStackTrace();
                     printXMLHint(args);
@@ -37,6 +44,7 @@ public class Application {
                     System.out.println("using input as string");
                     generateXml(arg);
                     printSuccess();
+                    System.exit(0);
                 } catch (Exception e) {
                     e.printStackTrace();
                     printXMLHint(args);
@@ -61,14 +69,28 @@ public class Application {
 
     private static void generateXml(File file) throws Exception {
         String xmlContent = FileUtils.readFileToString(file, "UTF-8");
-        OoRexxDocXml ooRexxDocXml = XmlParser.get(xmlContent);
-        DocGeneratorBase docGenerator = new StandaloneDocGenerator(ooRexxDocXml);
-        docGenerator.generate();
+        OoRexxDocXml ooRexxDocXml = new XmlMapper().readValue(xmlContent, OoRexxDocXml.class);
+
+        if(ooRexxDocXml.getTemplateName() == null) {
+            ooRexxDocXml.setTemplateName(TemplateRegistry.defaultTemplateName);
+        }
+
+        generate(ooRexxDocXml);
+    }
+
+    private static void generate(OoRexxDocXml ooRexxDocXml) {
+        OoRexxDocGenerationContext ooRexxDocGenerationContext = OoRexxDocGenerationContextFactory.of(ooRexxDocXml);
+        TemplateBundle templateBundle = TemplateRegistry.Companion.getTemplateByName(ooRexxDocGenerationContext.getTemplateName());
+        new StandaloneGenerator().generate(ooRexxDocGenerationContext, templateBundle);
     }
 
     private static void generateXml(String xmlContent) throws Exception {
-        OoRexxDocXml ooRexxDocXml = XmlParser.get(xmlContent);
-        DocGeneratorBase docGenerator = new StandaloneDocGenerator(ooRexxDocXml);
-        docGenerator.generate();
+        OoRexxDocXml ooRexxDocXml = new XmlMapper().readValue(xmlContent, OoRexxDocXml.class);
+
+        if(ooRexxDocXml.getTemplateName() == null) {
+            ooRexxDocXml.setTemplateName(TemplateRegistry.defaultTemplateName);
+        }
+
+        generate(ooRexxDocXml);
     }
 }

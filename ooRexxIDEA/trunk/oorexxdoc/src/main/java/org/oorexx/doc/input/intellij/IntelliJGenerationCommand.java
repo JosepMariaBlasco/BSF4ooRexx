@@ -23,6 +23,7 @@ public class IntelliJGenerationCommand {
     private boolean includePackage;
     private boolean includePrivate;
     private boolean includeVariableReferences;
+    private String templateName;
 
     public static IntelliJGenerationCommand of(OoRexxDocXml ooRexxDocXml) throws Exception {
         IntelliJGenerationCommand intelliJGenerationCommand = new IntelliJGenerationCommand();
@@ -40,6 +41,7 @@ public class IntelliJGenerationCommand {
         intelliJGenerationCommand.setIncludePublic(ooRexxDocXml.getSettings().isIncludePublic());
         intelliJGenerationCommand.setIncludePackage(ooRexxDocXml.getSettings().isIncludePackage());
         intelliJGenerationCommand.setIncludeVariableReferences(ooRexxDocXml.getSettings().isIncludeVariableReferences());
+        intelliJGenerationCommand.setTemplateName(ooRexxDocXml.getTemplateName());
         return intelliJGenerationCommand;
     }
 
@@ -113,5 +115,13 @@ public class IntelliJGenerationCommand {
 
     public boolean isIncludeVariableReferences() {
         return includeVariableReferences;
+    }
+
+    public String getTemplateName() {
+        return templateName;
+    }
+
+    public void setTemplateName(String templateName) {
+        this.templateName = templateName;
     }
 }

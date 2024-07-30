@@ -7,6 +7,7 @@ public class OoRexxDocXml {
     private Header header;
     private String overview;
     private Settings settings = new Settings();
+    private String templateName;
 
     public Parser getParser() {
         return parser;
@@ -46,5 +47,13 @@ public class OoRexxDocXml {
 
     public void setSettings(Settings settings) {
         this.settings = settings;
+    }
+
+    public String getTemplateName() {
+        return templateName;
+    }
+
+    public void setTemplateName(String templateName) {
+        this.templateName = templateName;
     }
 }

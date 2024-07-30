@@ -1,5 +1,5 @@
 var searchData = [
-    <#list packages as package>
+    <#list fillContext.ooRexxPackages as package>
     {
         id: "${package.id}", type: "Package", name: "${package.jsName}", info: null,  href: "${package.id}.html"
     },

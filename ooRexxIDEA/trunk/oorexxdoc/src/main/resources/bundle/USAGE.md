@@ -62,6 +62,7 @@ ooRexxDoc can be run with an XML configuration. The XML configuration can look a
         <includePackage>true</includePackage>
         <includeVariableReferences>true</includeVariableReferences>
     </settings>
+    <templateName>classic</templateName>
 </OoRexxDocXml>
 ```
 The example configuration shows multiple <input>-tags: two files and a directory containing rexx sources.

@@ -6,18 +6,35 @@ import org.oorexx.doc.input.model.xml.Header;
 import org.oorexx.doc.input.model.xml.HeaderProperty;
 import org.oorexx.doc.input.model.xml.Parser;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class OoRexxDocGenerationContext {
 
-    private List<String> inputs;
+    private List<String> inputs = new ArrayList<>();
     private String output;
-    private Map<String, String> headers;
+    private Map<String, String> headers = new HashMap<>();
     private String title;
     private String overview;
     private Settings settings = new Settings();
+    private String templateName = "classic";
+
+    public OoRexxDocGenerationContext() {
+    }
+
+    public OoRexxDocGenerationContext(List<String> inputs, String output, Map<String, String> headers, String title, String overview, Settings settings, String templateName) {
+        this.inputs = inputs;
+        this.output = output;
+        this.headers = headers;
+        this.title = title;
+        this.overview = overview;
+        this.settings = settings;
+        this.templateName = templateName;
+    }
 
     public List<String> getInputs() {
         return inputs;
@@ -67,7 +84,15 @@ public class OoRexxDocGenerationContext {
         this.settings = settings;
     }
 
-    public OoRexxDocXml toXml(){
+    public String getTemplateName() {
+        return templateName;
+    }
+
+    public void setTemplateName(String templateName) {
+        this.templateName = templateName;
+    }
+
+    public OoRexxDocXml toXml() {
         OoRexxDocXml ooRexxDocXml = new OoRexxDocXml();
         ooRexxDocXml.setSettings(new org.oorexx.doc.input.model.xml.Settings());
         ooRexxDocXml.getSettings().setIncludePackage(getSettings().isIncludePackage());
@@ -82,6 +107,7 @@ public class OoRexxDocGenerationContext {
         ooRexxDocXml.setHeader(new Header());
         List<HeaderProperty> headerProperties = getHeaders().entrySet().stream().map(entry -> new HeaderProperty(entry.getKey(), entry.getValue())).collect(Collectors.toList());
         ooRexxDocXml.getHeader().setHeaderProperties(headerProperties);
+        ooRexxDocXml.setTemplateName(getTemplateName());
         return ooRexxDocXml;
     }
 }
