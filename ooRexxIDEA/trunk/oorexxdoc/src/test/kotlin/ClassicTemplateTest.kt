@@ -11,6 +11,7 @@ class ClassicTemplateTest {
 
     @Test
     fun testClassicTemplate() {
+        TemplateRegistry.enableJarLoading = false
         val generator = StandaloneGenerator()
 
         val ooRexxDocGenerationContext = OoRexxDocGenerationContext(

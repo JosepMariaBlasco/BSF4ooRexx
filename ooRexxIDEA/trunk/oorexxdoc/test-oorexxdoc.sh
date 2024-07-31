@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # Define the absolute path to the zip file and the unpacked folder
-ZIP_FILE="/Users/alex/IdeaProjects/ooRexxIDEAPlugin/oorexxdoc/build/distributions/ooRexxDoc-2.3.0-GA.zip"
-UNPACKED_FOLDER="/Users/alex/IdeaProjects/ooRexxIDEAPlugin/oorexxdoc/build/distributions/ooRexxDoc-2.3.0-GA"
+VERSION="2.4.0-GA"
+ZIP_FILE="/Users/alex/IdeaProjects/ooRexxIDEAPlugin/oorexxdoc/build/distributions/ooRexxDoc-$VERSION.zip"
+UNPACKED_FOLDER="/Users/alex/IdeaProjects/ooRexxIDEAPlugin/oorexxdoc/build/distributions/ooRexxDoc-$VERSION"
 CP="/Users/alex/.gradle/caches/modules-2/files-2.1/com.jetbrains.intellij.idea/ideaIC/2024.1/181fa36f74690e64a81a8e06ceda9480d2a6c626/ideaIC-2024.1/lib/*"
 # Check if the zip file exists
 if [ -f "$ZIP_FILE" ]; then
@@ -24,8 +25,8 @@ if [ -f "$ZIP_FILE" ]; then
     # Call some commands afterwards
     # Replace the following echo commands with your actual commands
     cd "$UNPACKED_FOLDER/example"
-    java -cp "../oorexxdoc-2.3.0-GA.jar:$CP" org.oorexx.doc.Application ./ooRexxDoc-markdown.xml
-    java -cp "../oorexxdoc-2.3.0-GA.jar:$CP" org.oorexx.doc.Application ./ooRexxDoc.xml
+    java -cp "../oorexxdoc-$VERSION.jar:$CP" org.oorexx.doc.Application ./ooRexxDoc-markdown.xml
+    java -cp "../oorexxdoc-$VERSION.jar:$CP" org.oorexx.doc.Application ./ooRexxDoc.xml
   else
     echo "Failed to unpack the zip file."
     exit 1

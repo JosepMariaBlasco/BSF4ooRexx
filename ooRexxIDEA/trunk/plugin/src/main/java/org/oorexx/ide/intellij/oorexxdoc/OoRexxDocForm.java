@@ -146,7 +146,7 @@ public class OoRexxDocForm {
             output.setText(this.intelliJGenerationCommand.getOutput().toString());
         }
 
-        output.getButton().addActionListener(new AbstractAction() {
+        output.addActionListener(new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 PathChooserDialog pathChooser = FileChooserFactory.getInstance().createPathChooser(FileChooserDescriptorFactory.createSingleFolderDescriptor(), project, null);
@@ -174,7 +174,11 @@ public class OoRexxDocForm {
         for (String templateName : TemplateRegistry.Companion.getTemplateNames()) {
             templateNames.addItem(templateName);
         }
-        templateNames.setSelectedItem(intelliJGenerationCommand.getTemplateName());
+        if(intelliJGenerationCommand.getTemplateName() == null) {
+            templateNames.setSelectedItem(TemplateRegistry.defaultTemplateName);
+        } else {
+            templateNames.setSelectedItem(intelliJGenerationCommand.getTemplateName());
+        }
 
     }
 

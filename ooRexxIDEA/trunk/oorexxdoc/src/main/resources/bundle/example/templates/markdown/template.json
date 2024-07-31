@@ -1,0 +1,12 @@
+{
+  "descriptor": {
+    "name": "markdown",
+    "mainTemplateFileName": "markdown.ftl",
+    "mainTargetFileName": "oorexxdoc.md"
+  },
+  "templateFiles": [
+    {
+      "file": "markdown.ftl"
+    }
+  ]
+}

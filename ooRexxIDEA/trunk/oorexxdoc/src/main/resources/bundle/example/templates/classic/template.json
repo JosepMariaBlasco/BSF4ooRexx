@@ -1,0 +1,23 @@
+{
+  "descriptor": {
+    "name": "classic",
+    "mainTemplateFileName": "main.ftl",
+    "mainTargetFileName": "oorexxdoc.html"
+  },
+  "templateFiles": [
+    {
+      "file": "main.ftl"
+    },
+    {
+      "file": "package.ftl"
+    },
+    {
+      "file": "search-data-template.ftl"
+    }
+  ],
+  "supportingFiles": [
+    {
+      "file": "./js/"
+    }
+  ]
+}

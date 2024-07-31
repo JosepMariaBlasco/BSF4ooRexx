@@ -6,9 +6,9 @@ License: AL 2.0
 Version: ##version##
 
 Changelog:
-	- Various Fixes
-	- Build Improvements
-	- Auto Completion
+	- Fixes
+	- Support for custom ooRexxDoc templates
+	- A new markdown ooRexxDoc template
 
 Please report any bug you find or RFEs (request for enhancement) here: https://sourceforge.net/p/bsf4oorexx/oorexxplugin/milestone/2.0/
 
@@ -97,4 +97,8 @@ Highlighted Features:
         ::class my_class
 
 - To run ooRexxDoc without an active Intellij IDE (e.g. for usage in a build pipeline):
-    unpack the ooRexxDoc-##version##.zip and follow the instructions/examples in the USAGE.md file
+    unpack the ooRexxDoc-##version##.zip and follow the instructions/examples in the USAGE.md file.
+
+
+- To use custom ooRexxDoc templates :
+    unpack the ooRexxDoc-##version##.zip and follow the instructions/examples in the USAGE.md file.

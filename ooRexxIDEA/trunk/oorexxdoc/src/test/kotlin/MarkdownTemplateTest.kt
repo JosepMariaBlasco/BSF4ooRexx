@@ -16,6 +16,7 @@ class MarkdownTemplateTest {
 
     @Test
     fun testMarkdownTemplate() {
+        TemplateRegistry.enableJarLoading = false
          val generator = StandaloneGenerator()
 
         val ooRexxDocGenerationContext = OoRexxDocGenerationContext(

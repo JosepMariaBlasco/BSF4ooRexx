@@ -18,7 +18,7 @@ allprojects {
     apply plugin: 'org.jetbrains.kotlin.jvm'
 
     group 'org.oorexx.idea'
-    version '2.3.0-GA'
+    version '2.4.0-GA'
 
     sourceCompatibility = 1.17
     targetCompatibility = 1.17
@@ -118,6 +118,13 @@ project(':oorexxdoc') {
         testImplementation "junit:junit:4.13.2"
 
         implementation files(rootDir.getAbsolutePath() + "/lib/grammar-kit-2021.1.2.jar")
+    }
+
+    javadoc {
+        destinationDir = file("${buildDir}/docs/javadoc")
+        include 'org/oorexx/doc/analyse/model/**'
+        include 'org/oorexx/doc/generate/v2/FillContext.java'
+        include 'org/oorexx/doc/input/model/OoRexxDocGenerationContext.java'
     }
 
     jar {

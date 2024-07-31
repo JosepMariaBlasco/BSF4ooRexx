@@ -12,6 +12,7 @@ import kotlin.io.path.absolutePathString
 class TemplateRegistry {
     companion object {
         const val defaultTemplateName: String = "classic"
+        var enableJarLoading: Boolean = true
         private val loadedTemplates = mutableListOf<TemplateBundle>()
 
         fun getTemplates() : List<TemplateBundle> {
@@ -27,17 +28,23 @@ class TemplateRegistry {
 
             val templates = mutableSetOf<TemplateBundle>()
 
-            loadDefault(templates)
+            if(enableJarLoading) {
+                loadDefaultFromJar(templates)
+            }
 
             loadFromPath(templates, System.getenv("OOREXXDOC_TEMPLATE_HOME"))
-            loadFromPath(templates, System.getProperty("user.dir"), "ooRexxDoc/templates")
+            loadFromPath(templates, System.getProperty("user.home"), "ooRexxDoc/templates")
             loadFromPath(templates, System.getProperty("ooRexxDoc.templatesDir"))
 
             if (templates.isEmpty()) {
                 throw RuntimeException("Template registry cannot be empty. There are no templates available.")
             }
 
-            loadedTemplates.addAll(templates.toList())
+            for (template in templates) {
+                if(loadedTemplates.none {it.descriptor.name == template.descriptor.name}) {
+                    loadedTemplates.add(template)
+                }
+            }
         }
 
         private fun loadFromPath(templates: MutableSet<TemplateBundle>, path: String?, child: String = "") {
@@ -72,12 +79,7 @@ class TemplateRegistry {
             return file.listFiles()!!.filter { it.isDirectory }.map { loadTemplateBundle(it) }.filterNotNull()
         }
 
-        private fun loadDefault(templateFiles: MutableSet<TemplateBundle>)  {
-
-            if(!JarUtil.isJar()) {
-                return
-            }
-
+        private fun loadDefaultFromJar(templateFiles: MutableSet<TemplateBundle>)  {
             val path = JarUtil.copyFromJarToTmp("ooRexxDoc-templates")
 
             loadFromPath(templateFiles, path.absolutePathString())

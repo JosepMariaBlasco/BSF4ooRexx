@@ -53,11 +53,15 @@ class Filler {
     }
 
     fun fill(fillContext: FillContext, templateName: String, fileName: String, currentElement: Any?) {
-
         val stringWriter = StringWriter()
+
         val data = mutableMapOf(
             "filler" to this,
-            "fillContext" to fillContext.copy(current=currentElement)
+            "fillContext" to FillContext(fillContext.ooRexxDocGenerationContext,
+                fillContext.templateBundle,
+                fillContext.ooRexxPackages,
+                currentElement,
+                fillContext.templateMapping)
         )
 
         fillContext.templateMapping[templateName]!!.process(data, stringWriter)
@@ -65,13 +69,6 @@ class Filler {
         fileMapping[fileName] = stringWriter
     }
 
-    data class FillContext(
-        val ooRexxDocGenerationContext: OoRexxDocGenerationContext,
-        val templateBundle: TemplateBundle,
-        val ooRexxPackages: List<OoRexxPackage>,
-        val current: Any?,
-        val templateMapping: Map<String, Template>
-    )
 
     fun evaluate(eval: String) : String {
         try {
