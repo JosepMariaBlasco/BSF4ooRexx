@@ -112,8 +112,10 @@ Annotated with:
              <#if routine.variableReferences?size != 0>
 - Variable reference(s):
                  <#list routine.variableReferences as variableReference>
-    - ${variableReference?html}
+    - `${variableReference}`
                  </#list>
+
+
              </#if>
              <#if routine.useArg != "">
 - `USE ARG ${routine.useArg}`
