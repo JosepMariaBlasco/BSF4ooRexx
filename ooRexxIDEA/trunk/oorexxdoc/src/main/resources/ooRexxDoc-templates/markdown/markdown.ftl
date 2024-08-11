@@ -4,35 +4,44 @@
 - ${key}: ${filler.evaluate(value)}
 </#list>
 ---
+
 ${fillContext.ooRexxDocGenerationContext.overview}
+
 ---
 ## Packages
-<#list fillContext.ooRexxPackages as package>
+<#list fillContext.ooRexxPackages?sort_by("name") as package>
+- [${package.name}](#${package.id?lower_case})
+</#list>
+
+
+<#list fillContext.ooRexxPackages?sort_by("name") as package>
 - ${package.name}
     <#if package.routines?size != 0>
     - Routines
-        - <#list package.routines as routine>[${routine.name}](#${routine.id?lower_case})  </#list>
+        - <#list package.routines?sort_by("name") as routine>[${routine.name}](#${routine.id?lower_case})  </#list>
     </#if>
     <#if package.methods?size != 0>
     - Floating Methods
-        - <#list package.methods as method>[${method.name}](#${method.id?lower_case})  </#list>
+        - <#list package.methods?sort_by("name") as method>[${method.name}](#${method.id?lower_case})  </#list>
     </#if>
     <#if package.attributes?size != 0>
     - Floating Attributes
-        - <#list package.attributes as attribute>[${attribute.name}](#${attribute.id?lower_case})   </#list>
+        - <#list package.attributes?sort_by("name") as attribute>[${attribute.name}](#${attribute.id?lower_case})   </#list>
     </#if>
     <#if package.constants?size != 0>
     - Floating Constants
-        - <#list package.constants as constant>>[${constant.name}](#${constant.id?lower_case})  </#list>
+        - <#list package.constants?sort_by("name") as constant>>[${constant.name}](#${constant.id?lower_case})  </#list>
     </#if>
     <#if package.classes?size != 0>
     - Classes
-        - <#list package.classes as class>[${class.name}](#${class.id?lower_case})  </#list>
+        - <#list package.classes?sort_by("name") as class>[${class.name}](#${class.id?lower_case})  </#list>
     </#if>
 </#list>
+
+<#list fillContext.ooRexxPackages?sort_by("name") as package>
+
 ---
-<#list fillContext.ooRexxPackages as package>
-## ${package.name}
+## ${package.name} <a id="${package.id?lower_case}"></a> ([Top](#packages))
 <#if package.comment??>
     ${package.commentText}
     <#list package.comment.commentAnnotations as commentAnnotation>
@@ -40,16 +49,37 @@ ${fillContext.ooRexxDocGenerationContext.overview}
     </#list>
 </#if>
 
+<#if package.routines?size != 0>
+- Routines
+    - <#list package.routines?sort_by("name") as routine>[${routine.name}](#${routine.id?lower_case})  </#list>
+</#if>
+<#if package.methods?size != 0>
+- Floating Methods
+    - <#list package.methods?sort_by("name") as method>[${method.name}](#${method.id?lower_case})  </#list>
+</#if>
+<#if package.attributes?size != 0>
+- Floating Attributes
+    - <#list package.attributes?sort_by("name") as attribute>[${attribute.name}](#${attribute.id?lower_case})   </#list>
+</#if>
+<#if package.constants?size != 0>
+- Floating Constants
+    - <#list package.constants?sort_by("name") as constant>>[${constant.name}](#${constant.id?lower_case})  </#list>
+</#if>
+<#if package.classes?size != 0>
+- Classes
+    - <#list package.classes?sort_by("name") as class>[${class.name}](#${class.id?lower_case})  </#list>
+</#if>
+
 <#if package.annotations?size != 0>
 Annotated with:
-<#list package.annotations as packageAnnotation>
+<#list package.annotations?sort_by("name") as packageAnnotation>
     ${packageAnnotation.dataToString()}
 </#list>
 </#if>
      <#if package.routines?size != 0>
 ### Routines
-         <#list package.routines as routine>
-#### Routine: ${routine.name} <a id="${routine.id?lower_case}"></a>  [Up](#packages)
+         <#list package.routines?sort_by("name") as routine>
+#### Routine: ${routine.name} <a id="${routine.id?lower_case}"></a> ([Package](#${package.id?lower_case}))
              <#if routine.external??>
 - EXTERNAL ${routine.external}
              </#if>
@@ -62,10 +92,14 @@ Annotated with:
              <#if routine.comment??>
 ```
     ${routine.commentText}
-                 <#list routine.comment.commentAnnotations as commentAnnotation>
-    ${commentAnnotation.key}: ${commentAnnotation.value}
-                 </#list>
 ```
+<#if routine.comment.commentAnnotations?size != 0>
+<#list routine.comment.commentAnnotations as commentAnnotation>
+- `${commentAnnotation.key}`: ${commentAnnotation.value}
+</#list>
+
+
+</#if>
              </#if>
              <#if routine.variableReferences?size != 0>
 - Variable reference(s):
@@ -74,11 +108,11 @@ Annotated with:
                  </#list>
              </#if>
              <#if routine.useArg != "">
-- USE ARG ${routine.useArg}
+- `USE ARG ${routine.useArg}`
              </#if>
 
              <#if routine.parseArg??>
-- PARSE ARG ${routine.parseArg}
+- `PARSE ARG ${routine.parseArg}`
              </#if>
 ---
          </#list>
@@ -86,8 +120,8 @@ Annotated with:
 
     <#if package.methods?size != 0>
 ### Floating Methods
-        <#list package.methods as method>
-#### Floating Method: ${method.name}  <a id="${method.id?lower_case}"></a>  [Up](#packages)
+        <#list package.methods?sort_by("name") as method>
+#### Floating Method: ${method.name}  <a id="${method.id?lower_case}"></a> ([Package](#${package.id?lower_case}))
             <#if !method.guarded>
 - UNGUARDED
             </#if>
@@ -122,11 +156,11 @@ Annotated with:
             </#if>
 
             <#if method.useArg?? && method.useArg != "">
-- USE ARG ${method.useArg}
+- `USE ARG ${method.useArg}`
             </#if>
 
             <#if method.parseArg??>
-- PARSE ARG ${method.parseArg}
+- `PARSE ARG ${method.parseArg}`
             </#if>
             <#if method.annotations?size != 0>
 - Annotated with:
@@ -139,8 +173,8 @@ Annotated with:
     </#if>
     <#if package.attributes?size != 0>
 ### Floating Attributes
-        <#list package.attributes as attribute>
-#### Floating Attribute: ${attribute.name}   <a id="${attribute.id?lower_case}"></a>  [Up](#packages)
+        <#list package.attributes?sort_by("name") as attribute>
+#### Floating Attribute: ${attribute.name}   <a id="${attribute.id?lower_case}"></a>  ([Package](#${package.id?lower_case}))
             <#if attribute.type != "BOTH">
 - ${attribute.type}
             <#else>
@@ -176,11 +210,11 @@ Annotated with:
             </#if>
     
             <#if attribute.useArg??>
-- USE ARG ${attribute.useArg}
+- `USE ARG ${attribute.useArg}`
             </#if>
     
             <#if attribute.parseArg??>
-- PARSE ARG ${attribute.parseArg}
+- `PARSE ARG ${attribute.parseArg}`
             </#if>
             <#if attribute.annotations?size != 0>
 - Annotated with:
@@ -193,8 +227,8 @@ Annotated with:
     </#if>
     <#if package.constants?size != 0>
 ### Floating Constants
-        <#list package.constants as constant>
-#### Floating Constant: ${constant.name}   <a id="${constant.id?lower_case}"></a>  [Up](#packages)
+        <#list package.constants?sort_by("name") as constant>
+#### Floating Constant: ${constant.name}   <a id="${constant.id?lower_case}"></a> ([Package](#${package.id?lower_case}))
 
 - Value: ${constant.value}
             <#if constant.annotations?size != 0>
@@ -219,8 +253,8 @@ Annotated with:
     <#if package.classes?size != 0>
 ### Classes
     </#if>
-        <#list package.classes as class>
-#### Class: ${class.name}   <a id="${class.id?lower_case}"></a> [Up](#packages)
+        <#list package.classes?sort_by("name") as class>
+#### Class: ${class.name}   <a id="${class.id?lower_case}"></a> ([Package](#${package.id?lower_case}))
             <#if class.abstractClass == true>
 - ABSTRACT
             </#if>
@@ -262,8 +296,8 @@ Annotated with:
 - Constants
     - <#list class.constants as constant>[${constant.name}](#${constant.id?lower_case})  </#list>
             </#if>
-            <#list class.attributes as attribute>
-###### Class-Attribute: ${attribute.name}  <a id="${attribute.id?lower_case}"></a> [Class](#${class.id?lower_case})
+            <#list class.attributes?sort_by("name") as attribute>
+###### Attribute: ${attribute.name}  <a id="${attribute.id?lower_case}"></a> ([Class](#${class.id?lower_case}))
                 <#if attribute.type != "BOTH">
 - ${attribute.type}
                 <#else>
@@ -300,11 +334,11 @@ Annotated with:
                 </#if>
 
                 <#if attribute.useArg??>
-- USE ARG ${attribute.useArg}
+- `USE ARG ${attribute.useArg}`
                 </#if>
 
                 <#if attribute.parseArg??>
-- PARSE ARG ${attribute.parseArg}
+- `PARSE ARG ${attribute.parseArg}`
                 </#if>
 
             <#if attribute.annotations?size != 0>
@@ -315,8 +349,8 @@ Annotated with:
             </#if>
             </#list>
 
-            <#list class.methods as method>
-###### Class-Method: ${method.htmlName} <a id="${method.id?lower_case}"></a> [Class](#${class.id?lower_case})
+            <#list class.methods?sort_by("name") as method>
+###### Method: ${method.htmlName} <a id="${method.id?lower_case}"></a> ([Class](#${class.id?lower_case}))
                         <#if !method.guarded>
 - UNGUARDED
                         </#if>
@@ -352,11 +386,11 @@ Annotated with:
                         </#if>
 
                         <#if method.useArg?? && method.useArg != "">
-- USE ARG ${method.useArg}
+- `USE ARG ${method.useArg}`
                         </#if>
 
                         <#if method.parseArg??>
-- PARSE ARG ${method.parseArg}
+- `PARSE ARG ${method.parseArg}`
                         </#if>
                         <#if method.annotations?size != 0>
                             <#list method.annotations as methodAnnotation>
@@ -364,9 +398,9 @@ Annotated with:
                             </#list>
                         </#if>
             </#list>
-            <#list class.constants as constant>
+            <#list class.constants?sort_by("name") as constant>
                 <#if constant??>
-###### Class-Constant: ${constant.name} <a id="${constant.id?lower_case}"></a> [Class](#${class.id?lower_case})
+###### Constant: ${constant.name} <a id="${constant.id?lower_case}"></a> ([Class](#${class.id?lower_case}))
 - Value: ${constant.value}
                     <#if constant.annotations?size != 0>
 - Annotated with:
@@ -395,7 +429,7 @@ Annotated with:
     <#if package.resources?size != 0>
 ### Resources
     </#if>
-    <#list package.resources as resource>
+    <#list package.resources?sort_by("name") as resource>
 
 #### ${resource.name}
                 <div class="panel-body">
