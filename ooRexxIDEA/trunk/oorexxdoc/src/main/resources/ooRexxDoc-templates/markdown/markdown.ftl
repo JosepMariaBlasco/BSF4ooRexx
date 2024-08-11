@@ -43,10 +43,17 @@ ${fillContext.ooRexxDocGenerationContext.overview}
 ---
 ## ${package.name} <a id="${package.id?lower_case}"></a> ([Top](#packages))
 <#if package.comment??>
+```
     ${package.commentText}
-    <#list package.comment.commentAnnotations as commentAnnotation>
-        ${commentAnnotation.key}: ${commentAnnotation.value}
-    </#list>
+```
+    <#if package.comment.commentAnnotations?size != 0>
+        <#list package.comment.commentAnnotations as commentAnnotation>
+- `${commentAnnotation.key}`: ${commentAnnotation.value}
+        </#list>
+        
+
+
+    </#if>
 </#if>
 
 <#if package.routines?size != 0>
@@ -93,13 +100,14 @@ Annotated with:
 ```
     ${routine.commentText}
 ```
-<#if routine.comment.commentAnnotations?size != 0>
-<#list routine.comment.commentAnnotations as commentAnnotation>
-- `${commentAnnotation.key}`: ${commentAnnotation.value}
-</#list>
+ <#if routine.comment.commentAnnotations?size != 0>
+     <#list routine.comment.commentAnnotations as commentAnnotation>
+ - `${commentAnnotation.key}`: ${commentAnnotation.value}
+     </#list>
+     
 
 
-</#if>
+ </#if>
              </#if>
              <#if routine.variableReferences?size != 0>
 - Variable reference(s):
@@ -143,9 +151,15 @@ Annotated with:
             <#if method.comment??>
 ```
     ${method.commentText}
-                <#list method.comment.commentAnnotations as commentAnnotation>
-    ${commentAnnotation.key}: ${commentAnnotation.value}
-                </#list>
+```
+<#if method.comment.commentAnnotations?size != 0>
+    <#list method.comment.commentAnnotations as commentAnnotation>
+- `${commentAnnotation.key}`: ${commentAnnotation.value}
+    </#list>
+    
+
+
+</#if>
             </#if>
 
             <#if method.variableReferences?size != 0>
@@ -203,10 +217,15 @@ Annotated with:
             <#if attribute.comment??>
 ```
     ${attribute.commentText}
-                        <#list attribute.comment.commentAnnotations as commentAnnotation>
-    ${commentAnnotation.key}: ${commentAnnotation.value}
-                        </#list>
 ```
+<#if attribute.comment.commentAnnotations?size != 0>
+    <#list attribute.comment.commentAnnotations as commentAnnotation>
+- `${commentAnnotation.key}`: ${commentAnnotation.value}
+    </#list>
+    
+
+
+</#if>
             </#if>
     
             <#if attribute.useArg??>
@@ -241,10 +260,15 @@ Annotated with:
             <#if constant.comment??>
 ```
     ${constant.commentText}
-                        <#list constant.comment.commentAnnotations as commentAnnotation>
-    ${commentAnnotation.key}: ${commentAnnotation.value} <br />
-                        </#list>
 ```
+<#if constant.comment.commentAnnotations?size != 0>
+    <#list constant.comment.commentAnnotations as commentAnnotation>
+- `${commentAnnotation.key}`: ${commentAnnotation.value}
+    </#list>
+    
+
+
+</#if>
             </#if>
 ---
         </#list>
@@ -278,10 +302,15 @@ Annotated with:
            <#if class.comment??>
 ```
     ${class.commentText}
-                <#list class.comment.commentAnnotations as commentAnnotation>
-    ${commentAnnotation.key}: ${commentAnnotation.value}
-                </#list>
 ```
+<#if class.comment.commentAnnotations?size != 0>
+   <#list class.comment.commentAnnotations as commentAnnotation>
+- `${commentAnnotation.key}`: ${commentAnnotation.value}
+   </#list>
+   
+
+
+</#if>
 ---
             </#if>
             <#if class.attributes?size != 0>
@@ -326,11 +355,15 @@ Annotated with:
                 <#if attribute.comment??>
 ```
     ${attribute.commentText}
-
-                <#list attribute.comment.commentAnnotations as commentAnnotation>
-    ${commentAnnotation.key}: ${commentAnnotation.value}
-                </#list>
 ```
+<#if attribute.comment.commentAnnotations?size != 0>
+    <#list attribute.comment.commentAnnotations as commentAnnotation>
+- `${commentAnnotation.key}`: ${commentAnnotation.value}
+    </#list>
+    
+
+
+</#if>
                 </#if>
 
                 <#if attribute.useArg??>
@@ -374,11 +407,15 @@ Annotated with:
                         <#if method.comment??>
 ```
     ${method.commentText}
-
-                            <#list method.comment.commentAnnotations as commentAnnotation>
-    ${commentAnnotation.key}: ${commentAnnotation.value}
-                            </#list>
 ```
+<#if method.comment.commentAnnotations?size != 0>
+    <#list method.comment.commentAnnotations as commentAnnotation>
+- `${commentAnnotation.key}`: ${commentAnnotation.value}
+    </#list>
+    
+
+
+</#if>
                         </#if>
 
                         <#if method.variableReferences?size != 0>
@@ -411,10 +448,15 @@ Annotated with:
                             <#if constant.comment??>
 ```
     ${constant.commentText}
-                                        <#list constant.comment.commentAnnotations as commentAnnotation>
-    ${commentAnnotation.key}: ${commentAnnotation.value}
-                                        </#list>
 ```
+<#if constant.comment.commentAnnotations?size != 0>
+    <#list constant.comment.commentAnnotations as commentAnnotation>
+- `${commentAnnotation.key}`: ${commentAnnotation.value}
+    </#list>
+    
+
+
+</#if>
                             </#if>
                 </#if>
             </#list>
@@ -438,10 +480,13 @@ Annotated with:
                     <#if resource.comment??>
 ```
     ${resource.commentText}
-                                <#list resource.comment.commentAnnotations as commentAnnotation>
-    ${commentAnnotation.key}: ${commentAnnotation.value}
-                                </#list>
 ```
+<#if resource.comment.commentAnnotations?size != 0>
+    <#list resource.comment.commentAnnotations as commentAnnotation>
+- `${commentAnnotation.key}`: ${commentAnnotation.value}
+    </#list>
+    \n\n
+</#if>
                     </#if>
 ---
     </#list>
