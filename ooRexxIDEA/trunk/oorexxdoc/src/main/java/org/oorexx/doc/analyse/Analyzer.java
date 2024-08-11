@@ -63,7 +63,7 @@ public abstract class Analyzer {
         OoRexxKeywordUseTemplateList templateList = findChildOfType(ooRexxKeywordUse, OoRexxKeywordUseTemplateList.class);
 
         if(templateList != null) {
-            return StringEscapeUtils.escapeHtml4(templateList.getText());
+            return templateList.getText();
         }
 
         return null;
