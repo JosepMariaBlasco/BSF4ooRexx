@@ -48,7 +48,7 @@ ${fillContext.ooRexxDocGenerationContext.overview}
 ```
     <#if package.comment.commentAnnotations?size != 0>
         <#list package.comment.commentAnnotations as commentAnnotation>
-- `${commentAnnotation.key}`: ${commentAnnotation.value}
+- `${commentAnnotation.key}: ${commentAnnotation.firstWord}` ${commentAnnotation.remainder}
         </#list>
         
 
@@ -102,7 +102,7 @@ Annotated with:
 ```
  <#if routine.comment.commentAnnotations?size != 0>
      <#list routine.comment.commentAnnotations as commentAnnotation>
- - `${commentAnnotation.key}`: ${commentAnnotation.value}
+ - `${commentAnnotation.key}: ${commentAnnotation.firstWord}` ${commentAnnotation.remainder}
      </#list>
      
 
@@ -156,7 +156,7 @@ Annotated with:
 ```
 <#if method.comment.commentAnnotations?size != 0>
     <#list method.comment.commentAnnotations as commentAnnotation>
-- `${commentAnnotation.key}`: ${commentAnnotation.value}
+- `${commentAnnotation.key}: ${commentAnnotation.firstWord}` ${commentAnnotation.remainder}
     </#list>
     
 
@@ -222,7 +222,7 @@ Annotated with:
 ```
 <#if attribute.comment.commentAnnotations?size != 0>
     <#list attribute.comment.commentAnnotations as commentAnnotation>
-- `${commentAnnotation.key}`: ${commentAnnotation.value}
+- `${commentAnnotation.key}: ${commentAnnotation.firstWord}` ${commentAnnotation.remainder}
     </#list>
     
 
@@ -265,7 +265,7 @@ Annotated with:
 ```
 <#if constant.comment.commentAnnotations?size != 0>
     <#list constant.comment.commentAnnotations as commentAnnotation>
-- `${commentAnnotation.key}`: ${commentAnnotation.value}
+- `${commentAnnotation.key}: ${commentAnnotation.firstWord}` ${commentAnnotation.remainder}
     </#list>
     
 
@@ -307,7 +307,7 @@ Annotated with:
 ```
 <#if class.comment.commentAnnotations?size != 0>
    <#list class.comment.commentAnnotations as commentAnnotation>
-- `${commentAnnotation.key}`: ${commentAnnotation.value}
+- `${commentAnnotation.key}: ${commentAnnotation.firstWord}` ${commentAnnotation.remainder}
    </#list>
    
 
@@ -360,7 +360,7 @@ Annotated with:
 ```
 <#if attribute.comment.commentAnnotations?size != 0>
     <#list attribute.comment.commentAnnotations as commentAnnotation>
-- `${commentAnnotation.key}`: ${commentAnnotation.value}
+- `${commentAnnotation.key}: ${commentAnnotation.firstWord}` ${commentAnnotation.remainder}
     </#list>
     
 
@@ -412,7 +412,7 @@ Annotated with:
 ```
 <#if method.comment.commentAnnotations?size != 0>
     <#list method.comment.commentAnnotations as commentAnnotation>
-- `${commentAnnotation.key}`: ${commentAnnotation.value}
+- `${commentAnnotation.key}: ${commentAnnotation.firstWord}` ${commentAnnotation.remainder}
     </#list>
     
 
@@ -453,7 +453,7 @@ Annotated with:
 ```
 <#if constant.comment.commentAnnotations?size != 0>
     <#list constant.comment.commentAnnotations as commentAnnotation>
-- `${commentAnnotation.key}`: ${commentAnnotation.value}
+- `${commentAnnotation.key}: ${commentAnnotation.firstWord}` ${commentAnnotation.remainder}
     </#list>
     
 
@@ -485,7 +485,7 @@ Annotated with:
 ```
 <#if resource.comment.commentAnnotations?size != 0>
     <#list resource.comment.commentAnnotations as commentAnnotation>
-- `${commentAnnotation.key}`: ${commentAnnotation.value}
+- `${commentAnnotation.key}: ${commentAnnotation.firstWord}` ${commentAnnotation.remainder}
     </#list>
     \n\n
 </#if>

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the absolute path to the zip file and the unpacked folder
-VERSION="2.4.0-GA"
+VERSION="2.4.1-GA"
 ZIP_FILE="/Users/alex/IdeaProjects/ooRexxIDEAPlugin/oorexxdoc/build/distributions/ooRexxDoc-$VERSION.zip"
 UNPACKED_FOLDER="/Users/alex/IdeaProjects/ooRexxIDEAPlugin/oorexxdoc/build/distributions/ooRexxDoc-$VERSION"
 CP="/Users/alex/.gradle/caches/modules-2/files-2.1/com.jetbrains.intellij.idea/ideaIC/2024.1/181fa36f74690e64a81a8e06ceda9480d2a6c626/ideaIC-2024.1/lib/*"

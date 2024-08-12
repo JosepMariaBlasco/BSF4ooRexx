@@ -18,7 +18,7 @@ allprojects {
     apply plugin: 'org.jetbrains.kotlin.jvm'
 
     group 'org.oorexx.idea'
-    version '2.4.0-GA'
+    version '2.4.1-GA'
 
     sourceCompatibility = 1.17
     targetCompatibility = 1.17
