@@ -43,9 +43,9 @@ ${fillContext.ooRexxDocGenerationContext.overview}
 ---
 ## ${package.name} <a id="${package.id?lower_case}"></a> ([Top](#packages))
 <#if package.comment??>
-```
-    ${package.commentText}
-```
+
+>    ${package.commentText?replace("\n", "\n> ")}
+
     <#if package.comment.commentAnnotations?size != 0>
         <#list package.comment.commentAnnotations as commentAnnotation>
 - `${commentAnnotation.key}: ${commentAnnotation.firstWord}` ${commentAnnotation.remainder}
@@ -97,9 +97,8 @@ Annotated with:
                 </#list>
              </#if>
              <#if routine.comment??>
-```
-    ${routine.commentText}
-```
+> ${routine.commentText?replace("\n", "\n> ")}
+
  <#if routine.comment.commentAnnotations?size != 0>
      <#list routine.comment.commentAnnotations as commentAnnotation>
  - `${commentAnnotation.key}: ${commentAnnotation.firstWord}` ${commentAnnotation.remainder}
@@ -151,9 +150,8 @@ Annotated with:
 - `EXTERNAL ${method.external}`
             </#if>
             <#if method.comment??>
-```
-    ${method.commentText}
-```
+> ${method.commentText?replace("\n", "\n> ")}
+
 <#if method.comment.commentAnnotations?size != 0>
     <#list method.comment.commentAnnotations as commentAnnotation>
 - `${commentAnnotation.key}: ${commentAnnotation.firstWord}` ${commentAnnotation.remainder}
@@ -217,9 +215,8 @@ Annotated with:
             </#if>
     
             <#if attribute.comment??>
-```
-    ${attribute.commentText}
-```
+> ${attribute.commentText?replace("\n", "\n> ")}
+
 <#if attribute.comment.commentAnnotations?size != 0>
     <#list attribute.comment.commentAnnotations as commentAnnotation>
 - `${commentAnnotation.key}: ${commentAnnotation.firstWord}` ${commentAnnotation.remainder}
@@ -260,9 +257,8 @@ Annotated with:
             </#if>
 
             <#if constant.comment??>
-```
-    ${constant.commentText}
-```
+> ${constant.commentText?replace("\n", "\n> ")}
+
 <#if constant.comment.commentAnnotations?size != 0>
     <#list constant.comment.commentAnnotations as commentAnnotation>
 - `${commentAnnotation.key}: ${commentAnnotation.firstWord}` ${commentAnnotation.remainder}
@@ -302,9 +298,8 @@ Annotated with:
                 </#list>
             </#if>
            <#if class.comment??>
-```
-    ${class.commentText}
-```
+> ${class.commentText?replace("\n", "\n> ")}
+
 <#if class.comment.commentAnnotations?size != 0>
    <#list class.comment.commentAnnotations as commentAnnotation>
 - `${commentAnnotation.key}: ${commentAnnotation.firstWord}` ${commentAnnotation.remainder}
@@ -355,9 +350,8 @@ Annotated with:
                 </#if>
 
                 <#if attribute.comment??>
-```
-    ${attribute.commentText}
-```
+> ${attribute.commentText?replace("\n", "\n> ")}
+
 <#if attribute.comment.commentAnnotations?size != 0>
     <#list attribute.comment.commentAnnotations as commentAnnotation>
 - `${commentAnnotation.key}: ${commentAnnotation.firstWord}` ${commentAnnotation.remainder}
@@ -407,9 +401,8 @@ Annotated with:
                         </#if>
 
                         <#if method.comment??>
-```
-    ${method.commentText}
-```
+> ${method.commentText?replace("\n", "\n> ")}
+
 <#if method.comment.commentAnnotations?size != 0>
     <#list method.comment.commentAnnotations as commentAnnotation>
 - `${commentAnnotation.key}: ${commentAnnotation.firstWord}` ${commentAnnotation.remainder}
@@ -448,9 +441,8 @@ Annotated with:
                     </#list>
                     </#if>
                             <#if constant.comment??>
-```
-    ${constant.commentText}
-```
+> ${constant.commentText?replace("\n", "\n> ")}
+
 <#if constant.comment.commentAnnotations?size != 0>
     <#list constant.comment.commentAnnotations as commentAnnotation>
 - `${commentAnnotation.key}: ${commentAnnotation.firstWord}` ${commentAnnotation.remainder}
@@ -480,9 +472,8 @@ Annotated with:
 - Annotated with: <#list resource.annotations as constantAnnotation>${constantAnnotation.dataToString()} </#list>
 
                     <#if resource.comment??>
-```
-    ${resource.commentText}
-```
+> ${resource.commentText?replace("\n", "\n> ")}
+
 <#if resource.comment.commentAnnotations?size != 0>
     <#list resource.comment.commentAnnotations as commentAnnotation>
 - `${commentAnnotation.key}: ${commentAnnotation.firstWord}` ${commentAnnotation.remainder}
