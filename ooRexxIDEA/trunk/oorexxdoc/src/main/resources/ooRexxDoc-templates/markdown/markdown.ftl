@@ -88,7 +88,7 @@ Annotated with:
          <#list package.routines?sort_by("name") as routine>
 #### Routine: ${routine.name} <a id="${routine.id?lower_case}"></a> ([Package](#${package.id?lower_case}))
              <#if routine.external??>
-- EXTERNAL ${routine.external}
+- `EXTERNAL ${routine.external}`
              </#if>
              <#if package.annotations?size != 0>
 - Annotated with:
@@ -145,10 +145,10 @@ Annotated with:
 - ABSTRACT
             </#if>
             <#if method.delegate??>
-- DELEGATE ${method.delegate}
+- `DELEGATE ${method.delegate}`
             </#if>
             <#if method.external??>
-- EXTERNAL ${method.external}
+- `EXTERNAL ${method.external}`
             </#if>
             <#if method.comment??>
 ```
@@ -210,10 +210,10 @@ Annotated with:
             </#if>
     
             <#if attribute.delegate??>
-- DELEGATE ${attribute.delegate}
+- `DELEGATE ${attribute.delegate}`
             </#if>
             <#if attribute.external??>
-- EXTERNAL ${attribute.external}
+- `EXTERNAL ${attribute.external}`
             </#if>
     
             <#if attribute.comment??>
@@ -348,10 +348,10 @@ Annotated with:
                 </#if>
 
                 <#if attribute.delegate??>
-- DELEGATE ${attribute.delegate}
+- `DELEGATE ${attribute.delegate}`
                 </#if>
                 <#if attribute.external??>
-- EXTERNAL ${attribute.external}
+- `EXTERNAL ${attribute.external}`
                 </#if>
 
                 <#if attribute.comment??>
@@ -400,10 +400,10 @@ Annotated with:
                         </#if>
 
                         <#if method.delegate??>
-- DELEGATE ${method.delegate}
+- `DELEGATE ${method.delegate}`
                         </#if>
                         <#if method.external??>
-- EXTERNAL ${method.external}
+- `EXTERNAL ${method.external}`
                         </#if>
 
                         <#if method.comment??>
