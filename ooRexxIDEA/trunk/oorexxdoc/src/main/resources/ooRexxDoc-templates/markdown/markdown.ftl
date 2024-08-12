@@ -468,7 +468,7 @@ Annotated with:
     <#list package.resources?sort_by("name") as resource>
 
 #### ${resource.name}
-                <div class="panel-body">
+
 - Annotated with: <#list resource.annotations as constantAnnotation>${constantAnnotation.dataToString()} </#list>
 
                     <#if resource.comment??>
