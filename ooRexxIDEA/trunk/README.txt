@@ -7,8 +7,7 @@ Version: ##version##
 
 Changelog:
 	- Fixes
-	- Support for custom ooRexxDoc templates
-	- A new markdown ooRexxDoc template
+	- Improved markdown template
 
 Please report any bug you find or RFEs (request for enhancement) here: https://sourceforge.net/p/bsf4oorexx/oorexxplugin/milestone/2.0/
 
