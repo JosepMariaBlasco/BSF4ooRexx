@@ -8,6 +8,7 @@
 ${fillContext.ooRexxDocGenerationContext.overview}
 
 ---
+
 ## Packages
 <#list fillContext.ooRexxPackages?sort_by("name") as package>
 - [${package.name}](#${package.id?lower_case})
@@ -41,10 +42,13 @@ ${fillContext.ooRexxDocGenerationContext.overview}
 <#list fillContext.ooRexxPackages?sort_by("name") as package>
 
 ---
+
+---
+
 ## ${package.name} <a id="${package.id?lower_case}"></a> ([Top](#packages))
 <#if package.comment??>
 
->    ${package.commentText?replace("\n", "\n> ")}
+> ${package.commentText?replace("\n", "\n> ")}
 
     <#if package.comment.commentAnnotations?size != 0>
         <#list package.comment.commentAnnotations as commentAnnotation>
@@ -86,6 +90,9 @@ Annotated with:
      <#if package.routines?size != 0>
 ### Routines
          <#list package.routines?sort_by("name") as routine>
+
+---
+
 #### Routine: ${routine.name} <a id="${routine.id?lower_case}"></a> ([Package](#${package.id?lower_case}))
              <#if routine.external??>
 - `EXTERNAL ${routine.external}`
@@ -123,13 +130,15 @@ Annotated with:
              <#if routine.parseArg??>
 - `PARSE ARG ${routine.parseArg}`
              </#if>
----
          </#list>
      </#if>
 
     <#if package.methods?size != 0>
 ### Floating Methods
         <#list package.methods?sort_by("name") as method>
+
+---
+
 #### Floating Method: ${method.name}  <a id="${method.id?lower_case}"></a> ([Package](#${package.id?lower_case}))
             <#if !method.guarded>
 - UNGUARDED
@@ -182,12 +191,14 @@ Annotated with:
     ${methodAnnotation.dataToString()}
                 </#list>
             </#if>
----
         </#list>
     </#if>
     <#if package.attributes?size != 0>
 ### Floating Attributes
         <#list package.attributes?sort_by("name") as attribute>
+
+---
+
 #### Floating Attribute: ${attribute.name}   <a id="${attribute.id?lower_case}"></a>  ([Package](#${package.id?lower_case}))
             <#if attribute.type != "BOTH">
 - ${attribute.type}
@@ -240,12 +251,14 @@ Annotated with:
     ${attrAnnotation.dataToString()}
                 </#list>
             </#if>
----
         </#list>
     </#if>
     <#if package.constants?size != 0>
 ### Floating Constants
         <#list package.constants?sort_by("name") as constant>
+
+---
+
 #### Floating Constant: ${constant.name}   <a id="${constant.id?lower_case}"></a> ([Package](#${package.id?lower_case}))
 
 - Value: ${constant.value}
@@ -268,7 +281,6 @@ Annotated with:
 
 </#if>
             </#if>
----
         </#list>
     </#if>
 
@@ -276,6 +288,10 @@ Annotated with:
 ### Classes
     </#if>
         <#list package.classes?sort_by("name") as class>
+
+---
+
+
 #### Class: ${class.name}   <a id="${class.id?lower_case}"></a> ([Package](#${package.id?lower_case}))
             <#if class.abstractClass == true>
 - ABSTRACT
@@ -308,17 +324,28 @@ Annotated with:
 
 
 </#if>
----
             </#if>
             <#if class.attributes?size != 0>
+
+
+---
+
 - Attributes
     - <#list class.attributes as attribute>[${attribute.name}](#${attribute.id?lower_case})  </#list>
             </#if>
             <#if class.methods?size != 0>
+
+
+---
+
 - Methods
     - <#list class.methods as method>[${method.name}](#${method.id?lower_case})  </#list>
             </#if>
             <#if class.constants?size != 0>
+
+
+---
+
 - Constants
     - <#list class.constants as constant>[${constant.name}](#${constant.id?lower_case})  </#list>
             </#if>
@@ -454,15 +481,18 @@ Annotated with:
                             </#if>
                 </#if>
             </#list>
----
         </#list>
     <#if package.requires?size != 0>
+---
+
 ### ${package.name} - Requires
         <#list package.requires as require>
 - ${require.reference}
         </#list>
     </#if>
     <#if package.resources?size != 0>
+---
+
 ### Resources
     </#if>
     <#list package.resources?sort_by("name") as resource>
@@ -481,20 +511,24 @@ Annotated with:
     \n\n
 </#if>
                     </#if>
----
     </#list>
 
     <#if package.requiredBy?size != 0>
+---
+
+
 ### ${package.name} - Required By
             <#list package.requiredBy as requiredBy>
                 <#if requiredBy.id??>
 ${requiredBy.name}
                 </#if>
             </#list>
----
     </#if>
 
     <#if package.options?size != 0>
+---
+
+
 ### ${package.name} - Options
         <#list package.options as option>
 - ${option.key}: ${option.value}
