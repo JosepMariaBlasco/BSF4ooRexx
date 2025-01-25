@@ -153,7 +153,8 @@
                       if supplied
                     - add "COLOUR" as synonym for "COLOR"
         2023-11-14: - define and pregister all javafx.scene.paint.Color constants such that they
-                      can be immediately used (extended from the original predefined java.awt.Color constants)
+                      can be immediately used (extended from the original predefined java.awt.Color constants),
+                      also add missing RebeccaPurple from <https://www.w3schools.com/colors/colors_names.asp>
 */
 
 package org.oorexx.handlers.jdor;
