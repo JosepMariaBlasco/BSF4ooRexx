@@ -1,0 +1,116 @@
+areaAdd                         -- "areaAdd         areaName shapeName..."
+areaExclusiveOr                 -- "areaExclusiveOr areaName shapeName..."
+areaIntersect                   -- "areaIntersect   areaName shapeName..."
+areaSubtract                    -- "areaSubtract    areaName shapeName..."
+areaTransform                   -- "areaTransform   areaName tNickname"
+areaUnion                       -- synonym for "areaAdd"
+areaXor                         -- synonym for "areaExclusiveOr"
+assignRC                        -- "assignRC RexxVariable"
+background                      -- "background  [colorNickName]" query current background color or set
+clear                           -- synonym for "reset"
+clearRect                       -- "clear width height": uses current color to clear background
+clip                            -- "clip [x y w h]" -> get (getClipBounds()) or clipRect(x y w h)
+clipRemove                      -- "clipRemove" -> setClip(null)
+clipShape                       -- "clipShape name" defines intersection with named shape as the new clip
+clipboardGet                    -- "clipboardGet [imgName]" ... save in hmImages, if no imgName then under "CLIPBOARD"
+clipboardSet                    -- "clipboardSet [imgName]" ... if imgName: get from hmImages, else from currImage
+clipboardSetWithoutAlpha        -- "clipboardSetWithoutAlpha [imgName]" ... if imgName: get from hmImages, else from currImage
+color                           -- "color  [colorNickName [r g b [a]]" query current color or set + define new color
+colour                          -- synonym for "color"
+composite                       -- "composite [rule [alpha]]": get current or get and set new;
+copyArea                        -- "copyArea width height distX distY"
+draw3DRect                      -- "draw3DRect width height raised" - 20220906
+drawArc                         -- "drawArc  width height startAngle arcAngle"
+drawImage                       -- "drawImage nickName [bkgColor] | nickName width height [bkgColor] | nickName width height srcX1 srcY1 srcX2 srcY2 [bkgColor]"
+drawLine                        -- "drawLine toX toY"
+drawOval                        -- "drawOval width height"
+drawPolygon                     -- "drawPolygon  []xPoints []yPoints nPoints
+drawPolyline                    -- "drawPolyline []xPoints []yPoints nPoints
+drawRect                        -- "drawRect width height"
+drawRoundRect                   -- "drawRoundRect width height arcWidth arcHeight"
+drawShape                       -- "drawShape name" draws the named shape
+drawString                      -- "drawString text"
+fill3DRect                      -- "fill3DRect width height raised" - 20220906
+fillArc                         -- "fillArc  width height startAngle arcAngle"
+fillOval                        -- "fillOval width height"
+fillPolygon                     -- "fillPolygon  []xPoints []yPoints nPoints
+fillRect                        -- "fillRect width height"
+fillRoundRect                   -- "fillRoundRect width height arcWidth arcHeight"
+fillShape                       -- "fillShape name" fills the named shape
+font                            -- "font   [fontNickName [name]]" query or set font using curr type and size
+fontSize                        -- "fontSize size
+fontStyle                       -- "fontStyle 0=PLAIN | 1=BOLD | 2=ITALIC | 3=BOLD+ITALIC
+GC                              -- "GC"    returns current GC (GraphicsContext)
+getClipboard                    -- synonym for "clipboardGet"
+getState                        -- "getState [ctxtVariableName]" returns a StringTable with current variables, stacks and HashMaps;
+goto                            -- synonym for "moveTo"
+gradientPaint                   -- "gradientPaint paintNickName [x1 y1 colorName1 x2 y2 colorName2 [cyclic]]": set or define and set gradientPaint
+image                           -- "image [nickName]" returns image or nickName-stored image
+imageCopy                       -- "imageCopy [nickName]": get a copy of the current image, if nickName supplied use from registry and if not found from Rexx variable
+imageSize                       -- "imageSize [imageNickName]": returns width and height
+imageType                       -- "imageType [nickName]": get current image's type, if nickName supplied return its image type
+loadImage                       -- "loadImage imageNickName filename", loads an image -> returns its dimension
+location                        -- synonym for "moveTo"
+moveTo                          -- "pos [x y]" query or set position, synonyms: "goto"
+new                             -- synonym for "newImage"
+newImage                        -- "new[Image] [width height [type]]" creates a new BufferedImage
+paint                           -- "paint [gradiantPaintNickName|colorNickName]" query or set paint (for background) // 2022-09-22, paint, as of 20220922 cf. <http://underpop.online.fr/j/java/help/colors-graphics-programming.html.gz>
+pathAppend                      -- "pathAppend shapeName | "rexxVarName (Shape|PathIterator)" [connect=.true]"
+pathClone                       -- "pathClone shapeName [newShapeName]"
+pathClose                       -- "pathClose shapeName" ... closePath()
+pathCurrentPoint                -- "pathCurrentPoint shapeName" ... getCurrentPoint
+pathCurveTo                     -- "pathCurveTo shapeName x1 y1 x2 y2 x3 y3"
+pathIterator                    -- "pathIterator shapeName [affinityTransform=.nil [flatness]]" -> returns getPathIterator(AffinityTransform[,flatness])
+pathLineTo                      -- "pathLineTo shapeName x y"
+pathMoveTo                      -- "pathMoveTo shapeName x y"
+pathQuadTo                      -- "pathQuadTo shapeName x1 y1 x2 y2"
+pathReset                       -- "pathReset shapeName"
+pathTransform                   -- "pathTransform shapeName atName"
+pathWindingRule                 -- "pathWindingRule shapeName [WIND_EVEN_ODD=0 | WIND_NON_ZERO=1]" ... getWindingRule(), setWindingRule(newValue)
+popGC                           -- "popGC"  pop and set previous gc
+popImage                        -- "popImage"  pop and display previous image
+pos                             -- synonym for "moveTo"
+position                        -- synonym for "moveTo"
+preferredImageType              -- "preferredImageType [type]": get or set preferred image type, type can be integer or name of BufferedImage TYPE constant
+printImage                      -- "printImage [nickName]": print image, either current or the one by nickname
+printPos                        -- "printPos [X Y]: get or set position of left upperhand corner; honored if printScaleToPage is false
+printScale                      -- "printScale [scaleX [scaleY]": get or set scaleX (if no scaleY use scaleX); honored if printScaleToPage is false
+printScaleToPage                -- "printScaleToPage [.true|.false]": get or set
+pushGC                          -- "pushGC" push current gc
+pushImage                       -- "pushImage [nickName]" push current image displayed
+render                          -- "render [opt1 [opt2]]": returns or sets the current antialiasing settings for rendering
+reset                           -- "reset" synonym: "clear", clears everything, resets
+rotate                          -- "rotate [theta [x y]]" query or set rotation
+saveImage                       -- "saveImage filename", saves current image to file
+scale                           -- "scale [x [y]]" query or set scale for x, y; if y omitted, uses x
+setClipboard                    -- synonym for "clipboardSet"
+setClipboardWithoutAlpha        -- synonym for "clipboardSetWithoutAlpha"
+setPaintMode                    -- "setPaintMode": cf. Grahpics#setPaintMode()
+setXorMode                      -- "xorMode colorNickName": sets xorMode to supplied color
+shape                           -- "shape name [type args...]" query or create a shape
+shapeBounds                     -- "shapeBounds shapeName" ... getBounds2D()
+shapeClip                       -- synonym for "clipShape"
+shapeDraw                       -- synonym for "drawShape"
+shapeFill                       -- synonym for "fillShape"
+shear                           -- "shear [x [y]]" query or set shear for x, y; if y omitted, uses x
+sleep                           -- "sleep msecs" (uses Thread.sleep())
+stringBounds                    -- "stringBounds string": returns the Rectangle2D x y w h (in floats?)
+stroke                          -- "stroke [strokeNickName [width [cap join [miterlimit [[]floatDash floatDashPhase]]]]" query or set stroke
+transform                       -- "transform { | RESET | translateX translateY scaleX scaleY shearX shearY} " query, change reset Graphics2D's AfineTransform
+translate                       -- "translate [x [y]]" query origin or move origin; if y omitted, uses x
+winAlwaysOnTop                  -- "winAlwaysOnTop [.true | .false]" get or set of this window state
+winAlwaysOnTopSupported         -- "winAlwaysOnTopSupported" get value
+winClose                        -- "winClose" closes JavaDrawingFrame instance
+winFrame                        -- "winFrame [.true|.false]": query or set JFrame's frame according to argument
+winHide                         -- "winHide" hide JavaDrawingFrame
+winLocation                     -- (synonym: WINMOVETO)"winLocation [x y]" get or set location on screen
+winMoveTo                       -- synonym for "winLocation"
+winResizable                    -- "winResizable [.true|.false]": query or set JFrame's frame according to argument
+winScreenSize                   -- "winScreenSize" query screen's width and size
+winShow                         -- "winShow" show JavaDrawingFrame
+winSize                         -- "winSize [width height]" query or set position
+winTitle                        -- "winTitle [newtitle]": get or set JFrame's title
+winToBack                       -- "winToBack" put window into the back
+winToFront                      -- "winToFront" put window into the front
+winUpdate                       -- "winUpdate [.true|.false]" get or set whether Frame should be updated upon draws/changes
+winVisible                      -- "winVisible [.true|.false]" get or set visibility

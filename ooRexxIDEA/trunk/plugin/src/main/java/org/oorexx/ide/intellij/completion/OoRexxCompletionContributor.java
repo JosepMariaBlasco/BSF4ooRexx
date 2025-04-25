@@ -12,15 +12,13 @@ import com.intellij.patterns.PsiElementPattern;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.util.ProcessingContext;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
+import org.oorexx.ide.lang.psi.OoRexxCommandExpr;
 import org.oorexx.ide.lang.psi.OoRexxNumericExpr;
 import org.oorexx.ide.setting.OoRexxLanguageSettings;
 
-import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
@@ -31,11 +29,13 @@ public class OoRexxCompletionContributor extends CompletionContributor {
     public static final String ENVIRONMENT = "environment symbols";
     public static final String KEYWORDS = "keywords";
     public static final String DIRECTIVES = "directives";
+    public static final String COMMANDS = "commands";
     public static final String TT_METHOD = "Method";
     public static final String TT_FUNCTION = "Function";
     public static final String TT_ENVIRONMENT = "Environment";
     public static final String TT_KEYWORD = "Keyword";
     public static final String TT_DIRECTIVE = "Directive";
+    public static final String TT_COMMAND = "JDOR Commands";
 
     public OoRexxCompletionContributor(){
         Map<String, List<ElementData>> elements = loadCompletionElements();
@@ -165,6 +165,36 @@ public class OoRexxCompletionContributor extends CompletionContributor {
                 }
         );
 
+        extend(CompletionType.BASIC, generalPattern(),
+                new CompletionProvider<>() {
+                    public void addCompletions(@NotNull CompletionParameters parameters,
+                                               @NotNull ProcessingContext processingContext,
+                                               @NotNull CompletionResultSet resultSet) {
+
+                        if(PsiTreeUtil.getParentOfType(parameters.getPosition(), OoRexxCommandExpr.class) == null
+                                || shouldStop(parameters, processingContext, resultSet)){
+                            return;
+                        }
+                        elements.get(COMMANDS).forEach(
+                                s -> resultSet.addElement(LookupElementBuilder.create(s.value + " ")
+                                        .withInsertHandler((context, item) -> {
+                                            removeLeadingDot(context);
+                                            preventParentheseAutoComplete(context);
+                                            handleCtrlDot(context, false);
+                                        })
+                                        .withRenderer(new LookupElementRenderer<>() {
+                                            @Override
+                                            public void renderElement(LookupElement element, LookupElementPresentation presentation) {
+                                                presentation.setItemText(s.value);
+                                                presentation.setTailText(" - " + s.hint + " - " + s.tailText, true);
+                                            }
+                                        })
+
+                                ));
+                    }
+                }
+        );
+
 
     }
 
@@ -174,6 +204,7 @@ public class OoRexxCompletionContributor extends CompletionContributor {
         List<ElementData> environmentNames = transform(getCompletions("/completion/environmentNames.txt"), TT_ENVIRONMENT);
         List<ElementData> keywordNames = transform(getCompletions("/completion/keywordNames.txt"), TT_KEYWORD);
         List<ElementData> directivesNames = transform(getCompletions("/completion/directivesNames.txt"), TT_DIRECTIVE);
+        List<ElementData> commandNames = transform(getCompletions("/completion/commandNames.txt"), TT_COMMAND);
 
         Map<String, List<ElementData>> elements = new HashMap<>();
 
@@ -182,6 +213,7 @@ public class OoRexxCompletionContributor extends CompletionContributor {
         elements.put(ENVIRONMENT, environmentNames);
         elements.put(KEYWORDS, keywordNames);
         elements.put(DIRECTIVES, directivesNames);
+        elements.put(COMMANDS, commandNames);
 
         ExternalCompletionElementsUtil.loadExternal(elements);
 
@@ -245,7 +277,23 @@ public class OoRexxCompletionContributor extends CompletionContributor {
     private List<ElementData> transform(List<String> completions, String directive) {
         OoRexxLanguageSettings.AutoCompletionCasing autoCompletionCasing = OoRexxLanguageSettings.getInstance().getAutoCompletionCasing();
 
-        return Lists.newArrayList(completions.stream().map(s -> new ElementData(map(autoCompletionCasing, s), directive)).toList());
+        return Lists.newArrayList(completions.stream().map(s -> new ElementData(getSanitizedText(map(autoCompletionCasing, s)), directive, getHint(s))).toList());
+    }
+
+    public static String getHint(String value) {
+        if(!value.contains("--")) {
+            return "";
+        }
+        String[] split = value.split("\s*--\s*");
+        return split[1];
+    }
+
+    public static String getSanitizedText(String value) {
+        if(!value.contains("--")) {
+            return value;
+        }
+        String[] split = value.split("\s*--\s*");
+        return split[0];
     }
 
     private String map(OoRexxLanguageSettings.AutoCompletionCasing autoCompletionCasing, String s) {
@@ -257,7 +305,7 @@ public class OoRexxCompletionContributor extends CompletionContributor {
         };
     }
 
-    record ElementData(String value, String tailText){
+    record ElementData(String value, String tailText, String hint){
 
     }
 

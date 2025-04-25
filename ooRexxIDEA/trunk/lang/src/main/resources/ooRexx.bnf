@@ -358,8 +358,8 @@ keyword_list ::= (ROUTINE) | (METHOD) | (STATE) | (COMMAND) | (OPEN) | (DELETE) 
 | (THEN) | (TO) | (UNTIL) | (UPPER) | (USER) | (VALUE) | (VAR) | (VERSION) | (WHEN) | (WHILE) | (WITH) | (ITEM) | (INDEX)
 | (INPUT) | (OUTPUT) | REPLACE | APPEND | WITH | STEM | STREAM | USING | LOCAL
 
-private assignments_and_keywords ::= ( (block_hook !TILDE) | assignment |  <<excluding_expr keyword_list>> | (keyword_instruction) )
-instruction ::= (SEMICOLON | label_instruction | ((assignments_and_keywords | (!END keyword_list))  instruction_terminator))
+private assignments_and_keywords ::= ( (block_hook !TILDE) | assignment | command_expr | <<excluding_expr keyword_list>> | (keyword_instruction) )
+instruction ::= (SEMICOLON | label_instruction | ((assignments_and_keywords | (!END keyword_list)) instruction_terminator))
 
 function_call ::= built_in_functions | (namespace_prefix? function_call_without_namespace)
 private function_call_without_namespace ::= ((FUNC_IDENTIFIER | built_in_functions_keyword_list) LPAREN (supplier | (COMMA | (parameter_expr))*) RPAREN){pin = 2}
@@ -367,6 +367,8 @@ supplier ::= expr TILDE expr
 template_list ::= ( (expr (COMMA expr)*)+ | COMMA | DOT | ( (EQ | MINUS | PLUS) <<paren expr>>))+
 
 namespace_prefix ::= (identifier | keyword_list) COLON
+
+command_expr ::= !(built_in_functions_keyword_list | keyword_list | message_term) symbol_or_string !TILDE <<excluding_expr (WITH)>>*
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Literals
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -629,7 +631,7 @@ private comma_separated_expr_with_references ::= (variable_reference_operator? e
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Address
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-keyword_address ::= ADDRESS ((environment_or_symbol <<excluding_expr (WITH)>>?) | (VALUE? <<excluding_expr (WITH)>>) ) keyword_address_with? {pin = 1}
+keyword_address ::= ADDRESS ((environment_or_symbol (command_expr|<<excluding_expr (WITH)>>)?) | (VALUE? (command_expr|<<excluding_expr (WITH)>>)) ) keyword_address_with? {pin = 1}
 private environment_or_symbol ::= environment | symbol_or_string
 environment ::= 'sh' | 'bsh' | 'bash' | 'ksh' | 'tcsh' | 'zsh' | 'cmd' | 'command' | 'system' | 'path' | '""'
 private keyword_address_with ::= WITH (keyword_address_with_input | keyword_address_with_output | keyword_address_with_error)*

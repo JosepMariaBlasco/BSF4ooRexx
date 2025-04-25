@@ -7,7 +7,7 @@ Version: ##version##
 
 Changelog:
 	- Fixes
-	- Improved markdown template
+	- Added JDOR Command completion
 
 Please report any bug you find or RFEs (request for enhancement) here: https://sourceforge.net/p/bsf4oorexx/oorexxplugin/milestone/2.0/
 

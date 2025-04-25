@@ -44,9 +44,9 @@ public class ExternalCompletionElementsUtil {
             }
 
             if(currentCategory != null &&  StringUtils.isNoneBlank(s)) {
-                elements.get(currentCategory).add(new OoRexxCompletionContributor.ElementData(s,
+                elements.get(currentCategory).add(new OoRexxCompletionContributor.ElementData(getSanitizedText(s),
                         getTailText(currentCategory) + " - " +
-                                file.getName().replace(".txt", "")));
+                                file.getName().replace(".txt", ""), getHint(s)));
             }
         }
     }
@@ -59,6 +59,7 @@ public class ExternalCompletionElementsUtil {
             case KEYWORDS-> KEYWORDS;
             case DIRECTIVES -> DIRECTIVES;
             case FUNCTIONS -> FUNCTIONS;
+            case COMMANDS -> COMMANDS;
             default -> null;
         };
     }
@@ -70,6 +71,7 @@ public class ExternalCompletionElementsUtil {
             case KEYWORDS-> TT_KEYWORD;
             case DIRECTIVES -> TT_DIRECTIVE;
             case FUNCTIONS -> TT_FUNCTION;
+            case COMMANDS -> TT_COMMAND;
             default -> null;
         };
     }
