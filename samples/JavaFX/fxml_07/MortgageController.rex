@@ -5,14 +5,15 @@
 d1=.dateTime~new     -- save invocation date and time
 parse source s . fn  -- get fully qualified file name as supplied by the RexxScriptEngine
 
-bDebug=.true         -- change to .false to inhibit the debug output
+infoPrefix=pp("R".context~interpreter) pp("T".context~thread) pp("I".context~invocation)
+bDebug=.my.app~bDebug
 if bDebug=.true then
 do
-   say "--- MortageController.rex ("pp(fn)"), at begin of prolog code" pp(d1)
-   say "// MortgageController.rex, dumping SlotDir:"
+   say infoPrefix "--- MortageController.rex ("pp(fn)"), at begin of prolog code (MortgageController.rex)" pp(d1)
+   say infoPrefix "// MortgageController.rex, dumping SlotDir:"
    call dumpSlotDir arg(1)
    say
-   say "// MortgageController.rex, dumping SlotDir~scriptContext:"
+   say infoPrefix "// MortgageController.rex, dumping SlotDir~scriptContext:"
    call dumpScriptContext arg(1)~scriptContext
    say
 end
@@ -60,8 +61,11 @@ call addTooltip idInterestTextField, idInterestLabel, idInterestSlider
 call addTooltip idMonthsTextField,   idMonthsLabel,   idMonthsSlider
 
 d2=.dateTime~new
-say "--- MortageController.rex ("pp(fn)"), at end of prolog code" pp(d2) "duration:" pp(d2-d1)
-say
+if bDebug=.true then
+do
+   say "--- MortageController.rex ("pp(fn)"), at end of prolog code (MortgageController.rex)" pp(d2) "duration:" pp(d2-d1)
+   say
+end
 
 ::requires "BSF.CLS"
 
@@ -91,11 +95,12 @@ say
   use arg scriptContext
   if scriptContext~isA(.slot.argument) then scriptContext=scriptContext~scriptContext
 
+  infoPrefix=pp("R".context~interpreter) pp("T".context~thread) pp("I".context~invocation)
   names=.directory~of( (100,"ENGINE"), (200,"GLOBAL") )  -- standardized scope names
   do scope over scriptContext~getScopes
      if names~hasentry(scope) then info= "("names~entry(scope)")"
                               else info= ""
-     say "scope #" pp(scope) info
+     say infoPrefix "scope #" pp(scope) info
      bindings=scriptContext~getBindings(scope)
      dir=.directory~new
      len=0
@@ -106,7 +111,7 @@ say
      len+=2                      -- account for enclosing brackets
      do idx over dir~allindexes~sort
         val=dir[idx]
-        say "   " pp(idx)~left(len,".") || ":" pp(val[1])~left(len,".") "->" pp(val[2])
+        say infoPrefix "   " pp(idx)~left(len,".") || ":" pp(val[1])~left(len,".") "->" pp(val[2])
      end
      say
   end
@@ -114,8 +119,9 @@ say
 /* ------------------------------------------------------------------------- */
 ::routine dumpSlotDir            -- dump content of slotDir
   use arg slotDir
+  infoPrefix=pp("R".context~interpreter) pp("T".context~thread) pp("I".context~invocation)
   do idx over slotDir~allindexes~sort
-      say "   " pp(idx)~left(31,".") || ":" pp(slotDir[idx])
+      say infoPrefix "   " pp(idx)~left(31,".") || ":" pp(slotDir[idx])
   end
 
 /* ------------------------------------------------------------------------- */
@@ -266,3 +272,23 @@ say
      end
   end
   return
+
+
+/*
+      ------------------------ Apache Version 2.0 license -------------------------
+         Copyright 2019-2025 Rony G. Flatscher
+
+         Licensed under the Apache License, Version 2.0 (the "License");
+         you may not use this file except in compliance with the License.
+         You may obtain a copy of the License at
+
+             http://www.apache.org/licenses/LICENSE-2.0
+
+         Unless required by applicable law or agreed to in writing, software
+         distributed under the License is distributed on an "AS IS" BASIS,
+         WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+         See the License for the specific language governing permissions and
+         limitations under the License.
+      -----------------------------------------------------------------------------
+*/
+

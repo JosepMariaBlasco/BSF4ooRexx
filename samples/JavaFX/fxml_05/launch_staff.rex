@@ -11,7 +11,12 @@
          value present at runtime of this Rexx script, such that the changes
          to the environment variables by this Rexx program will not get seen
          by the already loaded JVM.
+
+   changed: 2025-08-29, ---rgf: edit say output to be more informative
 */
+
+parse source . . fullPath
+thisPgmName=filespec("name", fullPath)
 
 parse source op_sys +1        -- get operating system
 if op_sys="W" then dirSep="\"
@@ -21,29 +26,40 @@ if op_sys="W" then dirSep="\"
 jVersion=getJavaVersion()
 if jVersion~isNil then
 do
-   say "Cannot determine the Java version, is Java installed and available?"
+   say thisProgram": Cannot determine the Java version, is Java installed and available?"
    exit -1
 end
 else if jVersion<>8, jVersion<11 then
 do
-   say "Java version must be either 8 or 11 or higher, aborting ..."
+   say thisProgram": Java version must be either 8 or 11 or higher, aborting ..."
    exit -2
 end
 
 if jVersion>8 then jarFile="jar"dirSep"controlsfx-11.1.1.jar"
               else jarFile="jar"dirSep"controlsfx-8.40.18.jar"
 
+env="ENVIRONMENT"
+if jVersion>=24 then    -- add --enable-native-access=ALL-UNNAMED
+do
+   needle="BSF4Rexx_JavaStartupOptions"
+   option="--enable-native-access=ALL-UNNAMED"
+   res=value(needle, , env)      -- get value, if present
+   if res<>"" then res=res option
+              else res=option
+   call value needle, res, env   -- set new value
+end
+
 if op_sys="W" then   -- Windows
 do
-   cp=value("CLASSPATH",,"ENVIRONMENT")            -- get current value
+   cp=value("CLASSPATH",,env)             -- get current value
    newValue=jarFile";"cp
-   call value "CLASSPATH", newValue, "ENVIRONMENT" -- set new value
+   call value "CLASSPATH", newValue, env  -- set new value
    cmd='rexx staff.rxj'
 end
 else  -- Unix
    cmd="CLASSPATH=$CLASSPATH:"jarFile "rexx staff.rxj"
 
-say "cmd:" cmd    -- show command
+say thisPgmName": Java version="pp(jVersion)", issuing command:" cmd     -- show command
 address "" cmd    -- run the command
 
 
@@ -80,3 +96,27 @@ or maybe
    return v1
 syntax:                       -- if anything goes wrong
    return v1
+
+::routine pp
+  return "["arg(1)"]"
+
+
+
+/*
+      ------------------------ Apache Version 2.0 license -------------------------
+         Copyright 2017-2025 Rony G. Flatscher
+
+         Licensed under the Apache License, Version 2.0 (the "License");
+         you may not use this file except in compliance with the License.
+         You may obtain a copy of the License at
+
+             http://www.apache.org/licenses/LICENSE-2.0
+
+         Unless required by applicable law or agreed to in writing, software
+         distributed under the License is distributed on an "AS IS" BASIS,
+         WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+         See the License for the specific language governing permissions and
+         limitations under the License.
+      -----------------------------------------------------------------------------
+*/
+

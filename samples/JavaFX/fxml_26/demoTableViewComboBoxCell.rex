@@ -24,6 +24,10 @@
                                 debug mode (change to "true" to see the debug output on start-up
                                 of this program)
 
+            2025-08-29, rgf: - removed check and warning for minimum ooRexx 5.0, not needed for BSF4ooRexx850
+                             - add .TraceObject~option="F" like prefix to debug output,
+                               if .my.app~bDebug=.true
+
    purpose: demonstrate - TableView with editing, binding Person's simple properties with cell values
                         - Setting TableView item to null as a whole as opposed to removing the item
                         - Enabling/disabling menu options
@@ -96,14 +100,6 @@
 *
 */
 
-   -- make sure we run this program only on ooRexx 5.0 or higher
-parse version "_" majorVersion "."
-if majorVersion<5 then
-do
-   say "this program needs at least ooRexx 5.0 to run, aborting"
-   exit -1
-end
-
    -- make sure we change the current directory to the one this Rexx program resides in
 parse source  . . pgm   -- get fully qualified path to this program
    -- change current directory such that relatively addressed resources (fxml-file) can be found
@@ -112,6 +108,17 @@ call directory filespec('L', pgm)
 .environment~my.app=.directory~new  -- directory to contain objects relevant to this application
 .my.app~bDebug=.false   /* if set to .true, "put_FXID_objects_into.my.app.rex" will show
                            all entries in ScriptContext Bindings on the console           */
+
+thisPgmName=filespec("name", pgm)
+
+say thisPgmName": do you wish to process FXML files in debug mode? (y/N)"
+parse upper pull answer +1
+if answer="Y" then
+   .my.app~bDebug=.true
+
+infoPrefix=getPrefix(.context)      -- create .TraceObject~option='F' like prefix
+if .my.app~bDebug=.true then
+   say infoPrefix thisPgmName": starting up, .my.app~bDebug="pp(.my.app~bDebug)
 
    -- import JavaFX classes that we may use more often in different parts of the program
 call bsf.import    "javafx.fxml.FXMLLoader",                      "fx.FXMLLoader"
@@ -145,6 +152,9 @@ jRexxApp=BsfCreateRexxProxy(rexxApp, ,"javafx.application.Application")
 signal on syntax
    -- launch the application, invoke "start" and then stay up until the application closes
 jRexxApp~launch(jRexxApp~getClass, .nil)  -- need to use this version of launch in order to work
+
+if .my.app~bDebug=.true then
+   say infoPrefix thisPgmName": about to leave ..."
 
 call syssleep 0.01
 exit
@@ -312,7 +322,12 @@ syntax:
   use strict arg pos, tableColumn
 
   if .my.app~showDebugOutput=.true then   -- show extensive information about event
-     say .line":" .dateTime~new "\\\" self"::".context~name";" "arg()="pp(arg()) "| pos="pp(pos)", nameTableColumn="pp(nameTableColumn)
+  do
+     prefix=""
+     if .my.app~bDebug=1 then
+        prefix=getPrefix(.context) ""    -- create .TraceObject~option='F' like prefix with a trailing blank
+     say prefix || .line":" .dateTime~new "\\\" self"::".context~name";" "arg()="pp(arg()) "| pos="pp(pos)", nameTableColumn="pp(nameTableColumn)
+  end
 
   id_tableView~requestFocus
   id_tableView~getSelectionModel~select(pos,tableColumn)
@@ -334,14 +349,18 @@ syntax:
   eventType=event~eventType~toString
   isMouseEvent=(event~objectname~startsWith("javafx.scene.input.MouseEvent@"))
 
+  prefix=""
+  if .my.app~bDebug=1 then
+     prefix=getPrefix(.context) ""    -- create .TraceObject~option='F' like prefix with a trailing blank
+
   if .my.app~showDebugOutput=.true then   -- show extensive information about event
   do
     say
-    say .line":" .dateTime~new "\\\" self"::".context~name"; eventType="pp(eventType) "event:" pp(event)
-    say "09"x .line":" "    event~source="pp(source) "~toString:"pp(source~toString)
+    say prefix || .line":" .dateTime~new "\\\" self"::".context~name"; eventType="pp(eventType) "event:" pp(event)
+    say prefix || "09"x .line":" "    event~source="pp(source) "~toString:"pp(source~toString)
     if target=.nil then say "09"x .line":" "    event~target="pp(target) "<--- !"
                    else say "09"x .line":" "    event~target="pp(target) "~toString:"pp(target~toString)
-    say "09"x .line":" "    event~toString:" pp(event~tostring)
+    say prefix || "09"x .line":" "    event~toString:" pp(event~tostring)
 
     if isMouseEvent, eventType="MOUSE_CLICKED" then   -- if a mouse click, show extensive information
     do
@@ -369,15 +388,15 @@ syntax:
       mb~append("@ Scene: x=",   event~getSceneX, "/y=",event~getSceneY," ")
       mb~append("@ eventSource: x=",event~getX,      "/y=",event~getY,"/z=",event~getZ)
 
-      say "09"x .line":" "MOUSE_CLICKED -->" pp(mb~string)
+      say prefix || "09"x .line":" "MOUSE_CLICKED -->" pp(mb~string)
 
       selectedIndex=id_tableView~getSelectionModel~getSelectedIndex
       selectedItem =id_tableView~getSelectionModel~getSelectedItem
-      say "09"x .line":" "selectedIndex:" pp(selectedIndex) "selectedItem:" pp(selectedItem)
-      say "09"x .line":" "event~eventType~toString="pp(eventType)", event~button~toString="pp(event~button~toString)", event~getClickCount="pp(event~getClickCount) "\\\"
-      say "09"x .line":" "/// ---> pickResult~intersectedNode-Infos:"
-      say "09"x .line":" ppNodeInfo(event)
-      say "09"x .line":" "\\\ <---"
+      say prefix || "09"x .line":" "selectedIndex:" pp(selectedIndex) "selectedItem:" pp(selectedItem)
+      say prefix || "09"x .line":" "event~eventType~toString="pp(eventType)", event~button~toString="pp(event~button~toString)", event~getClickCount="pp(event~getClickCount) "\\\"
+      say prefix || "09"x .line":" "/// ---> pickResult~intersectedNode-Infos:"
+      say prefix || "09"x .line":" ppNodeInfo(event)
+      say prefix || "09"x .line":" "\\\ <---"
     end
   end
 
@@ -391,7 +410,7 @@ syntax:
      when tgtId="id_menu_show_debug" then    -- get selected-state, use it for setting .showDebugOutput
            do
               if .my.app~showDebugOutput=.true then
-                 say "09"x .line":" "*** handling" pp(eventType) "for" pp(tgtId)
+                 say prefix || "09"x .line":" "*** handling" pp(eventType) "for" pp(tgtId)
 
               .my.app~showDebugOutput=id_menu_show_debug~isSelected
               return
@@ -400,7 +419,7 @@ syntax:
      when tgtId="id_ctxt_menu_show_debug" then  -- reflect change from context menu in File menu item as well
            do
               if .my.app~showDebugOutput=.true then
-                 say "09"x .line":" "*** handling" pp(eventType) "for" pp(tgtId)
+                 say prefix || "09"x .line":" "*** handling" pp(eventType) "for" pp(tgtId)
               showDebugOutput=\id_menu_show_debug~isSelected
               id_menu_show_debug~setSelected(showDebugOutput)
               .my.app~showDebugOutput=showDebugOutput
@@ -410,7 +429,7 @@ syntax:
      when tgtId="id_menu_enable_editing" then   -- get selected-state, use it for setting TableView edit mode
            do
               if .my.app~showDebugOutput=.true then
-                 say "09"x .line":" "*** handling" pp(eventType) "for" pp(tgtId)
+                 say prefix || "09"x .line":" "*** handling" pp(eventType) "for" pp(tgtId)
               isSelected=id_menu_enable_editing~isSelected
               id_tableview~setEditable(isSelected)
               id_button_add   ~setDisable(\isSelected)
@@ -422,7 +441,7 @@ syntax:
      when tgtId="id_ctxt_menu_enable_editing" then -- reflect change from context menu in File menu item as well
            do
               if .my.app~showDebugOutput=.true then
-                 say "09"x .line":" "*** handling" pp(eventType) "for" pp(tgtId)
+                 say prefix || "09"x .line":" "*** handling" pp(eventType) "for" pp(tgtId)
               isSelected=event~source~isSelected   -- get ContextMenu's CheckMenuItem object
               id_tableview~setEditable(isSelected)
               id_button_add   ~setDisable(\isSelected)
@@ -440,7 +459,7 @@ syntax:
      when tgtId="id_menu_setitems" then   -- fill the TableView, set the menu and button states
            do
               if .my.app~showDebugOutput=.true then
-                 say "09"x .line":" "*** handling" pp(eventType) "for" pp(tgtId)
+                 say prefix || "09"x .line":" "*** handling" pp(eventType) "for" pp(tgtId)
 
               call resetTableViewData     -- reset the tableviewdata to inital state, such setitems will show them all again
               id_tableview~setItems(tableViewData)
@@ -459,7 +478,7 @@ syntax:
      when tgtId="id_menu_remove" then        -- remove .nil entries from ArrayList
            do
               if .my.app~showDebugOutput=.true then
-                 say "09"x .line":" "*** handling" pp(eventType) "for" pp(tgtId)
+                 say prefix || "09"x .line":" "*** handling" pp(eventType) "for" pp(tgtId)
               do idx=tableViewData~size-1 to 0 by -1     -- remove empty cells
                  if tableViewData~get(idx)~isNil then
                  do
@@ -492,7 +511,7 @@ syntax:
      when tgtId="id_menu_clear" then
            do
               if .my.app~showDebugOutput=.true then
-                 say "09"x .line":" "*** handling" pp(eventType) "for" pp(tgtId)
+                 say prefix || "09"x .line":" "*** handling" pp(eventType) "for" pp(tgtId)
               tableViewData~clear
               id_menu_setitems~setDisable(.false)
               id_menu_remove  ~setDisable(.true)
@@ -507,7 +526,7 @@ syntax:
      when tgtId="id_menu_quit" then
            do
               if .my.app~showDebugOutput=.true then
-                 say "09"x .line":" "*** handling" pp(eventType) "for" pp(tgtId)
+                 say prefix || "09"x .line":" "*** handling" pp(eventType) "for" pp(tgtId)
               self~handleExit
               return
            end
@@ -515,7 +534,7 @@ syntax:
       when tgtId="id_button_add" then
             do
                if .my.app~showDebugOutput=.true then
-                  say "09"x .line":" "*** handling" pp(eventType) "for" pp(tgtId)
+                  say prefix || "09"x .line":" "*** handling" pp(eventType) "for" pp(tgtId)
                iin=.my.app~imageIndexNames
                if tableViewData~size=0 then   -- if yet empty, make sure id_tableview gets set to tableViewData
                   id_tableview~setItems(tableViewData)
@@ -534,11 +553,11 @@ syntax:
       when tgtId="id_button_delete" then
             do
                if .my.app~showDebugOutput=.true then
-                  say "09"x .line":" "*** handling" pp(eventType) "for" pp(tgtId)
+                  say prefix || "09"x .line":" "*** handling" pp(eventType) "for" pp(tgtId)
                selectedIndex=id_tableView~getSelectionModel~getSelectedIndex
 
                if .my.app~showDebugOutput=.true then
-                  say "09"x .line":" "id_button_delete, selectedIndex="pp(selectedIndex)
+                  say prefix || "09"x .line":" "id_button_delete, selectedIndex="pp(selectedIndex)
 
                if selectedIndex>-1 then
                do
@@ -552,14 +571,14 @@ syntax:
                   id_label~setText("TableView has" tableViewData~size "row(s)")
                end
                else if .my.app~showDebugOutput=.true then
-                   say "09"x .line":" "id_button_delete, selectedIndex="pp(selectedIndex)
+                   say prefix || "09"x .line":" "id_button_delete, selectedIndex="pp(selectedIndex)
                return
             end
 
      when eventType="EDIT_CANCEL" then    -- force a refresh to make sure UI gets syncrhonized with state
            do
               if .my.app~showDebugOutput=.true then
-                 say "09"x .line":" "*** handling" pp(eventType) "for" pp(tgtId)
+                 say prefix || "09"x .line":" "*** handling" pp(eventType) "for" pp(tgtId)
 
               id_tableview~refresh        -- force a refresh of the TableView
               return
@@ -577,7 +596,7 @@ syntax:
          val=tableViewData~get(Idx)
 
          if .my.app~showDebugOutput=.true then
-            say "09"x .line":" "*** handling" pp("Ctl-"eventType) "for index="pp(idx)", value="pp(val)
+            say prefix || "09"x .line":" "*** handling" pp("Ctl-"eventType) "for index="pp(idx)", value="pp(val)
 
          if val~isNil then                   -- no backing observable (was nullified before with ctl-click)
          do
@@ -615,18 +634,18 @@ syntax:
 
   if .my.app~showDebugOutput=.true then   -- show current entries in ObservableArrayList
   do
-     say "09"x .line":" "// iterate over cells (observableArrayList):"
+     say prefix || "09"x .line":" "// iterate over cells (observableArrayList):"
      if \tableViewData~isNil then
      do
-        say "0909"x"current tableViewData~size:" pp(tableViewData~size)
+        say prefix || "0909"x"current tableViewData~size:" pp(tableViewData~size)
         do i=0 to tableViewData~size - 1 --  o over id_tableview~getItems
             o=tableViewData~get(i)
             info=""
             if \o~isNil, o~isA(.bsf) then info=pp("o~toString="o~toString)
             if info~pos(o~objectname)>0 then
-               say "0909"x"    " i~right(3)":" pp(o)
+               say prefix || "0909"x"    " i~right(3)":" pp(o)
             else
-               say "0909"x"    " i~right(3)":" pp(o) info
+               say prefix || "0909"x"    " i~right(3)":" pp(o) info
         end
      end
   end
@@ -781,7 +800,12 @@ syntax:
   since    =.fx.simpleStringProperty ~new(valSince)
 
   if .my.app~showDebugOutput=.true then
-     say .line":" .datetime~new "///   " self
+  do
+     prefix=""
+     if .my.app~bDebug=1 then
+        prefix=getPrefix(.context) ""    -- create .TraceObject~option='F' like prefix with a trailing blank
+     say prefix || .line":" .datetime~new "///   " self
+  end
 
 
 /* =================================================================================== */
@@ -923,10 +947,14 @@ syntax:
 ::method call           -- implements "javafx.util.Callback.call(Object o)": in this case an instance of a TableCell (or a subclass of it) must be returned!
   expose columnName     -- the name of the column/attribute we have to serve
 
+  prefix=""
+  if .my.app~bDebug=1 then
+     prefix=getPrefix(.context) ""    -- create .TraceObject~option='F' like prefix with a trailing blank
+
   if .my.app~showDebugOutput=.true, columnName="nr" then
   do
      say
-     say "09"x .line": ... create cells for a new record ..."
+     say prefix || "09"x .line": ... create cells for a new record ..."
   end
 
   if columnName="expertise" then  -- use our custom RexxComboBoxTableCell implementation
@@ -948,8 +976,7 @@ syntax:
 
   if .my.app~showDebugOutput=.true then
   do
-     say .line":" .dateTime~new "///<--" self"::call" "for" pp(columnName)~left(11)  "| RETURNING jCell:" pp(jStrip(jCell))
-     -- if columnName="since" then say
+     say prefix || .line":" .dateTime~new "///<--" self"::call" "for" pp(columnName)~left(11)  "| RETURNING jCell:" pp(jStrip(jCell))
   end
   return jCell         -- return the Java cell
 
@@ -1072,8 +1099,11 @@ syntax:
   strKeyCode=event~getCode~toString
   if .my.app~showDebugOutput=.true then
   do
-     say .line":" .dateTime~new "///-->" self"::".context~name":" "strKeyCode="pp(strKeyCode) "isCancelled="pp(isCancelled)
-     say "09"x .line":" "event~source:" pp(event~source) "event~target:" pp(event~target)
+     prefix=""
+     if .my.app~bDebug=1 then
+        prefix=getPrefix(.context) ""    -- create .TraceObject~option='F' like prefix with a trailing blank
+     say prefix || .line":" .dateTime~new "///-->" self"::".context~name":" "strKeyCode="pp(strKeyCode) "isCancelled="pp(isCancelled)
+     say prefix || "09"x .line":" "event~source:" pp(event~source) "event~target:" pp(event~target)
   end
 
   select
@@ -1101,7 +1131,12 @@ syntax:
   use arg observable, oldValue, newValue
 
   if .my.app~showDebugOutput=.true then
-     say .line":" .dateTime~new "///-->" self"::".context~name", focus changed:" "observable="pp(jstrip(observable))", oldValue="pp(oldValue)", newValue="pp(newValue) "isCancelled="pp(isCancelled)
+  do
+     prefix=""
+     if .my.app~bDebug=1 then
+        prefix=getPrefix(.context) ""    -- create .TraceObject~option='F' like prefix with a trailing blank
+     say prefix || .line":" .dateTime~new "///-->" self"::".context~name", focus changed:" "observable="pp(jstrip(observable))", oldValue="pp(oldValue)", newValue="pp(newValue) "isCancelled="pp(isCancelled)
+  end
 
    -- refresh UI when focus lost
   if oldValue=.true, newValue=.false, jself~getIndex>-1 then -- focus leaving? make sure we set the ComboBox
@@ -1175,7 +1210,12 @@ syntax:
   jSelf=slotDir~javaObject
   index=jSelf~getIndex
   if .my.app~showDebugOutput=.true then
-     say .line":" .dateTime~new "/// -->" self"::".context~name": jself:" pp(jstrip(jself)) "columnName="pp(columnName) "| item="pp(item)",empty="pp(empty)",index="pp(index)
+  do
+     prefix=""
+     if .my.app~bDebug=1 then
+        prefix=getPrefix(.context) ""    -- create .TraceObject~option='F' like prefix with a trailing blank
+     say prefix || .line":" .dateTime~new "/// -->" self"::".context~name": jself:" pp(jstrip(jself)) "columnName="pp(columnName) "| item="pp(item)",empty="pp(empty)",index="pp(index)
+  end
 
   jSelf~updateItem_forwardToSuper(item,empty)   -- will cause the event to fire, in case there are registered event handlers
 
@@ -1251,7 +1291,12 @@ syntax:
   rexxComboBoxCellHandler~setConverter(myClz~stringConverter) -- needed for edits with TextFieldListCell
 
   if .my.app~showDebugOutput=.true then
-     say .line":" .dateTime~new "///-->" self"::call" pp(obj)", RETURNING:" pp(rexxComboBoxCellHandler)
+  do
+     prefix=""
+     if .my.app~bDebug=1 then
+        prefix=getPrefix(.context) ""    -- create .TraceObject~option='F' like prefix with a trailing blank
+     say prefix || .line":" .dateTime~new "///-->" self"::call" pp(obj)", RETURNING:" pp(rexxComboBoxCellHandler)
+  end
 
   return rexxComboBoxCellHandler
 
@@ -1281,7 +1326,12 @@ syntax:
   index=jSelf~getIndex     -- get 0-based index (row) of this cell
 
   if .my.app~showDebugOutput=.true then
-     say .line":" .dateTime~new "///-->" self"::".context~name": jself:" pp(jstrip(jself)) "| item="pp(item)",empty="pp(empty)",index="pp(index)
+  do
+     prefix=""
+     if .my.app~bDebug=1 then
+        prefix=getPrefix(.context) ""    -- create .TraceObject~option='F' like prefix with a trailing blank
+     say prefix || .line":" .dateTime~new "///-->" self"::".context~name": jself:" pp(jstrip(jself)) "| item="pp(item)",empty="pp(empty)",index="pp(index)
+  end
 
      -- we need to invoke the method in the superclass first
   jSelf~updateItem_forwardToSuper(item,empty)
@@ -1417,7 +1467,12 @@ syntax:
   items~add(fxMI~new("Quit")             ~~setId("id_menu_quit")    ~~setOnAction(eventHandler) )
 
   if .my.app~showDebugOutput=.true then
-     say .line":" .dateTime~new "\\\"  "createContextMenu(eventHandler): ctxtMenu~toString="pp(ctxtMenu~toString)
+  do
+     prefix=""
+     if .my.app~bDebug=1 then
+        prefix=getPrefix(.context) ""    -- create .TraceObject~option='F' like prefix with a trailing blank
+     say prefix || .line":" .dateTime~new "\\\"  "createContextMenu(eventHandler): ctxtMenu~toString="pp(ctxtMenu~toString)
+  end
 
    -- use an ooRexx routine object as the Java EventHandler for the context menu
   jeh=bsfCreateRexxProxy(.routines~contextMenuHandler,,"javafx.event.EventHandler")
@@ -1437,7 +1492,12 @@ syntax:
   use arg event
 
   if .my.app~showDebugOutput=.true then
-     say .line":" .dateTime~new "   " .context~name"(event), event:" pp(event~toString)
+  do
+     prefix=""
+     if .my.app~bDebug=1 then
+        prefix=getPrefix(.context) ""    -- create .TraceObject~option='F' like prefix with a trailing blank
+     say prefix || .line":" .dateTime~new "   " .context~name"(event), event:" pp(event~toString)
+  end
 
   appDir=.my.app~demoTableViewComboBoxCell.fxml    -- get the directory with all current JavaFX objects having an fx:id
   ctxtMenu=event~source                -- get access to the ContextMenu object
@@ -1533,7 +1593,12 @@ syntax:
 
 syntax:
    if .my.app~showDebugOutput=.true then
-      say .line .dateTime~new .context~name"(event): SYNTAX condition (pickResult-method not present)"
+   do
+      prefix=""
+      if .my.app~bDebug=1 then
+         prefix=getPrefix(.context) ""    -- create .TraceObject~option='F' like prefix with a trailing blank
+      say prefix || .line .dateTime~new .context~name"(event): SYNTAX condition (pickResult-method not present)"
+   end
    return .nil
 
 
@@ -1574,19 +1639,35 @@ syntax:
 */
 ::routine dumpDir
   if .my.app~showDebugOutput=.false then return
+
+  prefix=""
+  if .my.app~bDebug=1 then
+     prefix=getPrefix(.context) ""    -- create .TraceObject~option='F' like prefix with a trailing blank
+
   use arg dir, hint=""
 
   say
-  say "dumpDir():" hint
+  say prefix || "dumpDir():" hint
   do counter i n over dir~allindexes~sort
-     say i~right(3)":" pp(n) pp(dir~entry(n))
+     say prefix || i~right(3)":" pp(n) pp(dir~entry(n))
   end
   say
 
 
+/* =================================================================================== */
+/** Utility routine for debugging: possible since ooRexx 5.0: return a prefix string
+ *  indicating the identifiers of the Rexx instance, thread and invocation.
+ */
+::routine getPrefix     -- create .TraceObject~option='F' like prefix
+  use strict arg context
+  return .mutableBuffer~new~append("[R", context~interpreter,            -
+                                   "] [T", context~thread,               -
+                                   "] [I", context~invocation, "]")~string
+
+
 /*
       ------------------------ Apache Version 2.0 license -------------------------
-         Copyright 2020 Rony G. Flatscher
+         Copyright 2020-2025 Rony G. Flatscher
 
          Licensed under the Apache License, Version 2.0 (the "License");
          you may not use this file except in compliance with the License.
@@ -1601,3 +1682,4 @@ syntax:
          limitations under the License.
       -----------------------------------------------------------------------------
 */
+

@@ -10,6 +10,9 @@
                2022-04-20, rgf: - Morgage.fxml - call to MortageController.rex moved before
                                   Button definition such that button's event code can get
                                   to see its public routines
+               2025-08-28, rgf: - removed ooRexx 5.0 test and warning, added infoPrefix
+                                - ask at inception whether debug should be activated (effects
+                                  put_FXID_objects_into.my.app.rex)
 
    purpose:    - demonstrates event filtering for assuring that numeric text fields
                  only contain valid numbers (otherwise an Alert error window pups
@@ -26,23 +29,24 @@
    license:    - Apache License 2.0 (AL 2.0)
 */
 rexxVersion=.bsf4rexx~rexx.version
-if rexxVersion<5 then
-do
-   say "This program cannot run with your version of ooRexx" pp(rexxVersion)", because"
-   say "it uses the package local environment ('.context~package~local') introduced"
-   say "with ooRexx 5.0. Besides ooRexx 5.0 may be needed anyway, because of its much"
-   say "improved multi-threading support."
-   say
-   say "Hit enter to continue ..."
-   bsf.loadClass("java.awt.Toolkit")~getDefaultToolkit~beep -- cross-platform beep
-   parse pull x
-   exit -1
-end
-
 
    -- make sure we change to the directory this program resides, such that all resources are in the local directory
 parse source  . . pgm
 call directory filespec('L', pgm)   -- change to the directory where the program resides
+thisPgmName=filespec("name", pgm)
+
+.environment~my.app=.directory~new  -- directory to contain objects relevant to this application
+.my.app~bDebug=.false               /* if set to .true, "put_FXID_objects_into.my.app.rex" will show
+                                       all entries in ScriptContext Bindings on the console           */
+say thisPgmName": do you wish to process FXML files in debug mode? (y/N)"
+parse upper pull answer +1
+if answer="Y" then
+   .my.app~bDebug=.true
+
+infoPrefix=pp("R".context~interpreter) pp("T".context~thread) pp("I".context~invocation)
+if .my.app~bDebug=.true then
+   say infoPrefix thisPgmName": starting up, .my.app~bDebug="pp(.my.app~bDebug)
+
 
 signal on syntax     -- in case something deep in Java caused an exception,
 
@@ -51,16 +55,20 @@ call bsf.loadClass "java.math.RoundingMode", "RoundingMode"
 call bsf.loadClass "java.lang.Math",         "Math"
 
 rxApp=.rexxApplication~new
+infoPrefix=pp("R".context~interpreter) pp("T".context~thread) pp("I".context~invocation)
    -- instantiate the abstract JavaFX class, abstract "start" method implemented in Rexx
 jrxApp=BsfCreateRexxProxy(rxApp,,"javafx.application.Application")
    -- launch the application, which will invoke the methdos "init" followed by "start"
 jrxApp~launch(jrxApp~getClass, .nil)   -- need to use this version of launch in order to work
+
+if .my.app~bDebug=.true then
+   say infoPrefix thisPgmName": about to leave ..."
 call sysSleep 0.01                     -- let ooRexx clean up
 exit
 
 syntax:
   co=condition("object")
-  say ppJavaExceptionChain(co)   -- display Java exception chain
+  say infoPrefix ppJavaExceptionChain(co)   -- display Java exception chain
   exit -1
 
 ::requires "BSF.CLS"       -- get Java support
@@ -83,7 +91,7 @@ syntax:
 
 /*
       ------------------------ Apache Version 2.0 license -------------------------
-         Copyright 2019-2020 Rony G. Flatscher
+         Copyright 2019-2025 Rony G. Flatscher
 
          Licensed under the Apache License, Version 2.0 (the "License");
          you may not use this file except in compliance with the License.

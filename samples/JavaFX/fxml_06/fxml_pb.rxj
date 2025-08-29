@@ -10,13 +10,16 @@
                2022-04-20, rgf: - fxml_pb.fxml: set labels text property to empty string
                                   or remove text property (has same effect)
                                 - fxml_pb_controller.rex: do not set labels in prolog
+               2025-08-28, rgf: - added infoPrefix, removed ooRexx 5.0 test and warning
+                                - ask at inception whether debug should be activated (effects
+                                  put_FXID_objects_into.my.app.rex)
 
    purpose:    - demonstrate how JavaFX controls can be updated from another thread
                  than the mandatory "JavaFX Application Thread" in ooRexx; the solution
                  is to use the new .FXGuiThread~runLater[Latest] methods (cf. worker.rex)
 
    needs:      need to change into the directory where this file resides and start the application
-               from there
+               from there; will be done in code below :)
 
    usage:      rexx fxml_pb.rxj or rexxj.sh|rexxj.cmd fxml_pb.rxj or double-clicking ;)
 
@@ -24,18 +27,10 @@
 */
 
 parse source  . . pgm
-parse version "_" v "."
-if v<5 then
-do
-   parse version v
-   .error~say(pp(pgm)" needs ooRexx 5.0 or higher, found:" pp(v))
-   .bsf.dialog~messageBox(pp(pgm)" needs ooRexx 5.0 or higher," "0a"x || "found:" pp(v), -
-                          "Wrong version of ooRexx", "error")
-   exit -1
-end
-
    -- change directory to program location such that relatively addressed resources can be found
 call directory filespec('L', pgm)   -- change to the directory where the program resides
+
+thisPgmName=filespec("name", pgm)
 
 
 /* Create a directory in the global Rexx .environment named MY.APP, such that we can store/retrieve
@@ -47,7 +42,16 @@ call directory filespec('L', pgm)   -- change to the directory where the program
      that directory from any Rexx program
 */
 .environment~setEntry("my.app", .directory~new)
-.my.app~bDebug=.true    -- uncomment to see debug output from "put_FXID_objects_into.my.app.rex
+.my.app~bDebug=.false   -- uncomment to see debug output from "put_FXID_objects_into.my.app.rex
+
+say thisPgmName": do you wish to process FXML files in debug mode? (y/N)"
+parse upper pull answer +1
+if answer="Y" then
+   .my.app~bDebug=.true
+
+infoPrefix=pp("R".context~interpreter) pp("T".context~thread) pp("I".context~invocation)
+if .my.app~bDebug=.true then
+   say infoPrefix thisPgmName": starting up, .my.app~bDebug="pp(.my.app~bDebug)
 
 rxApp=.rexxApplication~new
    -- instantiate the abstract JavaFX class, abstract "start" method implemented in Rexx
@@ -55,15 +59,20 @@ jrxApp=BsfCreateRexxProxy(rxApp,,"javafx.application.Application")
    -- launch the application, which will invoke the methdos "init" followed by "start"
 
 signal on syntax  -- intercept syntax conditions
+if .my.app~bDebug=.true then
+   say infoPrefix center(" about jrxApp~launch ", 70, "-")
+
 jrxApp~launch(jrxApp~getClass, .nil)    -- launch the application
-say center(" after jrxApp~launch ", 70, "-")
+
+if .my.app~bDebug=.true then
+   say infoPrefix center(" after jrxApp~launch ", 70, "-")
 call sysSleep 0.01                 -- let ooRexx clean up
 exit
 
    -- in case something goes foul, use "ppCondition2()" to show all Java exception causes
 syntax:
   co=condition('object')
-  say "--- oops, something went wrong while executing 'fxml_pb.rex':"
+  say infoPrefix "--- oops, something went wrong while executing 'fxml_pb.rex':"
   say ppJavaExceptionChain(co)   -- display Java exception chain
   exit -1
 
@@ -94,10 +103,9 @@ syntax:
   stage~show               -- show the stage with the scene
 
 
-
 /*
       ------------------------ Apache Version 2.0 license -------------------------
-         Copyright 2016-2020 Rony G. Flatscher
+         Copyright 2017-2025 Rony G. Flatscher
 
          Licensed under the Apache License, Version 2.0 (the "License");
          you may not use this file except in compliance with the License.
@@ -112,3 +120,4 @@ syntax:
          limitations under the License.
       -----------------------------------------------------------------------------
 */
+

@@ -6,6 +6,9 @@
 
    changed:    2018-03-24, rgf: make sure that we change into the directory of this program
                2019-08-13, rgf: warn, if not running run on ooRexx 5.0 or higher, ask user whether to proceed
+               2025-08-28, rgf: - ask at inception whether debug should be activated (effects
+                                  put_FXID_objects_into.my.app.rex)
+               2025-08-29, rgf: - removed check and warning for minimum ooRexx 5.0, not needed for BSF4ooRexx850
 
    purpose:    - shows how to switch between predefined themes
                - demonstrates how to prevent the window from closing
@@ -26,22 +29,12 @@
    license:    - Apache License 2.0 (AL 2.0)
 */
 
-
-   -- make sure we run on ooRexx 5 or higher
-parse version full 1 "_" v "."    -- get major version number of ooRexx
-if v<5 then    -- pre ooRexx 5.0 expose problems with multithreading switching
-do
-   say "--> WARNING: this program will run stable with ooRexx 5.0 or higher only!"
-   say "             (You are running ooRexx version" pp(full)")";say
-   say
-   say "Do you wish to continue (y/N) ?"
-   parse upper pull val +1
-   if val<>"Y" then exit -1
-end
-
    -- change directory to program location such that relatively addressed resources can be found
 parse source  . . pgm
 call directory filespec('L', pgm)   -- change to the directory where the program resides
+   -- determine our location and create an URLClassLoader to find resources relative to it
+appDirectory = filespec("Location", pgm)  -- determine path to this Rexx program
+
 
 /* Create a directory in the global Rexx .environment named MY.APP, such that we can store/retrieve
    objects that we need globally (over all Rexx programs):
@@ -51,12 +44,22 @@ call directory filespec('L', pgm)   -- change to the directory where the program
      symbol naming the entry (its index), hence .MY.APP will allow us to retrieve
      that directory from any Rexx program
 */
+
+parse source  . . pgm
+thisPgmName=filespec("name", pgm)
+
 .environment~setEntry("my.app", .directory~new)
+.my.app~bDebug=.false
 
-   -- determine our location and create an URLClassLoader to find resources relative to it
-parse source . . s
+say thisPgmName": do you wish to process FXML files in debug mode? (y/N)"
+parse upper pull answer +1
+if answer="Y" then
+   .my.app~bDebug=.true
 
-appDirectory = filespec("Location", s)   -- determine path to this Rexx program
+infoPrefix=pp("R".context~interpreter) pp("T".context~thread) pp("I".context~invocation)
+if .my.app~bDebug=.true then
+   say infoPrefix thisPgmName": starting up, .my.app~bDebug="pp(.my.app~bDebug)
+
    -- use a java.io.File to to get an URL for the file
 jfile = .bsf~new("java.io.File",appDirectory)
 urlAppDir = jfile~toUri~toUrl
@@ -76,6 +79,8 @@ rxApp = BsfCreateRexxProxy(.my.app~rexxHandler,,"javafx.application.Application"
 
    -- launch the application, invoke "start" and then stay up until the application closes
 rxApp~launch(rxApp~getClass, .nil)     -- need to use this version of launch in order to work
+if .my.app~bDebug=.true then
+   say infoPrefix thisPgmName": about to leave ..."
 
 ::requires "BSF.CLS"    -- get Java support
 
@@ -137,3 +142,23 @@ rxApp~launch(rxApp~getClass, .nil)     -- need to use this version of launch in 
 ::method run         -- Platform.runLater() will run this in the JavaFX application thread
    -- re-request the focus for this control
   .my.app~htmlEditor.fxml~htmlEditor~requestFocus
+
+
+/*
+      ------------------------ Apache Version 2.0 license -------------------------
+         Copyright 2017-2025 Adrian Baginski, Rony G. Flatscher
+
+         Licensed under the Apache License, Version 2.0 (the "License");
+         you may not use this file except in compliance with the License.
+         You may obtain a copy of the License at
+
+             http://www.apache.org/licenses/LICENSE-2.0
+
+         Unless required by applicable law or agreed to in writing, software
+         distributed under the License is distributed on an "AS IS" BASIS,
+         WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+         See the License for the specific language governing permissions and
+         limitations under the License.
+      -----------------------------------------------------------------------------
+*/
+

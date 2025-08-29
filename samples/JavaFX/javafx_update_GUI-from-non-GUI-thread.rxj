@@ -51,6 +51,8 @@
             2019-08-08, rgf: - if ooRexx smaller version 5.0, ask user whether to proceed
             2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
                              - removing dependency on "rgf_util2.rex"
+            2025-08-28, rgf: - remove warning to run on 5.0 or later, as this is now a given
+                             - added infoPrefix to say statements
 
    license: Apache License 2.0 (see at bottom)
 
@@ -59,22 +61,9 @@
          rexx javafx_update_GUI-from-non-GUI-thread.rxj
          rexxj.{cmd|sh} javafx_update_GUI-from-non-GUI-thread.rxj
 
-   needs: ooRexx 4.1 or higher, and BSF4ooRexx 6.00 or highter
+   needs: ooRexx 5.0 or higher, and BSF4ooRexx850 or higher
 
 */
-
-
-parse version full 1 "_" v "."    -- get major version number of ooRexx
-if v<5 then    -- pre ooRexx 5.0 expose problems with multithreading switching
-do
-   say "--> WARNING: this program will run stable with ooRexx 5.0 or higher only!"
-   say "             (You are running ooRexx version" pp(full)")";say
-   say
-   say "Do you wish to continue (y/N) ?"
-   parse upper pull val +1
-   if val<>"Y" then exit -1
-end
-
 
 signal on syntax
 rxApp=.RexxApplication~new  -- create Rexx object that will control the FXML set up
@@ -151,16 +140,18 @@ syntax:
   expose label      -- allow direct access to ooRexx attribute, not used in this example
   use arg event, slotDir    -- expected arguments
 
+  infoPrefix=pp("R".context~interpreter) pp("T".context~thread) pp("I".context~invocation)
+
   btn=event~source
   if btn~text=.btn.StartText then
   do
-     say self"::handle - starting Rexx thread"
+     say infoPrefix self"::handle - starting Rexx thread"
      btn~text=.btn.StopText
      .some_rexx_class~update_gui_from_rexx_thread(label)
   end
   else
   do
-     say self"::handle - stopping Rexx thread"
+     say infoPrefix self"::handle - stopping Rexx thread"
      .some_rexx_class~stopRexxThread=.true   -- have Rexx thread stop updating the label!
      call sysSleep .01
      btn~text=.btn.StartText
@@ -174,10 +165,13 @@ syntax:
 ::method update_gui_from_rexx_thread class
   expose stopRexxThread
   use arg label         -- GUI object to interact with
-  say self"::updateGuiFromRexxThread - just arrived, GUI thread:" bsfGetTid()
+  infoPrefix=pp("R".context~interpreter) pp("T".context~thread) pp("I".context~invocation)
+  say infoPrefix self"::updateGuiFromRexxThread - just arrived, GUI thread:" bsfGetTid()
   reply
+      -- this runs on a new thread
+  infoPrefix=pp("R".context~interpreter) pp("T".context~thread) pp("I".context~invocation)
   tid=bsfGetTid()
-  say self"::updateGuiFromRexxThread - now running on thread:" tid
+  say infoPrefix self"::updateGuiFromRexxThread - now running on thread:" tid
   rexxVersion=.bsf4rexx~rexx.version
   stopRexxThread=.false
   startDateTime=.dateTime~new    -- take start date and time
@@ -200,7 +194,7 @@ syntax:
   totalLoops=i-1
   loopsSec="| total" "loops:" pp(myFormat(totalLoops)) "duration:" pp(totalDuration) -
            "loops/sec="pp(myFormat(format((totalLoops/totalDuration~totalMicroseconds)*1000000,,0)))
-  say self"::updateGuiFromRexxThread - now stopping executing on thread:" tid loopsSec
+  say infoPrefix self"::updateGuiFromRexxThread - now stopping executing on thread:" tid loopsSec
   say
 
 ::routine myFormat   -- format a number American style, i.e. inject comma to indicate a thousand group
@@ -219,7 +213,7 @@ syntax:
 
 /*
       ------------------------ Apache Version 2.0 license -------------------------
-         Copyright 2018 Rony G. Flatscher
+         Copyright 2018-2025 Rony G. Flatscher
 
          Licensed under the Apache License, Version 2.0 (the "License");
          you may not use this file except in compliance with the License.

@@ -20,7 +20,7 @@
    changes: 2018-07-22, rgf: prepended file name in creating Image with "file:" to allow it to find
                the bitmap in the current directory
 
-            2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()                     
+            2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
 
    last change: $Revision$ $Author$ $Date$
 
@@ -398,6 +398,7 @@ syntax:
       -- the second argument is a Rexx value (a Rexx directory) which will be contained in the slotDir
       -- directory under the name "rexxDir"
    jobj=bsfCreateRexxProxy(.demoCustomizedDialogListener~new,rexxDir,"javafx.beans.value.ChangeListener","javafx.util.Callback")
+say .line": jobj="jobj
    userName~textProperty~addListener(jobj)   -- add it as listener, gets invoked if field gets edited
    dialog~setResultConverter(jobj)           -- add it as result converter which defines the return value of the Dialog
 

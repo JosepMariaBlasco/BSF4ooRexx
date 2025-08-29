@@ -227,7 +227,9 @@ syntax:
 
 ::method handle      -- will be invoked by the Java side
   use arg event, slotDir   -- the last argument will always be added by BSF4ooRexx
-  say " ==> ---> arrived in button's RexxButtonHandler's 'handle' method ..."
+
+  infoPrefix=pp("R".context~interpreter) pp("T".context~thread) pp("I".context~invocation)
+  say infoPrefix " ==> ---> arrived in button's RexxButtonHandler's 'handle' method ..."
   slotDir=arg(arg())          -- get last argument, will always be added by BSF4ooRexx
   userData=slotDir~userData   -- fetch the Rexx directory we supplied at button event handler creation time
    -- get values we want to work with
@@ -236,10 +238,10 @@ syntax:
   title   =userData~title     -- get the value of 'title'
   label   =userData~label     -- get the Label with the id "label"
 
-  say ' ... label~getText='pp(label~getText)
-  say ' ... changing text in label to current date and time ...'
+  say infoPrefix ' ... label~getText='pp(label~getText)
+  say infoPrefix ' ... changing text in label to current date and time ...'
   label~text=.dateTime~new~string
-  say ' ... label~getText='pp(label~getText)
+  say infoPrefix ' ... label~getText='pp(label~getText)
 
    -- as this version does not use the javax.script infrastructure there is
    -- no "ScriptContext" from javax.script available to us; "fxml_02" by
@@ -253,13 +255,13 @@ syntax:
     -- access the "label" JavaFX Label, change its text
   label~setText(title .dateTime~new~string "(count #" count")")
 
-  say " <== <--- returning from RexxButtonHandler's 'handle' method."
+  say infoPrefix " <== <--- returning from RexxButtonHandler's 'handle' method."
   say
 
 
 /*
       ------------------------ Apache Version 2.0 license -------------------------
-         Copyright 2016-2020 Rony G. Flatscher
+         Copyright 2016-2025 Rony G. Flatscher
 
          Licensed under the Apache License, Version 2.0 (the "License");
          you may not use this file except in compliance with the License.

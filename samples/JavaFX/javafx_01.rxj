@@ -3,6 +3,7 @@
    author:  Rony G. Flatscher
    date:    2016-12-06
    changed: 2017-11-09, rgf: adapted to Rexx symposium 2017 article
+            2025-08-28, rgf: added infoPrefix
 
    purpose: this is the standalone (FXML-less) version of the Rexx GUI application (taking advantage of JavaFX)
             in the fxml_01/ directory, i.e. the GUI elements are created in Rexx code only
@@ -14,7 +15,7 @@
          rexx javafx_01.rex
          rexxj.{cmd|sh} javafx_01.rex
 
-   needs: ooRexx 4.1 or higher, and BSF4ooRexx 6.00 or highter
+   needs: ooRexx 5.0 or higher, and BSF4ooRexx850or highter
 
 */
 
@@ -73,16 +74,17 @@ jrxApp~launch(jrxApp~getClass, .nil)    -- launch the application, invokes "star
 ::method handle     -- will be invoked by the Java side
   expose label      -- allow direct access to ooRexx attribute, not used in this example
   -- use arg event, slotDir    -- expected arguments
+  infoPrefix=pp("R".context~interpreter) pp("T".context~thread) pp("I".context~invocation)
   now=.dateTime~new -- time of invocation
-  say now": arrived in method 'handle' ..."
-  say '... current value of label='pp(label~getText)
+  say infoPrefix now": arrived in method 'handle' ..."
+  say infoPrefix '... current value of label='pp(label~getText)
   label~text="Clicked at:" now         -- set text property
-  say '...     new value of label='pp(label~getText)
+  say infoPrefix '...     new value of label='pp(label~getText)
   say
 
 /*
       ------------------------ Apache Version 2.0 license -------------------------
-         Copyright 2016-2017 Rony G. Flatscher
+         Copyright 2016-2025 Rony G. Flatscher
 
          Licensed under the Apache License, Version 2.0 (the "License");
          you may not use this file except in compliance with the License.

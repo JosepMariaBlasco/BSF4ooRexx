@@ -22,21 +22,27 @@
                   2017-11-04, rgf: on debug show all available scopes, usually (SimpleScriptContext)
                                    the 100 (ENGINE_SCOPE) and 200 (GLOBAL_SCOPE) Bindings
                   2020-06-22, rgf: changed debug output text
+                  2025-08-24, rgf: change debug text, show interpreter, thread and invocation
+                  2025-08-27, rgf: added debug output at beginning and at end, displaying .context
+                                   information that got introduced with ooRexx 5.0 which is the
+                                   baseline for BSF4ooRexx850 (8=Java minimum version,
+                                   50=5.0=Rexx minimum version)
 
       license:    Apache License 2.0
 */
 
+   -- show Rexx interpreter, thread and invocation identifiers in square brackets
+infoPrefix=pp("R".context~interpreter) pp("T".context~thread) pp("I".context~invocation)
+
 parse source . . thisProg
 thisProg=filespec("Name", thisProg)
 
-   -- include file name explicitly (JavaFX 15 will supply it)
-say .line":" .dateTime~new "in" pp(thisProg) "->" pp("put_FXID_objects_inot.my.app.rex") "..."
    -- make sure global Rexx .environment has an entry MY.APP (a Rexx directory)
 if \.environment~hasEntry("my.app") then           -- not there?
    .environment~setEntry("my.app", .directory~new) -- create it!
 
 bDebug=(.my.app~bDebug=.true)    -- set debug mode
-if bDebug then say .dateTime~new " ==> ---> arrived in Rexx program" pp(thisProg) "..."
+if bDebug then say .dateTime~new infoPrefix " ==> ---> arrived in Rexx program" pp(thisProg) "('put_FXID_objects_into.my.app.rex') ..."
 
 slotDir=arg(arg())  -- get slotDir argument (BSF4ooRexx adds this as the last argument)
 scriptContext=slotDir~scriptContext   -- get entry "SCRIPTCONTEXT"
@@ -57,10 +63,10 @@ end
 
 if bDebug then
 do
-   say "all GLOBAL_SCOPE attributes now available via:" pp(".MY.App~"fxmlFileName)
+   say infoPrefix "all GLOBAL_SCOPE attributes now available via:" pp(".MY.App~"fxmlFileName)
    say
       -- show all the currently defined attributes in all ScriptContext's scopes
-   say "getting all attributes from all ScriptContext's scopes..."
+   say infoPrefix "getting all attributes from all ScriptContext's scopes..."
    dir=.directory~new   -- known constant names
    dir[100]="ENGINE_SCOPE"
    dir[200]="GLOBAL_SCOPE"
@@ -68,7 +74,7 @@ do
    do sc over arr                --
        str="ScriptContext scope" pp(sc)
        if dir~hasEntry(sc) then str=str "("dir~entry(sc)")"
-       say str", available attributes:"
+       say infoPrefix str", available attributes:"
        say
        bin=scriptContext~getBindings(sc)
        if bin=.nil then iterate  -- inexistent scope
@@ -78,23 +84,22 @@ do
           val=bin~get(key)       -- fetch the key's value
           str=""
           if val~isA(.bsf) then str="~toString:" pp(val~toString)
-          say "  " pp(key)~left(35,".") pp(val) str
+          say infoPrefix "  " pp(key)~left(35,".") pp(val) str
        end
-       if sc<>arr~lastItem then say "-"~copies(89)
-                           else say "="~copies(89)
+       if sc<>arr~lastItem then say infoPrefix "-"~copies(89)
+                           else say infoPrefix "="~copies(89)
    end
 end
 
 if bDebug then
 do
-   say .dateTime~new " <== <--- returning from program" pp(thisProg) "."
+   say .dateTime~new infoPrefix " <== <--- returning from program" pp(thisProg) "('put_FXID_objects_into.my.app.rex')."
    say
 end
 
-
 /*
       ------------------------ Apache Version 2.0 license -------------------------
-         Copyright 2016-2020 Rony G. Flatscher
+         Copyright 2016-2025 Rony G. Flatscher
 
          Licensed under the Apache License, Version 2.0 (the "License");
          you may not use this file except in compliance with the License.
@@ -109,3 +114,4 @@ end
          limitations under the License.
       -----------------------------------------------------------------------------
 */
+

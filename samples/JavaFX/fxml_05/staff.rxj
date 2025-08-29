@@ -39,6 +39,9 @@
                2019-08-13, rgf: warn, if not running run on ooRexx 5.0 or higher, ask user whether to proceed
                2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
                                 - removing dependency on "rgf_util2.rex"
+               2025-08-28, rgf: - ask at inception whether debug should be activated (effects
+                                  put_FXID_objects_into.my.app.rex)
+               2025-08-29, rgf: - removed check and warning for minimum ooRexx 5.0, not needed for BSF4ooRexx850
 
 
    purpose:    - demonstrates usage of custom libraries
@@ -59,19 +62,6 @@
 */
 
 
-   -- make sure we run on ooRexx 5 or higher
-parse version full 1 "_" v "."    -- get major version number of ooRexx
-if v<5 then    -- pre ooRexx 5.0 expose problems with multithreading switching
-do
-   say "--> WARNING: this program will run stable with ooRexx 5.0 or higher only!"
-   say "             (You are running ooRexx version" pp(full)")";say
-   say
-   say "Do you wish to continue (y/N) ?"
-   parse upper pull val +1
-   if val<>"Y" then exit -1
-end
-
-
 /* Create a directory in the global Rexx .environment named MY.APP, such that we can store/retrieve
    objects that we need globally (over all Rexx programs):
 
@@ -86,6 +76,19 @@ end
 parse source . . fullPath
 say "executing" pp(fullPath) "using Java version:" pp(.bsf4rexx~java.version)
 homeDir=filespec('Location',fullPath)     -- get and save its location
+thisPgmName=filespec("name", fullPath)
+.environment~my.app=.directory~new  -- directory to contain objects relevant to this application
+.my.app~bDebug=.false               /* if set to .true, "put_FXID_objects_into.my.app.rex" will show
+                                       all entries in ScriptContext Bindings on the console           */
+
+say thisPgmName": do you wish to process FXML files in debug mode? (y/N)"
+parse upper pull answer +1
+if answer="Y" then
+   .my.app~bDebug=.true
+
+infoPrefix=pp("R".context~interpreter) pp("T".context~thread) pp("I".context~invocation)
+if .my.app~bDebug=.true then
+   say infoPrefix thisPgmName": starting up, .my.app~bDebug="pp(.my.app~bDebug)
 
 if .bsf4rexx~java.major.version<9 then
    jarName=homeDir"jar/controlsfx-8.40.14.jar"   -- Java 8 JavaFX library
@@ -123,6 +126,8 @@ rxApp = BsfCreateRexxProxy(.my.app~rexxHandler,,"javafx.application.Application"
 signal on syntax           -- activate handling of syntax condition
    -- launch the application, invoke "start" and then stay up until the application closes
 rxApp~launch(rxApp~getClass, .nil)     -- need to use this version of launch in order to work
+if .my.app~bDebug=.true then
+   say infoPrefix thisPgmName": about to leave ..."
 call sysSleep 0.01         -- let ooRexx clean up
 exit
 
@@ -407,3 +412,22 @@ syntax:
                -- create the TableCell handler, supply a RexxTableCell object to carry out "updateItem"
   rexxCellHandler=self~class~clzOoRexxTableCell~new(.rexxTableCell~new)
   return rexxCellHandler
+
+/*
+      ------------------------ Apache Version 2.0 license -------------------------
+         Copyright 2017-2025 Adrian Baginski, Rony G. Flatscher
+
+         Licensed under the Apache License, Version 2.0 (the "License");
+         you may not use this file except in compliance with the License.
+         You may obtain a copy of the License at
+
+             http://www.apache.org/licenses/LICENSE-2.0
+
+         Unless required by applicable law or agreed to in writing, software
+         distributed under the License is distributed on an "AS IS" BASIS,
+         WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+         See the License for the specific language governing permissions and
+         limitations under the License.
+      -----------------------------------------------------------------------------
+*/
+

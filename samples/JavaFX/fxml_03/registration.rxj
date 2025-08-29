@@ -9,6 +9,9 @@
                2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
                                 - removing dependency on "rgf_util2.rex"
                2022-08-08, rgf: - added third gender "neuter"
+               2025-08-28, rgf: - removed pre 5.0 warning as BSF4ooRexx850 uses 5.0 or later already
+               2025-08-28, rgf: - ask at inception whether debug should be activated (effects
+                                  put_FXID_objects_into.my.app.rex)
 
    purpose:    - show how versatile and easy JavaFX can be
                - demonstrate how to use resources in subdirectories (loading files using an URLClassLoader)
@@ -22,22 +25,12 @@
    license:    - Apache License 2.0 (AL 2.0)
 */
 
-   -- make sure we run on ooRexx 5 or higher
-parse version full 1 "_" v "."    -- get major version number of ooRexx
-if v<5 then    -- pre ooRexx 5.0 expose problems with multithreading switching
-do
-   say "--> WARNING: this program will run stable with ooRexx 5.0 or higher only!"
-   say "             (You are running ooRexx version" pp(full)")";say
-   say
-   say "Do you wish to continue (y/N) ?"
-   parse upper pull val +1
-   if val<>"Y" then exit -1
-end
-
-
    -- change directory to program location such that relatively addressed resources can be found
 parse source  . . pgm
 call directory filespec('L', pgm)   -- change to the directory where the program resides
+thisPgmName=filespec("name", pgm)
+   -- determine our location and create an URLClassLoader to find resources relative to it
+appDirectory = filespec("Location", pgm)  -- determine path to this Rexx program
 
 /* Create a directory in the global Rexx .environment named MY.APP, such that we can store/retrieve
    objects that we need globally (over all Rexx programs):
@@ -48,12 +41,18 @@ call directory filespec('L', pgm)   -- change to the directory where the program
      that directory from any Rexx program
 */
 
+
 .environment~setEntry("my.app", .directory~new)
+.my.app~bDebug=.false
+say thisPgmName": do you wish to process FXML files in debug mode? (y/N)"
+parse upper pull answer +1
+if answer="Y" then
+   .my.app~bDebug=.true
 
-   -- determine our location and create an URLClassLoader to find resources relative to it
-parse source . . s
+infoPrefix=pp("R".context~interpreter) pp("T".context~thread) pp("I".context~invocation)
+if .my.app~bDebug=.true then
+   say infoPrefix thisPgmName": starting up, .my.app~bDebug="pp(.my.app~bDebug)
 
-appDirectory = filespec("Location", s)   -- determine path to this Rexx program
    -- use a java.io.File to to get an URL for the file
 jfile = .bsf~new("java.io.File",appDirectory)
 urlAppDir = jfile~toUri~toUrl
@@ -72,6 +71,8 @@ rxApp = BsfCreateRexxProxy(rexxHandler,,"javafx.application.Application")
 signal on syntax
    -- launch the application, invoke "start" and then stay up until the application closes
 rxApp~launch(rxApp~getClass, .nil)     -- need to use this version of launch in order to work
+if .my.app~bDebug=.true then
+   say infoPrefix thisPgmName": about to leave ..."
 call sysSleep 0.01                 -- let ooRexx clean up
 exit
 
@@ -137,3 +138,23 @@ syntax:
                                                                            file represented as a string */
         .my.app~registration.fxml~imageview~setImage(Image)             -- set the image in the imageview
     end
+
+
+
+/*
+      ------------------------ Apache Version 2.0 license -------------------------
+         Copyright 2017-2025 Adrian Baginski, Rony G. Flatscher
+
+         Licensed under the Apache License, Version 2.0 (the "License");
+         you may not use this file except in compliance with the License.
+         You may obtain a copy of the License at
+
+             http://www.apache.org/licenses/LICENSE-2.0
+
+         Unless required by applicable law or agreed to in writing, software
+         distributed under the License is distributed on an "AS IS" BASIS,
+         WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+         See the License for the specific language governing permissions and
+         limitations under the License.
+      -----------------------------------------------------------------------------
+*/

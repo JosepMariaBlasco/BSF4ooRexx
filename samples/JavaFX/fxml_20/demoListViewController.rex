@@ -2,7 +2,7 @@
 /*
    author:  Rony G. Flatscher
    date:    2020-06-22
-   changes: --
+   changes: 2025-05-29, ---rgf   - add prefix to reveal interpreter, thread and invocation
 
    purpose: demonstrate a controller with a public routine that can be invoked directly from
             an ooRexx FXML event handler script; it will handle the interactions with the
@@ -20,7 +20,10 @@
    /* @showsource - ending comment on different line, RexxScript annotation does not take effect
    */
 parse source s
-say .line":" .dateTime~new pp(s)  "->" pp("demoListViewController.rex") "..."
+prefix=.mutableBuffer~new~append("[R", .context~interpreter, "] [T", .context~thread, "] [", .context~invocation, "]")~string ""
+
+if .my.app~bDebug=1 then
+   say prefix || .line":" .dateTime~new pp(s)  "->" pp("demoListViewController.rex") "..."
 
 /** This routine will fetch the <code>event</code> JavaFX object from the global
     <em>ScriptContext</em> using the Rexx script annotation &quot;/* @get(event) */&quot;
@@ -33,13 +36,17 @@ say .line":" .dateTime~new pp(s)  "->" pp("demoListViewController.rex") "..."
    /* RexxScript annotation: @get(event) (will be fetched from slotDir's scriptContext) */
    if .my.app~showDebugOutput=.true then
    do
-      say .line":" .context~name":" "arg()="arg() "event="pp(event) "slotDir="pp(slotDir)
-      say .line":" .context~name":" "event="pp(event~toString)
-      say .line":" .context~name":" "event~source="pp(event~source) pp(event~source~toString)
-      say .line":" .context~name":" "event~target="pp(event~target) pp(event~target~toString)
-      say .line":" .context~name":" "event~eventType="pp(event~eventType) pp(event~eventType~toString)
-      say .line":" .context~name":" "event~source~selected="pp(event~source~selected)
-      say "<---------------------------------------"
+      prefix=""
+      if .my.app~bDebug=1 then
+         prefix=.mutableBuffer~new~append("[R", .context~interpreter, "] [T", .context~thread, "] [", .context~invocation, "]")~string ""
+
+      say prefix || .line":" .context~name":" "arg()="arg() "event="pp(event) "slotDir="pp(slotDir)
+      say prefix || .line":" .context~name":" "event="pp(event~toString)
+      say prefix || .line":" .context~name":" "event~source="pp(event~source) pp(event~source~toString)
+      say prefix || .line":" .context~name":" "event~target="pp(event~target) pp(event~target~toString)
+      say prefix || .line":" .context~name":" "event~eventType="pp(event~eventType) pp(event~eventType~toString)
+      say prefix || .line":" .context~name":" "event~source~selected="pp(event~source~selected)
+      say prefix || "<---------------------------------------"
       say
    end
 
@@ -72,7 +79,7 @@ say .line":" .dateTime~new pp(s)  "->" pp("demoListViewController.rex") "..."
 
 /*
       ------------------------ Apache Version 2.0 license -------------------------
-         Copyright 2020 Rony G. Flatscher
+         Copyright 2020-2025 Rony G. Flatscher
 
          Licensed under the Apache License, Version 2.0 (the "License");
          you may not use this file except in compliance with the License.

@@ -11,6 +11,7 @@
                              employing routine ppCondition2() from "rgf_util2.rex" for debugging
             2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
                              - removing dependency on "rgf_util2.rex"
+            2025-08-28, rgf: - added infoPrefix
 
    purpose: this is a simple the Rexx GUI application (taking advantage of JavaFX)
             where the GUI elements are defined in a FXML file ("FXML_02_Document.fxml"),
@@ -30,7 +31,7 @@
          rexx fxml_02.rex [en|de]
          rexxj.{cmd|sh} fxml_02.rex [en|de]
 
-   needs: ooRexx 4.1 or higher, and BSF4ooRexx 6.00 or highter
+   needs: ooRexx 5.0 or higher, and BSF4ooRexx850 or highter
 
 */
 
@@ -48,9 +49,11 @@ if locale<>"" then rxApp=.rexxApplication~new(locale)
 
    -- instantiate the abstract JavaFX class, abstract "start" method implemented in Rexx
 jrxApp=BsfCreateRexxProxy(rxApp,,"javafx.application.Application")
+infoPrefix=pp("R".context~interpreter) pp("T".context~thread) pp("I".context~invocation)
+say infoPrefix center(" about jrxApp~launch ", 70, "-")
    -- launch the application, which will invoke the methdos "init" followed by "start"
 jrxApp~launch(jrxApp~getClass, .nil)    -- need to use this version of launch in order to work
-say center(" after jrxApp~launch ", 70, "-")
+say infoPrefix center(" after jrxApp~launch ", 70, "-")
 call sysSleep 0.01                 -- let ooRexx clean up
 exit
 
@@ -86,9 +89,6 @@ syntax:
   stage~getIcons~add(img)   -- use image as the application icon
   stage~show                -- show the stage with the scene
 
-
-
-
 /*
       ------------------------ Apache Version 2.0 license -------------------------
          Copyright 2016-2020 Rony G. Flatscher
@@ -106,3 +106,4 @@ syntax:
          limitations under the License.
       -----------------------------------------------------------------------------
 */
+

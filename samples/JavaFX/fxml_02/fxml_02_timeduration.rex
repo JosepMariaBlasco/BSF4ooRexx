@@ -8,6 +8,7 @@
             2018-06-25, rgf: demonstrate how to intercept the "stop" method
             2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
                              - removing dependency on "rgf_util2.rex"
+            2025-08-28, rgf: - adding infoPrefix
 
    purpose: this is a simple the Rexx GUI application (taking advantage of JavaFX)
             where the GUI elements are defined in a FXML file ("FXML_02_Document.fxml"),
@@ -31,7 +32,7 @@
          rexx test_fxml_02_timeduration.rex [en|de]
          rexxj.{cmd|sh} test_fxml_02_timeduration.rex [en|de]
 
-   needs: ooRexx 4.1 or higher, and BSF4ooRexx 6.00 or highter
+   needs: ooRexx 5.0 or higher, and BSF4ooRexx850 or highter
 
 */
 
@@ -55,7 +56,9 @@ jrxApp=tmpClz~new(rxApp)
    -- launch the application, which will invoke the methdos "init" followed by "start"
 signal on syntax              -- if an error occurs, the Java exception may not be helpful, so do it Rexx-like
 jrxApp~launch(jrxApp~getClass, .nil)    -- need to use this version of launch in order to work
-say center(" after jrxApp~launch ", 70, "-")
+
+infoPrefix=pp("R".context~interpreter) pp("T".context~thread) pp("I".context~invocation)
+say infoPrefix center(" after jrxApp~launch ", 70, "-")
 call sysSleep 0.01            -- let ooRexx clean up
 exit
 
@@ -95,16 +98,17 @@ syntax:                       -- internal routine: eases identification of the p
 ::method stop  -- this method will be called when the JavaFX applications is terminated
   expose startDateTime        -- get access to start timestamp
   endDateTime=.dateTime~new   -- get timestamp
+  infoPrefix=pp("R".context~interpreter) pp("T".context~thread) pp("I".context~invocation)
   width=26
   say
-  say "---> Application started at:" pp(startDateTime~string~right(width))
-  say "     Application ended   at:" pp(  endDateTime~string~right(width))
-  say "     Application lasted:    " pp((endDateTime-startDateTime)~string~right(width))
+  say infoPrefix "---> Application started at:" pp(startDateTime~string~right(width))
+  say infoPrefix "     Application ended   at:" pp(  endDateTime~string~right(width))
+  say infoPrefix "     Application lasted:    " pp((endDateTime-startDateTime)~string~right(width))
 
 
 /*
       ------------------------ Apache Version 2.0 license -------------------------
-         Copyright 2016-2020 Rony G. Flatscher
+         Copyright 2016-2025 Rony G. Flatscher
 
          Licensed under the Apache License, Version 2.0 (the "License");
          you may not use this file except in compliance with the License.

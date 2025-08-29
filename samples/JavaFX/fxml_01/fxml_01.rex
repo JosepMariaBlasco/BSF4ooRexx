@@ -25,7 +25,6 @@
    -- change directory to program location such that relatively addressed resources can be found
 parse source  . . pgm
 call directory filespec('L', pgm)   -- change to the directory where the program resides
-
 rxApp=.RexxApplication~new -- create Rexx object that will control the FXML set up
 jrxApp=BSFCreateRexxProxy(rxApp, ,"javafx.application.Application")
 jrxApp~launch(jrxApp~getClass, .nil)    -- launch the application, invokes "start"

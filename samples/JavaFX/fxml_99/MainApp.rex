@@ -33,6 +33,11 @@
             2022-06-09, rgf: - extract numeric part of "javafx.runtime.version" to compare to >= 8
             2023-02-08, rgf: - replace 'json-rgf.cls' with ooRexx 5.1.0 version, adjust toJsonFile()
                                and supply .true as third argument to create a legible JSON rendering
+            2025-08-27, rgf: - some reformats
+            2025-08-28, rgf: - ask at inception whether debug should be activated (effects
+                               put_FXID_objects_into.my.app.rex)
+            2025-08-29, rgf: - removed check and warning for minimum ooRexx 5.0, not needed for BSF4ooRexx850
+
 
    purpose: this is the ooRexx version of the pure Java tutorial on how to use JavaFX, demonstrating
             among other things also TableView and ObservableList; cf. the excellent tutorial as
@@ -74,39 +79,24 @@
 
 */
 
-   -- make sure we run this program only, if ooRexx 5.0 or higher (ooRexx 4.2.0 exhibits a runtime error)
-parse version "_" v "."
+signal on syntax
 parse source  . . pgm
-if v<5 then
-do
-   parse version v
-   .error~say(pp(pgm)" needs ooRexx 5.0 or higher, found:" pp(v))
-   .bsf.dialog~messageBox(pp(pgm)" needs ooRexx 5.0 or higher," "0a"x || "found:" pp(v), -
-                          "Wrong version of ooRexx", "error")
-   exit -1
-end
    -- change directory to program location such that relatively addressed resources can be found
 call directory filespec('L', pgm)   -- change to the directory where the program resides
-
-/* --- for debugging new reflection of BSF4ooRexx, needs to be removed from GA version
--- rgf, 20180218: test purposes, make sure we use MethoHandles
-rrj=bsf.wrap(bsf("rexxReflectObject"))
-say "rrj:" pp(rrj)
-say "setting useReflectInvoke=.false (now exclusively uses MethodHandles), rrj="pp(rrj)
--- rrj~useReflectInvoke=.false   -- use MethodHandle invocations
--- rrj~useUnreflect    =.true
--- rrj~useCaching      =.false
--- rrj~debugLevel      =4
-say "    useCaching      ="pp(rrj~useCaching      )
-say "    useReflectInvoke="pp(rrj~useReflectInvoke)
-say "    useUnreflect    ="pp(rrj~useUnreflect    )
-say "    debugLevel      ="pp(rrj~debugLevel      )
-say "-"~copies(100)
-- -- */
+thisPgmName=filespec("name", pgm)
 
 .environment~my.app=.directory~new  -- directory to contain objects relevant to this application
 .my.app~bDebug=.false               /* if set to .true, "put_FXID_objects_into.my.app.rex" will show
                                        all entries in ScriptContext Bindings on the console           */
+say thisPgmName": do you wish to process FXML files in debug mode? (y/N)"
+parse upper pull answer +1
+if answer="Y" then
+   .my.app~bDebug=.true
+
+infoPrefix=pp("R".context~interpreter) pp("T".context~thread) pp("I".context~invocation)
+if .my.app~bDebug=.true then
+   say infoPrefix thisPgmName": starting up, .my.app~bDebug="pp(.my.app~bDebug)
+
    -- starting with JavaFX 8u40 true dialogs got introduced; taking advantage of them if running on Java 1.8 or higher
 
    -- import JavaFX classes that we may use more often
@@ -133,6 +123,9 @@ jRexxApp=BsfCreateRexxProxy(rexxApp, ,"javafx.application.Application")
 signal on syntax
    -- launch the application, invoke "start" and then stay up until the application closes
 jRexxApp~launch(jRexxApp~getClass, .nil)  -- need to use this version of launch in order to work
+
+if .my.app~bDebug=.true then
+   say infoPrefix thisPgmName": about to leave ..."
 call sysSleep 0.01                 -- let ooRexx clean up
 exit
 
@@ -165,7 +158,6 @@ syntax:
 
 ::method init  -- constructor
   expose personData prefs personFilePath    -- observableArrayList (maintained by TableView)
-
    -- create and save an ObservableList
   personData=.fx.FXCollections~observableArrayList
 
@@ -211,7 +203,6 @@ syntax:
 
    -- starting with JavaFX 8u40 true dialogs got introduced; taking advantage of them if running on Java 1.8 or higher
    -- get the JavaFX runtime version (only available when running it), e.g. "8.0.111-b14"
-
   fxVersion=.java.lang.system~getProperty("javafx.runtime.version")  -- can be e.g. "17+b01"
   pos=verify(fxVersion,"0123456789")   -- get position of non numerical letter
   if pos>0 then fxVersion=fxVersion~substr(1,pos-1)   -- extract number portion
@@ -247,7 +238,6 @@ syntax:
   .my.app~overviewPage=overviewPage
   rootLayout~setCenter(overviewPage)
   .my.app~personOverviewController=.PersonOverviewController~new
-
   primaryStage~show        -- now show the stage (and thereby our scene)
 
 
@@ -870,7 +860,6 @@ syntax:
 ::method init        -- constructor
   expose mainApp -
          menuNew menuOpen menuPrint menuSave menuSaveAs menuAbout menuExit menuBirthdayStatistics
-
   use arg mainApp -- fetch and save object in attribute
 
    -- add self as the ChangeListener (we have its method "changed" implemented) and EventHandler (method "handle" implemented)
@@ -1302,7 +1291,7 @@ syntax:     -- Rexx condition raised
 
 /*
       ------------------------ Apache Version 2.0 license -------------------------
-         Copyright 2016-2020 Rony G. Flatscher
+         Copyright 2016-2025 Rony G. Flatscher
 
          Licensed under the Apache License, Version 2.0 (the "License");
          you may not use this file except in compliance with the License.
