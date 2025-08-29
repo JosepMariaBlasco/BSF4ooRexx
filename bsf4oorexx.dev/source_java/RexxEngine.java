@@ -17,7 +17,7 @@ import java.text.SimpleDateFormat;
   * This class manages the calls from Java via JNI to Open Object Rexx (ooRexx).
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2023 Rony G. Flatscher
+ *    Copyright (C) 2001-2025 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import java.text.SimpleDateFormat;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
   *
-  * @version 850, 20230312
+  * @version 850, 20250827
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   *
   */
@@ -40,6 +40,12 @@ import java.text.SimpleDateFormat;
 
 /*
     last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+
+    2025-08-27, ---rgf, - add protected setId(...) for RexxAndJava's createRexxInterpreterInstance(...)
+                          to ease debugging by allowing Java to use the same identifier as ooRexx
+
+                        - change id_counter to produce negative numbers to distinguish between Java
+                          created instance numbers and (positive) Rexx identifiers
 
     2023-03-12, ---rgf, - add a few debug statements and showObjectAndTypeName() to ease debugging
 
@@ -243,7 +249,7 @@ public class RexxEngine extends BSFEngineImpl {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "850.20220811";
+    static final public String version = "850.20250827";
 
     static int terminationCounter = 0;  // for termination thread name counts
 
@@ -566,6 +572,18 @@ if (bDebug)
         return id;
     }
 
+    /** Allows to set the id value which will be used starting with BSF4ooReex850
+     *  as it became possible to get the ooRexx Rexx interpreter identifier using
+     *  .context~interpreter. This is meant to be used by RexxAndJava.createRexxInterpreterInstance(...)
+     *  such that for debugging both, ooRexx and Java use the same id value.
+     *
+     * @since 20250827
+     */
+    protected void setId (long newValue)
+    {
+        id=newValue;
+    }
+
     final private boolean bDebug=false ; // 20040404, ---rgf
                                  //  true;
 
@@ -623,7 +641,7 @@ if (bDebug)
                             Vector declaredBeans) throws BSFException
     {
         super.initialize (mgr, lang, declaredBeans);
-        id=++id_counter;    // increase RexxEngine instance counter
+        id=--id_counter;    // decrease RexxEngine instance counter; after creation it gets replaced by Rexx' identifier value
 
 if (bDebug) System.err.println("RexxEngine, 1) # id=["+id+"], languageVersionString="+languageVersionString);
 
@@ -1822,6 +1840,7 @@ if (bDebugTermination) System.err.println(this+".terminate(): invoked for RE_"+i
                     final boolean tmpBTerminated=bTmp;
                     final String re_rii_ID=rii_ID;
                     final long currTid=Thread.currentThread().getId();
+if (bDebugTermination) System.err.println("RE.terminate(): on separate thread, re=("+re_rii_ID+")");
 
                     // invoke Terminate() on its own thread as it may be the case that termination waits on all threads to terminate
                     Runnable runnableTerminate=new Runnable()
@@ -1878,6 +1897,7 @@ if (bDebugTermination) System.err.println(this+".terminate(): about to create & 
                 else        // terminate in the current thread
                 {
 // System.out.print("j<0>j");
+if (bDebugTermination) System.err.println("RE.terminate(): on current thread, re=("+rii_ID+")");
                     int res=0;
                         // it may be the case that due to the new cleanup code the rii_ID got
                         // terminated already, hence ignore exception caused because of rii_ID not found

@@ -24,7 +24,7 @@ import        java.lang.reflect.Modifier;
  * different classes.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2018-2022 Rony G. Flatscher
+ *    Copyright (C) 2018-2025 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -60,6 +60,9 @@ import        java.lang.reflect.Modifier;
         2022-08-23, rgf  - truncate Rexx argument # 4 to 65 characters; this argument may
                            be large (e.g. a program) such that its output makes debugging
                            harder rather than easier
+        2025-08-16, rgf  - change error message of constructor to also indicate a runtime error as a cause
+                         - throwNotFoundBSFException() will now embed throwable.toString() into the generated
+                           Rexxlike error message
 */
 
 
@@ -748,7 +751,7 @@ if (bDebug) System.err.println("in ... # i: SUPPLIER branch...");
             msg.append(this.rexxArgs[2]+"]");
         }
 
-        if (reflectionType==REFLECT_METHOD)
+        if (reflectionType==REFLECT_METHOD || reflectionType==REFLECT_CONSTRUCTOR)
         {
             msg.append(" not found or execution error!");
         }
@@ -793,6 +796,7 @@ if (bDebug) System.err.println("in ... # i: SUPPLIER branch...");
             // now throw the BSFException
         if (throwable!=null)
         {
+            msg.append("\n\t=> caused by: \""+throwable+"\"\n");
             throw new BSFException(BSFException.REASON_INVALID_ARGUMENT, msg.toString(), throwable);
         }
         else

@@ -1618,7 +1618,7 @@ if (bDebug) System.out.println("... reflectConstructor(): arrived, cachedConstru
             {
                 for (CachedConstructor cc : al)
                 {
-if (bDebug) System.out.println("... reflectField(): checking from cache, cc=\""+cc+"\"");
+if (bDebug) System.out.println("... reflectConstructor(): checking from cache, cc=\""+cc+"\"");
                     if (cc.parameterTypes.length!=rru.funcArgs.length)  // skip, if not the same size
                     {
                         continue;

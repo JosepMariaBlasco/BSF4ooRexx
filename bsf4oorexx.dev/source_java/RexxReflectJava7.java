@@ -31,7 +31,7 @@ import        java.lang.reflect.Modifier;
  * ignored and resolution continues with the next ancestor.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2018-2022 Rony G. Flatscher
+ *    Copyright (C) 2018-2025 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -90,6 +90,14 @@ import        java.lang.reflect.Modifier;
                               non-public classes can be used in javac compiled programs; hence
                               adopting the code by using constructor.setAccessible(true) before
                               unreflecting it (unreflection throws a "class not public" exception)
+
+        2025-08-16, rgf:    - in case a cached handle threw an exception and it is not possible
+                              to find working alternate version, return the cached exception
+
+        2025-08-24, rgf:    - fixed reflection error: if a class does not have a public default constructor,
+                              reflectConstructor() would use one of the superclasses's public
+                              default constructor, thereby creating the wrong object; now throws
+                              a RuntimeException with appropriate error message
 */
 
 
@@ -1258,7 +1266,7 @@ System.out.println("// --> ... reflectNestedClass(): 4) OK look in superclass ["
      */
     void reflectMethod(RexxReflectUtil rru) throws BSFException
     {
-
+        Throwable tmpThrowable=null;    // remember Throwable from cached version, return it, if no other are successful
 if (bDebug)
 {
     // to be removed, blank line to ease start of reflectMethod()
@@ -1561,7 +1569,12 @@ System.err.println("... reflectMethod(): trying method, using method name ["+tmp
             }
         }
 
+
         // throw BSFException method not found, supply all information with it as in earlier versions of BSF4ooRexx
+        if (tmpThrowable!=null)     // use Throwable from matching cached method
+        {
+            rru.throwable=tmpThrowable;
+        }
         rru.throwNotFoundBSFException();
     }
 
@@ -2093,7 +2106,8 @@ System.err.println("... add2cachedFieldsOrMethods(): SUCCESS rru.memberName=["+r
      */
     void reflectConstructor(RexxReflectUtil rru) throws BSFException
     {
-if (bDebug) System.out.println("... reflectConstructor(): arrived, cachedConstructors.containsKey("+rru.beanClz+"): \""+cachedConstructors.containsKey(rru.beanClz)+"\"");
+        Throwable tmpThrowable=null;    // remember Throwable from cached version, return it, if no other are successful
+if (bDebug) System.err.println("... reflectConstructor(): arrived, cachedConstructors.containsKey("+rru.beanClz+"): \""+cachedConstructors.containsKey(rru.beanClz)+"\"");
         // let us first check, whether we have a usable cache entry already
         if (useCaching && cachedConstructors.containsKey(rru.beanClz))
         {
@@ -2103,22 +2117,31 @@ if (bDebug) System.out.println("... reflectConstructor(): arrived, cachedConstru
             {
                 for (CachedConstructor cc : al)
                 {
-if (bDebug) System.out.println("... reflectField(): checking from cache, cc=\""+cc+"\"");
+if (bDebug) System.err.println("... reflectConstructor(): checking from cache, cc=\""+cc+"\"");
                     if (cc.parameterTypes.length!=rru.funcArgs.length)  // skip, if not the same size
                     {
                         continue;
                     }
 
                     invokeConstructor(cc,rru);    // invoke the constructor MH
+
                     if (rru.success)     // found, return
                     {
 if (debugLevel>1)
 System.err.println("... reflectConstructor(): WOW, found cached Constructor/MethodHandle handle for class \""+rru.beanClz+"\" and could use it successfully: ["+cc.mh.toString()+"]");
                         return; //  rru.result;
                     }
+                    else    // if tmpThrowable not set, remember the throwable of this attempt, if any
+                    {
+                        if (tmpThrowable==null && rru.throwable!=null)
+                        {
+                            tmpThrowable=rru.throwable;
+                        }
+                    }
                 }
             }
         }
+
 
         boolean bStartLevel=true;   // we are about to start out with reflection
         Class   tmpClz=rru.beanClz; // start out with the current beanClz
@@ -2126,6 +2149,23 @@ System.err.println("... reflectConstructor(): WOW, found cached Constructor/Meth
         while (rru.success==false)   // as long as we have not found a matching Constructor object, keep processing
         {
             Constructor tmpConstructors[]=tmpClz.getDeclaredConstructors();
+            // special case: using the default constructor it needs to be public, otherwise the first
+            //               public superclass' constructor gets used, creating the wrong instance!
+            if (rru.rexxArgs.length==3)     // the default constructor sought
+            {
+                boolean notPublic=true;
+                if (tmpConstructors.length>0)
+                {
+                    notPublic = (tmpConstructors[0].getModifiers() & Modifier.PUBLIC)==0; // not public?
+                }
+
+                if (notPublic)  // create Java exception
+                {
+                    rru.throwable=new RuntimeException("error: no public default constructor found for "+tmpClz.toString());
+                    break; // return;
+                }
+            }
+
             for (int i=0; i<tmpConstructors.length; i++)
             {
                 Constructor constructor=tmpConstructors[i];
@@ -2148,6 +2188,12 @@ System.err.println("... reflectConstructor(): WOW, found cached Constructor/Meth
             {
                 break;
             }
+        }
+
+        // if the cached version failed, return that exception, it may have helpful information for the programmer
+        if (tmpThrowable!=null)
+        {
+            rru.throwable=tmpThrowable;
         }
 
         // throw BSFException method not found, supply all information with it as in earlier versions of BSF4ooRexx
@@ -2365,7 +2411,7 @@ if (bDebug) System.err.println("...invokeConstructor(): cc=["+cc+"] | rru.choice
         }
         catch (Throwable t)
         {
-if (debugLevel>3) System.err.println("// // // :( -> RexxReflectJava7.invokeConstructor(): throwable: \""+t+"\"\n");
+if (debugLevel>3) System.err.println("// // // :( -> RexxReflectJava7.invokeConstructor(): rru.success=["+rru.success+"] throwable: \""+t+"\"\n");
 // t.printStackTrace();
            rru.throwable=t;
            return;              // not successful :(
@@ -2375,7 +2421,7 @@ if (debugLevel>3) System.err.println("// // // :( -> RexxReflectJava7.invokeCons
 if (debugLevel>2 || bDebugSuccess) System.err.println("// // :) -> RexxReflectJava7.invokeConstructor(): bean=\""+rru.bean+"\",["
                                                 +rru.choice+"] invocation using ["
                                                 +(useReflectInvoke ? "java.lang.reflect.Constructor" : "MethodHandle")
-                                                +"] successful, rru.result=\""+rru.result+"\"");
+                                                +"] successful, rru.result=\""+rru.result+"\", rru.success=["+rru.success+"]");
     }
 
 

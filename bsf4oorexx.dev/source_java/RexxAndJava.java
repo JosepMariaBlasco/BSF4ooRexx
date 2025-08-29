@@ -25,7 +25,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
   *
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2022 Rony G. Flatscher
+ *    Copyright (C) 2001-2025 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 850, 2022-12-31
+  * @version 850, 2024-06-20
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -53,6 +53,9 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
 
  /*
+     2025-08-27, rgf  - RexxEngine gets as its id value the Rexx instance identifier (.context~interpreter) to
+                        ease debugging
+     2024-06-20, rgf  - added Josep Maria to kudos
      2022-12-31, rgf  - added Till Winkler to kudos
      2022-09-02, rgf  - added argument string to jniCreateCollectionObject ()
      2022-09-01, rgf  - new protected native Object  jniCreateCollectionObject (Object[] slot, int kind)
@@ -611,7 +614,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 class RexxAndJava {
 
 // TODO: rgf, 2016-12-03, remove after debugging
-final static boolean bDebugRefCounter=false; // true; // false; // true; // false;
+final static boolean bDebugRefCounter=false; // true; // false;
 static int bDebugRefCounterThreshold = 1; //  3;   // 2 ;  // > threshold show specific debug infos
 final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new ConcurrentHashMap<String,RAJBean>();
 
@@ -626,7 +629,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "850.20221231";
+    static final public String version = "850.20250827";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -4526,6 +4529,7 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): b) unregister=
                            "Baginski, Adrian"                       + "\n" +    // 2016-08-14, rgf: .NET/CLR nutshell examples, 2017: JavaFX, ooRexxTryFX.rxj
                            "Barmwater, Gil"                         + "\n" +
                            "Beck, Andreas"                          + "\n" +
+                           "Blasco, Josep Maria"                    + "\n" +    // 2024-06-20, rgf: testing, reported handler related erros
                            "Burger, Martin"                         + "\n" +
                            "Cowlishaw, Mike F."                     + "\n" +
                            "Davis, Chip"                            + "\n" +
@@ -5877,7 +5881,7 @@ if (bDebug) System.err.println("makeString4Rexx(): returning -> registerBean(raj
     // RexxEngine needs makeString4Rexx() to be static which invokes this method, hence it needs to be static too
     static public String makeBeanName(RexxAndJava rajo, Object o)
     {
-        final boolean bDebug=  // true;   // if true, show debug infos
+        final boolean bDebug= // true;   // if true, show debug infos
                               false;
 
         if (o==null)
@@ -6239,8 +6243,38 @@ final boolean bDebug= // true;
         String tmp_rii_ID=jniRexxCreateInterpreterInstance(options);  // create interpreter instance
         set_rii_ID(tmp_rii_ID);             // set the returned rii_ID
 
+        // 2025-08-27, fetch the Rexx interpreter's identifier value
+        String code="return .context~interpreter";
+        String fileName="RexxAndJava.java_createRexxInterpreterInstance";
 
-if (bDebug) {System.err.println(this+".createRexxInterpreterInstance(...), returning rii_ID=["+tmp_rii_ID+"]"); }
+        Object res=jniRexxRunProgram(
+                tmp_rii_ID, // newly created RexxInstance instance ID
+                2,          // invocationType,         // 1=CallProgram, 2=CallProgramFromData, 3=LoadPackage, 4=LoadPackageFromData
+                fileName,   // String  fileName,               // filename which contains the program to run
+                code,       // String  programData,            // Rexx code to execute; if given "fileName" denotes a (symbolic) name for this code
+                null        // Object[]args                    // arguments
+                );
+
+if (bDebug)
+{
+    System.err.println("1 - "+fileName+": rexxEngine.id=["+rexxEngine.id+"], rexxEngine="+rexxEngine);
+    System.err.println("2 - "+fileName+": res=["+res+"] res.getClass()="+res.getClass()+" .toString()="+res.getClass().toString());
+}
+        long rexxId = 0;
+        try
+        {
+            rexxId=Long.parseLong(res.toString());
+            rexxEngine.setId(rexxId);
+        }
+        catch (NumberFormatException nfe)
+        {
+            System.err.println(":( :( :( ---> "+fileName+": Long.parseLong("+res+") caused: "+nfe);
+        }
+if (bDebug)
+{
+    System.err.println("3 - "+fileName+": rexxEngine.id=["+rexxEngine.id+"], rexxEngine="+rexxEngine);
+    System.err.println(this+".createRexxInterpreterInstance(...), returning rii_ID=["+tmp_rii_ID+"] for Rexx instance identifier [R"+rexxId+"]");
+}
 
         return tmp_rii_ID;
     }

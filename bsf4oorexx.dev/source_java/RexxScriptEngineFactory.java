@@ -14,7 +14,7 @@ import org.rexxla.bsf.engines.rexx.RexxEngine;
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015-2022 Rony G. Flatscher
+   Copyright 2015-2025 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -70,6 +70,9 @@ import org.rexxla.bsf.engines.rexx.RexxEngine;
 
         - 2022-08-06, ---rgf, - changed package name to 'org.rexxla.bsf.engines.rexx'
                               - now uses RexxEngine.getLanguageVersionString()
+
+        - 2025-08-27, ---rgf, - reflect that RexxEngine got changed and now uses as 'id' value
+                                the ooRexx interpreter instance identifier
 */
 
 
@@ -88,7 +91,7 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
     final public static RexxScriptEngineFactory DEFAULT_REXX_SCRIPT_ENGINE_FACTORY=new RexxScriptEngineFactory();
 
     final protected static String       ENGINE_NAME      ="Open Object Rexx (ooRexx)";
-    final protected static String       ENGINE_VERSION   ="101.20220806";
+    final protected static String       ENGINE_VERSION   ="101.20250827";
     final protected static List<String> EXTENSIONS       = Arrays.asList("rex", "rexx", "orx", "cls",
                                                                 "rxj", "rexxj", "jrexx",
                                                                 "rxo" );

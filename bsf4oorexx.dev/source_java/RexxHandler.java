@@ -16,7 +16,7 @@ package org.rexxla.bsf.engines.rexx;   // belongs to that fine package ;) ...
    <p>
 
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2012-2022 Rony G. Flatscher
+ *    Copyright (C) 2012-2024 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -54,19 +54,20 @@ package org.rexxla.bsf.engines.rexx;   // belongs to that fine package ;) ...
             2022-09-02, rgf - renamed the new methods to the ooRexx native API names (newArray,
                               newDirectory, newStem, newStringTable), added stem base name argument
                               to newStem()
+            2024-06-20, rgf - corrected JavaDocs, kudos to Josep Maria Blasco
 */
 
 // public abstract class RexxHandler
 public interface RexxHandler
 {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
-     *  concatenated with a dot and the sorted date of last change. */
-    final static public String version = "850.20220906";
+     *  concatenated with a dot and the sorted date of last change), e.g. 850.20240620. */
+    final static public String version = "850.20240620";
 
 
     /** Raises a condition in the current Rexx thread, pass-through method to the Rexx API, which
      *  should be called immediately before returning to Rexx.
-     *  Cf. the ooRexx documentation in <code>rexxapi.pdf</code>, <em>9.14.126. RaiseCondition</em>.
+     *  Cf. the ooRexx documentation in <code>rexxapi.pdf</code>, <em>1.17.148. RaiseCondition</em>.
      *
      * @param slot opaque argument supplied to the handler methods by the Rexx native
      *             code interface
@@ -82,16 +83,16 @@ public interface RexxHandler
         ((RexxAndJava) arrSlot[0]).jniRaiseCondition(arrSlot, conditionName, description, additional, result);
     }
 
-    /** Raises a Rexx error of the given error number, call immediately before returning from
-     * Java. Please note: the value of <code>definedErrorNumber</code> has to be calculated as
+    /** Raises a Rexx syntax condition of the given error number, call immediately before returning from
+     * Java to Rexx. Please note: the value of <code>definedErrorNumber</code> has to be calculated as
      *  <code>errorNumber*1000+subcode</code>. Cf. the ooRexx reference manual (<code>rexxref.pdf</code>),
      *  &quot;Appendix C. Error Numbers and Messages&quot;.
      *
      * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
      * @param definedErrorNumber  <code>errorNumber*1000+subcode</code>
      * @param substitutions an Object array containing substitution values for the error message (if
-     *        more entries get added, then they can be retrieved by ooRexx using the additional method
-     *        of the condition object)
+     *        more entries than needed by the secondary message get added, then they can be retrieved
+     *        by ooRexx using the additional method of the condition object)
      *
     */
     default void raiseException(Object slot, long definedErrorNumber, Object[] substitutions)
@@ -150,7 +151,7 @@ public interface RexxHandler
     /** Fetches and returns a Rexx directory containing all context variables.
      *
      * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
-     * @return a @{link RexxProxy} representing a Rexx directory with the currently defined context variables
+     * @return a {@link RexxProxy} representing a Rexx directory with the currently defined context variables
      */
     default Object  getAllContextVariables(Object slot)
     {
@@ -255,7 +256,7 @@ public interface RexxHandler
 
 
 
-    /** Checks to see if any conditions have resulted from a call to a Rexx API (cf &quot;rexxpg.pdf&quot;).
+    /** Checks to see if any conditions have resulted from a call to a Rexx API (cf &quot;rexxapi.pdf&quot;).
      *
      * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
      * @return <code>true</code>, if Rexx condition is set, <code>false</code> else
@@ -266,7 +267,7 @@ public interface RexxHandler
         return ((RexxAndJava) arrSlot[0]).jniCheckCondition(arrSlot);
     }
 
-    /** Clears any pending condition status (cf &quot;rexxpg.pdf&quot;).
+    /** Clears any pending condition status (cf &quot;rexxapi.pdf&quot;).
      *
      * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
     */
@@ -277,7 +278,7 @@ public interface RexxHandler
     }
 
     /** Returns a directory object containing the condition information; this is equivalent to calling
-     *  <code>condition(&apos;O&apos;)</code> from within Rexx code (cf &quot;rexxpg.pdf&quot;).
+     *  <code>condition(&apos;O&apos;)</code> from within Rexx code (cf &quot;rexxapi.pdf&quot;).
      *
      * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
      * @return returns a {@link RexxProxy} for a Rexx Directory object or <code>NULL</code>, if no
@@ -362,11 +363,11 @@ public interface RexxHandler
         return ((RexxAndJava) arrSlot[0]).jniNil(arrSlot);
     }
 
-    /** (Copied from the ooRexx rexxpg.pdf documentation) &quot;Returns
-     *  the version of the interpreter. The returned version is
+    /** (Copied from the ooRexx rexxapi.pdf documentation) &quot;Returns
+     *  the version of the interpreter.&quot; &quot;The returned version is
      * encoded in the 3 least significant bytes of the returned value,
      * using 1 byte each for the interpreter version, release, and revision
-     * values. For example, on a 32-bit platform, this value would be
+     * values.&quot; &quot;For example, on a 32-bit platform, this value would be
      * <code>0x00050000</code> for version 5.0.0.&quot;
      *
      * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
@@ -379,8 +380,8 @@ public interface RexxHandler
     }
 
 
-    /** (Copied from the ooRexx rexxpg.pdf documentation) &quot;Returns the language level of
-     *  the interpreter. The returned language level is encoded in the 2 least
+    /** (Copied from the ooRexx rexxapi.pdf documentation) &quot;Returns the language level of
+     *  the interpreter.&quot; &quot;The returned language level is encoded in the 2 least
      *  significant bytes of the returned value, using 1 byte each for the
      *  interpreter version, release, and revision values. For example, on a 32-bit
      *  platform, this value would be <code>0x00000603</code> for language level 6.03.&quot;
