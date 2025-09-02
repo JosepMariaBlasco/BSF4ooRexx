@@ -925,6 +925,15 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 // rgf, 2017-08-19, add INFO_* definitions for helping debug crash, maybe it is related to creating and terminating Rexx interpreter instances
 // rgf, 2017-10-16: removed, seems RMG found the error in nestActivity() in the ooRexx kernel and fixed it
+
+
+// tmp, rgf 20250822
+/*
+#define INFO_ALL_OPTIONS
+#define DEBUG_SEND_MESSAGE_TO_REXX_OBJECT
+#define DEBUG_REXX_PROXY
+*/
+
 // #define INFO_ALL_OPTIONS
 #if defined (INFO_ALL_OPTIONS) // comment before && to activate all of the flags below
     #define INFO_PRIMODAL_RII   // rgf, 2017-10-04
@@ -1110,7 +1119,7 @@ void JAVA_TO_STRING (JNIEnv *env, jobject jo, char * buffer, int bufSize);
 
 char * RgfCreateRexxlikeErrorInfo (RexxThreadContext *rtc, RexxDirectoryObject condObj, CSTRING header);
 
-    // RexxCreateRexxProxy() can have as its first argument a string, method or array object representing the
+    // BsfCreateRexxProxy() can have as its first argument a string, method, routine or array object representing the
     // Rexx code to be executed when a method is invoked on the Java side; this Rexx program implements the
     // creation of the RexxProxy() defining an UNKNOWN method for that passed-in code
 #define REXX_PROXY_STUB_PROGRAM "BSF_OnTheFly.cls"  // name of Rexx program to use for creating ad hoc RexxProxy object
@@ -6603,7 +6612,7 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
 
     RexxObjectPtr r_obj     =context->ArrayAt(argArray,1);
 
-    // an undocumented feature: if the first argument is a Rexx object of type "STRING", "METHOD" or "ARRAY"
+    // an undocumented feature: if the first argument is a Rexx object of type "STRING", "METHOD", "ROUTINE" or "ARRAY"
     // then the companion Rexx program "BSF_OnTheFly.cls" is used to create a Rexx object on the fly with
     // a single unknown method whose code is this first argument, unless the third argument is "REXX[OBJECT]";
     // in general the Rexx object in the first argumetn will get proxied for Java to become able to interact
