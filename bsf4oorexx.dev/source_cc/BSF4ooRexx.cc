@@ -5805,6 +5805,7 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
             ch = (char *) malloc(tmpLength+1);   // copy Rexx argument
             memset(ch, 0, tmpLength+1);	    // make sure that initialized to 0x00
             strncpy(ch, resolvedCP, tmpLength);
+// fprintf(stderr, "BSF4ooRexx.cc::BsfLoadJava() L# %d: CP! i=%zd [%s]\n", __LINE__, i, ch);fflush(stderr);
             free (resolvedCP);
         }
         else    // any other argument
@@ -5813,6 +5814,7 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
             ch = (char *) malloc(tmpLength+1);   // copy Rexx argument
             memset(ch, 0, tmpLength+1);	    // make sure that initialized to 0x00
             strncpy(ch, cTmpStrObj, tmpLength);
+// fprintf(stderr, "BSF4ooRexx.cc::BsfLoadJava() L# %d:    i=%zd [%s]\n", __LINE__, i, ch);fflush(stderr);
         }
 
         // size_t tmpLength=strlen(cTmpStrObj)+2;

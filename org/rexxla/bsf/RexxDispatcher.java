@@ -2,12 +2,14 @@ package org.rexxla.bsf;
 import org.rexxla.bsf.engines.rexx.RexxException;
 import org.rexxla.bsf.engines.rexx.RexxEngine;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 
 /** Invokes given Rexx or ooRexx program and supplies the commandline arguments.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2006-2021 Rony G. Flatscher
+ *    Copyright (C) 2006-2024 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -23,11 +25,15 @@ import java.io.*;
  * ----------------------------------------------------------------------------- </pre>
  *
  * @author   Rony G. Flatscher
- * @version  404.20231031
+ * @version  404.20240707
  */
 
  /*
      last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+
+     2024-07-07, ---rgf: - if the Rexx script is not found in the current directory, then use
+                           java.library.path to locate it and if found there use its canonical path
+                           representation
 
      2023-10-31, ---rgf: - do not do a gc() and runFinalization() which may become obsolete
                            in the future
@@ -65,7 +71,7 @@ public class RexxDispatcher {
         /** Version string indicating version of this class (majorVersion*100+minorVersion
          *  concatenated with a dot and the sorted date of last change.
          */
-        static final public String version = "403.20231031";
+        static final public String version = "404.20240707";
 
         /** Key for storing the received args-String array in the BSF registry for Rexx to
          *  get at it.
@@ -153,19 +159,19 @@ public class RexxDispatcher {
 
             try
             {
-                java.io.File file=new java.io.File(args[0]);    // create fileObject
+                String rexxProgram = findFile(args[0]);
 
-                if (!file.exists())
+                if (rexxProgram==null)
                 {
-                    System.err.println("RexxDispatcher.java: file ["+args[0]+"] does not exist, aborting...");
+                    System.err.println("RexxDispatcher.java: Rexx program \""+args[0]+"\" can neither be found in current directory (\".\") nor in 'java.library.path'=\""+System.getProperty("java.library.path")+"\"), aborting...");
                     System.exit(-1);
                 }
                     // execute Rexx script
 // System.err.println("*** RexxDispatcher: # 161, before apply() of ["+file.getCanonicalPath()+"] ...");
-                Object obj =ap_rexx.apply( file.getCanonicalPath(),
+                Object obj =ap_rexx.apply( rexxProgram,
                                         0,
                                         0,
-                                        (Object) org.apache.bsf.util.IOUtils.getStringFromReader(new FileReader(file)),
+                                        (Object) org.apache.bsf.util.IOUtils.getStringFromReader(new FileReader(rexxProgram)),
                                         null,
                                         vArgs
                                       );
@@ -221,6 +227,50 @@ System.err.println("*** RexxDispatcher: # 195, after before runFinalization() ..
 // System.err.println("*** RexxDispatcher: # 215, before exit() ...");
             System.exit(0); // make sure JVM does not crash (there was a bug, if using JNI)
 	}
+
+
+
+        /** This method tries to locate the supplied Rexx program in the
+         *  following locations: current directory and then in each directory
+         *  listed with "java.library.path"; if found it returns the canonical
+         *  path.
+         *
+         *  @param fileName the Rexx program to find
+         *  @return the canonical path of the Rexx program if found on java.library.path, if not found return null
+         */
+        static String findFile(String fileName)     // find and return file
+        {
+            File tmpFile=new File(fileName);
+            try
+            {
+                if (tmpFile.exists())
+                {
+                    return tmpFile.getCanonicalPath();
+                }
+            }
+            catch (IOException ioe) {}
+
+                // not found, search along java.library.path
+            String fileSeparator = System.getProperty("file.separator");
+            String arrPaths[] = System.getProperty("java.library.path").
+                                       split(System.getProperty("path.separator"));
+
+            for (String dir : arrPaths) // iterate over each path
+            {
+                String fullPath=dir+fileSeparator+fileName; // create fully qualified name
+                tmpFile=new File(fullPath);
+                if (tmpFile.exists())
+                {
+                    try
+                    {
+                        return tmpFile.getCanonicalPath();  // return canonical path
+                    }
+                    catch (IOException ioe) {}
+                }
+            }
+
+            return null;    // not found
+        }
 }
 
 

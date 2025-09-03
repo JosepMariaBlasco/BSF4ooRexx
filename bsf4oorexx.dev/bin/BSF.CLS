@@ -12,7 +12,14 @@
    needs: ooRexx 5.0.0 (cf. <http://www.ooRexx.org>) and Java 8 or higher
 
    date:
+         2025-09-02, ---rgf, - increase check for minimum ooRexx version to 5.0
+                             - show how to set bDebug globally via .local, remove debug block that
+                               uses a non-existent module
 
+         2024-06-15, ---rgf, - honor environment variable "BSF4Rexx_quiet" set to 1 in addition to
+                               .bsf.quiet: if either is set to .true (1) do not show hints
+                             - change ppJavaExceptionChain() routine to prepend CR if .endofLine
+                               is "0d0a"x to all contained single LF
          2024-05-24, ---rgf, - .bsf.quiet: if set to .true, inhibits informal output
                              - add bsf.isArray: returns .true if a BSF_ARRAY_REFERENCE, .false else
          2023-10-30, ---rgf, - rework parseJavaOptions() to behave like:
@@ -875,7 +882,7 @@
 
 
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2001-2021 Rony G. Flatscher
+   Copyright 2001-2025 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -893,7 +900,7 @@
 
 
 ------------------------ Common Public License 1.0 --------------------------
-   Copyright 2001-2021 Rony G. Flatscher
+   Copyright 2001-2025 Rony G. Flatscher
 
    This program and the accompanying materials are made available under the
    terms of the Common Public License v1.0 which accompanies this distribution.
@@ -903,6 +910,7 @@
 
 */
 
+-- .local~bDebug=.true
 /*
    -- last change:  - Revision: 194  - Author: rony  - Date: 2007-02-01 00:22:00 +0100 (Thu, 01 Feb 2007)
    .local~revision.rev   ="$Rev$"
@@ -912,7 +920,13 @@
    .local~revision.id    ="$Id: BSF.CLS 927 2010-12-26 17:34:19Z Administrator $"
 */
 
-bDebug=.false -- .true
+-- e.g. ooRexxShell can set .bsf.quiet, if .true then do not show hints;
+-- added: if environment variable "BSF4Rexx_quiet" is set to 1, do not show hints as well
+bsf4rexx_quiet = value('BSF4Rexx_quiet',,'ENVIRONMENT')
+.context~package~local~bHints= ((.bsf.quiet=.true | bsf4rexx_quiet=.true)<>.true)
+
+-- bDebug=.false -- .true
+bDebug=(.bdebug=.true)
 
 if bDebug=.true then
 do
@@ -926,7 +940,7 @@ end
    parse version "_" major '.' minor '.' revision "(";   -- extract version parts
    rexxVersion=major"."minor  -- create major/minor version number, ignore revisions
 
-   minimumVersion="4.1"     -- minimum ooRexx version (same as BSF4ooRexx.cc)
+   minimumVersion="5.0"     -- minimum ooRexx version (same as BSF4ooRexx.cc)
    if rexxVersion < minimumVersion then
    do
        parse source s . name  -- extract name of this module
@@ -970,7 +984,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="850.20240524" -- set version (date distribution got created)
+      .bsf4rexx~version="850.20250902" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -1512,14 +1526,11 @@ syntax:
   use strict arg val=.nil     -- can be omitted, a string or an array of strings
 
   q=.queue~new          -- allows to push environment variables to front
-  if \val~isNil then    -- if .nil then CLASSPATH environment variable, if set gets processed
+  if \val~isNil, val\="" then    -- if .nil then CLASSPATH environment variable, if set gets processed
   do
      if val~isA(.string) then q~queue(val)      -- append string
                          else q~appendAll(val)  -- append all string elements of array
   end
-
-  -- allow ooRexxShell to inhibit infor output
-  .context~package~local~bHints= (.bsf.quiet<>.true)
 
    -- .context~package~local~bDebug=.true  -- uncomment: will cause initialization error due to classpath options
    bDebug=(.bDebug=.true)   -- test just once, whether debug is set
@@ -1564,8 +1575,13 @@ syntax:
   if bDebug then
   do
      say "--> "~copies(10)
-     say "arrStartup:" pp(arrStartup~toString('L', "|"'0d0a'x))
+     say .line "arrStartup:" pp(arrStartup~toString('L', "|"'0d0a'x))
      say "<-- "~copies(10)
+     say "___>>"
+     do counter c line over arrStartup
+        say .line c~right(2)"." pp(line)
+     end
+     say "<<___"
   end
 
   return arrStartup                 -- return Rexx array with JVM startup options for loading Java
@@ -6623,6 +6639,7 @@ syntax:
   jexc=co~Additional~at(2)    -- get Java Exception object
   if \jexc~isA(.bsf) then return ""    -- not a Java object
 
+  bPrependCR=(.endofline~c2x = '0D0A') -- do we have to use CR-LF?
   mb=.MutableBuffer~new
 
   mb~append("/"~copies(39), " Environment: [", .bsf4rexx~display.version, "]", .endOfLine)
@@ -6633,7 +6650,7 @@ syntax:
      i+=1
      mb~append(eyecatcher, "> (Java exception # ", i, ")")
      mb~append(" caused by: [", jexc~objectName, "]:", .endOfLine)
-     mb~append(jexc~toString, .endOfLine, "<", eyecatcher, " (Java exception # ", i, ")", .endofline)
+     mb~append(editJavaString(jexc~toString), .endOfLine, "<", eyecatcher, " (Java exception # ", i, ")", .endofline)
      oldJexc=jexc             -- save Java exception object
      jexc=jexc~getCause       -- get cause if any left
      if jexc~isA(.bsf) then mb~append(.endOfLine)
@@ -6645,11 +6662,17 @@ syntax:
      barrPrintWriter=.bsf~new("java.io.PrintWriter", barrOutputStream)
      oldJexc~printStackTrace(barrPrintWriter)   -- show stack trace
      barrPrintWriter~flush
-     mb~append(.endOfLine, eyecatcher, "- stack trace from [", oldJexc~objectName, "]:", .endOfLine, .endOfLine, barrOutputStream~toString) -- get string and append
+     mb~append(.endOfLine, eyecatcher, "- stack trace from [", oldJexc~objectName, "]:", .endOfLine, .endOfLine, editJavaString(barrOutputStream~toString)) -- get string and append
      barrPrintWriter~close
   end
   mb~append("\"~copies(39), " ... end of Java exception chain." , .endOfLine)
   return mb~string
+
+editJavaString: procedure expose bPrependCR  -- prepend CR to single LF in Java string?
+  parse arg str
+  if bPrependCR then return str~changeStr('0a'x, '0d0a'x)     -   -- .endofline="0D0A"x, prepend CR
+                               ~changeStr('0d0d0a'x, '0d0a'x)     -- make sure that CR-CR-LF get changed to CR-LF
+  return str      -- unchanged
 
 
 /** This routine creates a hexadecimal value from the identityHash number returned by .Object's

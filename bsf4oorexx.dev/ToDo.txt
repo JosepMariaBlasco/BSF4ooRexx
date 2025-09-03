@@ -8,25 +8,6 @@
         - allow Java script applications in jpackage (allow multi-platform support if necessary?)
 
 
-
----
-
-2022-08-03
-
-        - remove rexxj-32.sh and rexxj-64.sh, JVMs 64-bit almost everywhere
-    	DONE.
-
-
----
-
-2021-07-28
-
-        - Java: remove "finalize" (will be removed eventually from Java itself), use PhantomReference, e.g.
-                <https://github.com/pfirmstone/JGDMS/blob/trunk/JGDMS/jgdms-collections/src/main/java/org/apache/river/concurrent/ReferenceProcessor.java>
-                <https://www.baeldung.com/java-phantom-reference>
-
-        DONE (using PhantomReferences).
-
 ---
 
 2021-02-16:
@@ -50,34 +31,12 @@
                 - Support files (information, help files, samples): make it optional?
                 - USB (minimal) install?
 
-        - new launcher: checks accessible/installed Java and uses it (even if not on PATH or /usr/local/bin)
+        - DONE new launcher: checks accessible/installed Java and uses it (even if not on PATH or /usr/local/bin)
 
-        - create a release for 4.1
-        - create immediately a beta requiring 5.0 and adding features only available there (create - even
+        - DONE create a release for 4.1
+        - DONE create immediately a beta requiring 5.0 and adding features only available there (create - even
                   redirectable - command environment; SendMessageScoped() to RexxProxy)
 
-
-
----
-
-2020-07-05, rgf: --2020-08-12: NOT NEEDED, everything needed already in place!
-        - BSF.InputStream
-        - BSF.OutputStream
-
-                - allow switch to temporarily inhibit prefixes
-                - change prefix to an attribute to allow its change
-
----
-
-2020-07-02, rgf:
-
-        - DONE: rgf: --2020-08-12: make JDBC samples for MiniSQL, MySQL, Postgress; DONE, also added
-          MariaDB
-        - DONE: create and add Tomcat-Taglib for script engines, have stdout
-          use the document writer object without a "rexxOut>" prefix
-          - may need rework of BSF.CLS redirections (individually turn on/off
-            prefix, get/set prefix values)
-        - DONE (they are!): check whether Tomcat "Rexx server pages (RSP)" are feasible
 
 
 ---
@@ -108,30 +67,9 @@
 2020-02-06, rgf: exits: check for thread, attach/detach if necessary
 
 ---
-                DONE: 2020-01-26, rgf:
-                        - re-capitlize and add engine names, e.g. "Rexx"
 
-                        - make sure that CompiledScript objects gain the filename in engine scope Bindings,
-                          if present/possible; DONE in RexxScriptEngine.compile(script,filename)
-
-                        remark (rgf): in the meantime I could officially add a proper filename creation in FXMLLoader
-                                  which also gives exact location information in FXML files; will be part of JavaFX15
-                                  to be released in fall 2020
-
----
 2019-08-13, rgf: maybe check in exits whether tid has changed (should not be necessary, maybe with command handlers)
 
-
----
-2019-04-19, rgf, with ooRexx 5.0:
-        - add new SendMessageScoped() to RexxProxy
-
----
-2019-01-28, rgf, with ooRexx 5.0:
-        - add external function to add command environment implemented in Java, using the new native C++ function
-                - context->AddCommandEnvironment(name, handler, DIRECT_COMMAND_ENVIRONMENT);
-                - context->AddCommandEnvironment(name, handler, REDIRECTING_COMMAND_ENVIRONMENT);
-                - example usage, cf. native code segment in <http://sourceforge.net/p/oorexx/code-0/11697>
 
 ---
 2019-01-13, rgf, BSF4ooRexx.def, after ooRexx 5.0 goes GA:
@@ -307,4 +245,82 @@ DONE
 
 2013-01-10, ---rgf
 
+
+
+DONE:
+2025-09-02
+
+        2024-09-16
+
+                To inhibit the JVM warning use e.g.:
+
+                   --enable-native-access=ALL-UNNAMED
+
+                Cf. <https://openjdk.org/jeps/454>, <https://openjdk.org/jeps/412>,
+                <https://docs.oracle.com/en/java/javase/21/core/call-native-functions-jextract.html#GUID-480A7E64-531A-4C88-800F-810FF87F24A1>,
+                <https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/foreign/package-summary.html>
+
+---
+
+2022-08-03
+
+        - remove rexxj-32.sh and rexxj-64.sh, JVMs 64-bit almost everywhere
+    	DONE.
+
+
+---
+
+2021-07-28
+
+        - Java: remove "finalize" (will be removed eventually from Java itself), use PhantomReference, e.g.
+                <https://github.com/pfirmstone/JGDMS/blob/trunk/JGDMS/jgdms-collections/src/main/java/org/apache/river/concurrent/ReferenceProcessor.java>
+                <https://www.baeldung.com/java-phantom-reference>
+
+        DONE (using PhantomReferences).
+
+---
+
+2020-07-05, rgf: --2020-08-12: NOT NEEDED, everything needed already in place!
+        - BSF.InputStream
+        - BSF.OutputStream
+
+                - allow switch to temporarily inhibit prefixes
+                - change prefix to an attribute to allow its change
+
+---
+
+2020-07-02, rgf:
+
+        - DONE: rgf: --2020-08-12: make JDBC samples for MiniSQL, MySQL, Postgress; DONE, also added
+          MariaDB
+        - DONE: create and add Tomcat-Taglib for script engines, have stdout
+          use the document writer object without a "rexxOut>" prefix
+          - may need rework of BSF.CLS redirections (individually turn on/off
+            prefix, get/set prefix values)
+        - DONE (they are!): check whether Tomcat "Rexx server pages (RSP)" are feasible
+
+
+---
+                DONE: 2020-01-26, rgf:
+                        - re-capitlize and add engine names, e.g. "Rexx"
+
+                        - make sure that CompiledScript objects gain the filename in engine scope Bindings,
+                          if present/possible; DONE in RexxScriptEngine.compile(script,filename)
+
+                        DONE remark (rgf): in the meantime I could officially add a proper filename creation in FXMLLoader
+                                  which also gives exact location information in FXML files; will be part of JavaFX15
+                                  to be released in fall 2020
+
+---
+
+2019-04-19, rgf, with ooRexx 5.0:
+        - DONE add new SendMessageScoped() to RexxProxy
+
+---
+
+2019-01-28, rgf, with ooRexx 5.0:
+        - DONE add external function to add command environment implemented in Java, using the new native C++ function
+                - context->AddCommandEnvironment(name, handler, DIRECT_COMMAND_ENVIRONMENT);
+                - context->AddCommandEnvironment(name, handler, REDIRECTING_COMMAND_ENVIRONMENT);
+                - example usage, cf. native code segment in <http://sourceforge.net/p/oorexx/code-0/11697>
 

@@ -5,8 +5,11 @@
             without any knowledge about Java installation issues)
    Author:  Rony G. Flatscher
    Date:    2006-01-07
-   Version: 1.48
+   Version: 1.49
    Changed:
+            2025-09-02  - fixed a typo (infoBSF.rex -> infoBSF.rxj)
+                        - added code to inhibit infamous JNI warning introduced with Java/OpenJDK 24
+                          (by defining the jvm startup option "--enable-native-access=ALL-UNNAMED")
             2024-01-09  - removed news group from text hinting at support
             2024-01-07  - use $HOME and %USERPROFILE% for determining user's home directory
                           in CLASSPATH
@@ -422,12 +425,56 @@ end
 cmd.eSuperDir = qualify(directory() || j.file.separator || "..")  -- get path to super directory
 cmd.eSuperDir2=cmd.eSuperDir || j.file.separator   -- supply a trailing separator
 
-   /* set BSF4OOREXX_HOME */
-   -- if BSF4OOREXX_HOME not defined, assign default value
+   /* set BSF4OOREXX_HOME; -- if BSF4OOREXX_HOME not defined, assign default value */
+
+   /* if running under java/OpenJDK >=24 inhibit misleading startup warning; note: an unknown
+    * jvm startup option will cause an error at startup, hence cannot be used in Java/OpenJDK <24;
+    * if a jvm startup option is listed multiple times, then this will not be regarded as an error.
+   */
+jvmStartupOption="--enable-native-access=ALL-UNNAMED"
+cmd.eSetBSF4Rexx_quiet=""
+cmd.eSetBSF4Rexx_JavaStartupOptions=""
+
 if cmd.eIsWindows then
-   cmd.eSetBSF4OOREXX_HOME='if "%BSF4OOREXX_HOME%"=="" set BSF4OOREXX_HOME='cmd.eSuperDir
-else
+do
+   cmd.eSetBSF4OOREXX_HOME           ='if "%BSF4OOREXX_HOME%"=="" set BSF4OOREXX_HOME='cmd.eSuperDir
+
+   -- to inhibit misleading JNI warnings starting with Java 24
+   if j.java.vm.specification.version>=24 then
+   do
+         -- supply this jvmStartupOption without showing its use to the user
+      mb=.MutableBuffer~new
+      mb~append('if "%BSF4Rexx_quiet%"==""  set BSF4Rexx_quiet=1 ') -- if set, leave alone
+      cmd.eSetBSF4Rexx_quiet=mb~string
+
+      mb=.MutableBuffer~new
+      mb~append('if "%BSF4Rexx_JavaStartupOptions%"=="" (set BSF4Rexx_JavaStartupOptions=',jvmStartupOption,.endOfLine)
+      mb~append('    ) else (set BSF4Rexx_JavaStartupOptions=!BSF4Rexx_JavaStartupOptions! ',jvmStartupOption,")")
+      cmd.eSetBSF4Rexx_JavaStartupOptions=mb~string
+   end
+end
+else  -- TODO: quiet etc. for Unix
+do
    cmd.eSetBSF4OOREXX_HOME='[ "$BSF4OOREXX_HOME" = "" ] && BSF4OOREXX_HOME='cmd.eSuperDir
+
+   -- to inhibit misleading JNI warnings starting with Java 24
+   if j.java.vm.specification.version>=24 then
+   do
+         -- supply this jvmStartupOption without showing its use to the user
+      mb=.MutableBuffer~new
+      mb~append('if [ "$BSF4Rexx_quiet" == "" ]', .endOfLine, 'then', .endOfLine)
+      mb~append('   export BSF4Rexx_quiet=1', .endOfLine, 'fi')
+      cmd.eSetBSF4Rexx_quiet=mb~string
+
+      mb=.MutableBuffer~new
+      mb~append('if [ "$BSF4Rexx_JavaStartupOptions" == "" ]', .endOfLine, 'then', .endOfLine )
+      mb~append('   export BSF4Rexx_JavaStartupOptions=', jvmStartupOption, .endOfLine)
+      mb~append('else', .endOfLine)
+      mb~append('   export BSF4Rexx_JavaStartupOptions=$BSF4Rexx_JavaStartupOptions ', jvmStartupOption, .endOfLine)
+      mb~append('fi')
+      cmd.eSetBSF4Rexx_JavaStartupOptions=mb~string
+   end
+end
 
 if cmd.eRexxMajorVersion>= 5 then   /* .RexxInfo available, use it for rexxj.{cmd|sh}   */
 do
@@ -1424,6 +1471,20 @@ create_REXXJ_Script: procedure expose j. cmd. path.
   call lineout fn, cmd.eSetBSF4OOREXX_HOME  /* set BSF4OOREXX_HOME */
   call lineout fn, ""
 
+  if cmd.eSetBSF4Rexx_quiet<>"" then               -- 20250902, rgf
+  do
+     call lineout fn, cmd.eLineComment "set BSF4Rexx_quiet variable"
+     call lineout fn, cmd.eSetBSF4Rexx_quiet
+     call lineout fn, ""
+  end
+
+  if cmd.eSetBSF4Rexx_JavaStartupOptions<>"" then   -- 20250902, rgf
+  do
+     call lineout fn, cmd.eLineComment "set BSF4Rexx_JavaStartupOptions variable"
+     call lineout fn, cmd.eSetBSF4Rexx_JavaStartupOptions
+     call lineout fn, ""
+  end
+
   call lineout fn, cmd.eLineComment "get fully qualified path for BSF4OOREXX_HOME/lib"
   if cmd.eIsUnix=1 then                /* find bsf4ooRexx*bin.jar */
   do
@@ -1896,12 +1957,12 @@ info:                            /* tell user what has happened   */
   if cmd.eIsUnix=0 then
   do
   --   say "       usage:" cmd.eTestScriptName "rexx-file optional-arguments"
-     say "                    " cmd.eTestScriptName "infoBSF.rex"
+     say "                    " cmd.eTestScriptName "infoBSF-oo.rxj"
   end
   else
   do
      say "       usage:" q("./"cmd.eTestScriptName "rexx-file optional-arguments")
-     say "     example:" q("./"cmd.eTestScriptName "infoBSF.rex")
+     say "     example:" q("./"cmd.eTestScriptName "infoBSF-oo.rxj")
   end
 
   say

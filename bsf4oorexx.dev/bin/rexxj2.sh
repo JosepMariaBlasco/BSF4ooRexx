@@ -6,6 +6,11 @@
 #             2010-06-10, ---rgf, honor environment variable 'BSF4Rexx.JavaStartupOptions', if set
 #             2014-01-22, ---rgf, add missing hashbang line at the top
 #             2022-08-03, ---rgf, simplify a little bit
+#             2024-05-09, ---rgf, special version for ooRexxShell, honor PREPEND_LIBRARY_PATH
+#                                 (needed for macOS' to circumvent SIP)
+#             2024-06-15, ---rgf, if PREPEND_LIBRARY_PATH is set export it to [DY]LD_LIBRARY_PATH
+#                          - if environment variable "BSF4Rexx_quiet" is set to 1, then do not
+#                            display informative (debug) information
 #    Remark:  Rexx script can retrieve all arguments as passed to Java via the BSFRegistry, including
 #             the name of the Rexx script to be invoked/dispatched
 #
@@ -15,7 +20,7 @@
 #
 #    license:
 #    ------------------------ Apache Version 2.0 license -------------------------
-#       Copyright 2006-2022 Rony G. Flatscher
+#       Copyright 2006-2024 Rony G. Flatscher
 #
 #       Licensed under the Apache License, Version 2.0 (the "License");
 #       you may not use this file except in compliance with the License.
@@ -30,8 +35,39 @@
 #       limitations under the License.
 #    -----------------------------------------------------------------------------
 
-if [ "$BSF4Rexx_JavaStartupOptions" != "" ]
+
+if  [ "$BSF4Rexx_quiet" != "1" ]
 then
-   echo "... using environment variable 'BSF4Rexx_JavaStartupOptions' to configure JVM: [$BSF4Rexx_JavaStartupOptions]"
+   if  [ "$BSF4Rexx_JavaStartupOptions" != "" ]
+   then
+      echo "... using environment variable 'BSF4Rexx_JavaStartupOptions' to configure JVM: [$BSF4Rexx_JavaStartupOptions]"
+   fi
 fi
+
+# desiring a single script, hence exporting for both, Linux and macOS
+if  [ "$PREPEND_LIBRARY_PATH" != "" ]
+then
+   # PREPEND_LIBRARY_PATH gets defined and set by setupoorexx.rex
+   # echo "... 'PREPEND_LIBRARY_PATH': [$PREPEND_LIBRARY_PATH]"
+   if  [ "$LD_LIBRARY_PATH" != "" ]
+   then
+      export LD_LIBRARY_PATH=$PREPEND_LIBRARY_PATH:$LD_LIBRARY_PATH
+   else
+      export LD_LIBRARY_PATH=$PREPEND_LIBRARY_PATH
+   fi
+
+   if  [ "$DYLD_LIBRARY_PATH" != "" ]
+   then
+      export DYLD_LIBRARY_PATH=$PREPEND_LIBRARY_PATH:$DYLD_LIBRARY_PATH
+   else
+      export DYLD_LIBRARY_PATH=$PREPEND_LIBRARY_PATH
+   fi
+   # show user the exports taking place
+   if  [ "$BSF4Rexx_quiet" != "1" ]
+   then
+      echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+      echo "export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH"
+   fi
+fi
+
 java $BSF4Rexx_JavaStartupOptions org.rexxla.bsf.RexxDispatcher $*

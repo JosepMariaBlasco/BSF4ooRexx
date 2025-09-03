@@ -39,13 +39,14 @@
             2013-07-09, rgf, added Latvian Lats
             2014-07-24, rgf, added Lithuania Litas
             2022-07-15, rgf, added Croatian Kuna (HRK)
+            2025-06-29, rgf, added Bulgarian Lewa (BGR/BGN)
 
    last change: $Revision$ $Author$ $Date$
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2001-2022 Rony G. Flatscher
+       Copyright (C) 2001-2026 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -130,9 +131,11 @@ userDir~closeEH~waitForExit   -- get closing Rexx event handler object, block ma
 
     euro.hrk =     7.534500;  euro.HRK.eCountry = "HRK: Croatia (Kuna)"       ; euro.HRK.eSince=2023
 
+    euro.bgr =     1.955830;  euro.BGR.eCountry = "BGR: Bulgaria (Lewa)"      ; euro.BGR.eSince=2027
+
         /* determine processing order of currencies, will also be used as index
            into "euro."-stem, hence UPPERCASE (!) spelling     */
-    euro.eOrder = "EUR ATS BEF CYP DEM EEK ESP FIM FRF GRD HRK IEP ITL LTL LUF LVL MTL NLG PTE SIT SKK"
+    euro.eOrder = "EUR ATS BEF CYP DEM EEK ESP FIM FRF GRD HRK IEP ITL LTL LUF LVL MTL NLG PTE SIT SKK BGR"
 
     euro.eCount=words(euro.eOrder)     /* save number of currencies */
     RETURN

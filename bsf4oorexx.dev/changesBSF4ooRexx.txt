@@ -1,3 +1,104 @@
+-------------------------------------- 2025-09-02 ----------------------------------
+
+- BSF.CLS
+
+         - increase check for minimum ooRexx version to 5.0
+
+         - show how to set bDebug globally via .local, remove debug block that
+           uses a non-existent module
+
+- adding new launcher "bin\rexxb4r.rex"
+
+        - a new BSF4ooRexx launcher that automatically sets the startup
+          option "--enable-native-access=ALL-UNNAMED" for Java/OpenJDK
+          versions 24 or higher to avoid those stupid dreadful messages
+          about JNI being dangerous which is nuisance;
+          this needs to be a proper script as to not permanently load the
+          JVM as after loading it one cannot change the CLASSPATH or the
+          module path
+
+-------------------------------------- 2025-08-27 ----------------------------------
+
+- updated all samples/JavaFX samples
+
+        - remove check whether ooRexx 5.0 is being used
+
+        - add more debug info (show interpreter, thread and invocation ids)
+
+        - add ability to show debug output when processing the FXML files
+
+-------------------------------------- 2025-08-27 ----------------------------------
+
+- RexxAndJava.java
+
+        - RexxEngine gets as its id value the Rexx instance identifier (.context~interpreter) to
+          ease debugging
+
+- RexxEngine.java
+
+        - add protected setId(...) for RexxAndJava's createRexxInterpreterInstance(...)
+          to ease debugging by allowing Java to use the same identifier as ooRexx
+
+        - change id_counter to produce negative numbers to distinguish between Java
+          created instance numbers and (positive) Rexx identifiers
+
+- RexxScriptEngineFactory.java
+
+        - reflect that RexxEngine got changed and now uses as 'id' value
+          the ooRexx interpreter instance identifier
+
+-------------------------------------- 2025-08-24 ----------------------------------
+
+- RexxReflectJava7.java
+
+        - fixed reflection error: if a class does not have a public default constructor,
+          reflectConstructor() would use one of the superclasses's public
+          default constructor, thereby creating the wrong object; now throws
+          a RuntimeException with appropriate error message
+
+-------------------------------------- 2025-08-16 ----------------------------------
+
+- RexxReflectJava7.java
+
+         - in case a cached handle threw an exception and it is not possible
+           to find working alternate version, return the cached exception
+
+-------------------------------------- 2024-07-07 ----------------------------------
+
+- RexxDispatcher.java
+
+        - if the Rexx script is not found in the current directory, then use
+          java.library.path to locate it and if found there use its canonical path
+          representation
+
+-------------------------------------- 2024-06-20 ----------------------------------
+
+- RexxAndJava.java
+
+        - added Josep Maria to kudos
+
+- RexxHandler.java
+
+        - corrected JavaDocs, kudos to Josep Maria Blasco
+
+-------------------------------------- 2024-06-15 ----------------------------------
+
+- BSF.CLS
+
+        - honor environment variable "BSF4Rexx_quiet" set to 1 in addition to
+          .bsf.quiet: if either is set to .true (1) do not show hints
+
+        - change ppJavaExceptionChain() routine to prepend CR if .endofLine
+          is "0d0a"x to all contained single LF
+
+-------------------------------------- 2024-05-24 ----------------------------------
+
+- BSF.CLS
+
+        - .bsf.quiet: if set to .true, inhibits informal output
+
+        - add bsf.isArray: returns .true if a BSF_ARRAY_REFERENCE, .false else
+
 
 -------------------------------------- 2024-03-04 ----------------------------------
 

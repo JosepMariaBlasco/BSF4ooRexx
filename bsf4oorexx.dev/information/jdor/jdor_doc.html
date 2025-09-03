@@ -1,6 +1,6 @@
 <!--
     ======================== Apache Version 2.0 license =========================
-       Copyright (C) 2022-2023 Rony G. Flatscher
+       Copyright (C) 2022-2025 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -32,6 +32,8 @@
     2023-06-05, rgf: - add redirecting subkeywords in overview to address,
                        document Area related commands
     2023-06-09, rgf: - add first line back to sample code (erroneously deleted)
+
+    2025-09-01, rgf: - correct ADDRESS ... WITH ... examples
 -->
 
 
@@ -269,10 +271,10 @@ will get rounded to integer values by <em>JDOR</em>.
     <li>redirecting <em>INPUT</em>: all commands are taken and processed from the redirected
         input, e.g., from the <em>.input</em> monitor (defaults to the <em>.stdin</em> stream):
 
-        <br><em>Hint</em>: to activate output of executed JDOR commands in canonized form one
+        <br><em>Hint</em>: to activate input redirection for JDOR commands to be executed one
         can redirect like this:
 
-        <pre>ADDRESS JDOR WITH using input (.input) /* activate input redirection */ </pre>
+        <pre>ADDRESS JDOR WITH input using (stemOrStreamOrArray)   /* activate input redirection  */ </pre>
 
         <em>Note:</em> you need to supply at least one command (e.g. a comment command like
         <code><em>"-- some comment"</code></em>) to the command handler
@@ -290,18 +292,20 @@ will get rounded to integer values by <em>JDOR</em>.
 
         <br><em>Hint</em>: to activate output of executed JDOR commands in canonized form
         one can redirect like this (the <em>.output</em> monitor defaults to the <em>.stdout</em>
-        stream):
+        stream, you could also use a <em>stem</em>, a <em>stream</em> (file) or any ordered
+        collection like an <em>array</em> instead):
 
-        <pre>ADDRESS JDOR WITH using output (.output) /* activate output redirection */ </pre>
+        <pre>ADDRESS JDOR WITH output using (.output) /* activate output redirection */ </pre>
 
     <li>redirecting <em>ERROR</em>: all commands causing an error or failure condition will
         supplied together with the kind of error or failure. In the case of a failure more
         detailed information gets supplied, like the exact location.
         <br><em>Hint</em>: while developing or changing <em>JDOR</em> programs one can get
         the detailed error and failure information by redirecting like this (the <em>.error</em>
-        monitor defaults to the <em>.stderr</em> stream):
+        monitor defaults to the <em>.stderr</em> stream, you could also use a <em>stem</em>, a
+        <em>stream</em> (file) or any ordered collection like an <em>array</em> instead):
 
-        <pre>ADDRESS JDOR WITH using error (.error) /* activate error redirection */ </pre>
+        <pre>ADDRESS JDOR WITH error using (.error)   /* activate error redirection  */ </pre>
 
         In addition ooRexx
         will communicate the result of executing a command by setting the environment
@@ -2809,7 +2813,7 @@ resulting command with arguments to the Rexx command handler.
 <p>
 
 
-<h2 id="h2PathCommands"><em>Path2D</em> Related Related commands </h2>
+<h2 id="h2PathCommands"><em>Path2D</em> Related commands </h2>
 <nav>
 <a href="#purposeOfJDOR">Purpose</a> |
 <a href="#briefOverview">Brief Overview</a> |
@@ -3029,7 +3033,7 @@ resulting command with arguments to the Rexx command handler.
 
    <hr width="75%">
     <small>
-       JDOR synopsis of commands, version: 100.20231114
+       JDOR synopsis of commands, version: 100.20250901
        <br>Acknowledgement: the author wishes to thank DI Walter Pachl
        <br>for his help in testing and proof reading
     </small>

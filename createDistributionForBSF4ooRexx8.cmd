@@ -10,7 +10,9 @@
 @rem 2016-11-24, adding JavaFX support, basing on Java 1.6/6.0, hence version "600" (6.00)
 @rem 2021-07-30, copy new NOTICE.txt to bsf4rexx
 @rem 2022-09-29, TODO: add module-info.{java|class} to allow package to be used as a module
+@rem 2024-06-06, rgf: add /y to xcopy to overwrite destination without prompting
 @rem                   not called anymore: createScriptProviderForooRexx.cmd
+@rem 2025-09-02, rgf: copy new rexxb4r.rex to bsf4oorexx directory
 
 @rem @echo createDistribution.cmd (for BSF4ooRexx)
 @echo %0 (for BSF4ooRexx)
@@ -37,9 +39,9 @@ set CLASSPATH=%CLASSPATH%;%ooo_classes%\unoil.jar;%ooo_classes%\ridl.jar;%ooo_cl
 set CLASSPATH=%CLASSPATH%;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet.jsp.jar;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet-3.0.0.v201112011016.jar
 
 @rem do not forget to set the version date in bsf4oorexx.dev\bin\BSF.CLS accordingly as well!
-set releaseDate=20240510
-set runDate=20240510
-set doc_date=20240510
+set releaseDate=20250902
+set runDate=20250902
+set doc_date=20250902
 
 @rem values to use for creating the BSF jarfile
 @rem set bsfDate=20090910
@@ -239,13 +241,17 @@ md bsf4oorexx\Templates
 @rem --------- rgf, 20160815, .NET/CLR support
 md bsf4oorexx\clr
 copy %path2dev%\oorexx.net\bin                     bsf4oorexx\clr
-xcopy %path2dev%\oorexx.net\samples                bsf4oorexx\samples\ /s
+xcopy %path2dev%\oorexx.net\samples                bsf4oorexx\samples\ /s /y
 
 @rem --------- rgf, 20220920, xcopy doc dirs directly to target information directory
-xcopy %DIR_DOCS_APACHE_BSF%                        bsf4oorexx\information\%DIR_DOCS_APACHE_BSF%\ /S
-xcopy %DIR_DOCS_BSF4OOREXX%                        bsf4oorexx\information\%DIR_DOCS_BSF4OOREXX%\ /S
+xcopy %DIR_DOCS_APACHE_BSF%                        bsf4oorexx\information\%DIR_DOCS_APACHE_BSF%\ /S /y
+@echo.
+xcopy %DIR_DOCS_BSF4OOREXX%                        bsf4oorexx\information\%DIR_DOCS_BSF4OOREXX%\ /S /y
+@echo.
+@echo done copying %DIR_DOCS_BSF4OOREXX% to bsf4oorexx\information\%DIR_DOCS_BSF4OOREXX%\
+@echo.
 
-xcopy %path2dev%\oorexx.net\docs                   bsf4oorexx\information\ /s
+xcopy %path2dev%\oorexx.net\docs                   bsf4oorexx\information\ /s /y
 @echo pause just for debugging .NET/CLR support so far
 
 copy *LICENS*.txt                                  bsf4oorexx\
@@ -258,6 +264,7 @@ copy %path2dev%\bin\add*.r*                        bsf4oorexx\
 copy %path2dev%\bin\BSF*                           bsf4oorexx\
 copy %path2dev%\bin\rexxj2*                        bsf4oorexx\
 copy %path2dev%\bin\rexxjh*                        bsf4oorexx\
+copy %path2dev%\bin\rexxb4*                        bsf4oorexx\
 copy %path2dev%\bin\rexxcUtil.rex                  bsf4oorexx\
 copy %path2dev%\bin\rgf_util2.rex                  bsf4oorexx\
 copy %path2dev%\bin\libBS*                         bsf4oorexx\
@@ -277,13 +284,13 @@ copy %path2dev%\images\linux\Tango                 bsf4oorexx\install\images\lin
 
 copy %path2dev%\Templates\*                        bsf4oorexx\Templates
 
-xcopy %path2dev%\information\*                     bsf4oorexx\information\ /s
+xcopy %path2dev%\information\*                     bsf4oorexx\information\ /s /y
 
 copy %path2dev%\install\*                          bsf4oorexx\install\
 copy %path2dev%\install\linux\*                    bsf4oorexx\install\linux\
 copy %path2dev%\install\linux\resources\*          bsf4oorexx\install\linux\resources\
 copy %path2dev%\install\linux\resources\menu\*     bsf4oorexx\install\linux\resources\menu\
-xcopy /s %path2dev%\install\linux\resources\xdg-utils\* bsf4oorexx\install\linux\resources\xdg-utils\
+xcopy /s /y %path2dev%\install\linux\resources\xdg-utils\* bsf4oorexx\install\linux\resources\xdg-utils\
 copy %path2dev%\install\windows\*                  bsf4oorexx\install\windows\
 
 copy %path2dev%\install\portable\*                 bsf4oorexx\install\portable
@@ -349,10 +356,10 @@ md bsf4oorexx\utilities\ooRexxTryFX
 md bsf4oorexx\utilities\OOo
 md bsf4oorexx\utilities\OOo\UNO_API_info
 
-xcopy %path2dev%\utilities\*                       bsf4oorexx\utilities\
-xcopy %path2dev%\utilities\ooRexxTryFX             bsf4oorexx\utilities\ooRexxTryFX\  /s/e/i/r/k/y
-xcopy %path2dev%\utilities\OOo\*                   bsf4oorexx\utilities\OOo\
-xcopy %path2dev%\utilities\OOo\UNO_API_info\*      bsf4oorexx\utilities\OOo\UNO_API_info\
+xcopy /y %path2dev%\utilities\*                       bsf4oorexx\utilities\
+xcopy    %path2dev%\utilities\ooRexxTryFX             bsf4oorexx\utilities\ooRexxTryFX\  /s/e/i/r/k/y
+xcopy /y %path2dev%\utilities\OOo\*                   bsf4oorexx\utilities\OOo\
+xcopy /y %path2dev%\utilities\OOo\UNO_API_info\*      bsf4oorexx\utilities\OOo\UNO_API_info\
 
 
 @echo cleaning samples directories ...
