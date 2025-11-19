@@ -12,7 +12,10 @@
    needs: ooRexx 5.0.0 (cf. <http://www.ooRexx.org>) and Java 8 or higher
 
    date:
-         2025-09-02, ---rgf, - increase check for minimum ooRexx version to 5.0
+         2025-11-19, ---rgf, - ppJavaExceptionChain(): if not a Java exception, but a Rexx exception
+                               show it using rgf_util2.rex' ppCondition2() instead
+         2025-09-02, ---rgf, - enquote CLASSPATH value
+                             - increase check for minimum ooRexx version to 5.0
                              - show how to set bDebug globally via .local, remove debug block that
                                uses a non-existent module
 
@@ -984,7 +987,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="850.20250902" -- set version (date distribution got created)
+      .bsf4rexx~version="850.20251119" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -6637,7 +6640,12 @@ syntax:
   use strict arg co, bStackTrace=.false
 
   jexc=co~Additional~at(2)    -- get Java Exception object
-  if \jexc~isA(.bsf) then return ""    -- not a Java object
+  if \jexc~isA(.bsf) then -- return ""    -- not a Java object
+  do
+     .context~package~loadPackage("rgf_util2.rex") -- we want to show the Rexx condition
+     str=ppCondition2(co)
+     return .dateTime~new "(line #" .line")" .endOfLine str
+  end
 
   bPrependCR=(.endofline~c2x = '0D0A') -- do we have to use CR-LF?
   mb=.MutableBuffer~new

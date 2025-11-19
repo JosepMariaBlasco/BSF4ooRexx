@@ -98,6 +98,11 @@ import        java.lang.reflect.Modifier;
                               reflectConstructor() would use one of the superclasses's public
                               default constructor, thereby creating the wrong object; now throws
                               a RuntimeException with appropriate error message
+
+        2025-11-19, rgf:    - fixed a bug in reflectMethod(): if a script related Throwable
+                              gets created because there was a script error, then no more
+                              attempts for finding a working method should be done; rather
+                              the script exception should be returned instead
 */
 
 
@@ -1375,6 +1380,20 @@ if (bDebug) System.out.println("... reflectMethod(): ---> no appropriate cache f
                 {
                     return;
                 }
+                else if (rru.throwable != null) // rgf, 20251119: check whether Throwable is script related
+                {
+                    // System.out.println("... reflectMethod(): "+i+"/"+tmpMethods.length+" ---> rru.success="+rru.success+", rru.throwable="+rru.throwable);
+                    // 20251119, rgf: if the Throwable is a ScriptException or BSFException, then the script was run
+                    //                and caused the Throwable; in that case we are done and report the script exception
+                    if (rru.throwable instanceof javax.script.ScriptException)  // script was run, do not try anything anymore
+                    {
+                        return;
+                    }
+                    else if (rru.throwable instanceof BSFException)
+                    {
+                        return;
+                    }
+                }
             }
 
 // TODO: 2018-11-24, rgf: default methods only resolved from interface class, if not implemented in any superclass
@@ -1865,7 +1884,7 @@ System.err.println("// // // RexxReflectJava7.processMethod(): INSTANCE, mh.bind
                     catch (Throwable t)
                     {
 if (debugLevel>0)
-System.err.println("// // :( RexxReflectJava7.processMethod(): INSTANCE, mh.invokeWithArguments(...) caused Throwable: \""+t+"\"");
+System.err.println("// // :( RexxReflectJava7.processMethod(): INSTANCE, mh.invokeWithArguments(...) caused Throwable: \""+t+"\", rru.success="+rru.success);
 // System.err.println("// // :( RexxReflectJava7.processMethod(): .... t.getCause()=\""+t.getCause()+"\" -> t.getCause().toString()=\""+t.getCause().toString()+"\"");
                         rru.throwable=t;
                         return;
