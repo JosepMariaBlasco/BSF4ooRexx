@@ -56,7 +56,7 @@ purpose: allow programs to run without the wrong message that using BSF4ooRexx85
          (BSF4ooRexx850 must use JNI like Java must use JNI to interface with
          the operating system)
 
-usage:   rexxb4r.rex [-d] [-jh] [rexx|rexxj] rexx_pgm [arguments]
+usage:   rexxb4r.rex [-d] [-jh] [rexx|rexxj2] rexx_pgm [arguments]
 
          ... "-d" debug, creates debug output
 
@@ -64,7 +64,7 @@ usage:   rexxb4r.rex [-d] [-jh] [rexx|rexxj] rexx_pgm [arguments]
              environment variable JAVA_HOME (using 'java' from its 'bin'
              subdirectory)
 
-         ... optional "rexx" executable or generated "rexxj.cmd" or "rexxj.sh" (Unix)
+         ... optional "rexx" executable or generated "rexxj2.cmd" or "rexxj2.sh" (Unix)
 
          ... run program "rexx_pgm" and supplies it any supplied command
              line arguments; it will set BSF4Rexx_JavaStartupOptions to
@@ -165,6 +165,8 @@ do
 
    if pos(enableNativeAccess,nameBJSO_value)=0 then      -- not yet set
       call value nameBJSO, strip(nameBJSO_value enableNativeAccess), env  -- set environment variable to new value
+
+   if .bDebug then .error~say(.line': added "'enableNativeAccess'" to environment variable "BSF4Rexx_JavaStartupOptions')
 end
 else     -- in case enableNativeAccess is set, we need to remove it for earlier versions of Java (inhibit errors)
 do
@@ -172,6 +174,7 @@ do
    do
       parse var nameBJSO_value before (enableNativeAccess) after
       call value nameBJSO, strip(before after), env   -- set environment variable to new value
+   if .bDebug then .error~say(.line': removed "'enableNativeAccess'" from environment variable "BSF4Rexx_JavaStartupOptions')
    end
 end
 
@@ -277,7 +280,7 @@ purpose: allow programs to run without the wrong message that using BSF4ooRexx85
          would be dangerous and inhibit Java to force not using it in the future
          (BSF4ooRexx850 must use JNI like Java must use JNI)
 
-usage:   rexxb4r.rex [-d] [-jh] [rexx|rexxj] rexx_pgm [arguments]
+usage:   rexxb4r.rex [-d] [-jh] [rexx|rexxj2] rexx_pgm [arguments]
 
          ... "-d" debug, creates debug output
 
@@ -285,7 +288,7 @@ usage:   rexxb4r.rex [-d] [-jh] [rexx|rexxj] rexx_pgm [arguments]
              environment variable JAVA_HOME (using 'java' from its 'bin'
              subdirectory)
 
-         ... optional: "rexx" executable or generated "rexxj.cmd" or "rexxj.sh" (Unix)
+         ... optional: "rexx" executable or "rexxj2.cmd" or "rexxj2.sh" (Unix)
 
          ... run program "rexx_pgm" and supplies it any supplied command
              line arguments; it will set BSF4Rexx_JavaStartupOptions to
