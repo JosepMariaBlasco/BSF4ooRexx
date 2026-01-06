@@ -12,6 +12,10 @@
    needs: ooRexx 5.0.0 (cf. <http://www.ooRexx.org>) and Java 8 or higher
 
    date:
+         2025-12-15, ---rgf, - method getAttribute: superfluous first 'signal on syntax',
+                               methods isEmpty and getDataFlavors: typo 'synax:' instead of 'syntax:';
+                               reported by Josep Maria Blasco, thanks!
+
          2025-11-19, ---rgf, - ppJavaExceptionChain(): if not a Java exception, but a Rexx exception
                                show it using rgf_util2.rex' ppCondition2() instead
          2025-09-02, ---rgf, - enquote CLASSPATH value
@@ -885,7 +889,7 @@
 
 
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2001-2025 Rony G. Flatscher
+   Copyright 2001-2026 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -903,7 +907,7 @@
 
 
 ------------------------ Common Public License 1.0 --------------------------
-   Copyright 2001-2025 Rony G. Flatscher
+   Copyright 2001-2026 Rony G. Flatscher
 
    This program and the accompanying materials are made available under the
    terms of the Common Public License v1.0 which accompanies this distribution.
@@ -987,7 +991,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="850.20251119" -- set version (date distribution got created)
+      .bsf4rexx~version="850.20260106" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -5284,7 +5288,6 @@ syntax:           -- propagate the syntax condition to caller
 */
 ::method getAttribute guarded class
   use strict arg scriptContext, name, scope=.nil
-  signal on syntax
 
    /* if a RexxContext supplied instead, then extract the ScriptContext from its last
       argument (expected: the slotDir Rexx directory supplied by the Java side) */
@@ -6802,7 +6805,7 @@ editJavaString: procedure expose bPrependCR  -- prepend CR to single LF in Java 
   expose thisClz
   signal on syntax
   return thisClz~isEmpty
-synax:
+syntax:
   return .nil     -- indicate a problem (java.lang.IllegalStateException) accessing system clipboard
 
 /* ------------------------------------------------------------------------ */
@@ -6823,7 +6826,7 @@ synax:
   expose thisClz
   signal on syntax
   return thisClz~getDataFlavors
-synax:
+syntax:
   return .nil     -- indicate a problem (java.lang.IllegalStateException) accessing system clipboard
 
 /* ------------------------------------------------------------------------ */

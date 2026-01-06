@@ -56,7 +56,9 @@ purpose: allow programs to run without the wrong message that using BSF4ooRexx85
          (BSF4ooRexx850 must use JNI like Java must use JNI to interface with
          the operating system)
 
-usage:   rexxb4r.rex [-jh] [rexx|rexxj] rexx_pgm [arguments]
+usage:   rexxb4r.rex [-d] [-jh] [rexx|rexxj] rexx_pgm [arguments]
+
+         ... "-d" debug, creates debug output
 
          ... "-jh" forces the use of Java according to the setting of the
              environment variable JAVA_HOME (using 'java' from its 'bin'
@@ -67,18 +69,17 @@ usage:   rexxb4r.rex [-jh] [rexx|rexxj] rexx_pgm [arguments]
          ... run program "rexx_pgm" and supplies it any supplied command
              line arguments; it will set BSF4Rexx_JavaStartupOptions to
              include "--enable-native-access=ALL-UNNAMED" starting with
-             OpenJDK/Java 24
+             OpenJDK/Java >= 24, and removes it for OpenJDK/Java < 24
 
-date:    2025-09-02
+date:    2025-09-02, 2026-01-06
 
-version: 1.0
+version: 1.1
 
 license: Apache License 2.0 (see also at the end of this program)
 */
 
-parse source op_sys +1        -- get operating system
-if op_sys="W" then dirSep="\"
-              else dirSep="/"
+dirSep=.file~separator     -- / or \ depending on operating system
+env        ="ENVIRONMENT"  -- operating system environment (vor value()-BIF)
 
 java="java"    -- by default use any Java that is accessible
 
@@ -86,61 +87,124 @@ java="java"    -- by default use any Java that is accessible
    --       arguments (they need to be quoted), hence using .sysCargs
 startIdx=1     -- default for index into .sysCargs for the program argument
 parse arg switch pgm args      -- assume -jh, parse into program and into
-if switch~upper="-JH" then
+
+if switch="" then    -- no arguments given, show usage/explanation
 do
-   java_home=value("JAVA_HOME",,"environment")  -- fetch JAVA_HOME
-   if java_home="" then
-   do
-      say switch": mandates explicitly the use of the environment variable JAVA_HOME which is not defined, aborting..."
-      exit -1
-   end
-   java=java_home || dirSep || "bin" || dirSep || "java"
-   startIdx=2  -- index into .sysCargs for the program argument
+   .error~say(.resources~usage)
+   exit -1
 end
 
+if .sysCargs~isNil then
+do
+   say "no arguments supplied via the command line, aborting ..."
+   exit -2
+end
+
+.context~package~local~bDebug=.false
+do i=1 to .sysCargs~items for 2
+   if .sysCargs[i]~startsWith('-') then
+   select case .sysCargs[i]~upper
+      when "-D"  then
+           do
+              startIdx+=1
+              .context~package~local~bDebug=.true
+              .error~say(.line": using .File~searchPath() to locate 'java' executable:" pp(.file~searchPath("java" || (dirsep='\')~?(".exe","")) ))
+           end
+      when "-JH" then
+           do
+              startIdx+=1
+              java_home=value("JAVA_HOME",,env)  -- fetch JAVA_HOME
+              if java_home="" then
+              do
+                 say "switch ""-JH"" mandates explicitly the use of the environment variable JAVA_HOME which is not defined, aborting..."
+                 exit -3
+              end
+              java=java_home || dirSep || "bin" || dirSep || "java"
+              if .bDebug then .error~say(.line": JAVA_HOME="pp(java_home) "-> calculated java executable:" pp(java))
+           end
+      otherwise
+           do
+              if .sysCargs[i][1]="-" then
+              do
+                 say "switch #" i "(""".sysCargs[i]""") is not valid, aborting ..."
+                 exit -4
+              end
+              startIdx=i
+              leave
+           end
+   end
+end
+
+
+
 jVersion=getJavaVersion(java)    -- get Java main version number
+if .bDebug then
+   .error~say(.line": OpenJDK/Java version="pp(jVersion))
 
 if jVersion~isNil then
 do
    say "Cannot determine the Java version, is Java installed and available?"
-   exit -1
+   exit -5
 end
 
-newValue="--enable-native-access=ALL-UNNAMED"
-nameQ   ="BSF4Rexx_quiet"                 -- if 1 no information about useing BJSO is given
-nameBJSO="BSF4Rexx_JavaStartupOptions"    -- case dependent (it is for Java)!
-env     ="environment"                    -- operating system environment variables
+enableNativeAccess="--enable-native-access=ALL-UNNAMED"
+nameQ      ="BSF4Rexx_quiet"              -- if 1 no information about useing BJSO is given
+nameQ_value=value(nameQ,,env)             -- get current value of environment variable
+nameBJSO   ="BSF4Rexx_JavaStartupOptions" -- case dependent (it is for Java)!
+nameBJSO_value=value(nameBJSO,,env)       -- get current value of environment variable
+if .bDebug then
+do
+   .error~say(.line":" "--> BSF4Rexx_quiet             ="pp(nameQ_value))
+   .error~say(.line":" "--> BSF4Rexx_JavaStartupOptions="pp(nameBJSO_value))
+end
+
 if jVersion>=24 then    -- starting with Java/OpenJDK 24 these stupid warnings get issued
 do
-      -- set quiet?
-   currQuiet=value(nameQ,,env)
-   if currQuiet="" then    -- only change if BSF4_quiet is not currently set
-   do
-      -- say "currQuiet NOT set, hence setting it to 1 to not show user resolution"
-      call value nameQ,1,env  -- do not show substitution value from BSF4Rexx_JavaStartupOptions
-   end
+   if nameQ_value="" then        -- set quiet: only change if BSF4_quiet is not currently set
+      call value nameQ,.true,env -- do not show substitution value from BSF4Rexx_JavaStartupOptions
 
-   currBJSO=value(nameBJFO, , "environment")
-   newValue=strip(currBJSO newValue)
-   call value nameBJSO, newValue, env  -- define environment variable
+   if pos(enableNativeAccess,nameBJSO_value)=0 then      -- not yet set
+      call value nameBJSO, strip(nameBJSO_value enableNativeAccess), env  -- set environment variable to new value
+end
+else     -- in case enableNativeAccess is set, we need to remove it for earlier versions of Java (inhibit errors)
+do
+   if pos(enableNativeAccess,nameBJSO_value)>0 then      -- not yet set
+   do
+      parse var nameBJSO_value before (enableNativeAccess) after
+      call value nameBJSO, strip(before after), env   -- set environment variable to new value
+   end
+end
+
+if .bDebug then
+do
+   .error~say(.line": OpenJDK/Java version="pp(jVersion) "<-- BSF4Rexx_quiet             ="pp(value(nameQ,   ,env)))
+   .error~say(.line": OpenJDK/Java version="pp(jVersion) "<-- BSF4Rexx_JavaStartupOptions="pp(value(nameBJSO,,env)))
+   address system "rexx -e ""call bsf.cls;say" .line"': using OpenJDK/Java from directory=['.java.lang.system~getProperty('java.home')']'"""
 end
 
 -- process command line information appropriately
-if .sysCargs~items>(startIdx-1) then   -- a program name supplied?
+cmd=.sysCargs[startIdx]          -- get command
+if .sysCargs~items>startIdx then -- arguments supplied?
 do
    res=processArgs(startIdx)     -- use .sysCargs to build program and argument strings
-   cmd=(res[1]) res[2]           -- assamble command with its args
-   address system cmd            -- execute command
+   cmd=(res[1]) res[2]           -- assemble command with its args
 end
-else
+
+if .bDebug then
 do
-   say "using" pp(java) "the Java version is:" pp(jVersion)
+   .error~say(.line": command to execute:" pp(cmd))
+   dt=.DateTime~new
 end
+address system cmd            -- execute command
+if .bDebug then .error~say(.line": running command (program) lasted:" pp(dt~elapsed))
 
 
+/* ========================================================================== */
 
-::routine pp
+::routine pp                  -- "pretty-print": enquote in square brackets
   return "["arg(1)"]"
+
+/* ========================================================================== */
 
 ::routine getJavaVersion      -- get the Java version of the default java
    parse arg java
@@ -164,6 +228,12 @@ or maybe
    openjdk version "24.0.2" 2025-07-15
    OpenJDK Runtime Environment (build 24.0.2+12)
    OpenJDK 64-Bit Server VM (build 24.0.2+12, mixed mode, sharing)
+
+or maybe
+
+   openjdk version "25" 2025-09-16 LTS
+   OpenJDK Runtime Environment (build 25+37-LTS)
+   OpenJDK 64-Bit Server VM (build 25+37-LTS, mixed mode, sharing)
 */
 
    v1=.nil                    -- default to .nil
@@ -171,15 +241,19 @@ or maybe
    arr=.array~new             -- for fetchting output to 1 (stdout)
       -- command to get Java version, collect both, 2 (stderr) and 1 (stdout), via 1 (stdout)
    cmd=java "-version 2>&1"
+   if .bDebug then dt=.DateTime~new
    address system cmd with output using (arr)
+   if .bDebug then .error~say(.line": querying OpenJDK/Java version lasted:" pp(dt~elapsed))
 
       -- parse will trigger arr~makestring which creates a single string from all entries
-   parse var arr 'version "' v1 "." v2 "."
+   parse var arr 'version "' val '"'
+   parse var val v1 "." v2 "."
    if v1=1 then               -- e.g. 1.8, then use major version 8
       v1=v2
    return v1
 
 
+/* ========================================================================== */
 ::routine processArgs
   use arg pgmIdx=1         -- Index for program argument (can be 2 if "-jh" was given)
 
@@ -197,9 +271,32 @@ or maybe
   return (strip(pgm), strip(args))
 
 
+/* ========================================================================== */
+::resource usage
+purpose: allow programs to run without the wrong message that using BSF4ooRexx850
+         would be dangerous and inhibit Java to force not using it in the future
+         (BSF4ooRexx850 must use JNI like Java must use JNI)
+
+usage:   rexxb4r.rex [-d] [-jh] [rexx|rexxj] rexx_pgm [arguments]
+
+         ... "-d" debug, creates debug output
+
+         ... "-jh" forces the use of Java according to the setting of the
+             environment variable JAVA_HOME (using 'java' from its 'bin'
+             subdirectory)
+
+         ... optional: "rexx" executable or generated "rexxj.cmd" or "rexxj.sh" (Unix)
+
+         ... run program "rexx_pgm" and supplies it any supplied command
+             line arguments; it will set BSF4Rexx_JavaStartupOptions to
+             include "--enable-native-access=ALL-UNNAMED" starting with
+             OpenJDK/Java >= 24, and removes it for OpenJDK/Java < 24
+::END
+
+
 /*
       ------------------------ Apache Version 2.0 license -------------------------
-         Copyright 2025 Rony G. Flatscher
+         Copyright 2025-2026 Rony G. Flatscher
 
          Licensed under the Apache License, Version 2.0 (the "License");
          you may not use this file except in compliance with the License.
