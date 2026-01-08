@@ -4,6 +4,7 @@ rem            if JAVA_HOME is defined try to use its java.exe, fallback: java.e
 rem   Author:  Rony G. Flatscher
 rem   Date:    2022-08-03
 rem   Changed: 2024-01-04 rgf, give feedback to user as to which java.exe gets employed
+rem            2026-01-08 rgf, only verbose, if BSF4Rexx_quiet <> 1
 rem   Remark:  Rexx script can retrieve all arguments as passed to Java via the BSFRegistry, including
 rem            the name of the Rexx script to be invoked/dispatched
 rem
@@ -13,7 +14,7 @@ rem            ooRexx: args=.bsf~bsf.lookupBean("allCommandLineArguments")
 
 rem   license:
 rem   ------------------------ Apache Version 2.0 license -------------------------
-rem      Copyright 2022-2024 Rony G. Flatscher
+rem      Copyright 2022-2026 Rony G. Flatscher
 
 rem      Licensed under the Apache License, Version 2.0 (the "License");
 rem      you may not use this file except in compliance with the License.
@@ -30,8 +31,10 @@ rem   --------------------------------------------------------------------------
 
 if not defined BSF4Rexx_JavaStartupOptions goto invokenormal
 
+if not "%BSF4Rexx_quiet%" == "1" (
    rem environment variable defining Java startup parameters exists, show it to the user
    echo ... using environment variable 'BSF4Rexx_JavaStartupOptions' to configure JVM: [%BSF4Rexx_JavaStartupOptions%]
+)
 
 :invokenormal
 
@@ -44,19 +47,26 @@ if not "%JAVA_HOME%" == "" (
    set jexe=!JAVA_HOME!\bin\java.exe
    if exist "!jexe!"  (
      set java_binary=!jexe!
-     echo ... using environment variable JAVA_HOME: [!JAVA_BINARY!]
+     if not "%BSF4Rexx_quiet%" == "1" (
+        echo ... using environment variable JAVA_HOME: [!JAVA_BINARY!]
+     )
    ) else (
       set jexe=!JAVA_HOME!\jre\bin\java.exe
       if exist "!jexe!" (
         set java_binary=!jexe!
-        echo ... using environment variable JAVA_HOME: [!JAVA_BINARY!]
+        if not "%BSF4Rexx_quiet%" == "1" (
+           echo ... using environment variable JAVA_HOME: [!JAVA_BINARY!]
+        )
       )
    )
 )
 @rem if original java.exe is not present anymore use just java as a last resort
 if not exist "%JAVA_BINARY%" set JAVA_BINARY=java
 
-echo command: "%JAVA_BINARY%"  %BSF4Rexx_JavaStartupOptions% org.rexxla.bsf.RexxDispatcher %*
+
+if not "%BSF4Rexx_quiet%" == "1" (
+   echo command: "%JAVA_BINARY%"  %BSF4Rexx_JavaStartupOptions% org.rexxla.bsf.RexxDispatcher %*
+)
 "%JAVA_BINARY%"  %BSF4Rexx_JavaStartupOptions% org.rexxla.bsf.RexxDispatcher %*
 
 :end
