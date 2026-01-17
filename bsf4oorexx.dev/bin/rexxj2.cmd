@@ -5,6 +5,7 @@ rem   Date:    2006-01-02
 rem   Changed: 2007-02-03, ---rgf, renamed file, changed year-range
 rem            2010-06-10, ---rgf, honor environment variable 'BSF4Rexx.JavaStartupOptions', if set
 rem            2022-08-03, ---rgf, simplify invocation
+rem            2026-01-11, ---rgf, honor BSF4Rexx_quiet
 rem   Remark:  Rexx script can retrieve all arguments as passed to Java via the BSFRegistry, including
 rem            the name of the Rexx script to be invoked/dispatched
 rem
@@ -14,7 +15,7 @@ rem            ooRexx: args=.bsf~bsf.lookupBean("allCommandLineArguments")
 
 rem   license:
 rem   ------------------------ Apache Version 2.0 license -------------------------
-rem      Copyright 2006-2022 Rony G. Flatscher
+rem      Copyright 2006-2026 Rony G. Flatscher
 
 rem      Licensed under the Apache License, Version 2.0 (the "License");
 rem      you may not use this file except in compliance with the License.
@@ -31,8 +32,10 @@ rem   --------------------------------------------------------------------------
 
 if not defined BSF4Rexx_JavaStartupOptions goto invokenormal
 
+if not "%BSF4Rexx_quiet%" == "1" (
    rem environment variable defining Java startup parameters exists, show it to the user
    echo ... using environment variable 'BSF4Rexx_JavaStartupOptions' to configure JVM: [%BSF4Rexx_JavaStartupOptions%]
+)
 
 :invokenormal
    rem  just use the default Java runtime settings

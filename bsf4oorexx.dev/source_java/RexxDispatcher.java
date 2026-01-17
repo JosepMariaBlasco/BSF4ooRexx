@@ -5,11 +5,12 @@ import org.rexxla.bsf.engines.rexx.RexxEngine;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.HashSet;
 
 /** Invokes given Rexx or ooRexx program and supplies the commandline arguments.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2006-2024 Rony G. Flatscher
+ *    Copyright (C) 2006-2026 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -25,11 +26,17 @@ import java.io.IOException;
  * ----------------------------------------------------------------------------- </pre>
  *
  * @author   Rony G. Flatscher
- * @version  404.20240707
+ * @version  405.20260114
  */
 
  /*
      last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+
+     2026-01-14, ---rgf: - if the Rexx script is not found, then try with appended ".rex",
+                           ".rexx", ".rxj", ".rxo", ".cls"
+                         - improve error message to be more comprehensible/legible
+                         - make sure that we only check, if full path was not yet tested to
+                           prevent loops if environment has recursive directories
 
      2024-07-07, ---rgf: - if the Rexx script is not found in the current directory, then use
                            java.library.path to locate it and if found there use its canonical path
@@ -67,11 +74,16 @@ import java.io.IOException;
      2006-01-07, ---rgf, removed ability to look for com.ibm.bsf, if org.apache.bsf is not
                          found (to reduce confusion on error reports)
  */
+
 public class RexxDispatcher {
         /** Version string indicating version of this class (majorVersion*100+minorVersion
          *  concatenated with a dot and the sorted date of last change.
          */
-        static final public String version = "404.20240707";
+        static final public String version = "405.20260114";
+
+        /** Determine whether debug output should be given.
+         */
+        static final private boolean bDebug = false;    // true: debug output; false: no debug output
 
         /** Key for storing the received args-String array in the BSF registry for Rexx to
          *  get at it.
@@ -163,7 +175,9 @@ public class RexxDispatcher {
 
                 if (rexxProgram==null)
                 {
-                    System.err.println("RexxDispatcher.java: Rexx program \""+args[0]+"\" can neither be found in current directory (\".\") nor in 'java.library.path'=\""+System.getProperty("java.library.path")+"\"), aborting...");
+                    System.err.println("RexxDispatcher.java: the supplied Rexx program \""+args[0]+"\" can neither be found in the current directory (\".\", ie., \""
+                                       + System.getProperty("user.dir") + "\") "
+                                       + "nor in 'java.library.path':\n---> \""+System.getProperty("java.library.path")+"\" <---, aborting...");
                     System.exit(-1);
                 }
                     // execute Rexx script
@@ -192,24 +206,6 @@ public class RexxDispatcher {
             {
                 try
                 {
-/* --
-                    // it may be the case that at this point in time there are still Rexx threads
-                    // executing; once could sleep to allow them to end, but this is not acceptable
-                    // for a general purpose dispatcher; a sleep statement may look like:
-                    // try { Thread.sleep(750); } catch (Exception e) {}
-System.err.println("*** RexxDispatcher: # 190, after before gc() ...");
-                    System.gc();    // run the garbage collector, such that Java objects with finalizers get a chance to run
-
-                    try // at 2021-08-04: Object.finalize() is planned to be removed in the future, possibly also runFinalization(), cater for it
-                    {
-System.err.println("*** RexxDispatcher: # 195, after before runFinalization() ...");
-                        System.runFinalization();   // run outstanding finalizers (e.g. from RexxProxy objects), if any
-                    }
-                    catch (NoSuchMethodError nsme)
-                    {
-                        // System.err.println(nsme);
-                    }
--- */
 // System.err.println("*** RexxDispatcher: # 202, before ap_rexx.terminate() ...");
                     ap_rexx.terminate();    // wait for termination of the Rexx instance
 // System.err.println("*** RexxDispatcher: # 204, after ap_rexx.terminate() ...");
@@ -255,20 +251,41 @@ System.err.println("*** RexxDispatcher: # 195, after before runFinalization() ..
             String arrPaths[] = System.getProperty("java.library.path").
                                        split(System.getProperty("path.separator"));
 
-            for (String dir : arrPaths) // iterate over each path
+            // .rxj Rexx program needs Java; .rxo: Rexx program needs Java and OpenOffice/LibreOffice
+            String suffixes[] = { "", ".rex", ".rexx", ".rxj", ".rxo", ".cls" };
+
+            // remember tested paths
+            HashSet<String> seenPaths = new HashSet<>();
+
+            for (String suff : suffixes)
             {
-                String fullPath=dir+fileSeparator+fileName; // create fully qualified name
-                tmpFile=new File(fullPath);
-                if (tmpFile.exists())
+                for (String dir : arrPaths) // iterate over each path
                 {
-                    try
+                    String fullPath=dir+fileSeparator+fileName+suff; // create fully qualified name
+
+                    if (seenPaths.add(fullPath))    // if not yet tested
                     {
-                        return tmpFile.getCanonicalPath();  // return canonical path
+                        if (bDebug)
+                        {
+                            System.err.println("\t checking ---> ["+fullPath+"]...");
+                        }
+                        tmpFile=new File(fullPath);
+                        if (tmpFile.exists())
+                        {
+                            try
+                            {
+                                if (bDebug)
+                                {
+                                    System.err.println("\t BINGO!!! fullPath=["+fullPath+"],"
+                                                      +"\t         returning ["+tmpFile.getCanonicalPath()+"]");
+                                }
+                                return tmpFile.getCanonicalPath();  // return canonical path
+                            }
+                            catch (IOException ioe) {}
+                        }
                     }
-                    catch (IOException ioe) {}
                 }
             }
-
             return null;    // not found
         }
 }

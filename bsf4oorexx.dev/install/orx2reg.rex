@@ -4,7 +4,7 @@
 
    date:       2008-05-12, rgf
 
-   version:    1.0.4
+   version:    1.0.5
 
    authors:    Rony G. Flatscher
 
@@ -38,11 +38,12 @@
                                 - added menu-entry "ooRexxTry.rxj"
             2011-06-19, ---rgf: add the new icons from Graham Wilson for reinstall and uninstall
             2022-08-29, ---rgf: change BSF4ooRexx to BSF4ooRexx850
+            2026-01-12, ---rgf: cater for changes in handling double quotes on the command line shell
 
 
 
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2008-2011 Rony G. Flatscher
+   Copyright 2008-2026 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -60,7 +61,7 @@
 
 
 ------------------------ Common Public License 1.0 --------------------------
-   Copyright 2008-2011 Rony G. Flatscher
+   Copyright 2008-2026 Rony G. Flatscher
 
    This program and the accompanying materials are made available under the
    terms of the Common Public License v1.0 which accompanies this distribution.
@@ -89,10 +90,15 @@ do
    exit
 end
 
-parse caseless arg "/" +1 switch +1 '/key:"' key '"' 'path:"' path '"'
+parse caseless arg "/" +1 switch +1 '/key:' key '/path:' path
+key =key~strip("B")~strip("B",'"')     -- remove blanks and then double quotes if any
+path=path~strip("B")~strip("B",'"')    -- remove blanks and then double quotes if any
 switch=switch~translate    -- put into uppercase
 path=path~changestr("[25x]", "%")     -- unescape
 
+say
+say "key:  ["key"]"
+say "path: ["path"]"
 
 if pos(switch, "ARQ")=0 then
 do
@@ -106,15 +112,14 @@ if switch="A" then         -- add path to key
 do
    if key="" then
    do
-      "Key argument is empty or was not within mandatory quotes, aborting..."
+      "/key argument is empty or was not within mandatory quotes, aborting..."
       exit -3
    end
    if path="" then
    do
-      "Path argument is empty or was not within mandatory quotes, aborting..."
+      "/path argument is empty or was not within mandatory quotes, aborting..."
       exit -4
    end
-
    call add2Registry wsh, key, path
    call RexxPaws wsh, "A"    -- add
    call startMenu wsh, "A"    -- add

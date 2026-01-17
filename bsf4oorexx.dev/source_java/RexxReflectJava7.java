@@ -31,7 +31,7 @@ import        java.lang.reflect.Modifier;
  * ignored and resolution continues with the next ancestor.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2018-2025 Rony G. Flatscher
+ *    Copyright (C) 2018-2026 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ import        java.lang.reflect.Modifier;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
- * @version 1.05, 2018-11-01, 2018-11-03, 2018-11-09, 2018-11-13, 2019-08-16, 2021-02-05, 2021-02-07
+ * @version 1.06, 2026-01-17
  * @since BSF4ooRexx 600 (implementation started: 2018-01-05)
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
  */
@@ -103,6 +103,13 @@ import        java.lang.reflect.Modifier;
                               gets created because there was a script error, then no more
                               attempts for finding a working method should be done; rather
                               the script exception should be returned instead
+        2026-01-15, rgf:    - if debugLevel>4 show method entries and related rru fields,
+                              debugLevel>5 show all debug output (very verbose for last resort debugging)
+        2026-01-17, rgf:    - create an exception for all situations where a non accessible
+                              default constructor gets sought
+                            - leave debug variants "(bDebug || bDebugLevel>n)", but comment them out
+                              such that the blocks do not get created by the compiler for the release
+                              version
 */
 
 
@@ -174,6 +181,11 @@ field:       [items] not found!" || "0A0A09"x || "-> check field name=[items] (c
                                             // 2 ... show successful usage of cached entries ("WOW" output)
                                             // 3 ... show successful usages from cached entry with their return value, if any
                                             // 4 ... Throwable while invoking cached entry
+                                            // 5 ... show method entries and related rru fields,
+                                            // 6 ... show  more debug statements
+                                            // >6 ... show all debug statements (extremely verbose)
+
+
 
     /** Allows for showing successful invocations and their result. */
     boolean bDebugSuccess=false;     // enable debug output on successful invocation of Constructor, Method or get/setField
@@ -440,7 +452,8 @@ publicLookup yields o.k.!?!
      */
     public void reflect(final RexxReflectUtil rru) throws BSFException // , IllegalAccessException (in Java 9)
     {
-if (bDebug)
+// if (bDebug || debugLevel>4)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 {
 System.err.println("========================= > "+this+" < =============================="
                             +" useCaching="+useCaching+", useReflectInvoke="+useReflectInvoke+", useUnreflect="+useUnreflect);
@@ -482,7 +495,10 @@ System.err.println("========================= > "+this+" < =====================
      */
     void reflectField(RexxReflectUtil rru) throws BSFException
     {
-if (bDebug) System.out.println("... reflectField(): arrived, cachedFields.containsKey("+rru.beanClz+"): \""+cachedFields.containsKey(rru.beanClz)+"\"");
+// if (bDebug || debugLevel>4)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+        System.out.println("... reflectField(): arrived, cachedFields.containsKey("+rru.beanClz+"): \""+cachedFields.containsKey(rru.beanClz)+"\"");
+
         // let us first check, whether we have a usable cache entry already
         if (useCaching && cachedFields.containsKey(rru.beanClz))
         {
@@ -531,7 +547,8 @@ if (bDebug) System.out.println("... reflectField(): arrived, cachedFields.contai
                             break;
 
                         default:
-if (bDebug)
+// if (bDebug || debugLevel>5)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 System.out.println("... ... reflectField(): UNKNOWN CACHE ENTRY !! :( ["+cfm.ro.toString()+"]");
                             continue;
                     }
@@ -551,7 +568,10 @@ System.err.println("... reflectField():  WOW: found cached Field/MethodHandle (f
         boolean bStartLevel=true;   // we are about to start out with reflection
         Class   tmpClz=rru.beanClz; // start out class
 
-if (bDebug) System.out.println("... reflectField(): ---> no appropriate cache found, starting reflection with rru.beanClz=\""+tmpClz+"\"");
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.out.println("... reflectField(): ---> no appropriate cache found, starting reflection with rru.beanClz=\""+tmpClz+"\"");
+
         while (rru.success==false)   // as long as we have not found a matching Field object, keep processing
         {
             Field tmpFields[]=tmpClz.getDeclaredFields();
@@ -618,7 +638,9 @@ if (bDebug) System.out.println("... reflectField(): ---> no appropriate cache fo
                                  of boolean/Boolean getters also "isXXX()" and "hasXXX()"
             */
 
-if (bDebug) System.err.println("... reflectField(): no field ["+rru.keyMemberName+"] found, still trying hard ;) ...");
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("... reflectField(): no field ["+rru.keyMemberName+"] found, still trying hard ;) ...");
 
             // Rexx might have supplied a private field: search for an appropriate getter or setter method and use that instead
             RexxReflectUtil tmpRru=rru.copy();          // create a copy of the current RexxReflectUtil
@@ -634,7 +656,10 @@ if (bDebug) System.err.println("... reflectField(): no field ["+rru.keyMemberNam
                 tmpRru.bFieldGet        = false;
                 tmpRru.memberName       = "SET"+rru.keyMemberName;  // create name of appropriate setter method
 
-if (bDebug) System.err.println("... reflectField(): tmpRru.bFieldGet=[false], now trying method name ["+tmpRru.memberName+"] ...");
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("... reflectField(): tmpRru.bFieldGet=[false], now trying method name ["+tmpRru.memberName+"] ...");
+
                 reflectMethod(tmpRru);
             }
 
@@ -646,7 +671,10 @@ if (bDebug) System.err.println("... reflectField(): tmpRru.bFieldGet=[false], no
             {
                 tmpRru.memberName       = "GET"+rru.keyMemberName;  // try getter method first
 
-if (bDebug) System.err.println("... reflectField(): tmpRru.bFieldGet=[false], now trying method name ["+tmpRru.memberName+"] ...");
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("... reflectField(): tmpRru.bFieldGet=[false], now trying method name ["+tmpRru.memberName+"] ...");
+
                 reflectMethod(tmpRru);
                 if (tmpRru.success)          // found & processed, return
                 {
@@ -656,7 +684,10 @@ if (bDebug) System.err.println("... reflectField(): tmpRru.bFieldGet=[false], no
                 };
 
                 tmpRru.memberName       = "IS" +rru.keyMemberName;  // try another getter method for Booleans
-if (bDebug) System.err.println("... reflectField(): tmpRru.bFieldGet=[false], now trying method name ["+tmpRru.memberName+"] ...");
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("... reflectField(): tmpRru.bFieldGet=[false], now trying method name ["+tmpRru.memberName+"] ...");
+
                 reflectMethod(tmpRru);
                 if (tmpRru.success)          // found & processed, return
                 {
@@ -666,7 +697,10 @@ if (bDebug) System.err.println("... reflectField(): tmpRru.bFieldGet=[false], no
                 };
 
                 tmpRru.memberName       = "HAS"+rru.keyMemberName;  // try another getter method for Booleans
-if (bDebug) System.err.println("... reflectField(): tmpRru.bFieldGet=[false], now trying method name ["+tmpRru.memberName+"] ...");
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("... reflectField(): tmpRru.bFieldGet=[false], now trying method name ["+tmpRru.memberName+"] ...");
+
                 reflectMethod(tmpRru);
             }
 
@@ -696,7 +730,10 @@ if (bDebug) System.err.println("... reflectField(): tmpRru.bFieldGet=[false], no
     {
         Object result;
 
-if (bDebug) System.err.println("\\\\// RexxReflectJava7.getAndProcessFieldFromInterface: tmpClz=["+tmpClz.toString()+"]");
+// if (bDebug || debugLevel>4)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("\\\\// RexxReflectJava7.getAndProcessFieldFromInterface: tmpClz=["+tmpClz.toString()+"]");
+
         for (Field tmpField : tmpClz.getDeclaredFields())   // process all Fields in this Interface
         {
             processField(tmpField, rru);
@@ -731,24 +768,31 @@ if (bDebug) System.err.println("\\\\// RexxReflectJava7.getAndProcessFieldFromIn
     {
         String fieldName=tmpField.getName();
 
-if (bDebug)
+// if (bDebug || debugLevel>4)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 System.err.println("// // // RexxReflectJava7.processField(), ARRIVED: -> \""+rru.choice+"\", tmpField=\""+tmpField.toString()+"\": rru.memberName=\""+rru.memberName+"\" in object=[rru.rexxArgs[1]=\""+rru.rexxArgs[1]+"\"/rru.bean=\""+rru.bean+"\"]");
 
         if (rru.bStrict)        // strict, then use name as is!
         {
             if (!fieldName.equals(rru.memberName))
             {
-if (bDebug) System.err.println("// // // RexxReflectJava7.processField(), \"! \""+fieldName+"\".equals(\""+rru.memberName+"\")\": "+!fieldName.equalsIgnoreCase(rru.memberName));
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("// // // RexxReflectJava7.processField(), \"! \""+fieldName+"\".equals(\""+rru.memberName+"\")\": "+!fieldName.equalsIgnoreCase(rru.memberName));
                 return;
             }
         }
         else if (!fieldName.equalsIgnoreCase(rru.memberName))
         {
-if (bDebug) System.err.println("// // // RexxReflectJava7.processField(), \"! \""+fieldName+"\".equalsIgnoreCase(\""+rru.memberName+"\")\": "+!fieldName.equalsIgnoreCase(rru.memberName));
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("// // // RexxReflectJava7.processField(), \"! \""+fieldName+"\".equalsIgnoreCase(\""+rru.memberName+"\")\": "+!fieldName.equalsIgnoreCase(rru.memberName));
+
             return;
         }
 
-if (bDebug)
+// if (bDebug || debugLevel>5)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 System.err.println("         -> RexxReflectJava7.processField(): => ["+rru.choice+"]: FOUND candidate Field=["+rru.memberName+"] in object=[" + rru.rexxArgs[1]+ "/" + rru.bean + "]"+ (rru.bFieldGet==true ? "" : " newValue=["+rru.rexxArgs[3]+"/"+rru.funcArgs[0]+"]"));
 
         int   fieldMods=tmpField.getModifiers();    // get Field's modifiers
@@ -848,7 +892,9 @@ if (debugLevel>0) System.err.println("// // :) RexxReflectJava7.processField(), 
         {
             if (rru.bFieldGet)
             {
-if (bDebug) System.err.println("// // // -> RexxReflectJava7.processField(): GET-operation: tmpField=\""+tmpField.getName()+"\" tmpField.getDeclaringClass()=\""+tmpField.getDeclaringClass()+"\"<<<\n");
+// if (bDebug || debugLevel>5)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("// // // -> RexxReflectJava7.processField(): GET-operation: tmpField=\""+tmpField.getName()+"\" tmpField.getDeclaringClass()=\""+tmpField.getDeclaringClass()+"\"<<<\n");
                 try
                 {
                     if (bStaticField)
@@ -874,7 +920,8 @@ if (debugLevel>0)
             }
             else    // a set operation!
             {
-if (bDebug)
+// if (bDebug || debugLevel>5)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 {
     System.err.println("// // // -> RexxReflectJava7.processField(): SET-operation: tmpField=\""+tmpField.getName()+"\" tmpField.getDeclaringClass()=\""+tmpField.getDeclaringClass()+"\"<<<\n");
     System.err.println("// // //                                                    rru.funcArgs[0]=\""+rru.funcArgs[0]+"\"->newValue=\""+newValue+"\" | .getClass()=\""+newValue.getClass()+"\"; tmpFieldType=\""+tmpFieldType+"\"");
@@ -978,7 +1025,10 @@ if (debugLevel>2 || bDebugSuccess)
                     }
                     else    // store with cachedMethods instead (ooRexx attribute pattern, getter)
                     {
-if (bDebug) System.err.println("// // // -> RexxReflectJava7.processField(): FAKING field access using STATIC_METHOD instead");
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("// // // -> RexxReflectJava7.processField(): FAKING field access using STATIC_METHOD instead");
+
                         add2cachedFieldsOrMethods(new CachedFieldOrMethod(tmpField, rru.bOtherKind, mh, MH_Kind.STATIC_METHOD,emptyClassArray), cachedMethods, rru);
                     }
                 }
@@ -990,7 +1040,10 @@ if (bDebug) System.err.println("// // // -> RexxReflectJava7.processField(): FAK
                     }
                     else    // store with cachedMethods instead (ooRexx attribute pattern, getter)
                     {
-if (bDebug) System.err.println("// // // -> RexxReflectJava7.processField(): FAKING field access using METHOD instead");
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("// // // -> RexxReflectJava7.processField(): FAKING field access using METHOD instead");
+
                         add2cachedFieldsOrMethods(new CachedFieldOrMethod(tmpField, rru.bOtherKind, mh, MH_Kind.METHOD,emptyClassArray), cachedMethods, rru);
                     }
                 }
@@ -1006,7 +1059,10 @@ if (bDebug) System.err.println("// // // -> RexxReflectJava7.processField(): FAK
                     }
                     else    // store with cachedMethods instead (ooRexx attribute pattern, setter)
                     {
-if (bDebug) System.err.println("// // // -> RexxReflectJava7.processField(): FAKING field access using STATIC_METHOD instead");
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("// // // -> RexxReflectJava7.processField(): FAKING field access using STATIC_METHOD instead");
+
                         add2cachedFieldsOrMethods(new CachedFieldOrMethod(tmpField, rru.bOtherKind, mh, MH_Kind.STATIC_METHOD, new Class[]{tmpFieldType}), cachedMethods, rru);
                     }
 
@@ -1019,7 +1075,10 @@ if (bDebug) System.err.println("// // // -> RexxReflectJava7.processField(): FAK
                     }
                     else    // store with cachedMethods instead (ooRexx attribute pattern, setter)
                     {
-if (bDebug) System.err.println("// // // -> RexxReflectJava7.processField(): FAKING field access using METHOD instead");
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("// // // -> RexxReflectJava7.processField(): FAKING field access using METHOD instead");
+
                         add2cachedFieldsOrMethods(new CachedFieldOrMethod(tmpField, rru.bOtherKind, mh, MH_Kind.METHOD, new Class[]{tmpFieldType}), cachedMethods, rru);
                     }
                 }
@@ -1039,7 +1098,10 @@ if (bDebug) System.err.println("// // // -> RexxReflectJava7.processField(): FAK
      */
     void invokeFieldGet (CachedFieldOrMethod cfm, RexxReflectUtil rru)
     {
-if (bDebug) System.err.println("...invokeFieldGet(): cfm="+cfm+" | rru.choice=["+rru.choice+"]");
+// if (bDebug || debugLevel>4)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("...invokeFieldGet(): cfm="+cfm+" | rru.choice=["+rru.choice+"]");
+
         try     // invoke field get operation
         {
             if (cfm.mhk==MH_Kind.STATIC_GETTER)
@@ -1108,7 +1170,8 @@ if (debugLevel>2 || bDebugSuccess) System.err.println("// // :) -> RexxReflectJa
      */
     void invokeFieldSet (CachedFieldOrMethod cfm, RexxReflectUtil rru)
     {
-if (bDebug)
+// if (bDebug || debugLevel>4)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 {
     System.err.println("...invokeFieldSet().1: cfm=["+cfm+"] | rru.choice=["+rru.choice+"], newValue=rru.funcArgs[0]=["+rru.funcArgs[0]+"].getClass()=["+rru.funcArgs[0].getClass()+"]");
     System.err.println("                       : cfm.mh.type().parameterArray()=["+Arrays.deepToString(cfm.mh.type().parameterArray())+"]");
@@ -1199,7 +1262,8 @@ if (debugLevel>2 || bDebugSuccess) System.err.println("// // :) -> RexxReflectJa
         boolean bAllowProtected=false;  // allow protected classes only in superclasses
         Class   tmpClz=rru.beanClz;     // start out with the current beanClz
 
-if (bDebug)
+// if (bDebug || debugLevel>4)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 System.out.println("\n"+this+".reflectNestedClass(): arrived, seeking a \n\tnested class named: ["+rru.memberName+"] \n\tin class ["+tmpClz.toString()+"] ...");
 
         // find a nested class, resolve inheritance tree
@@ -1224,7 +1288,8 @@ System.out.println("\n"+this+".reflectNestedClass(): arrived, seeking a \n\tnest
                 {
                     int   nestedClassMods=nestedClass.getModifiers();
 
-if (bDebug)
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 System.out.println("... reflectNestedClass(): 1) found a nested class by the given name, modifiers: "+Modifier.toString(nestedClassMods));
 
                         // PUBLIC or PROTECTED in superclass ?
@@ -1233,20 +1298,26 @@ System.out.println("... reflectNestedClass(): 1) found a nested class by the giv
                     {
                         rru.result=nestedClass;
                         rru.success=true;
-if (bDebug)
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 System.out.println("... reflectNestedClass(): 2) BINGO! BINGO! Returning found nested class!");
+
                         return;
                     }
-if (bDebug)
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 System.out.println("... reflectNestedClass(): 3) PROBLEM not ACCESSIBLE!");
+
                     // TODO: rgf, 2021-02-05, shall we throw a BSFException and report this condition?
                     return; // we stop the look-up process
                 }
             }
                 // not found, look in superclass
             tmpClz=tmpClz.getSuperclass();
-if (bDebug)
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 System.out.println("// --> ... reflectNestedClass(): 4) OK look in superclass ["+
+
                 (tmpClz==null ? null : tmpClz.toString() )
                 +"], protected now accessible!");
             bAllowProtected=true;   // make sure we now also honor protected nested classes
@@ -1272,7 +1343,8 @@ System.out.println("// --> ... reflectNestedClass(): 4) OK look in superclass ["
     void reflectMethod(RexxReflectUtil rru) throws BSFException
     {
         Throwable tmpThrowable=null;    // remember Throwable from cached version, return it, if no other are successful
-if (bDebug)
+// if (bDebug || debugLevel>4)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 {
     // to be removed, blank line to ease start of reflectMethod()
     System.out.println("\n... reflectMethod(): arrived, bean="+rru.bean+", seeking method \""+rru.keyMemberName+"\""
@@ -1289,7 +1361,8 @@ if (bDebug)
     System.out.println("*** los geht's... ***");
 }
 
-if (bDebug)
+// if (bDebug || debugLevel>5)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 System.out.println("... reflectMethod(): arrived, cachedMethods.containsKey("+rru.beanClz+"): \""+cachedMethods.containsKey(rru.beanClz)+"\"");
 
         // let us first check, whether we have a usable cache entry already
@@ -1302,13 +1375,19 @@ System.out.println("... reflectMethod(): arrived, cachedMethods.containsKey("+rr
             {
                 for (CachedFieldOrMethod cfm : al)
                 {
-if (bDebug) System.out.println("... ... reflectMethod(): from cache, trying cfm=\""+cfm+"\"");
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.out.println("... ... reflectMethod(): from cache, trying cfm=\""+cfm+"\"");
+
                     switch (cfm.mhk)    // only invoke, if MethodHandle is of the appropriate type
                     {
                         case METHOD:
                         case STATIC_METHOD:
 
-if (bDebug) System.out.println("... ... reflectMethod(): from cache, using \"invokeMethod(cfm,rru)\" ..");
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.out.println("... ... reflectMethod(): from cache, using \"invokeMethod(cfm,rru)\" ..");
+
                              invokeMethod(cfm,rru);
                             break;
 
@@ -1352,7 +1431,9 @@ System.err.println("... reflectMethod(): WOW, found cached Method/MethodHandle (
                                         // two rounds (deviating to Class->Object) such that we also accept
                                         // instance methods for the class object
 
-if (bDebug) System.out.println("... reflectMethod(): ---> no appropriate cache found, starting reflection with rru.beanClz=\""+tmpClz+"\"");
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.out.println("... reflectMethod(): ---> no appropriate cache found, starting reflection with rru.beanClz=\""+tmpClz+"\"");
 
         while (rru.success==false)   // as long as we have not found a matching Method object, keep processing
         {
@@ -1456,7 +1537,8 @@ if (bDebug) System.out.println("... reflectMethod(): ---> no appropriate cache f
         if (!rru.bStrict && rru.funcArgs.length<2) // not a candidate for the next guesses/attempts
         {
             // ============================= try a few other helpers ======================================
-if (bDebug)
+//if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 System.err.println("... reflectMethod(): no method ["+rru.keyMemberName+"] found, still trying hard ;) ...");
 
             /* ooRexx-semantics: if method is named MAKEARRAY or SUPPLIER and no argument is supplied,
@@ -1491,7 +1573,8 @@ System.err.println("... reflectMethod(): no method ["+rru.keyMemberName+"] found
 
                 tmpRru.bFieldGet        = false;
                 tmpRru.memberName       = rru.keyMemberName;  // field name
-if (bDebug)
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 System.err.println("... reflectMethod(): trying field GET, bFieldGet=[false], taking method name as field name ["+tmpRru.memberName+"] ...");
 
                 reflectField(tmpRru);
@@ -1518,7 +1601,8 @@ System.err.println("... reflectMethod(): trying field GET, bFieldGet=[false], ta
                 tmpRru.bFieldGet        = true;
                 tmpRru.memberName       = rru.keyMemberName;  // field name
 
-if (bDebug)
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 System.err.println("... reflectMethod(): trying field GET, bFieldGet=[true], taking method name as field name ["+tmpRru.memberName+"] ...");
 
                 reflectField(tmpRru);
@@ -1543,7 +1627,8 @@ System.err.println("... reflectMethod(): trying field GET, bFieldGet=[true], tak
 
                 tmpRru.memberName       = "GET"+rru.keyMemberName;  // try getter method
 
-if (bDebug)
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 System.err.println("... reflectMethod(): trying method, using method name ["+tmpRru.memberName+"] ...");
 
                 reflectMethod(tmpRru);
@@ -1556,7 +1641,8 @@ System.err.println("... reflectMethod(): trying method, using method name ["+tmp
 
                 tmpRru.memberName       = "IS" +rru.keyMemberName;  // try another getter method for Booleans
 
-if (bDebug)
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 System.err.println("... reflectMethod(): trying method, using method name ["+tmpRru.memberName+"] ...");
                 reflectMethod(tmpRru);
                 if (tmpRru.success)          // found & processed, return
@@ -1567,13 +1653,15 @@ System.err.println("... reflectMethod(): trying method, using method name ["+tmp
                 };
 
                 tmpRru.memberName       = "HAS"+rru.keyMemberName;  // try another getter method for Booleans
-    if (bDebug)
+    // if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
     {
         System.err.println("... reflectMethod(): ---> GETTER: reflectField("+tmpRru.memberName+") ...");
         System.err.println("                                  using tmpRru: "+tmpRru.debugString());
     }
 
-if (bDebug)
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 System.err.println("... reflectMethod(): trying method, using method name ["+tmpRru.memberName+"] ...");
 
                 reflectMethod(tmpRru);
@@ -1583,7 +1671,10 @@ System.err.println("... reflectMethod(): trying method, using method name ["+tmp
             {
                 rru.success=tmpRru.success;
                 rru.result=tmpRru.result;
-    if (bDebug) System.err.println("... reflectMethod(): ---> bFound=true, rru.result=["+rru.result+"]");
+    // if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+
+    System.err.println("... reflectMethod(): ---> bFound=true, rru.result=["+rru.result+"]");
                 return;
             }
         }
@@ -1617,7 +1708,8 @@ System.err.println("... reflectMethod(): trying method, using method name ["+tmp
     {
         Object result;
 
-if (bDebug)
+// if (bDebug || debugLevel>4)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 System.err.println("\\\\// RexxReflectJava7.getAndProcessMethodFromInterface: tmpClz=["+tmpClz.toString()+"]");
         for (Method tmpMethod : tmpClz.getDeclaredMethods())
         {
@@ -1653,7 +1745,8 @@ System.err.println("\\\\// RexxReflectJava7.getAndProcessMethodFromInterface: tm
     {
         String methodName=tmpMethod.getName();
 
-if (bDebug)
+// if (bDebug || debugLevel>4)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 System.err.println("// // // RexxReflectJava7.processMethod(), ARRIVED: -> \""+rru.choice+"\", tmpMethod=\""+tmpMethod.toString()+"\": rru.memberName=\""+rru.memberName+"\" in object=[rru.rexxArgs[1]=\""+rru.rexxArgs[1]+"\"/rru.bean=\""+rru.bean+"\"]");
 
         if (rru.bStrict)        // strict, then use name as is!
@@ -1673,7 +1766,8 @@ System.err.println("// // // RexxReflectJava7.processMethod(), ARRIVED: -> \""+r
         // check number of parameterTypes matches number of Rexx arguments
         if (parameterTypes.length!=rru.funcArgs.length) // Method not a candidate for this invocation
         {
-if (bDebug)
+// if (bDebug || debugLevel>5)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 System.err.println("// // // RexxReflectJava7.processMethod(), parameterTypes.length="+parameterTypes.length
                                     +"!=funcArgs.length="+rru.funcArgs.length+", not a candidate returning");
             return;
@@ -1686,7 +1780,8 @@ System.err.println("// // // RexxReflectJava7.processMethod(), parameterTypes.le
 //                                                                          )
                           );
 
-if (bDebug)
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 {
     String tmpStrCoercedArgs= (coercedArgs==null ? null : Arrays.deepToString(coercedArgs)+".getClass().toString()="+coercedArgs.getClass().toString() );
     System.err.println("// // // RexxReflectJava7.processMethod(), coercedArgs=\""+tmpStrCoercedArgs+"\""
@@ -1697,12 +1792,13 @@ if (bDebug)
 
         if (coercedArgs==null)      // could not be coerced successfully, coerceArgs() returned null!
         {
-if (bDebug)
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 System.err.println("// // :( RexxReflectJava7.processMethod(), coercedArgs==null :( :( :(; coercion was not successful!");
             return;
         }
 
-if (debugLevel>0)       // Rexx arguments could be coerced successfully, show candidate tmpMethod
+if (debugLevel>0 || debugLevel>6)       // Rexx arguments could be coerced successfully, show candidate tmpMethod
 {
     System.err.println("// // // RexxReflectJava7.processMethod(), FOUND candidate method=\""
                                              +tmpMethod.getDeclaringClass().toString()+"\".\""+tmpMethod.toString()+ "\"...");
@@ -1716,10 +1812,10 @@ if (debugLevel>0)       // Rexx arguments could be coerced successfully, show ca
             {
                 Class tmpReturnType=tmpMethod.getReturnType();
 
-System.err.println("// // T? RexxReflectJava7.processMethod(), IS or HAS getter (\""+rru.keyMemberName+"\"), return type boolean, or Boolean?: \""+tmpReturnType.toString()+"\".");
+if (debugLevel>6) System.err.println("// // T? RexxReflectJava7.processMethod(), IS or HAS getter (\""+rru.keyMemberName+"\"), return type boolean, or Boolean?: \""+tmpReturnType.toString()+"\".");
                 if (! ( (tmpReturnType==boolean.class) || (tmpReturnType==Boolean.class)) )
                 {
-System.err.println("// // :( RexxReflectJava7.processMethod(), IS or HAS getter (\""+rru.keyMemberName+"\") not of type boolean, nor Boolean, instead: \""+tmpReturnType+"\", not eligible, returning");
+if (debugLevel>6) System.err.println("// // :( RexxReflectJava7.processMethod(), IS or HAS getter (\""+rru.keyMemberName+"\") not of type boolean, nor Boolean, instead: \""+tmpReturnType+"\", not eligible, returning");
                     return;     // prefix IS and HAS mandate a Boolean or boolean return type
                 }
             }
@@ -1768,7 +1864,10 @@ System.err.println("// // :( RexxReflectJava7.processMethod(), thisLookup=\""+th
                 Class <?> returnType=tmpMethod.getReturnType();
                 MethodType mt = MethodType.methodType(returnType, parameterTypes);
 
-if (bDebug) System.err.println("// // // RexxReflectJava7.processMethod(), MethodType for Method ["+tmpMethod.toString()+"]: \""+mt+"\"");
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("// // // RexxReflectJava7.processMethod(), MethodType for Method ["+tmpMethod.toString()+"]: \""+mt+"\"");
+
                 if (bStaticMethod)      // a static method in hand
                 {
                     strLookupName="findStatic";
@@ -1864,14 +1963,17 @@ System.err.println("// // :( RexxReflectJava7.processMethod(): STATIC, mh.invoke
                         return;
                     }
 
-if (bDebug) System.err.println("// // // RexxReflectJava7.processMethod(), STATIC, mh.invokeWithArguments(...), rru.result=\""+rru.result+"\""+(rru.result==null ? "" : ".getClass()=\""+rru.result.getClass()+"\""));
+// if (bDebug || debugLevel>5)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("// // // RexxReflectJava7.processMethod(), STATIC, mh.invokeWithArguments(...), rru.result=\""+rru.result+"\""+(rru.result==null ? "" : ".getClass()=\""+rru.result.getClass()+"\""));
 
             }
             else    // instance Method
             {
 // if (bDebug)
 // System.err.println("// // // RexxReflectJava7.processMethod(): INSTANCE, mh.bindTo(\""+rru.bean+"\"/\""+rru.bean.getClass().toString()+"\").invokeWithArguments(...),"
-if (bDebug)
+// if (bDebug || debugLevel>5)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 System.err.println("// // // RexxReflectJava7.processMethod(): INSTANCE, mh.bindTo(\""+rru.bean+"\").invokeWithArguments(...),"
                                +"\n\t-> coercedArgs=\""+Arrays.deepToString(coercedArgs)+"\""
                                +"\n\t-> Method     =\""+tmpMethod.toString()+"\""
@@ -1889,7 +1991,10 @@ System.err.println("// // :( RexxReflectJava7.processMethod(): INSTANCE, mh.invo
                         rru.throwable=t;
                         return;
                     }
-if (bDebug) System.err.println("// // // RexxReflectJava7.processMethod(), INSTANCE, mh.invokeWithArguments(...), rru.result=\""+rru.result+"\""+(rru.result==null ? "" : ".getClass()=\""+rru.result.getClass()+"\""));
+// if (bDebug || debugLevel>5)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("// // // RexxReflectJava7.processMethod(), INSTANCE, mh.invokeWithArguments(...), rru.result=\""+rru.result+"\""+(rru.result==null ? "" : ".getClass()=\""+rru.result.getClass()+"\""));
+
             }
         }
 
@@ -1957,7 +2062,9 @@ System.err.println("// // :) -> RexxReflectJava7.processMethod(): bean=\""+rru.b
      */
     void invokeMethod (CachedFieldOrMethod cfm, RexxReflectUtil rru) throws BSFException
     {
-if (bDebug) System.err.println("...invokeMethod(): cfm=["+cfm+"] | rru.choice=["+rru.choice+"] | rru.bean=["+rru.bean+"], rru.keyMemberName=["+rru.keyMemberName+"]");
+// if (bDebug || debugLevel>4)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("...invokeMethod(): cfm=["+cfm+"] | rru.choice=["+rru.choice+"] | rru.bean=["+rru.bean+"], rru.keyMemberName=["+rru.keyMemberName+"]");
 
         Class<?> [] parameterTypes=cfm.parameterTypes;  // fetch parameterTypes from cache entry
         if (parameterTypes.length!=rru.funcArgs.length) // arguments do not match parameter count?
@@ -1988,21 +2095,31 @@ if (bDebug) System.err.println("...invokeMethod(): cfm=["+cfm+"] | rru.choice=["
                 {
                     if (parameterTypes.length==0)   // a getter method
                     {
-if (bDebug) System.err.println("...invokeMethod(): cfm.ro=\""+cfm.ro+"\".get(rru.bean=\""+rru.bean+"\") ...");
+// if (bDebug || debugLevel>5)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("...invokeMethod(): cfm.ro=\""+cfm.ro+"\".get(rru.bean=\""+rru.bean+"\") ...");
+
                         rru.result=((Field) cfm.ro).get(rru.bean);
                     }
                     else
                     {
-if (bDebug) System.err.println("...invokeMethod(): cfm.ro=\""+cfm.ro+"\".set(rru.bean=\""+rru.bean+"\", \""+coercedArgs[0]+"\") ...");
+// if (bDebug || debugLevel>5)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("...invokeMethod(): cfm.ro=\""+cfm.ro+"\".set(rru.bean=\""+rru.bean+"\", \""+coercedArgs[0]+"\") ...");
                         ((Field) cfm.ro).set(rru.bean,coercedArgs[0]);
                     }
                 }
                 else
                 {
-if (bDebug) System.err.println("...invokeMethod(): cfm.ro=\""+cfm.ro+"\".set(rru.bean=\""+rru.bean+"\", \""+coercedArgs+"\") ...");
+// if (bDebug || debugLevel>5)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("...invokeMethod(): cfm.ro=\""+cfm.ro+"\".set(rru.bean=\""+rru.bean+"\", \""+coercedArgs+"\") ...");
+
                     rru.result=((Method) cfm.ro).invoke(rru.bean, (Object []) coercedArgs);
                 }
-if (bDebug) System.err.println("...invokeMethod(): cfm.ro=\""+cfm.ro+"\", rru.result=\""+rru.result+"\"");
+// if (bDebug || debugLevel>5)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("...invokeMethod(): cfm.ro=\""+cfm.ro+"\", rru.result=\""+rru.result+"\"");
 
                 rru.success=true;
 
@@ -2049,7 +2166,9 @@ if (debugLevel>3)  System.err.println("// // // :( -> RexxReflectJava7.invokeMet
         }
         rru.success=true;        // we could successfully carry out the get operation!
 
-if (bDebug) System.err.println("...mhMethodGetInvoke(): rru.memberName=\""+rru.memberName+"\"(...),  rru.result=\""+rru.result+"\"");
+// if (bDebug || debugLevel>5)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("...mhMethodGetInvoke(): rru.memberName=\""+rru.memberName+"\"(...),  rru.result=\""+rru.result+"\"");
 if (debugLevel>2 || bDebugSuccess) System.err.println("// // :) -> RexxReflectJava7.invokeMethod(): bean=\""+rru.bean+"\",["
                                                 +rru.choice+"] invocation using ["
                                                 +(useReflectInvoke ? "java.lang.reflect.Method" : "MethodHandle")
@@ -2074,7 +2193,8 @@ if (debugLevel>2 || bDebugSuccess) System.err.println("// // :) -> RexxReflectJa
                                           ConcurrentHashMap<Class<?>,ConcurrentHashMap<String,ArrayList<CachedFieldOrMethod>>>  cachedFieldsOrMethods,
                                           RexxReflectUtil rru)
     {
-if (bDebug)
+// if (bDebug || debugLevel>4)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 System.err.println("... add2cachedFieldsOrMethods(): SUCCESS rru.memberName=["+rru.memberName+"] -> rru.keyMemberName=["+rru.keyMemberName
                                   +"], rru.choice=["+rru.choice
                                   +"] --> cfm.ro.getClass()=\""+cfm.ro.getClass().toString()
@@ -2126,7 +2246,10 @@ System.err.println("... add2cachedFieldsOrMethods(): SUCCESS rru.memberName=["+r
     void reflectConstructor(RexxReflectUtil rru) throws BSFException
     {
         Throwable tmpThrowable=null;    // remember Throwable from cached version, return it, if no other are successful
-if (bDebug) System.err.println("... reflectConstructor(): arrived, cachedConstructors.containsKey("+rru.beanClz+"): \""+cachedConstructors.containsKey(rru.beanClz)+"\"");
+// if (bDebug || debugLevel>4)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("... reflectConstructor(): arrived, cachedConstructors.containsKey("+rru.beanClz+"): \""+cachedConstructors.containsKey(rru.beanClz)+"\"");
+
         // let us first check, whether we have a usable cache entry already
         if (useCaching && cachedConstructors.containsKey(rru.beanClz))
         {
@@ -2136,7 +2259,10 @@ if (bDebug) System.err.println("... reflectConstructor(): arrived, cachedConstru
             {
                 for (CachedConstructor cc : al)
                 {
-if (bDebug) System.err.println("... reflectConstructor(): checking from cache, cc=\""+cc+"\"");
+// if (bDebug || debugLevel>5)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("... reflectConstructor(): checking from cache, cc=\""+cc+"\"");
+
                     if (cc.parameterTypes.length!=rru.funcArgs.length)  // skip, if not the same size
                     {
                         continue;
@@ -2168,26 +2294,21 @@ System.err.println("... reflectConstructor(): WOW, found cached Constructor/Meth
         while (rru.success==false)   // as long as we have not found a matching Constructor object, keep processing
         {
             Constructor tmpConstructors[]=tmpClz.getDeclaredConstructors();
-            // special case: using the default constructor it needs to be public, otherwise the first
-            //               public superclass' constructor gets used, creating the wrong instance!
-            if (rru.rexxArgs.length==3)     // the default constructor sought
-            {
-                boolean notPublic=true;
-                if (tmpConstructors.length>0)
-                {
-                    notPublic = (tmpConstructors[0].getModifiers() & Modifier.PUBLIC)==0; // not public?
-                }
 
-                if (notPublic)  // create Java exception
-                {
-                    rru.throwable=new RuntimeException("error: no public default constructor found for "+tmpClz.toString());
-                    break; // return;
-                }
-            }
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println(".. .. -> reflectConstructor(), seeking constructor for ["
+                                               +tmpClz+", found ["+tmpConstructors.length+"] declared constructors ...");
 
             for (int i=0; i<tmpConstructors.length; i++)
             {
                 Constructor constructor=tmpConstructors[i];
+
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println(".. .. -> reflectConstructor(), seeking constructor for ["
+                +rru.beanClz+"]: \""+constructor+"\" "+i+"/"+tmpConstructors.length+" | rru.rexxArgs.length="+rru.rexxArgs.length);
+
                 int   constructorMods=constructor.getModifiers();
 
                 if ((constructorMods & Modifier.PUBLIC)==0)  // not PUBLIC: ignore
@@ -2200,6 +2321,19 @@ System.err.println("... reflectConstructor(): WOW, found cached Constructor/Meth
                 {
                     return;
                 }
+            }
+
+// if (bDebug || debugLevel>6)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println(".. .. -> reflectConstructor(), seeking constructor for ["
+                                               +rru.beanClz+"], | rru.rexxArgs.length="+rru.rexxArgs.length+" - about to lookup superclass ...");
+            // special case: using the default constructor it needs to be public, otherwise the first
+            //               public superclass' constructor gets used, creating the wrong instance!
+            //               (we do not look for a public constructor in the superclass in this case)
+            if (rru.rexxArgs.length==3)     // the default constructor sought, but not available
+            {
+                rru.throwable=new RuntimeException("error: no public default constructor found for "+tmpClz.toString()+" (use a different constructor or a static method instead?)");
+                break; // return;
             }
 
             tmpClz=tmpClz.getSuperclass();  // try next superclass
@@ -2231,7 +2365,9 @@ System.err.println("... reflectConstructor(): WOW, found cached Constructor/Meth
      */
     void processConstructor (Constructor tmpConstructor, RexxReflectUtil rru)
     {
-if (bDebug) System.err.println("// // // RexxReflectJava7.processConstructor(), ARRIVED: -> \""+rru.choice+"\", tmpConstructor=\""+tmpConstructor.toString()+"\": rru.memberName=\""+rru.memberName+"\" in object=[rru.rexxArgs[1]=\""+rru.rexxArgs[1]+"\"/\""+rru.bean+"\"]");
+// if (bDebug || debugLevel>4)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("// // // RexxReflectJava7.processConstructor(), ARRIVED: -> \""+rru.choice+"\", tmpConstructor=\""+tmpConstructor.toString()+"\": rru.memberName=\""+rru.memberName+"\" in object=[rru.rexxArgs[1]=\""+rru.rexxArgs[1]+"\"/\""+rru.bean+"\"]");
 
         Class<?> parameterTypes[] = tmpConstructor.getParameterTypes();
 
@@ -2366,7 +2502,8 @@ System.err.println("// // :) -> RexxReflectJava7.processConstructor(): bean=\""+
 
         if (useCaching)    // add Method object and corresponding MethodHandle to cache
         {
-if (bDebug)
+// if (bDebug || debugLevel>5)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
 System.err.println("// // :) RexxReflectJava7.processConstructor(), SUCCESS adding constructor \""+tmpConstructor+"\" and its MH ["+mh+"] to cache!");
 
             ArrayList<CachedConstructor> alOfCC=cachedConstructors.get(rru.beanClz);           // get ArrayList for this memberName
@@ -2390,7 +2527,10 @@ System.err.println("// // :) RexxReflectJava7.processConstructor(), SUCCESS addi
      */
     void invokeConstructor (CachedConstructor cc, RexxReflectUtil rru)
     {
-if (bDebug) System.err.println("...invokeConstructor(): cc=["+cc+"] | rru.choice=["+rru.choice+"] | rru.beanClz=["+rru.beanClz+"], funcArgs="+Arrays.deepToString(rru.funcArgs));
+// if (bDebug || debugLevel>4)
+if (bDebug)     // a final field, if set to false, compiler does not create the code
+System.err.println("...invokeConstructor(): cc=["+cc+"] | rru.choice=["+rru.choice+"] | rru.beanClz=["+rru.beanClz+"], funcArgs="+Arrays.deepToString(rru.funcArgs));
+
         if (cc.parameterTypes.length!=rru.funcArgs.length) // arguments do not match parameter count?
         {
             return;
@@ -2431,7 +2571,7 @@ if (bDebug) System.err.println("...invokeConstructor(): cc=["+cc+"] | rru.choice
         catch (Throwable t)
         {
 if (debugLevel>3) System.err.println("// // // :( -> RexxReflectJava7.invokeConstructor(): rru.success=["+rru.success+"] throwable: \""+t+"\"\n");
-// t.printStackTrace();
+
            rru.throwable=t;
            return;              // not successful :(
         }
