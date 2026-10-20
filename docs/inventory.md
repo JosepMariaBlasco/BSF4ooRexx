@@ -33,8 +33,9 @@ results referred to are in [`test-baseline.md`](test-baseline.md).
 The surface a Rexx programmer sees is mostly **dynamic**: a `BSF` object
 forwards any unknown message to Java (`BSF~unknown`), so every public
 member of every Java class is reachable, and what matters for
-compatibility there is the conversion of arguments and results, studied in
-`oorexx-bridges` (`topics/conversion-rules/java.md`), not a list of names.
+compatibility there is the conversion of arguments and results (studied
+separately, in a comparison of the conversion rules of several bridges),
+not a list of names.
 The static surface listed here is what the bridge itself adds.
 
 ## 2. How big it is
