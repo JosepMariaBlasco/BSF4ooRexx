@@ -1,9 +1,8 @@
 # CLAUDE.md — BSF4ooRexx
 
 Notes for Claude (or any coding assistant) working in this repository.
-The person you work with here is **Josep Maria Blasco**, who decides:
-always "Josep Maria", by name, never "the user" (BSF4ooRexx's author may
-work here one day, and "the user" would then be ambiguous). BSF4ooRexx is
+The person you work with here is **Josep Maria** Blasco, who decides.
+BSF4ooRexx is
 **Rony G. Flatscher's** project: he wrote it, and nothing here changes what
 it is without Josep Maria saying so.
 
@@ -35,10 +34,8 @@ says the minimum Java (8) and ooRexx (5.0).
 
 ## How it relates to the other bridges
 
-It is the parent of the family of ooRexx bridges coordinated in
-`JosepMariaBlasco/oorexx-bridges` (Python, .NET, Lua, JavaScript/WASM).
-Read that repository's `CLAUDE.md`, `README.md` and `CONVENTIONS.md`, and
-your inbox there, `inbox/bsf.md`, at the start of every session.
+It is the parent of a family of ooRexx bridges (Python, .NET, Lua,
+JavaScript/WASM) that grew from it.
 
 ## Rules of this project
 
