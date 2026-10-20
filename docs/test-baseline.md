@@ -144,7 +144,12 @@ kept in the repository; `scripts/run-tests.sh` writes them to
 
 ## To reproduce
 
+The CI (`.github/workflows/ci.yml`) runs the build and the third pass on
+every push, on Java 21 and on Java 8 (with `LANG=C.UTF-8`), Linux only.
+Locally:
+
 ```sh
+scripts/setup-oorexx.sh deb                        # ooRexx at the CI's revision
 scripts/build.sh                                   # needs ooRexx 5.x and a JDK
 scripts/run-tests.sh                               # Xvfb if available
 scripts/run-tests.sh --display none

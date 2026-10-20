@@ -1,0 +1,69 @@
+# Build BSF4ooRexx 850 on Linux and run its 67 ooRexxUnit test groups,
+# on Java 21 and on Java 8 (the jar is compiled with javac --release 8).
+# Windows and macOS: not yet (the build scripts are Linux-only for now).
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  # ooRexx: SourceForge's portable build of this trunk revision; sessions
+  # read the same value (scripts/setup-oorexx.sh).
+  OOREXX_REV: "13278"
+
+jobs:
+  linux:
+    name: Linux, Java ${{ matrix.java }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ["21", "8"]
+    env:
+      # Java 8's default charset follows the locale (ASCII under POSIX);
+      # docs/test-baseline.md.
+      LANG: C.UTF-8
+      TEST_TIMEOUT: "60"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JDKs (21 builds; the matrix one runs the tests)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            8
+            21
+
+      - name: ooRexx r${{ env.OOREXX_REV }}
+        run: scripts/setup-oorexx.sh portable "$HOME/oorexx"
+
+      - name: Build
+        run: |
+          export JAVA_HOME="$JAVA_HOME_21_X64"
+          scripts/build.sh
+
+      - name: Tests
+        run: |
+          export JAVA_HOME="$JAVA_HOME_21_X64"
+          if [ "${{ matrix.java }}" = 8 ]; then export TEST_JAVA_HOME="$JAVA_HOME_8_X64"; fi
+          scripts/run-tests.sh --display none --legacy-lib-name
+
+      - name: Inventory tables up to date
+        if: matrix.java == '21'
+        run: |
+          sudo apt-get install -y -q poppler-utils > /dev/null
+          export JAVA_HOME="$JAVA_HOME_21_X64" PATH="$JAVA_HOME_21_X64/bin:$PATH"
+          python3 scripts/inventory.py
+          git diff --exit-code docs/inventory-tables.md \
+            || { echo "::error::docs/inventory-tables.md is out of date: run scripts/inventory.py"; exit 1; }
+
+      - name: Test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs-java${{ matrix.java }}
+          path: build/tests/*/
+          if-no-files-found: ignore

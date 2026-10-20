@@ -37,6 +37,7 @@
 #   build/tests/<display>-<framework>/logs/<group>.log   the full output of each group
 #   build/tests/<display>-<framework>/results.tsv        one line per group:
 #       group  status  tests  assertions  failures  errors  seconds
+#   Exit status: 0 if every group is ok, 1 otherwise.
 #     status: ok | failures | errors | crash (no summary; exit code noted)
 #             | timeout (no summary) | hang-at-exit (summary printed, then the
 #             process did not end before the time limit; the counts are valid)
@@ -70,7 +71,7 @@ JAVAC="$JAVA_HOME/bin/javac"   # the build's JDK compiles the test helpers (--re
 if [ -n "${TEST_JAVA_HOME:-}" ]; then
   export JAVA_HOME="$TEST_JAVA_HOME"
   # not the build JDK's directories: a mixed path makes the JVM fail to start
-  export LD_LIBRARY_PATH="$OUT/dist:$JAVA_HOME/lib/server:$JAVA_HOME/jre/lib/amd64/server"
+  export LD_LIBRARY_PATH="$OUT/dist:$OOREXX_HOME/lib:$JAVA_HOME/lib/server:$JAVA_HOME/jre/lib/amd64/server"
 fi
 JVERSION=$("$JAVA_HOME/bin/java" -version 2>&1 | head -1)
 
@@ -152,3 +153,6 @@ echo
 echo "display=$MODE framework=$FRAMEWORK  results: $T/results.tsv"
 awk -F'\t' 'NR>1{n[$2 ~ /^crash/ ? "crash" : $2]++; t+=$3; f+=$5; e+=$6}
   END{printf "groups:"; for (k in n) printf " %s=%d", k, n[k]; printf "\ntests=%d failures=%d errors=%d\n", t, f, e}' "$T/results.tsv"
+
+# exit status: 0 only if every group that ran is ok
+awk -F'\t' 'NR>1 && $2!="ok"{bad=1} END{exit bad}' "$T/results.tsv"

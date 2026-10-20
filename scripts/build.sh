@@ -197,8 +197,9 @@ build_dist() {
 # source this file: . build/dist/env.sh
 export JAVA_HOME="$JAVA_HOME"
 export BSF4OOREXX_DIST="$D"
-export PATH="$D:\$PATH"
-export LD_LIBRARY_PATH="$D:$JAVA_HOME/lib/server:$JAVA_HOME/lib\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
+export PATH="$D:$OOREXX_HOME/bin:\$PATH"
+export OOREXX_HOME="$OOREXX_HOME"
+export LD_LIBRARY_PATH="$D:$OOREXX_HOME/lib:$JAVA_HOME/lib/server:$JAVA_HOME/lib\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
 export CLASSPATH="$D/$(basename "$JAR")\${CLASSPATH:+:\$CLASSPATH}"
 EOF
   cat > "$D/rexxj.sh" <<'EOF'
