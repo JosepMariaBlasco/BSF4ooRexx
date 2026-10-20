@@ -33,10 +33,11 @@ each): `rgf/C_interfaceClasses/01_rexx_testInterface`,
 `rgf/C_interfaceClasses/Test_ITest.java` line 127). With `LANG=C.UTF-8`
 they pass. Java 18 and later default to UTF-8 whatever the locale (JEP
 400), which is why the Java 21 passes, also run with no `LANG`, are clean.
-The cause: a Rexx string passed to Java as an argument is converted with
-the JVM's default charset, while a string a Rexx method returns to a Java
-caller goes through `NewStringUTF` (`BSF4ooRexx.cc` line 2984), whatever
-that charset is.
+The cause: strings crossing between Rexx and Java are mostly converted
+with the JVM's default charset (`String(byte[])`, `getBytes()`), so under
+ASCII a `'ß'` does not survive; only a string that a Rexx method returns to
+a Java caller goes through `NewStringUTF` (`BSF4ooRexx.cc` line 2984),
+whatever that charset is.
 
 ## What it takes to run them
 
