@@ -15,13 +15,18 @@
 #                   $OOTEST_REV (default 13278, the ooRexx the family uses);
 #                   the default. The tests use assertions (assertSameList, ...)
 #                   that the bundled copy lacks.
-#   --framework bundled  testUnits/ooRexxUnit/ (a 2009 snapshot, ooTest 4.0.0)
+#   --framework bundled  testUnits/ooRexxUnit/ (an old copy, ooTest 4.0.0)
 #   --legacy-lib-name    also offer the library as libBSF4ooRexx.so (a symlink
 #                   in build/tests/): two groups still load it by its pre-850
 #                   name (rxFuncAdd "BsfLoadFuncs", "BSF4ooRexx", ...)
 #   GROUP-PATTERN   an extended regex; only the groups whose path matches run
 #
-# Environment: TEST_TIMEOUT (seconds per group, default 180), OOTEST_REV.
+# Environment: TEST_TIMEOUT (seconds per group, default 180), OOTEST_REV;
+#   TEST_JAVA_HOME: run the tests on another JVM than the one of the build
+#   (for instance a Java 8 JRE); its libjvm.so directory is put first on
+#   LD_LIBRARY_PATH, instead of the build JDK's (on Java 8 that is
+#   jre/lib/amd64/server, which the library's own JAVA_HOME lookup does not
+#   try: it tries lib/server and jre/lib/server).
 #
 # The test tree is copied to build/tests/<display>-<framework>/ (the imported tree is not
 # touched); the Java helper classes of the tests are recompiled there with
@@ -61,8 +66,15 @@ done
 # shellcheck disable=SC1091
 . "$OUT/dist/env.sh"
 unset JAVA_TOOL_OPTIONS   # the tests need no network; keeps the logs clean
+JAVAC="$JAVA_HOME/bin/javac"   # the build's JDK compiles the test helpers (--release 8)
+if [ -n "${TEST_JAVA_HOME:-}" ]; then
+  export JAVA_HOME="$TEST_JAVA_HOME"
+  # not the build JDK's directories: a mixed path makes the JVM fail to start
+  export LD_LIBRARY_PATH="$OUT/dist:$JAVA_HOME/lib/server:$JAVA_HOME/jre/lib/amd64/server"
+fi
+JVERSION=$("$JAVA_HOME/bin/java" -version 2>&1 | head -1)
 
-T="$OUT/tests/$MODE-$FRAMEWORK$([ "$LEGACY" = 1 ] && echo -legacylib)"
+T="$OUT/tests/$MODE-$FRAMEWORK$([ "$LEGACY" = 1 ] && echo -legacylib)$([ -n "${TEST_JAVA_HOME:-}" ] && echo "-$(basename "$TEST_JAVA_HOME")")"
 rm -rf "$T"; mkdir -p "$T/logs"
 if [ "$LEGACY" = 1 ]; then
   mkdir -p "$T/lib" && ln -s "$OUT/dist/libBSF4ooRexx850.so" "$T/lib/libBSF4ooRexx.so"
@@ -78,7 +90,7 @@ TU="$T/tu"
 ( cd "$TU/bsf4rexx"
   : > "$T/javac.log"
   for d in $(find . -name '*.java' ! -path './java9/*' -exec dirname {} \; | sort -u); do
-    ( cd "$d" && "$JAVA_HOME/bin/javac" --release 8 -nowarn -encoding ISO-8859-1 \
+    ( cd "$d" && "$JAVAC" --release 8 -nowarn -encoding ISO-8859-1 \
           -cp "$TU/bsf4rexx:.:$CLASSPATH" ./*.java ) >> "$T/javac.log" 2>&1 \
       || { echo "compiling the Java helpers in $d failed:"; cat "$T/javac.log"; exit 1; }
   done ) || exit 1
@@ -102,6 +114,7 @@ else
   export PATH="$PATH:$FW"
 fi
 echo "test framework: $FRAMEWORK ($FW); display: $MODE; legacy lib name: $LEGACY; time limit: ${TIMEOUT}s per group"
+echo "JVM: $JVERSION ($JAVA_HOME)"
 
 run_group() {   # $1 = group path relative to $TU
   if [ "$MODE" = xvfb ]; then

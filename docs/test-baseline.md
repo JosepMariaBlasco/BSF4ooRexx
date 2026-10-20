@@ -2,7 +2,7 @@
 
 *20/10/2026. Build: `main` (SVN `branches/850` r1125) with
 [`scripts/build.sh`](../scripts/build.sh); ooRexx 5.3.0 r13278; OpenJDK
-21.0.12 (classes compiled with `javac --release 8`); Ubuntu 24.04 x86_64.
+21.0.12.1 (classes compiled with `javac --release 8`); Ubuntu 24.04 x86_64.
 Runner: [`scripts/run-tests.sh`](../scripts/run-tests.sh).*
 
 ## Summary
@@ -15,19 +15,35 @@ run one by one:
 | Virtual display (Xvfb) | 65 / 67 | 992 | 0 | 0 | 2 (see below) |
 | No display at all (`DISPLAY` unset) | 65 / 67 | 992 | 0 | 0 | the same 2 |
 | Virtual display, library also offered under its pre-850 name | **67 / 67** | **1013** | 0 | 0 | none |
+| The same on **Java 8** (OpenJDK 1.8.0_504), UTF-8 locale (`LANG=C.UTF-8`) | **67 / 67** | 1013 | 0 | 0 | none |
+| The same on Java 8, POSIX locale (no `LANG`) | 63 / 67 | 1013 | 0 | 16 | none |
 
-273,246 assertions in the last pass. No group needs a display, and none
+273,246 assertions in the third pass. No group needs a display, and none
 needs Windows: every group that runs passes on Linux with no display.
-The groups for Java 6, Java 8 and the `java8/defaultMethods` helpers pass
-with the helper classes compiled for Java 8.
+The jar and the test helpers are compiled with `javac --release 8`, and the
+whole suite also passes on a Java 8 runtime.
+
+**The locale matters on Java 8, not on Java 21.** With no `LANG` (POSIX
+locale), Java 8's default charset is ASCII, and four groups that send a
+`char` `'ß'` through a Rexx proxy and back get it back changed (4 errors
+each): `rgf/C_interfaceClasses/01_rexx_testInterface`,
+`rgf/D_abstractClasses/01_rexx_testAbstract`,
+`rgf/E_extendNormalClasses/01_rexx_testExtendNormal`,
+`rgf/F_testClassNames/01_rexx_ClassNameMusings` (the check is in, e.g.,
+`rgf/C_interfaceClasses/Test_ITest.java` line 127). With `LANG=C.UTF-8`
+they pass. Java 18 and later default to UTF-8 whatever the locale (JEP
+400), which is why the Java 21 passes, also run with no `LANG`, are clean.
+This is the "two string encodings over JNI" of `oorexx-bridges`'
+`java.md` §5.7 showing up in the tests: arguments are converted with the
+JVM's default charset.
 
 ## What it takes to run them
 
-- **The test framework.** `testUnits/ooRexxUnit/` is a 2009 snapshot of
-  the ooRexx test framework (ooTest 4.0.0). Several groups call assertions
+- **The test framework.** `testUnits/ooRexxUnit/` is an old copy of the
+  ooRexx test framework (ooTest 4.0.0; files dated 2007 to 2015). Several groups call assertions
   it does not have (for example `assertSameList` in
   `java6/plain/Do_over.testGroup` and `java8/plain/Do_over.testGroup`:
-  SYNTAX 97.1, 6 errors in 8 tests each with that framework), and `setEnv4bsf4rexx.sh` says that the
+  SYNTAX 97.1, 6 errors each with that framework), and `setEnv4bsf4rexx.sh` says that the
   bundled copy was dropped from the path in 2017. The runner therefore uses
   the current framework from ooRexx's SVN (`test/trunk`: `testOORexx.rex`,
   `worker.rex`, `ooTest.frm`, `framework/*.cls`) at revision 13278, the
@@ -42,7 +58,7 @@ with the helper classes compiled for Java 8.
   the classic way, `call rxFuncAdd "BsfLoadFuncs", "BSF4ooRexx",
   "BsfLoadFuncs"`: the library's name before 850 (now
   `BSF4ooRexx850`). Without a library by that name their `setUp` fails
-  (`Error 43.1: Could not find routine "BSFLOADFUNCS"`) and the framework
+  (`Error 43.1:  Could not find routine "BSFLOADFUNCS".`) and the framework
   then waits until the time limit (180 s) instead of reporting an error.
   With a symbolic link `libBSF4ooRexx.so` → `libBSF4ooRexx850.so`
   (`--legacy-lib-name`) both pass (7 and 14 tests). The other 65 groups use
@@ -133,4 +149,12 @@ scripts/build.sh                                   # needs ooRexx 5.x and a JDK
 scripts/run-tests.sh                               # Xvfb if available
 scripts/run-tests.sh --display none
 scripts/run-tests.sh --legacy-lib-name
+LANG=C.UTF-8 TEST_JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 scripts/run-tests.sh --legacy-lib-name
 ```
+
+On Java 8 the runner puts `jre/lib/amd64/server` on `LD_LIBRARY_PATH`:
+the library's own lookup through `JAVA_HOME` tries `lib/server` and
+`jre/lib/server` (`BSF4ooRexx.cc`, around line 5635), which is where
+Java 9 and later keep `libjvm.so`, not Java 8 on Linux; without it,
+Rexx-first start fails with *Java dynamic link/shared library
+"/opt/BSF4ooRexx/libjvm.so" not found*.
