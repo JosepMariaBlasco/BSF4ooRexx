@@ -24,3 +24,19 @@ has 2 failures (`test_errorSyntax_callOn`, `test_errorSyntax_untrapped`:
 `SYNTAX 98.970` instead of the condition); on r13282, 7 tests, 0
 failures. The full suite on r13282 with `--legacy-lib-name`: 68/68
 groups, 1,020 tests, 0 failures.
+
+## Test group `HaltThroughCommandHandler` (21/10/2026)
+
+`bsf4oorexx.dev/testUnits/bsf4rexx/additions/HaltThroughCommandHandler.testGroup`
+documents what happens today when the Rexx code of a command handler is
+halted. The handler is written in Rexx, wrapped with
+`BsfCreateRexxProxy(..., "org.rexxla.bsf.engines.rexx.AbstractDirectCommandHandler")`
+(as in `samples/Java/handlers/commandHandlers/30_java_starter850`) and
+registered with `BsfCommandHandler("ADD", ...)`; its `handleCommand` runs
+`RAISE HALT`. The program that issued the command gets **SYNTAX 40.900**
+(`rexx_command_handler_entry()`, error 6, a Java exception) whether it
+traps HALT with `SIGNAL ON`, with `CALL ON`, or not at all; the message
+carries the original "Error 4.1: Program interrupted with HALT condition".
+This is BSF4ooRexx's design (any error inside a handler is 40.900); the
+group records it, it does not propose to change it. Measured on ooRexx
+r13282: 4 tests, 0 failures; full suite 69/69 groups, 1,024 tests.

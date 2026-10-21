@@ -1,0 +1,80 @@
+#!/usr/bin/env rexx
+/*
+   name:             HaltThroughCommandHandler testGroup
+   version:          1.0.0
+   purpose:          documents what happens today when the Rexx code of a
+                     command handler is halted: a handler written in Rexx,
+                     wrapped with BsfCreateRexxProxy(...,
+                     "org.rexxla.bsf.engines.rexx.AbstractDirectCommandHandler")
+                     and registered with BsfCommandHandler "ADD", runs
+                     RAISE HALT.  The program that issued the command gets
+                     SYNTAX 40.900 (rexx_command_handler_entry(), error 6,
+                     a Java exception), whose message carries the original
+                     "Error 4.1: Program interrupted with HALT condition";
+                     SIGNAL ON HALT and CALL ON HALT do not see a HALT.
+                     This records BSF4ooRexx's design (any error inside a
+                     handler is 40.900); it is not a judgement on it.
+*/
+  parse source . . fileSpec;
+  group = .TestGroup~new(fileSpec)
+  group~add(.HaltThroughCommandHandler.testGroup)
+  if group~isAutomatedTest then return group
+  testResult = group~suite~execute~~print
+return testResult
+-- End of entry point.
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+::routine ensureHandler
+  if .local~hasEntry("ADDITIONS.HALTENV") then return
+  p = BsfCreateRexxProxy(.HaltingHandler~new, , "org.rexxla.bsf.engines.rexx.AbstractDirectCommandHandler")
+  call BsfCommandHandler "ADD", "BSFADDHALT", p
+  .local~additions.haltEnv = .true
+
+::class HaltingHandler
+::method handleCommand
+  use arg slot, address, command
+  if command = "halt" then raise halt description "from the handler"
+  return 0
+
+-- what came back: "HALT", "SYNTAX code|has 4.1", or "none"
+::routine viaSignalOn
+  signal on halt name h
+  signal on syntax name s
+  address BSFADDHALT "halt"
+  return "none"
+h: return "HALT"
+s: c = condition("O"); return "SYNTAX" c~code"|"||(pos("Error 4.1:", c~message) > 0)
+
+::routine viaCallOn
+  res = "none"
+  signal on syntax name s
+  call on halt name h
+  address BSFADDHALT "halt"
+  return res
+h: res = "HALT"; return
+s: c = condition("O"); return "SYNTAX" c~code"|"||(pos("Error 4.1:", c~message) > 0)
+
+::routine untrapped
+  signal on syntax name s
+  address BSFADDHALT "halt"
+  return "none"
+s: c = condition("O"); return "SYNTAX" c~code"|"||(pos("Error 4.1:", c~message) > 0)
+
+::class "HaltThroughCommandHandler.testGroup" subclass ooTestCase public
+
+::method setUp
+  call ensureHandler
+
+::method "test_signalOnHalt"
+  self~assertEquals("SYNTAX 40.900|1", viaSignalOn())
+
+::method "test_callOnHalt"
+  self~assertEquals("SYNTAX 40.900|1", viaCallOn())
+
+::method "test_untrapped"
+  self~assertEquals("SYNTAX 40.900|1", untrapped())
+
+::method "test_otherCommand"
+  address BSFADDHALT "other"
+  self~assertEquals(0, rc)
