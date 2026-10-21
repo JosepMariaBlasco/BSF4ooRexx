@@ -48,7 +48,7 @@ Environment entries set by this package:
 | `BSF4REXX~bsf.dir` | attribute | get guarded class | 2006 | comment | - | 0 |
 | `BSF4REXX~bsf.dir` | attribute | set guarded class | 2009 | comment | - | 0 |
 | `BSF4REXX~unknown` | method | guarded class | 2015 | comment | n/a | n/a |
-| `BSF` | class |  | 2026 | comment | yes | 79 |
+| `BSF` | class |  | 2026 | comment | yes | 80 |
 | `BSF~init` | method | guarded class | 2033 | comment | n/a | n/a |
 | `BSF~rBSF` | attribute | guarded class | 2048 | comment | - | 0 |
 | `BSF~rBsfUninit4JavaBean` | attribute | guarded class | 2050 | comment | - | 0 |
@@ -534,7 +534,7 @@ The native routine `BSF` passes its first argument to `RexxAndJava.javaCallBSF()
 |---|---|---|---:|---|---|---:|
 | `getFieldValue` |  | `GET_FIELD_VALUE` (44) | 3368 | yes | yes | 6 |
 | `invoke` |  | `INVOKE` (46) | 3630 | yes | yes | 20 |
-| `registerBean` | `NEW` | `REGISTER_BEAN` (47) | 4098 | yes | yes | 105 |
+| `registerBean` | `NEW` | `REGISTER_BEAN` (47) | 4098 | yes | yes | 106 |
 | `createArray` | `CREATEJAVAARRAY` | `CREATE_ARRAY_OBJECT` (50) | 2863 | yes | yes | 5 |
 | `arrayAt` |  | `ARRAY_AT` (51) | 2954 | yes | yes | 2 |
 | `arrayPut` |  | `ARRAY_PUT` (52) | 2962 | yes | yes | 3 |
@@ -597,7 +597,7 @@ Registered in the package table `bsf_external_functions[]`; `::requires "BSF4ooR
 
 | Routine | Table | Defined | Only if | Wrapped by | Refcard | Tests |
 |---|---:|---:|---|---|---|---:|
-| `BSF` | 9006 | 7242 |  | `xBSF` BSF.CLS:1047 | yes | 79 |
+| `BSF` | 9006 | 7242 |  | `xBSF` BSF.CLS:1047 | yes | 80 |
 | `BsfAttachToTID` | 9007 | 6511 |  |  | - | 3 |
 | `BsfCreateRexxProxy` | 9008 | 6586 |  | `xBsfCreateRexxProxy` BSF.CLS:1048 | yes | 17 |
 | `BsfRexxProxy` | 9009 | 6846 |  | `xBsfRexxProxy` BSF.CLS:1049 | yes | 8 |
@@ -622,7 +622,7 @@ Registered in the package table `bsf_external_functions[]`; `::requires "BSF4ooR
 | `BsfApplyHotFixCrash` | 9036 | 6380 | `#ifdef HOT_FIX_CRASH` |  | - | 0 |
 | `BsfUninit4JavaBean` | 9039 | 8101 |  | `xBsfUninit4JavaBean` BSF.CLS:1050 | - | 0 |
 | `BsfTestPing` | 9040 | 8164 |  |  | - | 0 |
-| `BsfCommandHandler` | 9042 | 8223 |  |  | - | 2 |
+| `BsfCommandHandler` | 9042 | 8223 |  |  | - | 3 |
 
 ### 3.2 JNI functions (called by the Java side)
 
@@ -780,7 +780,7 @@ Source: `org/oorexx/datergf/DateFormatRGF.java`:147; class Javadoc: yes.
 | `public static String version` | field | 151 | yes | n/a |
 | `public static final String[] romanL` | field | 157 | yes | 0 |
 | `public static final String[] romanU` | field | 159 | yes | 0 |
-| `protected static char[] options` | field | 167 | yes | 0 |
+| `protected static char[] options` | field | 167 | yes | 3 |
 | `public org.oorexx.datergf.DateFormatRGF()` | constructor | - | implicit | 0 |
 | `public static String format(String, Object)` | method | 478 | yes | 0 |
 | `protected static int verify(char, char[])` | method | 792 | yes | 0 |
@@ -807,7 +807,7 @@ Source: `org/oorexx/datergf/DateRGF.java`:155; class Javadoc: -.
 | `public static void main(String[])` | method | 414 | yes | n/a |
 | `public static org.oorexx.datergf.DateRGF valueOf(int, int)` | method | 554 | yes | n/a |
 | `public static org.oorexx.datergf.DateRGF valueOf(String)` | method | 624 | yes | n/a |
-| `public org.oorexx.datergf.DateRGF add(int)` | method | 705 | yes | 70 |
+| `public org.oorexx.datergf.DateRGF add(int)` | method | 705 | yes | 71 |
 | `public int subtract(org.oorexx.datergf.DateRGF)` | method | 731 | yes | 0 |
 | `public org.oorexx.datergf.DateRGF assign(org.oorexx.datergf.DateRGF)` | method | 745 | yes | 0 |
 | `protected void cD()` | method | 768 | yes | n/a |
@@ -856,7 +856,7 @@ Source: `org/oorexx/datergf/DateTimeRGF.java`:135; class Javadoc: yes.
 | `public org.oorexx.datergf.DateTimeRGF(org.oorexx.datergf.DateRGF, org.oorexx.datergf.TimeRGF)` | constructor | 169 | yes | 0 |
 | `public org.oorexx.datergf.DateTimeRGF(int, int, int, int, int, int)` | constructor | 185 | yes | 0 |
 | `public org.oorexx.datergf.DateTimeRGF(int, int, int, int, int, int, int)` | constructor | 202 | yes | 0 |
-| `public org.oorexx.datergf.DateTimeRGF add(int, int)` | method | 235 | yes | 70 |
+| `public org.oorexx.datergf.DateTimeRGF add(int, int)` | method | 235 | yes | 71 |
 | `public int[] subtract(org.oorexx.datergf.DateTimeRGF)` | method | 281 | yes | 0 |
 | `public org.oorexx.datergf.DateTimeRGF assign(org.oorexx.datergf.DateTimeRGF)` | method | 306 | yes | 0 |
 | `public int compareTo(Object)` | method | 324 | yes | 3 |
@@ -912,7 +912,7 @@ Source: `bsf4oorexx.dev/source_java/JavaDrawingHandler.java`:322; class Javadoc:
 | `public boolean bUseNames4canonical` | field | 616 | - | 0 |
 | `public boolean bUseInt4numbers` | field | 617 | - | 0 |
 | `public org.oorexx.handlers.jdor.JavaDrawingHandler()` | constructor | - | implicit | 0 |
-| `public Object handleCommand(Object, String, String)` | method | 719 | yes | 3 |
+| `public Object handleCommand(Object, String, String)` | method | 719 | yes | 4 |
 | `public static String[] getNonBlankWords(String, ArrayList<int[]>)` | method | 5176 | yes | 0 |
 | `public static ArrayList<int[]> getWordBoundaries(String, int)` | method | 5202 | yes | 0 |
 | `public static boolean checkBooleanValue(String)` | method | 5246 | yes | 0 |
@@ -989,7 +989,7 @@ Source: `bsf4oorexx.dev/source_java/AbstractDirectCommandHandler.java`:20; class
 |---|---|---:|---|---:|
 | `public AbstractDirectCommandHandler()` | constructor | - | implicit | 0 |
 | `public static void main(String[])` | method | 22 | - | n/a |
-| `public abstract Object handleCommand(Object, String, String)` | method | 27 | - | 3 |
+| `public abstract Object handleCommand(Object, String, String)` | method | 27 | - | 4 |
 
 #### `org.rexxla.bsf.engines.rexx.AbstractExitHandler` (class)
 
@@ -1009,7 +1009,7 @@ Source: `bsf4oorexx.dev/source_java/AbstractRedirectingCommandHandler.java`:20; 
 |---|---|---:|---|---:|
 | `public AbstractRedirectingCommandHandler()` | constructor | - | implicit | 0 |
 | `public static void main(String[])` | method | 22 | - | n/a |
-| `public abstract Object handleCommand(Object, String, String)` | method | 29 | - | 3 |
+| `public abstract Object handleCommand(Object, String, String)` | method | 29 | - | 4 |
 
 #### `org.rexxla.bsf.engines.rexx.ArrayWrapper` (class)
 
@@ -1182,7 +1182,7 @@ Source: `bsf4oorexx.dev/source_java/RexxCommandHandler.java`:42; class Javadoc: 
 |---|---|---:|---|---:|
 | `public static final String version` | field | 46 | yes | n/a |
 | `public default boolean isRedirectable()` | method | 53 | yes | 2 |
-| `public abstract Object handleCommand(Object, String, String)` | method | 70 | yes | 3 |
+| `public abstract Object handleCommand(Object, String, String)` | method | 70 | yes | 4 |
 | `public default String toString(Object, String)` | method | 79 | yes | n/a |
 
 #### `org.rexxla.bsf.engines.rexx.RexxCompiledScript` (class)
@@ -1370,7 +1370,7 @@ Source: `bsf4oorexx.dev/source_java/RexxHandler.java`:61; class Javadoc: -.
 | Member | Kind | Line | Javadoc | Tests |
 |---|---|---:|---|---:|
 | `public static final String version` | field | 65 | yes | n/a |
-| `public default void raiseCondition(Object, String, String, Object[], Object)` | method | 80 | yes | 0 |
+| `public default void raiseCondition(Object, String, String, Object[], Object)` | method | 80 | yes | 2 |
 | `public default void raiseException(Object, long, Object[])` | method | 98 | yes | 3 |
 | `public default void raiseException0(Object, long)` | method | 112 | yes | 0 |
 | `public default void raiseException1(Object, long, String)` | method | 127 | yes | 0 |
