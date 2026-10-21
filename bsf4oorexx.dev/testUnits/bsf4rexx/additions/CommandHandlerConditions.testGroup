@@ -1,0 +1,68 @@
+#!/usr/bin/env rexx
+/*
+   name:             CommandHandlerConditions testGroup
+   version:          1.0.0
+   purpose:          a Java command handler (BsfCommandHandler "ADD") that
+                     raises a Rexx condition with raiseCondition(): the
+                     condition must reach the Rexx program as itself, with
+                     and without ::OPTIONS ERROR SYNTAX.  With that option,
+                     ooRexx up to r13281 turned USER, NOTREADY... into
+                     SYNTAX 98.970 when trapped by CALL ON or not trapped
+                     (ooRexx #2119, fixed in r13282); SIGNAL ON was not
+                     affected.  Only ERROR becomes SYNTAX 98.970 then.
+*/
+  parse source . . fileSpec;
+  group = .TestGroup~new(fileSpec)
+  group~add(.CommandHandlerConditions.testGroup)
+  if group~isAutomatedTest then return group
+  testResult = group~suite~execute~~print
+return testResult
+-- End of entry point.
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+::requires "commandsPlain.rex"
+::requires "commandsErrorSyntax.rex"
+
+::routine ensureHandler
+  if .local~hasEntry("ADDITIONS.CHC") then return
+  call BsfCommandHandler "ADD", "BSFADDCHC", .bsf~new("additions.ConditionRaisingCommandHandler")
+  .local~additions.chc = .true
+
+::class "CommandHandlerConditions.testGroup" subclass ooTestCase public
+
+::method setUp
+  call ensureHandler
+
+-- no ::OPTIONS ----------------------------------------------------------
+::method "test_plain_signalOn"
+  self~assertEquals("USER MINE rc=4", plain.signalOn("user"))
+  self~assertEquals("NOTREADY rc=5",  plain.signalOn("notready"))
+  self~assertEquals("ERROR rc=6",     plain.signalOn("error"))
+
+::method "test_plain_callOn"
+  self~assertEquals("USER MINE rc=4", plain.callOn("user"))
+  self~assertEquals("NOTREADY rc=5",  plain.callOn("notready"))
+
+::method "test_plain_untrapped"
+  self~assertEquals("none rc=4", plain.untrapped("user"))
+  self~assertEquals("none rc=5", plain.untrapped("notready"))
+  self~assertEquals("none rc=6", plain.untrapped("error"))
+  self~assertEquals("none rc=0", plain.untrapped("other"))
+
+-- ::OPTIONS ERROR SYNTAX ------------------------------------------------
+::method "test_errorSyntax_signalOn"
+  self~assertEquals("USER MINE rc=4", es.signalOn("user"))
+  self~assertEquals("NOTREADY rc=5",  es.signalOn("notready"))
+  self~assertEquals("ERROR rc=6",     es.signalOn("error"))
+
+::method "test_errorSyntax_callOn"         -- ooRexx #2119 before r13282
+  self~assertEquals("USER MINE rc=4", es.callOn("user"))
+  self~assertEquals("NOTREADY rc=5",  es.callOn("notready"))
+
+::method "test_errorSyntax_untrapped"      -- ooRexx #2119 before r13282
+  self~assertEquals("none rc=4", es.untrapped("user"))
+  self~assertEquals("none rc=5", es.untrapped("notready"))
+  self~assertEquals("none rc=0", es.untrapped("other"))
+
+::method "test_errorSyntax_untrappedError" -- the option's own job
+  self~assertEquals("SYNTAX 98.970", es.untrapped("error"))
