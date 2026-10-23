@@ -3,8 +3,9 @@
 *20/10/2026. Build: `main` (SVN `branches/850` r1125) with
 [`scripts/build.sh`](../scripts/build.sh); ooRexx 5.3.0 r13278; OpenJDK
 21.0.12.1 (classes compiled with `javac --release 8`); Ubuntu 24.04 x86_64.
-Rechecked on 21/10/2026 with ooRexx r13282 (framework at r13282 too): the
-same results, with and without `--legacy-lib-name`.
+Rechecked with the same results, with and without `--legacy-lib-name`, on
+ooRexx r13282 (21/10/2026) and r13286 (23/10/2026), the test framework at
+the same revision each time.
 Runner: [`scripts/run-tests.sh`](../scripts/run-tests.sh).*
 
 ## Summary
@@ -51,7 +52,7 @@ whatever that charset is.
   bundled copy was dropped from the path in 2017. The runner therefore uses
   the current framework from ooRexx's SVN (`test/trunk`: `testOORexx.rex`,
   `worker.rex`, `ooTest.frm`, `framework/*.cls`) at the same revision as
-  the interpreter (13282 since 21/10/2026; 13278 before); `--framework bundled` uses the old copy.
+  the interpreter (13286 since 23/10/2026; 13282 from 21/10/2026; 13278 before); `--framework bundled` uses the old copy.
 - **The Java helper classes** of the tests (`rgf.*`, `java6.plain`,
   `java8.plain`, `java8.defaultMethods`, `rgf_multithreading`; `UseTest2` in
   the unnamed package) are compiled in place in a copy of the tree, as
