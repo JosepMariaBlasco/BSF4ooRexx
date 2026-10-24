@@ -5,6 +5,7 @@ rem   Author:  Rony G. Flatscher
 rem   Date:    2022-08-03
 rem   Changed: 2024-01-04 rgf, give feedback to user as to which java.exe gets employed
 rem            2026-01-08 rgf, only verbose, if BSF4Rexx_quiet <> 1
+rem            2026-02-11 rgf, define "BSF_Medication=-XX:+IgnoreUnrecognizedVMOptions --enable-native-access"
 rem   Remark:  Rexx script can retrieve all arguments as passed to Java via the BSFRegistry, including
 rem            the name of the Rexx script to be invoked/dispatched
 rem
@@ -38,6 +39,9 @@ if not "%BSF4Rexx_quiet%" == "1" (
 
 :invokenormal
 
+rem make sure that "--enable-native-access" does not cause the JVM to crash on earlier versions of Java
+set BSF_Medication=-XX:+IgnoreUnrecognizedVMOptions --enable-native-access
+
 setlocal enableDelayedExpansion
 
 REM  if JAVA_HOME defined, use its Java binary
@@ -65,8 +69,8 @@ if not exist "%JAVA_BINARY%" set JAVA_BINARY=java
 
 
 if not "%BSF4Rexx_quiet%" == "1" (
-   echo command: "%JAVA_BINARY%"  %BSF4Rexx_JavaStartupOptions% org.rexxla.bsf.RexxDispatcher %*
+   echo command: "%JAVA_BINARY%" %BSF_Medication% %BSF4Rexx_JavaStartupOptions% org.rexxla.bsf.RexxDispatcher %*
 )
-"%JAVA_BINARY%"  %BSF4Rexx_JavaStartupOptions% org.rexxla.bsf.RexxDispatcher %*
+"%JAVA_BINARY%" %BSF_Medication% %BSF4Rexx_JavaStartupOptions% org.rexxla.bsf.RexxDispatcher %*
 
 :end

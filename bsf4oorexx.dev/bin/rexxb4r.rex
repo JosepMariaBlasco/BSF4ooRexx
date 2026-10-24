@@ -1,5 +1,13 @@
 #!/usr/bin/env rexx
 /*
+   Update, rgf, 20260211: it is possible to issue the "--enaböe-native-access"
+   on earlier versions of Java without the JVM to crash, if supplying also
+   "-XX:+IgnoreUnrecognizedVMOptions". Therefore, the rexxj* launchers define
+   and use "BSF_Medication=-XX:+IgnoreUnrecognizedVMOptions --enable-native-access"
+
+   As a result, this launcher is not needed anymore, just leaving it for a
+   couple of releases for documentation.
+
    Motivation for this program (context), rgf, 20250828:
 
    With the introduction of FFM (foreign function and foreign memory) to Java
