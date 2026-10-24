@@ -1,0 +1,206 @@
+#!/usr/bin/env rexx
+/*
+   name:             05_transform.testGroup
+   author:           Josep Maria Blasco
+   version:          0.1.0
+   date:             2026-10-14
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          JDOR affine transforms: translate, scale, shear, rotate
+                     and transform (query, set, keep with ".", reset, named)
+   hint:             transform values are compared as numbers with a small
+                     tolerance, never as strings (e.g. rotate 90 gives -0.0
+                     and values like 6.1E-17 in Java). RESET is a full
+                     word: the documentation said R[ESET] until 2026-10-14
+                     (finding F)
+*/
+
+  parse source . . fileSpec
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.jdor.transform.testGroup)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"
+::requires "jdorTestSupport.cls"
+
+::class "jdor.transform.testGroup" subclass ooTestCase public
+
+::method setUp
+  call jdorTest.fresh
+  address jdor
+  newImage 50 50
+  render aliasOff
+  color red
+
+::method assertNumbers            -- assertNumbers(expected, actual [, message]): blank-delimited, numerically
+  use strict arg expected, actual, msg = ""
+  self~assertEquals(expected~words, actual~words, msg "(number of values:" actual")")
+  do i = 1 to expected~words
+    self~assertTrue(abs(expected~word(i) - actual~word(i)) < 1e-9, -
+      msg "value" i": expected" expected~word(i)", got" actual~word(i) "("actual")")
+  end
+
+-- transform: query, set, keep, reset --------------------------------------------
+
+::method test_transform_default_is_identity
+  address jdor
+  transform
+  self~assertNumbers("0 0 1 1 0 0", rc)
+
+::method test_transform_set_returns_old
+  address jdor
+  transform 1 2 3 4 5 6
+  self~assertNumbers("0 0 1 1 0 0", rc, "previous")
+  transform
+  self~assertNumbers("1 2 3 4 5 6", rc)
+
+::method test_transform_dot_keeps_value
+  address jdor
+  transform 1 2 3 4 5 6
+  transform . . 7 . . .
+  transform
+  self~assertNumbers("1 2 7 4 5 6", rc)
+
+::method test_transform_reset
+  address jdor
+  transform 1 2 3 4 5 6
+  transform reset
+  transform
+  self~assertNumbers("0 0 1 1 0 0", rc)
+
+::method test_transform_wrong_number_of_arguments_is_error
+  trace off
+  address jdor
+  transform 1 2 3
+  self~assertEquals(-102, rc)
+  self~assertEquals(1, .rs)
+
+::method test_transform_named_is_stored_not_applied
+  address jdor
+  transform t1 10 0 2 2 0 0
+  self~assertEquals(0, .rs)
+  self~assertEquals(10, rc~getTranslateX, "the new transform is returned")
+  self~assertEquals(2,  rc~getScaleX)
+  transform
+  self~assertNumbers("0 0 1 1 0 0", rc, "the current transform is unchanged")
+  transform t1
+  self~assertEquals(10, rc~getTranslateX, "retrieved by name")
+
+::method test_transform_R_is_a_name_not_reset
+  -- the documentation said R[ESET] ("only necessary to supply the first
+  -- letter"); since 2026-10-14 it says RESET (finding F): R is a name
+  trace off
+  address jdor
+  transform 1 2 3 4 5 6
+  'transform r'
+  self~assertEquals(-102, rc, "no transform named R")
+  self~assertEquals(1, .rs)
+  transform
+  self~assertNumbers("1 2 3 4 5 6", rc, "unchanged")
+  transform r 7 8 1 1 0 0         -- a transform named R is reachable by its name
+  'transform r'
+  self~assertEquals(0, .rs)
+  self~assertEquals(7, rc~getTranslateX)
+
+::method test_transform_unknown_name_is_error
+  trace off
+  address jdor
+  'transform noSuchTransform'
+  self~assertEquals(-102, rc)
+  self~assertEquals(1, .rs)
+
+-- translate --------------------------------------------------------------------
+
+::method test_translate_query_and_set
+  address jdor
+  translate
+  self~assertNumbers("0 0", rc, "default")
+  translate 10 20
+  self~assertNumbers("0 0", rc, "previous")
+  translate
+  self~assertNumbers("10 20", rc)
+
+::method test_translate_accumulates_one_argument_for_both
+  address jdor
+  translate 10 20
+  translate 5
+  translate
+  self~assertNumbers("15 25", rc)
+
+::method test_translate_moves_drawings_not_position
+  address jdor
+  translate 10 20
+  moveTo 0 0
+  fillRect 5 5
+  self~assertEquals(jdorTest.argb(255, 0, 0), jdorTest.pixel(12, 22), "drawn at the new origin")
+  self~assertEquals(0, jdorTest.pixel(2, 2), "nothing at the old origin")
+  position
+  self~assertEquals("0 0", rc, "currX/currY unchanged")
+
+-- scale ------------------------------------------------------------------------
+
+::method test_scale_query_set_and_concatenate
+  address jdor
+  scale
+  self~assertNumbers("1 1", rc, "default")
+  scale 2 3
+  self~assertNumbers("1 1", rc, "previous")
+  scale 2                       -- one argument for both, concatenated
+  scale
+  self~assertNumbers("4 6", rc)
+
+::method test_scale_affects_drawings
+  address jdor
+  scale 2
+  moveTo 5 5
+  fillRect 5 5                  -- becomes 10..19 x 10..19
+  self~assertEquals(jdorTest.argb(255, 0, 0), jdorTest.pixel(12, 12))
+  self~assertEquals(jdorTest.argb(255, 0, 0), jdorTest.pixel(19, 19))
+  self~assertEquals(0, jdorTest.pixel(7, 7))
+  self~assertEquals(0, jdorTest.pixel(22, 22))
+
+-- shear ------------------------------------------------------------------------
+
+::method test_shear_query_and_set
+  address jdor
+  shear
+  self~assertNumbers("0 0", rc, "default")
+  shear 0.5 0
+  self~assertNumbers("0 0", rc, "previous")
+  transform
+  self~assertNumbers("0 0 1 1 0.5 0", rc)
+
+::method test_shear_one_argument_for_both
+  address jdor
+  shear 0.5
+  transform
+  self~assertNumbers("0 0 1 1 0.5 0.5", rc)
+
+-- rotate -----------------------------------------------------------------------
+
+::method test_rotate_degrees
+  address jdor
+  rotate 90
+  self~assertEquals(0, rc)
+  transform
+  self~assertNumbers("0 0 0 0 -1 1", rc, "90 degrees, not radians")
+
+::method test_rotate_about_a_point
+  address jdor
+  rotate 90 25 25
+  transform
+  self~assertNumbers("50 0 0 0 -1 1", rc)
+
+::method test_rotate_affects_drawings
+  address jdor
+  rotate 90 25 25
+  moveTo 30 10
+  fillRect 10 5                 -- 30..39 x 10..14, rotated about the centre
+  self~assertEquals(jdorTest.argb(255, 0, 0), jdorTest.pixel(38, 32), "rotated position")
+  self~assertEquals(0, jdorTest.pixel(35, 12), "not at the unrotated position")

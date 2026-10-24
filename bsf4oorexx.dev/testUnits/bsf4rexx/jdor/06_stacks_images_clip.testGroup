@@ -1,0 +1,223 @@
+#!/usr/bin/env rexx
+/*
+   name:             06_stacks_images_clip.testGroup
+   author:           Josep Maria Blasco
+   version:          0.1.0
+   date:             2026-10-14
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          JDOR state stacks, images and clipping: pushGC/popGC,
+                     pushImage/popImage, image, imageSize/imageType of named
+                     images, imageCopy, copyArea, clip/clipRemove,
+                     saveImage/loadImage/drawImage
+   hint:             files are written to .File~temporaryPath. drawImage
+                     with a source rectangle is tested in 10_findings
+                     (finding 5)
+*/
+
+  parse source . . fileSpec
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.jdor.stacksImagesClip.testGroup)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"
+::requires "jdorTestSupport.cls"
+
+::class "jdor.stacksImagesClip.testGroup" subclass ooTestCase public
+
+::method setUp
+  call jdorTest.fresh
+  address jdor
+  newImage 40 40
+  render aliasOff
+
+::method red   ; return jdorTest.argb(255, 0, 0)
+::method blue  ; return jdorTest.argb(0, 0, 255)
+
+::method tempFile                 -- a file name in the temporary directory
+  use strict arg name
+  return .File~new(name, .File~temporaryPath)~absolutePath
+
+-- GC stack -------------------------------------------------------------------------
+
+::method test_popGC_restores_state
+  address jdor
+  color red
+  pushGC
+  color blue
+  translate 5 5
+  popGC
+  color
+  self~assertEquals("255 0 0", rc~getRed rc~getGreen rc~getBlue, "colour restored")
+  translate
+  self~assertEquals("0.0 0.0", rc, "transform restored")
+
+::method test_popGC_empty_stack_is_error
+  trace off
+  address jdor
+  popGC
+  self~assertEquals(-15, rc)
+  self~assertEquals(1, .rs)
+
+-- image stack and named images ---------------------------------------------------
+
+::method test_pushImage_popImage
+  address jdor
+  color red
+  fillRect 40 40
+  pushImage
+  self~assertEquals(40, rc~getWidth, "the pushed copy is returned")
+  color blue
+  fillRect 40 40
+  self~assertEquals(self~blue, jdorTest.pixel(5, 5))
+  popImage
+  self~assertEquals(self~red, jdorTest.pixel(5, 5), "the popped image is drawn onto the current one")
+
+::method test_popImage_empty_stack_is_error
+  trace off
+  address jdor
+  popImage
+  self~assertEquals(-16, rc)
+  self~assertEquals(1, .rs)
+
+::method test_pushImage_with_name_registers_it
+  address jdor
+  color red
+  fillRect 40 40
+  pushImage snap
+  color blue
+  fillRect 40 40
+  image snap
+  self~assertEquals(self~red, rc~getRGB(5, 5), "the registered copy keeps the old content")
+  imageSize snap
+  self~assertEquals("40 40", rc)
+  imageType snap
+  self~assertEquals(2, rc)
+
+::method test_image_current
+  address jdor
+  color red
+  fillRect 10 10
+  image
+  self~assertEquals(40, rc~getWidth)
+  self~assertEquals(40, rc~getHeight)
+  self~assertEquals(self~red, rc~getRGB(5, 5))
+
+::method test_image_unknown_name_is_error
+  trace off
+  address jdor
+  image nope
+  self~assertEquals(-102, rc)
+  self~assertEquals(1, .rs)
+
+::method test_imageCopy
+  address jdor
+  color red
+  fillRect 40 40
+  pushImage snap
+  imageCopy snap
+  copy = rc
+  self~assertEquals(40, copy~getWidth)
+  self~assertEquals(self~red, copy~getRGB(5, 5))
+
+-- copyArea -------------------------------------------------------------------------
+
+::method test_copyArea
+  address jdor
+  color red
+  fillRect 10 10
+  moveTo 0 0
+  copyArea 10 10 20 20
+  self~assertEquals(0, rc)
+  self~assertEquals(self~red, jdorTest.pixel(25, 25), "copied")
+  self~assertEquals(self~red, jdorTest.pixel(5, 5),   "original kept")
+  self~assertEquals(0,        jdorTest.pixel(15, 15), "between them")
+
+-- clip -----------------------------------------------------------------------------
+
+::method test_clip_default_is_nil
+  address jdor
+  clip
+  self~assertSame(.nil, rc)
+
+::method test_clip_set_query_and_effect
+  address jdor
+  clip 10 10 20 20
+  clip
+  self~assertEquals("10 10 20 20", rc)
+  color red
+  moveTo 0 0
+  fillRect 40 40
+  self~assertEquals(self~red, jdorTest.pixel(15, 15), "inside the clip")
+  self~assertEquals(0, jdorTest.pixel(5, 5),   "outside the clip")
+  self~assertEquals(0, jdorTest.pixel(35, 35), "outside the clip")
+
+::method test_clip_intersects
+  address jdor
+  clip 10 10 20 20
+  clip 20 20 20 20
+  clip
+  self~assertEquals("20 20 10 10", rc, "intersection")
+
+::method test_clipRemove
+  address jdor
+  clip 10 10 20 20
+  clipRemove
+  self~assertEquals(0, rc)
+  clip
+  self~assertSame(.nil, rc)
+
+-- files and drawImage -------------------------------------------------------------
+
+::method test_saveImage_loadImage_roundtrip
+  address jdor
+  newImage 30 20
+  color red
+  fillRect 30 20
+  file = self~tempFile("jdor_test_roundtrip.png")
+  'saveImage' file
+  self~assertEquals(1, rc, "saveImage returns 1 (.true)")
+  'loadImage pic' file
+  self~assertEquals("30 20", rc, "loadImage returns the size")
+  image pic
+  self~assertEquals(self~red, rc~getRGB(3, 3))
+  call SysFileDelete file
+
+::method test_loadImage_missing_file_is_error
+  trace off
+  address jdor
+  'loadImage p2' self~tempFile("jdor_test_no_such_file.png")
+  self~assertEquals(-102, rc)
+  self~assertEquals(1, .rs)
+
+::method test_drawImage_at_position
+  address jdor
+  newImage 30 20
+  color red
+  fillRect 30 20
+  pushImage pic
+  newImage 40 40
+  moveTo 5 5
+  drawImage pic
+  self~assertEquals(0, rc)
+  self~assertEquals(self~red, jdorTest.pixel(10, 10))
+  self~assertEquals(0, jdorTest.pixel(2, 2),   "left of / above the image")
+  self~assertEquals(0, jdorTest.pixel(37, 10), "right of the image (5 + 30)")
+
+::method test_drawImage_scaled
+  address jdor
+  newImage 30 20
+  color red
+  fillRect 30 20
+  pushImage pic
+  newImage 40 40
+  moveTo 0 0
+  drawImage pic 10 10
+  self~assertEquals(self~red, jdorTest.pixel(8, 8))
+  self~assertEquals(0, jdorTest.pixel(13, 13), "scaled down to 10 x 10")

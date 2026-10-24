@@ -1,0 +1,293 @@
+#!/usr/bin/env rexx
+/*
+   name:             02_color_paint.testGroup
+   author:           Josep Maria Blasco
+   version:          0.1.0
+   date:             2026-10-14
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          JDOR colours and paints: color/colour, background and
+                     clearRect, paint, gradientPaint, composite
+   hint:             colours are checked through the getters of the returned
+                     objects (getRed, getGreen, getBlue, getAlpha, getRule)
+                     and through pixels; gradients with a tolerance, since
+                     interpolation may differ slightly between implementations
+*/
+
+  parse source . . fileSpec
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.jdor.colorPaint.testGroup)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"
+::requires "jdorTestSupport.cls"
+
+::class "jdor.colorPaint.testGroup" subclass ooTestCase public
+
+::method assertColor              -- assertColor(colourObject, r, g, b [, a] [, message])
+  use strict arg c, r, g, b, a = 255, msg = ""
+  self~assertEquals(r g b a, c~getRed c~getGreen c~getBlue c~getAlpha, msg)
+
+-- color ------------------------------------------------------------------------
+
+::method test_color_default_is_opaque_black
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  color
+  self~assertColor(rc, 0, 0, 0, 255)
+
+::method test_color_set_returns_old
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  color red
+  self~assertColor(rc, 0, 0, 0, 255, "previous: black")
+  color
+  self~assertColor(rc, 255, 0, 0)
+
+::method test_colour_is_alias
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  colour blue
+  colour
+  self~assertColor(rc, 0, 0, 255)
+
+::method test_color_predefined_names_are_caseless
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  color aliceBlue
+  color
+  self~assertColor(rc, 240, 248, 255)
+  'color ALICEBLUE'
+  color
+  self~assertColor(rc, 240, 248, 255)
+
+::method test_color_define_rgb_integers
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  color somePurple 127 46 111
+  color
+  self~assertColor(rc, 127, 46, 111)
+
+::method test_color_define_rgba_integers
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  color c 10 20 30 40
+  color
+  self~assertColor(rc, 10, 20, 30, 40)
+
+::method test_color_define_floats
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  color c 0.5 0.25 1.0         -- a decimal dot: all values are floats
+  color
+  self~assertColor(rc, 128, 64, 255)
+
+::method test_color_defined_is_registered
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  color mine 1 2 3
+  color red
+  color mine
+  color
+  self~assertColor(rc, 1, 2, 3)
+
+::method test_color_unknown_name_is_error
+  trace off
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  color noSuchColour
+  self~assertEquals(-3, rc)
+  self~assertEquals(1, .rs)
+
+::method test_color_value_out_of_range_is_error
+  trace off
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  color c 300 0 0
+  self~assertEquals(-102, rc)
+  self~assertEquals(1, .rs)
+
+::method test_color_wrong_number_of_values_is_error
+  trace off
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  color c 1 2
+  self~assertEquals(-102, rc)
+  self~assertEquals(1, .rs)
+
+::method test_color_used_for_drawing
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  color red
+  fillRect 10 10
+  self~assertEquals(jdorTest.argb(255, 0, 0), jdorTest.pixel(5, 5))
+
+-- background and clearRect ------------------------------------------------------
+
+::method test_background_default_is_opaque_black
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  background
+  self~assertColor(rc, 0, 0, 0, 255)
+
+::method test_background_set_returns_old
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  background green
+  self~assertColor(rc, 0, 0, 0, 255, "previous: black")
+  background
+  self~assertColor(rc, 0, 255, 0)
+
+::method test_clearRect_uses_background
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  color red
+  fillRect 20 20
+  background green
+  moveTo 5 5
+  clearRect 5 5
+  self~assertEquals(jdorTest.argb(0, 255, 0), jdorTest.pixel(7, 7), "inside the cleared area")
+  self~assertEquals(jdorTest.argb(255, 0, 0), jdorTest.pixel(2, 2), "outside")
+  self~assertEquals(jdorTest.argb(255, 0, 0), jdorTest.pixel(10, 10), "just past the cleared area")
+
+::method test_background_unknown_name_is_error
+  trace off
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  background noSuch
+  self~assertEquals(-8, rc)
+  self~assertEquals(1, .rs)
+
+-- paint ------------------------------------------------------------------------
+
+::method test_paint_query_and_set
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  color red
+  paint
+  self~assertColor(rc, 255, 0, 0, 255, "the current colour is the current paint")
+  paint blue
+  self~assertColor(rc, 255, 0, 0, 255, "previous")
+  paint
+  self~assertColor(rc, 0, 0, 255)
+
+::method test_paint_used_for_filling
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  paint blue
+  fillRect 10 10
+  self~assertEquals(jdorTest.argb(0, 0, 255), jdorTest.pixel(5, 5))
+
+-- gradientPaint ----------------------------------------------------------------
+
+::method test_gradientPaint_fills_with_gradient
+  call jdorTest.fresh
+  address jdor
+  newImage 100 10
+  gradientPaint g 0 0 red 99 0 blue
+  fillRect 100 10
+  self~assertTrue(jdorTest.near(jdorTest.pixel(0, 5),  255, 0, 0, 255, 3), "start: red")
+  self~assertTrue(jdorTest.near(jdorTest.pixel(99, 5), 0, 0, 255, 255, 3), "end: blue")
+  parse value jdorTest.rgba(jdorTest.pixel(50, 5)) with r g b a
+  self~assertTrue(r > 100 & r < 155 & b > 100 & b < 155 & g < 5 & a = 255, "middle: a mix ("r g b a")")
+
+::method test_gradientPaint_registered_by_name
+  call jdorTest.fresh
+  address jdor
+  newImage 100 10
+  gradientPaint g 0 0 red 99 0 blue
+  color green                  -- replaces the paint
+  gradientPaint g              -- reuse the registered gradient
+  fillRect 100 10
+  self~assertTrue(jdorTest.near(jdorTest.pixel(0, 5),  255, 0, 0, 255, 3), "start: red")
+  self~assertTrue(jdorTest.near(jdorTest.pixel(99, 5), 0, 0, 255, 255, 3), "end: blue")
+
+::method test_gradientPaint_as_paint_nickname
+  call jdorTest.fresh
+  address jdor
+  newImage 100 10
+  gradientPaint g 0 0 red 99 0 blue
+  color green
+  paint g                      -- paint looks up gradientPaints first
+  fillRect 100 10
+  self~assertTrue(jdorTest.near(jdorTest.pixel(0, 5), 255, 0, 0, 255, 3))
+
+::method test_gradientPaint_unknown_name_is_error
+  trace off
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  gradientPaint nope
+  self~assertEquals(-4, rc)
+  self~assertEquals(1, .rs)
+
+-- composite --------------------------------------------------------------------
+
+::method test_composite_default
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  composite
+  self~assertEquals(3, rc~getRule, "SRC_OVER")
+  self~assertEquals(1, rc~getAlpha)
+
+::method test_composite_set_by_name_with_alpha
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  composite SRC_OVER 0.5
+  self~assertEquals(3, rc~getRule, "previous")
+  composite
+  self~assertEquals(3,   rc~getRule)
+  self~assertEquals(0.5, rc~getAlpha)
+
+::method test_composite_set_by_number
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  composite 2
+  composite
+  self~assertEquals(2, rc~getRule, "SRC")
+  self~assertEquals(1, rc~getAlpha)
+
+::method test_composite_alpha_affects_pixels
+  call jdorTest.fresh
+  address jdor
+  newImage 10 10
+  composite SRC_OVER 0.5
+  color red
+  fillRect 10 10
+  self~assertTrue(jdorTest.near(jdorTest.pixel(5, 5), 255, 0, 0, 128, 1), "half-transparent red")
+
+::method test_composite_unknown_rule_is_error
+  trace off
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  composite BOGUS
+  self~assertEquals(-102, rc)
+  self~assertEquals(1, .rs)
