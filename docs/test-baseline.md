@@ -7,7 +7,8 @@ Rechecked with the same results, with and without `--legacy-lib-name`, on
 ooRexx r13282 (21/10/2026) and r13286 (23/10/2026), the test framework at
 the same revision each time, and on ooRexx r13289 (25/10/2026) with the
 test framework at test/trunk r13291 (the family's pin: r13290 and r13291
-change no code, and SourceForge builds neither).
+change no code, and SourceForge builds neither), and on ooRexx r13297
+(25/10/2026, `StackCommandEnvironment`) with test/trunk r13299.
 Runner: [`scripts/run-tests.sh`](../scripts/run-tests.sh).*
 
 ## Summary
@@ -54,8 +55,9 @@ whatever that charset is.
   bundled copy was dropped from the path in 2017. The runner therefore uses
   the current framework from ooRexx's SVN (`test/trunk`: `testOORexx.rex`,
   `worker.rex`, `ooTest.frm`, `framework/*.cls`) at the same revision as
-  the interpreter, except since 25/10/2026: test/trunk r13291 with the
-  interpreter at r13289 (13286 from 23/10/2026; 13282 from 21/10/2026; 13278 before); `--framework bundled` uses the old copy.
+  the interpreter, except since 25/10/2026, when the family pins it apart:
+  test/trunk r13299 with the interpreter at r13297 (r13291 with r13289
+  before; 13286 from 23/10/2026; 13282 from 21/10/2026; 13278 before); `--framework bundled` uses the old copy.
 - **The Java helper classes** of the tests (`rgf.*`, `java6.plain`,
   `java8.plain`, `java8.defaultMethods`, `rgf_multithreading`; `UseTest2` in
   the unnamed package) are compiled in place in a copy of the tree, as
