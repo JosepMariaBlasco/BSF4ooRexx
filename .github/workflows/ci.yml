@@ -11,7 +11,7 @@ on:
 env:
   # ooRexx: SourceForge's portable build of this trunk revision; sessions
   # read the same value (scripts/setup-oorexx.sh).
-  OOREXX_REV: "13297"
+  OOREXX_REV: "13324"
 
 jobs:
   linux:
