@@ -12,7 +12,7 @@
 #                   not forced), to see which groups need one
 #   --framework svn      the ooRexx test framework (testOORexx.rex, ooTest.frm,
 #                   worker.rex, framework/*.cls) from ooRexx's SVN at revision
-#                   $OOTEST_REV (default 13331, the family's pin for test/trunk);
+#                   $OOTEST_REV (default 13344, the family's pin for test/trunk);
 #                   the default. The tests use assertions (assertSameList, ...)
 #                   that the bundled copy lacks.
 #   --framework bundled  testUnits/ooRexxUnit/ (an old copy, ooTest 4.0.0)
@@ -51,7 +51,7 @@ PATTERN='.'
 TIMEOUT="${TEST_TIMEOUT:-180}"
 FRAMEWORK=svn
 LEGACY=0
-OOTEST_REV="${OOTEST_REV:-13331}"
+OOTEST_REV="${OOTEST_REV:-13344}"
 
 while [ $# -gt 0 ]; do
   case "$1" in
