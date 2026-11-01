@@ -12,7 +12,8 @@ change no code, and SourceForge builds neither), and on ooRexx r13297
 ooRexx r13324 (28/10/2026: #2126, #2123, #2128, #2116) with test/trunk
 r13325, and on ooRexx r13329 (29/10/2026: #2129, RFE #883) with test/trunk
 r13331, and on ooRexx r13344 (31/10/2026: #2130, #2131, #2132, #2108,
-#2124, #2104) with test/trunk r13344.
+#2124, #2104) with test/trunk r13344, and on ooRexx r13346 (1/11/2026:
+#2124's regression fixed) with test/trunk r13347.
 Runner: [`scripts/run-tests.sh`](../scripts/run-tests.sh).*
 
 ## Summary
@@ -60,7 +61,8 @@ whatever that charset is.
   the current framework from ooRexx's SVN (`test/trunk`: `testOORexx.rex`,
   `worker.rex`, `ooTest.frm`, `framework/*.cls`) at the same revision as
   the interpreter, except since 25/10/2026, when the family pins it apart:
-  test/trunk r13344 with the interpreter at r13344 (r13331 with r13329,
+  test/trunk r13347 with the interpreter at r13346 (r13344 with r13344,
+  r13331 with r13329,
   r13325 with r13324,
   r13299 with r13297,
   and r13291 with r13289, before; 13286 from 23/10/2026; 13282 from 21/10/2026; 13278 before); `--framework bundled` uses the old copy.
