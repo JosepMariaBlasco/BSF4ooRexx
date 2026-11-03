@@ -12,6 +12,8 @@
    needs: ooRexx 5.0.0 (cf. <http://www.ooRexx.org>) and Java 8 or higher
 
    date:
+         2026-11-03, ---rgf   - increase digits() for 32-bit usage by 1 in id2x() to not get a runtime
+                                error if having an immense amount of objects
          2026-02-22/23, ---rgf  - fix "--enable-native-access" to "--enable-native-access=ALL-UNNAMED",
                                was not pointed out by Java because of "-XX:+IgnoreUnrecognizedVMOptions"
                                in effect (hence should be removed, once Java 25 goes out of service)
@@ -998,7 +1000,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="850.20261024" -- set version (date distribution got created)
+      .bsf4rexx~version="850.20261103" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -6726,7 +6728,7 @@ editJavaString: procedure expose bPrependCR  -- prepend CR to single LF in Java 
   use strict arg argVal, deliString=("_")
 
   iDigits=.rexxinfo~internalDigits  -- get number of internal digits
-  numeric digits iDigits
+  numeric digits iDigits +1
   val=argVal~d2x(iDigits)  -- convert to a hexadecimal string
   len=(iDigits=9)~?(8,16)  -- determine length of hexadecimal value
   hexval = val~right(len)  -- extract the hex digits representing 32 or 64 bit value

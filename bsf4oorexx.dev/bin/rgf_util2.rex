@@ -116,7 +116,8 @@
                                 of the ~identityHash value to make it better legible,
                                 comprehensible
                   2024-04-26  - do not use ~?() as  not available in ooRexx 4.2, use "if" instead
-
+                  2026-11-03  - increase digits() for 32-bit usage by 1 in id2x() to not get a runtime
+                                error if having an immense amount of objects
 
       purpose:    set of 3.2 utilities to ease programming of 3.2.0, e.g. offer sort2()- and
                   stableSort2()-BIFs that handle all kind of standard sorting needs, thereby
@@ -134,7 +135,7 @@
 
       license:    ASF 2.0, <http://www.apache.org/licenses/LICENSE-2.0>:
                   --------------- cut here ----------------
-                     Copyright 2008-2017 Rony G. Flatscher
+                     Copyright 2008-2026 Rony G. Flatscher
 
                      Licensed under the Apache License, Version 2.0 (the "License");
                      you may not use this file except in compliance with the License.
@@ -149,7 +150,7 @@
                      limitations under the License.
                   --------------- cut here ----------------
 
-      version:    110.20171221
+      version:    111.20261103
 */
 
 .environment~rgf.non.printable=xrange("00"x,"1F"x)||"FF"x
@@ -3549,7 +3550,7 @@ listCollection: procedure
   use strict arg argVal, deliString=("_")
 
   iDigits=.someRexxInfo~internalDigits  -- get number of internal digits
-  numeric digits iDigits
+  numeric digits iDigits + 1
   val=argVal~d2x(iDigits)  -- convert to a hexadecimal string
   if iDigits=9 then len=8  -- hex string length
                else len=16
