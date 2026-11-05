@@ -14,7 +14,9 @@ r13325, and on ooRexx r13329 (29/10/2026: #2129, RFE #883) with test/trunk
 r13331, and on ooRexx r13344 (31/10/2026: #2130, #2131, #2132, #2108,
 #2124, #2104) with test/trunk r13344, and on ooRexx r13346 (1/11/2026:
 #2124's regression fixed) with test/trunk r13347, and on ooRexx r13358
-(3/11/2026: #2107, #2133, #2109, #2115, #2135) with test/trunk r13359.
+(3/11/2026: #2107, #2133, #2109, #2115, #2135) with test/trunk r13359, and
+on ooRexx r13379 (5/11/2026: #2075, #2134, #2136, #2084, #2018, #1317,
+#2137, #2138, #2009, #2011, #2014, #1890) with test/trunk r13380.
 Runner: [`scripts/run-tests.sh`](../scripts/run-tests.sh).*
 
 ## Summary
@@ -62,7 +64,8 @@ whatever that charset is.
   the current framework from ooRexx's SVN (`test/trunk`: `testOORexx.rex`,
   `worker.rex`, `ooTest.frm`, `framework/*.cls`) at the same revision as
   the interpreter, except since 25/10/2026, when the family pins it apart:
-  test/trunk r13359 with the interpreter at r13358 (r13347 with r13346,
+  test/trunk r13380 with the interpreter at r13379 (r13359 with r13358,
+  r13347 with r13346,
   r13344 with r13344,
   r13331 with r13329,
   r13325 with r13324,
