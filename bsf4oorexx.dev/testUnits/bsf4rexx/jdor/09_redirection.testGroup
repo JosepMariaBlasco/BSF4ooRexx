@@ -1,0 +1,149 @@
+#!/usr/bin/env rexx
+/*
+   name:             09_redirection.testGroup
+   author:           Josep Maria Blasco
+   version:          0.1.0
+   date:             2026-10-14
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          JDOR and ADDRESS ... WITH redirection: the canonical form
+                     of commands (OUTPUT), errors and failures (OUTPUT and
+                     ERROR), and replaying a recorded macro (INPUT)
+   hint:             arrays are used with APPEND: without it every command
+                     replaces the array's content. Within one activation a
+                     plain "ADDRESS JDOR" keeps the redirections of the
+                     environment (ooRexx semantics): they are switched off
+                     with "WITH INPUT NORMAL OUTPUT NORMAL ERROR NORMAL"
+*/
+
+  parse source . . fileSpec
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.jdor.redirection.testGroup)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"
+::requires "jdorTestSupport.cls"
+
+::class "jdor.redirection.testGroup" subclass ooTestCase public
+
+::method setUp
+  call jdorTest.fresh
+
+::method tearDown
+  address jdor with input normal output normal error normal
+
+-- canonical form --------------------------------------------------------------
+
+::method test_canonical_form_basic
+  out = .array~new
+  address jdor with output append using (out)
+  newImage 30 20
+  color red
+  fillRect 10 10
+  address jdor with output normal
+  self~assertEquals("newImage 30 20|color RED|fillRect 10 10", out~toString(, "|"))
+
+::method test_canonical_form_rounds_numbers
+  out = .array~new
+  address jdor with output append using (out)
+  newImage 30 20
+  moveTo 2.6 3.2
+  address jdor with output normal
+  self~assertEquals("moveTo 3 3", out[2])
+
+::method test_canonical_form_position_aliases
+  out = .array~new
+  address jdor with output append using (out)
+  newImage 30 20
+  goto 1 2
+  location 1 2
+  pos 1 2
+  position 1 2
+  pos 5                         -- one argument: both coordinates
+  position                      -- query
+  address jdor with output normal
+  self~assertEquals(7, out~items)
+  do i = 2 to 5
+    self~assertEquals("moveTo 1 2", out[i], "alias #" (i - 1))
+  end
+  self~assertEquals("moveTo 5 5", out[6])
+  self~assertEquals("moveTo",     out[7], "query")
+
+::method test_canonical_form_keeps_comments
+  out = .array~new
+  address jdor with output append using (out)
+  newImage 30 20
+  '-- a comment'
+  '; another one'
+  address jdor with output normal
+  self~assertEquals("-- a comment", out[2])
+  self~assertEquals("; another one", out[3])
+
+-- errors and failures ---------------------------------------------------------
+
+::method test_error_in_output_and_error_target
+  trace off
+  out = .array~new
+  err = .array~new
+  address jdor with output append using (out) error append using (err)
+  newImage 30 20
+  moveTo a b
+  address jdor with output normal error normal
+  self~assertEquals("-- ERROR (argument): [MOVETO A B]", out[2])
+  self~assertEquals(1, err~items)
+  self~assertTrue(err[1]~startsWith("ERROR"), "error line: "err[1])
+  self~assertTrue(err[1]~contains("[MOVETO A B]"), "names the command: "err[1])
+
+::method test_failure_in_output_and_error_target
+  trace off
+  out = .array~new
+  err = .array~new
+  address jdor with output append using (out) error append using (err)
+  newImage 30 20
+  'bogus x'
+  address jdor with output normal error normal
+  self~assertEquals("-- FAILURE (unknown command): [bogus x]", out[2])
+  self~assertEquals(1, err~items)
+  self~assertTrue(err[1]~startsWith("FAILURE"), "failure line: "err[1])
+  self~assertEquals("unknown command", jdorTest.cause(err[1]))
+
+::method test_successful_commands_write_nothing_to_error_target
+  err = .array~new
+  address jdor with error append using (err)
+  newImage 30 20
+  color red
+  fillRect 5 5
+  address jdor with error normal
+  self~assertEquals(0, err~items)
+
+-- replay ------------------------------------------------------------------------
+
+::method test_replay_recorded_macro
+  out = .array~new
+  address jdor with output append using (out)
+  newImage 30 20
+  '-- recorded'
+  color red
+  moveTo 2.6 3
+  fillRect 10 10
+  address jdor with output normal
+
+  call jdorTest.fresh            -- a brand-new handler replays the macro
+  in = out~section(1)
+  replayed = .array~new
+  address jdor with input using (in) output append using (replayed)
+  '-- start the replay'          -- at least one command is needed to start
+  address jdor with input normal output normal
+
+  self~assertEquals("-- start the replay", replayed[1])
+  self~assertEquals(out~toString(, "|"), replayed~section(2)~toString(, "|"), "same canonical form")
+  imageSize
+  self~assertEquals("30 20", rc)
+  self~assertEquals(jdorTest.argb(255, 0, 0), jdorTest.pixel(5, 5), "same drawing")
+  self~assertEquals(0, jdorTest.pixel(1, 1), "same drawing (outside)")

@@ -5,8 +5,10 @@
             without any knowledge about Java installation issues)
    Author:  Rony G. Flatscher
    Date:    2006-01-07
-   Version: 1.49
+   Version: 1.50
    Changed:
+            2026-10-24  - fix quotes in DOS for loop (directory may contain blanks), fixes
+                          bug [bugs:#56]
             2025-09-02  - fixed a typo (infoBSF.rex -> infoBSF.rxj)
                         - added code to inhibit infamous JNI warning introduced with Java/OpenJDK 24
                           (by defining the jvm startup option "--enable-native-access=ALL-UNNAMED")
@@ -1497,7 +1499,7 @@ create_REXXJ_Script: procedure expose j. cmd. path.
      call lineout fn, 'for /f "usebackq tokens=*" %%a in (`cd`) do set CURR_DIR=%%a'
      call lineout fn, "cd /d %BSF4OOREXX_HOME%"      -- also change drive letter
 
-     call lineout fn, "for /F ""delims="" %%I in ('""dir /B %BSF4OOREXX_HOME%\lib 2>null""') do set TMP_BSF4OOREXX_JAR=%%~fI"
+     call lineout fn, "for /F ""delims="" %%I in ('dir /B ""%BSF4OOREXX_HOME%\lib"" ') do set TMP_BSF4OOREXX_JAR=%%~fI"
      call lineout fn, "cd /d %CURR_DIR%"           -- also change drive letter
   end
   call lineout fn, ""

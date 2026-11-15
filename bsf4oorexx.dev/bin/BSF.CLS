@@ -12,6 +12,15 @@
    needs: ooRexx 5.0.0 (cf. <http://www.ooRexx.org>) and Java 8 or higher
 
    date:
+         2026-11-03, ---rgf   - increase digits() for 32-bit usage by 1 in id2x() to not get a runtime
+                                error if having an immense amount of objects
+         2026-02-22/23, ---rgf  - fix "--enable-native-access" to "--enable-native-access=ALL-UNNAMED",
+                               was not pointed out by Java because of "-XX:+IgnoreUnrecognizedVMOptions"
+                               in effect (hence should be removed, once Java 25 goes out of service)
+         2026-02-11, ---rgf, - add BSF_Medication if demand loading Java to inhibit older JVMs to crash
+                               upon startup because "--enable-native-access" is unknown to them, ie.,
+                               "BSF_Medication=-XX:+IgnoreUnrecognizedVMOptions --enable-native-access"
+
          2025-12-15, ---rgf, - method getAttribute: superfluous first 'signal on syntax',
                                methods isEmpty and getDataFlavors: typo 'synax:' instead of 'syntax:';
                                reported by Josep Maria Blasco, thanks!
@@ -991,7 +1000,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="850.20260117" -- set version (date distribution got created)
+      .bsf4rexx~version="850.20261103" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -1576,6 +1585,9 @@ syntax:
 
   if bDebug then .error~say( .context~name"/".line":" "q~items="pp(q~items) "q~allitems:" pp(q~allitems~toString('L','/\')) )
 
+  -- rgf, 20260204 (from jigsaw-dev), works on Java/OpenJDK 8+:
+  --         -XX:+IgnoreUnrecognizedVMOptions --enable-native-access
+
   tokens     = makeTokens(q~allItems)  -- parse all arguments into tokens
   arrStartup = makeArgArray(tokens)    -- create individual startup options from tokens
 
@@ -1810,6 +1822,20 @@ makeArgArray: procedure
           arr~append(str)     -- just the option
       end
    end
+
+   -- rgf, 2026-02-11,23: cater for "BSF_Medication=-XX:+IgnoreUnrecognizedVMOptions --enable-native-access=ALL-UNNAMED"
+   -- TODO: when Java/OpenJDK 25 goes out of service remove ignoreSwitch
+   ignoreSwitch      ="-XX:+IgnoreUnrecognizedVMOptions"
+   enableNativeSwitch="--enable-native-access=ALL-UNNAMED"
+   bIgnoreSeen?      =.false
+   bEnableNativeSeen?=.false
+   do option over arr   -- check whether BSF_Medication switches are present
+      if pos(ignoreSwitch      ,option)>0 then bIgnoreSeen?      =.true
+      if pos(enableNativeSwitch,option)>0 then bEnableNativeSeen?=.true
+   end
+   if bIgnoreSeen?      =.false then arr~append(ignoreSwitch)
+   if bEnableNativeSeen?=.false then arr~append(enableNativeSwitch)
+
 
    if \cpSeen? then     -- no classpath set, use CLASSPATH environment variable, if set
    do
@@ -6702,7 +6728,7 @@ editJavaString: procedure expose bPrependCR  -- prepend CR to single LF in Java 
   use strict arg argVal, deliString=("_")
 
   iDigits=.rexxinfo~internalDigits  -- get number of internal digits
-  numeric digits iDigits
+  numeric digits iDigits +1
   val=argVal~d2x(iDigits)  -- convert to a hexadecimal string
   len=(iDigits=9)~?(8,16)  -- determine length of hexadecimal value
   hexval = val~right(len)  -- extract the hex digits representing 32 or 64 bit value

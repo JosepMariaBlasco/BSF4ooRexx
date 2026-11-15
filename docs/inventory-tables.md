@@ -26,216 +26,216 @@ Environment entries set by this package:
 
 ### BSF.CLS
 
-`bsf4oorexx.dev/bin/BSF.CLS`; 194 public items, 85 non-public. Requires: `BSF4ooRexx850` library (line 1039).
+`bsf4oorexx.dev/bin/BSF.CLS`; 194 public items, 85 non-public. Requires: `BSF4ooRexx850` library (line 1048).
 
 | Item | Kind | Flags | Line | Src | Refcard | Tests |
 |---|---|---|---:|---|---|---:|
-| `xBSF` | routine | external: `LIBRARY BSF4ooRexx850 BSF` | 1047 | comment | - | 1 |
-| `xBsfCreateRexxProxy` | routine | external: `LIBRARY BSF4ooRexx850 BsfCreateRexxProxy` | 1048 | - | - | 0 |
-| `xBsfRexxProxy` | routine | external: `LIBRARY BSF4ooRexx850 BsfRexxProxy` | 1049 | - | - | 0 |
-| `xBsfUninit4JavaBean` | routine | external: `LIBRARY BSF4ooRexx850 BsfUninit4JavaBean` | 1050 | - | - | 0 |
-| `xBsfLoadJava` | routine | external: `LIBRARY BSF4ooRexx850 BsfLoadJava` | 1051 | - | - | 0 |
-| `makeBSF4ooRexxLookLikeMacOSX` | routine |  | 1073 | comment | - | 0 |
-| `box` | routine |  | 1318 | comment | yes | 11 |
-| `box.strictArg` | routine |  | 1380 | comment | - | 4 |
-| `unbox` | routine |  | 1448 | comment | yes | 2 |
-| `unbox_ori` | routine |  | 1464 | - | - | 0 |
-| `parseJavaOptions` | routine |  | 1532 | doc | - | 0 |
-| `iif` | routine |  | 1889 | comment | yes | 0 |
-| `bsf.wrap` | routine |  | 1953 | comment | yes | 7 |
-| `BSF4REXX` | class |  | 1998 | doc | yes | 52 |
-| `BSF4REXX~init` | method | guarded class | 2001 | comment | n/a | n/a |
-| `BSF4REXX~bsf.dir` | attribute | get guarded class | 2006 | comment | - | 0 |
-| `BSF4REXX~bsf.dir` | attribute | set guarded class | 2009 | comment | - | 0 |
-| `BSF4REXX~unknown` | method | guarded class | 2015 | comment | n/a | n/a |
-| `BSF` | class |  | 2026 | comment | yes | 81 |
-| `BSF~init` | method | guarded class | 2033 | comment | n/a | n/a |
-| `BSF~rBSF` | attribute | guarded class | 2048 | comment | - | 0 |
-| `BSF~rBsfUninit4JavaBean` | attribute | guarded class | 2050 | comment | - | 0 |
-| `BSF~rBsfRexxProxy` | attribute | guarded class | 2052 | comment | - | 0 |
-| `BSF~rBsfCreateRexxProxy` | attribute | guarded class | 2054 | comment | - | 0 |
-| `BSF~unknown` | method | class unguarded | 2061 | comment | n/a | n/a |
-| `BSF~bsf.setBSF4RexxInfos` | method | guarded class | 2096 | comment | - | 0 |
-| `BSF~bsf.import` | method | guarded class | 2122 | comment | yes | 16 |
-| `BSF~bsf.importClass` | method | guarded class | 2178 | comment | yes | 9 |
-| `BSF~bsf.attachNewStrict` | method | guarded class | 2189 | comment | - | 0 |
-| `BSF~bsf.FullJavaClassName` | method | guarded class | 2204 | comment | - | 0 |
-| `BSF~bsf.null_string` | attribute | get unguarded class | 2221 | comment | - | 0 |
-| `BSF~bsf.null_string` | attribute | set guarded class | 2223 | comment | - | 0 |
-| `BSF~rii_id` | attribute | get guarded | 2229 | comment | - | 0 |
-| `BSF~init` | method | guarded | 2237 | comment | n/a | n/a |
-| `BSF~uninit` | method | guarded | 2282 | comment | n/a | n/a |
-| `BSF~bsf.dispatch` | method | guarded | 2305 | comment | yes | 1 |
-| `BSF~makearray` | method | guarded | 2324 | comment | n/a | n/a |
-| `BSF~supplier` | method | guarded | 2344 | comment | n/a | n/a |
-| `BSF~unknown` | method | unguarded | 2366 | comment | n/a | n/a |
-| `BSF~bsf.addEventListener` | method | guarded | 2432 | comment | - | 0 |
-| `BSF~bsf.exit` | method | guarded | 2450 | comment | yes | 0 |
-| `BSF~bsf.invoke` | method | guarded | 2455 | comment | yes | 1 |
-| `BSF~bsf.invokeJSO` | method | guarded | 2462 | comment | - | 1 |
-| `BSF~bsf.invokeStrict` | method | guarded | 2481 | comment | yes | 4 |
-| `BSF~bsf.invokeStrictJSO` | method | guarded | 2500 | comment | - | 0 |
-| `BSF~bsf.isArray` | method | unguarded | 2518 | comment | - | 0 |
-| `BSF~bsf.getFieldValue` | method | guarded | 2522 | comment | yes | 2 |
-| `BSF~bsf.getFieldValueJSO` | method | guarded | 2538 | comment | - | 1 |
-| `BSF~bsf.getFieldValueStrict` | method | guarded | 2554 | comment | yes | 4 |
-| `BSF~bsf.getFieldValueStrictJSO` | method | guarded | 2573 | comment | - | 1 |
-| `BSF~bsf.setFieldValue` | method | guarded | 2590 | comment | yes | 2 |
-| `BSF~bsf.setFieldValueStrict` | method | guarded | 2607 | comment | yes | 3 |
-| `BSF~bsf.getPropertyValue` | method | guarded | 2626 | comment | yes | 0 |
-| `BSF~bsf.getPropertyValueJSO` | method | guarded | 2643 | comment | - | 1 |
-| `BSF~bsf.setPropertyValue` | method | guarded | 2660 | comment | yes | 0 |
-| `BSF~bsf.setPropertyValueStrict` | method | guarded | 2678 | comment | yes | 0 |
-| `BSF~bsf.isA` | method | guarded | 2697 | comment | yes | 4 |
-| `BSF~bsf.exit` | method | class guarded | 2725 | comment | yes | 0 |
-| `BSF~bsf.sleep` | method | class guarded | 2750 | comment | yes | 1 |
-| `BSF~bsf.loadClass` | method | guarded class | 2770 | comment | yes | 18 |
-| `BSF~bsf.lookupBean` | method | guarded class | 2792 | comment | yes | 1 |
-| `BSF~bsf.pollEventText` | method | guarded class | 2810 | comment | yes | 1 |
-| `BSF~bsf.getStaticValue` | method | guarded class | 2832 | comment | yes | 2 |
-| `BSF~bsf.getStaticValueJSO` | method | guarded class | 2849 | comment | - | 1 |
-| `BSF~bsf.getStaticValueStrict` | method | guarded class | 2866 | comment | yes | 2 |
-| `BSF~bsf.getStaticValueStrictJSO` | method | guarded class | 2883 | comment | - | 0 |
-| `BSF~bsf.postEventText` | method | guarded class | 2900 | comment | yes | 1 |
-| `BSF~bsf.wrapArray` | method | unguarded class | 2922 | comment | yes | 0 |
-| `BSF~bsf.createArray` | method | guarded class | 2939 | comment | yes | 4 |
-| `BSF~bsf.createArrayOf` | method | guarded class | 2963 | comment | - | 9 |
-| `BSF~bsf.createJavaArray` | method | guarded class | 2993 | comment | yes | 1 |
-| `BSF~bsf.createJavaArrayOf` | method | guarded class | 3002 | comment | yes | 12 |
-| `BSF~bsf.wrapEnumeration` | method | guarded class | 3007 | comment | - | 0 |
-| `BSF~bsf.setRexxNullString` | method | guarded class | 3026 | comment | yes | 1 |
-| `BSF~bsf.haltThread` | method | guarded class | 3048 | comment | yes | 0 |
-| `BSF~bsf.wrap` | method | unguarded class | 3071 | comment | yes | 7 |
-| `bsf.import` | routine |  | 3512 | comment | yes | 16 |
-| `bsf.importClass` | routine |  | 3541 | comment | yes | 9 |
-| `bsf.loadClass` | routine |  | 3563 | doc | yes | 18 |
-| `bsf.lookupBean` | routine |  | 3573 | comment | yes | 1 |
-| `bsf.unregisterBean` | routine |  | 3579 | comment | yes | 1 |
-| `bsf.pollEventText` | routine |  | 3585 | comment | yes | 1 |
-| `bsf.postEventText` | routine |  | 3599 | comment | yes | 1 |
-| `bsf.getStaticValue` | routine |  | 3614 | comment | yes | 2 |
-| `bsf.getStaticValueJSO` | routine |  | 3622 | comment | - | 1 |
-| `bsf.getStaticValueStrict` | routine |  | 3630 | comment | yes | 2 |
-| `bsf.getStaticValueStrictJSO` | routine |  | 3638 | comment | - | 0 |
-| `bsf.getConstant` | routine |  | 3646 | comment | yes | 1 |
-| `bsf.getConstantJSO` | routine |  | 3654 | comment | - | 1 |
-| `bsf.createArray` | routine |  | 3662 | comment | yes | 4 |
-| `bsf.createArrayOf` | routine |  | 3683 | comment | - | 9 |
-| `bsf.createJavaArray` | routine |  | 3714 | comment | yes | 1 |
-| `bsf.createJavaArrayOf` | routine |  | 3735 | comment | yes | 12 |
-| `bsf.version` | routine |  | 3767 | comment | yes | 1 |
-| `bsf.haltThread` | routine |  | 3788 | comment | yes | 0 |
-| `bsf.isA` | routine |  | 3810 | comment | yes | 4 |
-| `bsf.getSlotDir` | routine |  | 3832 | comment | - | 0 |
-| `bsf.wrapStaticFields` | routine |  | 3850 | comment | yes | 0 |
-| `pp` | routine |  | 3999 | comment | yes | n/a |
-| `bsf.dialog` | class |  | 4110 | comment | yes | 0 |
-| `bsf.dialog~init` | method | class guarded | 4116 | comment | n/a | n/a |
-| `bsf.dialog~getMessageType` | method | guarded class | 4125 | comment | - | 0 |
-| `bsf.dialog~setDefaultComponent` | method | guarded class | 4135 | - | - | 0 |
-| `bsf.dialog~javaDialogClass` | method | guarded class | 4141 | comment | - | 0 |
-| `bsf.dialog~dlgConstants` | method | guarded class | 4151 | comment | - | 0 |
-| `bsf.dialog~unknown` | method | guarded class | 4197 | comment | n/a | n/a |
-| `bsf.dialog~component` | method | guarded attribute | 4209 | comment | - | 0 |
-| `bsf.dialog~init` | method | guarded | 4211 | comment | n/a | n/a |
-| `bsf.dialog~dialogBox` | method | guarded | 4219 | comment | yes | 0 |
-| `bsf.dialog~inputBox` | method | guarded | 4302 | comment | yes | 0 |
-| `bsf.dialog~messageBox` | method | guarded | 4388 | comment | yes | 0 |
-| `bsf.createProxyClass` | routine |  | 4503 | comment | - | 1 |
-| `bsf.stringToUtf8` | routine |  | 4597 | doc | - | 1 |
-| `bsf.utf8ToString` | routine |  | 4612 | doc | - | 1 |
-| `bsf.utf8stringAsJSO` | routine |  | 4630 | doc | - | 1 |
-| `bsf.JSOasUtf8string` | routine |  | 4644 | doc | - | 1 |
-| `bsf.stringAsJSO` | routine |  | 4672 | doc | - | 0 |
-| `bsf.asString` | routine |  | 4687 | doc | - | 0 |
-| `BSF.terminateRexxEngine` | routine |  | 4712 | comment | yes | 0 |
-| `bsf.redirectTo` | routine |  | 4751 | doc | yes | 2 |
-| `BSF.InputStream` | class | subclass inputstream | 4899 | comment | - | 1 |
-| `BSF.InputStream~javaObject` | attribute | guarded | 4901 | comment | - | 5 |
-| `BSF.InputStream~isReader` | attribute | guarded | 4903 | comment | - | 1 |
-| `BSF.InputStream~prefix` | attribute | guarded | 4905 | comment | yes | 0 |
-| `BSF.InputStream~string` | method | guarded | 4907 | - | n/a | n/a |
-| `BSF.InputStream~init` | method | guarded | 4915 | comment | n/a | n/a |
-| `BSF.InputStream~charIn` | method | guarded | 4928 | comment | n/a | n/a |
-| `BSF.InputStream~chars` | method | guarded | 4970 | comment | n/a | n/a |
-| `BSF.InputStream~lineIn` | method | guarded | 4979 | comment | n/a | n/a |
-| `BSF.OutputStream` | class | subclass outputstream | 5002 | comment | - | 1 |
-| `BSF.OutputStream~javaObject` | attribute | guarded | 5004 | comment | - | 5 |
-| `BSF.OutputStream~isWriter` | attribute | guarded | 5006 | comment | - | 1 |
-| `BSF.OutputStream~prefix` | attribute | guarded | 5008 | comment | yes | 0 |
-| `BSF.OutputStream~endOfLine` | attribute | guarded | 5010 | comment | - | 0 |
-| `BSF.OutputStream~doFlush` | attribute | guarded | 5012 | comment | - | 0 |
-| `BSF.OutputStream~string` | method | guarded | 5014 | - | n/a | n/a |
-| `BSF.OutputStream~init` | method | guarded | 5028 | doc | n/a | n/a |
-| `BSF.OutputStream~charOut` | method | guarded | 5045 | comment | n/a | n/a |
-| `BSF.OutputStream~lineOut` | method | guarded | 5084 | comment | n/a | n/a |
-| `BSF.OutputStream~say` | method | guarded | 5114 | - | n/a | n/a |
-| `JSR223` | class |  | 5123 | doc | - | 0 |
-| `JSR223~ENGINE_SCOPE` | constant | 100 | 5126 | comment | - | 1 |
-| `JSR223~GLOBAL_SCOPE` | constant | 200 | 5128 | comment | - | 1 |
-| `JSR223~showWarnings` | attribute | guarded class | 5131 | comment | - | 0 |
-| `JSR223~showDebugs` | attribute | guarded class | 5133 | comment | - | 0 |
-| `JSR223~init` | method | guarded class | 5136 | comment | n/a | n/a |
-| `JSR223~getBindings` | method | guarded class | 5151 | doc | - | 1 |
-| `JSR223~normalizeName` | method | guarded class | 5177 | doc | - | 0 |
-| `JSR223~ScriptContext2RexxDir` | method | guarded class | 5215 | doc | - | 1 |
-| `JSR223~getAttribute` | method | guarded class | 5289 | doc | - | 0 |
-| `JSR223~getAttributes` | method | guarded class | 5326 | doc | - | 0 |
-| `JSR223~setAttribute` | method | guarded class | 5363 | doc | - | 0 |
-| `JSR223~get` | method | guarded class | 5534 | doc | n/a | n/a |
-| `JSR223~set` | method | guarded class | 5690 | doc | n/a | n/a |
-| `FxGUIThread` | class | subclass abstractguithread | 6183 | doc | - | 0 |
-| `FxGUIThread~init` | method | guarded class | 6187 | doc | n/a | n/a |
-| `FxGUIThread~msgQueue` | attribute | get guarded class | 6192 | - | - | 0 |
-| `FxGUIThread~runnable` | attribute | get guarded class | 6193 | - | - | 2 |
-| `FxGUIThread~JavaGuiUtilityClz` | attribute | get guarded class | 6194 | - | - | 0 |
-| `FxGUIThread~waitingToRun` | attribute | guarded class | 6195 | - | - | 0 |
-| `FxGUIThread~isGuiThread` | method | guarded class | 6213 | doc | - | 0 |
-| `FxGUIThread~invokeOnGuiThread` | method | guarded class | 6222 | doc | - | 0 |
-| `AwtGUIThread` | class | subclass abstractguithread | 6243 | doc | - | 0 |
-| `AwtGUIThread~init` | method | guarded class | 6247 | doc | n/a | n/a |
-| `AwtGUIThread~msgQueue` | attribute | get guarded class | 6252 | - | - | 0 |
-| `AwtGUIThread~runnable` | attribute | get guarded class | 6253 | - | - | 2 |
-| `AwtGUIThread~JavaGuiUtilityClz` | attribute | get guarded class | 6254 | - | - | 0 |
-| `AwtGUIThread~waitingToRun` | attribute | guarded class | 6255 | - | - | 0 |
-| `AwtGUIThread~isGuiThread` | method | guarded class | 6271 | doc | - | 0 |
-| `AwtGUIThread~invokeOnGuiThread` | method | guarded class | 6280 | doc | - | 0 |
-| `Slot.Argument` | class | subclass directory | 6396 | doc | - | 0 |
-| `bsf.compile` | routine |  | 6414 | doc | - | 1 |
-| `bsf.iconv` | routine |  | 6519 | doc | - | 0 |
-| `bsf.contextClassLoader` | routine |  | 6551 | doc | - | 0 |
-| `ppJavaExceptionChain` | routine |  | 6642 | doc | - | 2 |
-| `id2x` | routine |  | 6701 | doc | - | 0 |
-| `bsf.initRAJinstance` | routine |  | 6719 | doc | - | 0 |
-| `BSF.ClipBoard` | class |  | 6770 | doc | - | 0 |
-| `BSF.ClipBoard~loadPeerClass` | method | package class | 6776 | doc | - | 0 |
-| `BSF.ClipBoard~defaultCodePage` | attribute | class | 6790 | comment | - | 0 |
-| `BSF.ClipBoard~clipboard` | method | class | 6796 | doc | - | 0 |
-| `BSF.ClipBoard~isEmpty` | method | class | 6804 | doc | - | 0 |
-| `BSF.ClipBoard~dataFlavors` | attribute | get class | 6817 | doc | - | 0 |
-| `BSF.ClipBoard~getDataFlavors` | method | class | 6825 | doc | - | 0 |
-| `BSF.ClipBoard~clear` | method | class | 6836 | doc | - | 0 |
-| `BSF.ClipBoard~image` | attribute | set class | 6850 | doc | - | 0 |
-| `BSF.ClipBoard~setImage` | method | class | 6862 | doc | - | 0 |
-| `BSF.ClipBoard~setImageWithoutAlpha` | method | class | 6880 | doc | - | 0 |
-| `BSF.ClipBoard~image` | attribute | get class | 6893 | doc | - | 0 |
-| `BSF.ClipBoard~getImage` | method | class | 6900 | doc | - | 0 |
-| `BSF.ClipBoard~string` | attribute | set class | 6917 | doc | n/a | n/a |
-| `BSF.ClipBoard~setString` | method | class | 6932 | doc | - | 0 |
-| `BSF.ClipBoard~string` | attribute | get class | 6952 | doc | n/a | n/a |
-| `BSF.ClipBoard~getString` | method | class | 6964 | doc | - | 2 |
+| `xBSF` | routine | external: `LIBRARY BSF4ooRexx850 BSF` | 1056 | comment | - | 1 |
+| `xBsfCreateRexxProxy` | routine | external: `LIBRARY BSF4ooRexx850 BsfCreateRexxProxy` | 1057 | - | - | 0 |
+| `xBsfRexxProxy` | routine | external: `LIBRARY BSF4ooRexx850 BsfRexxProxy` | 1058 | - | - | 0 |
+| `xBsfUninit4JavaBean` | routine | external: `LIBRARY BSF4ooRexx850 BsfUninit4JavaBean` | 1059 | - | - | 0 |
+| `xBsfLoadJava` | routine | external: `LIBRARY BSF4ooRexx850 BsfLoadJava` | 1060 | - | - | 0 |
+| `makeBSF4ooRexxLookLikeMacOSX` | routine |  | 1082 | comment | - | 0 |
+| `box` | routine |  | 1327 | comment | yes | 14 |
+| `box.strictArg` | routine |  | 1389 | comment | - | 4 |
+| `unbox` | routine |  | 1457 | comment | yes | 2 |
+| `unbox_ori` | routine |  | 1473 | - | - | 0 |
+| `parseJavaOptions` | routine |  | 1541 | doc | - | 0 |
+| `iif` | routine |  | 1915 | comment | yes | 0 |
+| `bsf.wrap` | routine |  | 1979 | comment | yes | 7 |
+| `BSF4REXX` | class |  | 2024 | doc | yes | 52 |
+| `BSF4REXX~init` | method | guarded class | 2027 | comment | n/a | n/a |
+| `BSF4REXX~bsf.dir` | attribute | get guarded class | 2032 | comment | - | 0 |
+| `BSF4REXX~bsf.dir` | attribute | set guarded class | 2035 | comment | - | 0 |
+| `BSF4REXX~unknown` | method | guarded class | 2041 | comment | n/a | n/a |
+| `BSF` | class |  | 2052 | comment | yes | 84 |
+| `BSF~init` | method | guarded class | 2059 | comment | n/a | n/a |
+| `BSF~rBSF` | attribute | guarded class | 2074 | comment | - | 0 |
+| `BSF~rBsfUninit4JavaBean` | attribute | guarded class | 2076 | comment | - | 0 |
+| `BSF~rBsfRexxProxy` | attribute | guarded class | 2078 | comment | - | 0 |
+| `BSF~rBsfCreateRexxProxy` | attribute | guarded class | 2080 | comment | - | 0 |
+| `BSF~unknown` | method | class unguarded | 2087 | comment | n/a | n/a |
+| `BSF~bsf.setBSF4RexxInfos` | method | guarded class | 2122 | comment | - | 0 |
+| `BSF~bsf.import` | method | guarded class | 2148 | comment | yes | 16 |
+| `BSF~bsf.importClass` | method | guarded class | 2204 | comment | yes | 9 |
+| `BSF~bsf.attachNewStrict` | method | guarded class | 2215 | comment | - | 0 |
+| `BSF~bsf.FullJavaClassName` | method | guarded class | 2230 | comment | - | 0 |
+| `BSF~bsf.null_string` | attribute | get unguarded class | 2247 | comment | - | 0 |
+| `BSF~bsf.null_string` | attribute | set guarded class | 2249 | comment | - | 0 |
+| `BSF~rii_id` | attribute | get guarded | 2255 | comment | - | 0 |
+| `BSF~init` | method | guarded | 2263 | comment | n/a | n/a |
+| `BSF~uninit` | method | guarded | 2308 | comment | n/a | n/a |
+| `BSF~bsf.dispatch` | method | guarded | 2331 | comment | yes | 1 |
+| `BSF~makearray` | method | guarded | 2350 | comment | n/a | n/a |
+| `BSF~supplier` | method | guarded | 2370 | comment | n/a | n/a |
+| `BSF~unknown` | method | unguarded | 2392 | comment | n/a | n/a |
+| `BSF~bsf.addEventListener` | method | guarded | 2458 | comment | - | 0 |
+| `BSF~bsf.exit` | method | guarded | 2476 | comment | yes | 0 |
+| `BSF~bsf.invoke` | method | guarded | 2481 | comment | yes | 1 |
+| `BSF~bsf.invokeJSO` | method | guarded | 2488 | comment | - | 1 |
+| `BSF~bsf.invokeStrict` | method | guarded | 2507 | comment | yes | 4 |
+| `BSF~bsf.invokeStrictJSO` | method | guarded | 2526 | comment | - | 0 |
+| `BSF~bsf.isArray` | method | unguarded | 2544 | comment | - | 0 |
+| `BSF~bsf.getFieldValue` | method | guarded | 2548 | comment | yes | 2 |
+| `BSF~bsf.getFieldValueJSO` | method | guarded | 2564 | comment | - | 1 |
+| `BSF~bsf.getFieldValueStrict` | method | guarded | 2580 | comment | yes | 4 |
+| `BSF~bsf.getFieldValueStrictJSO` | method | guarded | 2599 | comment | - | 1 |
+| `BSF~bsf.setFieldValue` | method | guarded | 2616 | comment | yes | 2 |
+| `BSF~bsf.setFieldValueStrict` | method | guarded | 2633 | comment | yes | 3 |
+| `BSF~bsf.getPropertyValue` | method | guarded | 2652 | comment | yes | 0 |
+| `BSF~bsf.getPropertyValueJSO` | method | guarded | 2669 | comment | - | 1 |
+| `BSF~bsf.setPropertyValue` | method | guarded | 2686 | comment | yes | 0 |
+| `BSF~bsf.setPropertyValueStrict` | method | guarded | 2704 | comment | yes | 0 |
+| `BSF~bsf.isA` | method | guarded | 2723 | comment | yes | 4 |
+| `BSF~bsf.exit` | method | class guarded | 2751 | comment | yes | 0 |
+| `BSF~bsf.sleep` | method | class guarded | 2776 | comment | yes | 1 |
+| `BSF~bsf.loadClass` | method | guarded class | 2796 | comment | yes | 18 |
+| `BSF~bsf.lookupBean` | method | guarded class | 2818 | comment | yes | 1 |
+| `BSF~bsf.pollEventText` | method | guarded class | 2836 | comment | yes | 1 |
+| `BSF~bsf.getStaticValue` | method | guarded class | 2858 | comment | yes | 2 |
+| `BSF~bsf.getStaticValueJSO` | method | guarded class | 2875 | comment | - | 1 |
+| `BSF~bsf.getStaticValueStrict` | method | guarded class | 2892 | comment | yes | 2 |
+| `BSF~bsf.getStaticValueStrictJSO` | method | guarded class | 2909 | comment | - | 0 |
+| `BSF~bsf.postEventText` | method | guarded class | 2926 | comment | yes | 1 |
+| `BSF~bsf.wrapArray` | method | unguarded class | 2948 | comment | yes | 0 |
+| `BSF~bsf.createArray` | method | guarded class | 2965 | comment | yes | 4 |
+| `BSF~bsf.createArrayOf` | method | guarded class | 2989 | comment | - | 9 |
+| `BSF~bsf.createJavaArray` | method | guarded class | 3019 | comment | yes | 1 |
+| `BSF~bsf.createJavaArrayOf` | method | guarded class | 3028 | comment | yes | 14 |
+| `BSF~bsf.wrapEnumeration` | method | guarded class | 3033 | comment | - | 0 |
+| `BSF~bsf.setRexxNullString` | method | guarded class | 3052 | comment | yes | 1 |
+| `BSF~bsf.haltThread` | method | guarded class | 3074 | comment | yes | 0 |
+| `BSF~bsf.wrap` | method | unguarded class | 3097 | comment | yes | 7 |
+| `bsf.import` | routine |  | 3538 | comment | yes | 16 |
+| `bsf.importClass` | routine |  | 3567 | comment | yes | 9 |
+| `bsf.loadClass` | routine |  | 3589 | doc | yes | 18 |
+| `bsf.lookupBean` | routine |  | 3599 | comment | yes | 1 |
+| `bsf.unregisterBean` | routine |  | 3605 | comment | yes | 1 |
+| `bsf.pollEventText` | routine |  | 3611 | comment | yes | 1 |
+| `bsf.postEventText` | routine |  | 3625 | comment | yes | 1 |
+| `bsf.getStaticValue` | routine |  | 3640 | comment | yes | 2 |
+| `bsf.getStaticValueJSO` | routine |  | 3648 | comment | - | 1 |
+| `bsf.getStaticValueStrict` | routine |  | 3656 | comment | yes | 2 |
+| `bsf.getStaticValueStrictJSO` | routine |  | 3664 | comment | - | 0 |
+| `bsf.getConstant` | routine |  | 3672 | comment | yes | 1 |
+| `bsf.getConstantJSO` | routine |  | 3680 | comment | - | 1 |
+| `bsf.createArray` | routine |  | 3688 | comment | yes | 4 |
+| `bsf.createArrayOf` | routine |  | 3709 | comment | - | 9 |
+| `bsf.createJavaArray` | routine |  | 3740 | comment | yes | 1 |
+| `bsf.createJavaArrayOf` | routine |  | 3761 | comment | yes | 14 |
+| `bsf.version` | routine |  | 3793 | comment | yes | 1 |
+| `bsf.haltThread` | routine |  | 3814 | comment | yes | 0 |
+| `bsf.isA` | routine |  | 3836 | comment | yes | 4 |
+| `bsf.getSlotDir` | routine |  | 3858 | comment | - | 0 |
+| `bsf.wrapStaticFields` | routine |  | 3876 | comment | yes | 0 |
+| `pp` | routine |  | 4025 | comment | yes | n/a |
+| `bsf.dialog` | class |  | 4136 | comment | yes | 0 |
+| `bsf.dialog~init` | method | class guarded | 4142 | comment | n/a | n/a |
+| `bsf.dialog~getMessageType` | method | guarded class | 4151 | comment | - | 0 |
+| `bsf.dialog~setDefaultComponent` | method | guarded class | 4161 | - | - | 0 |
+| `bsf.dialog~javaDialogClass` | method | guarded class | 4167 | comment | - | 0 |
+| `bsf.dialog~dlgConstants` | method | guarded class | 4177 | comment | - | 0 |
+| `bsf.dialog~unknown` | method | guarded class | 4223 | comment | n/a | n/a |
+| `bsf.dialog~component` | method | guarded attribute | 4235 | comment | - | 1 |
+| `bsf.dialog~init` | method | guarded | 4237 | comment | n/a | n/a |
+| `bsf.dialog~dialogBox` | method | guarded | 4245 | comment | yes | 0 |
+| `bsf.dialog~inputBox` | method | guarded | 4328 | comment | yes | 0 |
+| `bsf.dialog~messageBox` | method | guarded | 4414 | comment | yes | 0 |
+| `bsf.createProxyClass` | routine |  | 4529 | comment | - | 1 |
+| `bsf.stringToUtf8` | routine |  | 4623 | doc | - | 1 |
+| `bsf.utf8ToString` | routine |  | 4638 | doc | - | 1 |
+| `bsf.utf8stringAsJSO` | routine |  | 4656 | doc | - | 1 |
+| `bsf.JSOasUtf8string` | routine |  | 4670 | doc | - | 1 |
+| `bsf.stringAsJSO` | routine |  | 4698 | doc | - | 0 |
+| `bsf.asString` | routine |  | 4713 | doc | - | 0 |
+| `BSF.terminateRexxEngine` | routine |  | 4738 | comment | yes | 0 |
+| `bsf.redirectTo` | routine |  | 4777 | doc | yes | 2 |
+| `BSF.InputStream` | class | subclass inputstream | 4925 | comment | - | 1 |
+| `BSF.InputStream~javaObject` | attribute | guarded | 4927 | comment | - | 5 |
+| `BSF.InputStream~isReader` | attribute | guarded | 4929 | comment | - | 1 |
+| `BSF.InputStream~prefix` | attribute | guarded | 4931 | comment | yes | 1 |
+| `BSF.InputStream~string` | method | guarded | 4933 | - | n/a | n/a |
+| `BSF.InputStream~init` | method | guarded | 4941 | comment | n/a | n/a |
+| `BSF.InputStream~charIn` | method | guarded | 4954 | comment | n/a | n/a |
+| `BSF.InputStream~chars` | method | guarded | 4996 | comment | n/a | n/a |
+| `BSF.InputStream~lineIn` | method | guarded | 5005 | comment | n/a | n/a |
+| `BSF.OutputStream` | class | subclass outputstream | 5028 | comment | - | 1 |
+| `BSF.OutputStream~javaObject` | attribute | guarded | 5030 | comment | - | 5 |
+| `BSF.OutputStream~isWriter` | attribute | guarded | 5032 | comment | - | 1 |
+| `BSF.OutputStream~prefix` | attribute | guarded | 5034 | comment | yes | 1 |
+| `BSF.OutputStream~endOfLine` | attribute | guarded | 5036 | comment | - | 0 |
+| `BSF.OutputStream~doFlush` | attribute | guarded | 5038 | comment | - | 0 |
+| `BSF.OutputStream~string` | method | guarded | 5040 | - | n/a | n/a |
+| `BSF.OutputStream~init` | method | guarded | 5054 | doc | n/a | n/a |
+| `BSF.OutputStream~charOut` | method | guarded | 5071 | comment | n/a | n/a |
+| `BSF.OutputStream~lineOut` | method | guarded | 5110 | comment | n/a | n/a |
+| `BSF.OutputStream~say` | method | guarded | 5140 | - | n/a | n/a |
+| `JSR223` | class |  | 5149 | doc | - | 0 |
+| `JSR223~ENGINE_SCOPE` | constant | 100 | 5152 | comment | - | 1 |
+| `JSR223~GLOBAL_SCOPE` | constant | 200 | 5154 | comment | - | 1 |
+| `JSR223~showWarnings` | attribute | guarded class | 5157 | comment | - | 0 |
+| `JSR223~showDebugs` | attribute | guarded class | 5159 | comment | - | 0 |
+| `JSR223~init` | method | guarded class | 5162 | comment | n/a | n/a |
+| `JSR223~getBindings` | method | guarded class | 5177 | doc | - | 1 |
+| `JSR223~normalizeName` | method | guarded class | 5203 | doc | - | 0 |
+| `JSR223~ScriptContext2RexxDir` | method | guarded class | 5241 | doc | - | 1 |
+| `JSR223~getAttribute` | method | guarded class | 5315 | doc | - | 0 |
+| `JSR223~getAttributes` | method | guarded class | 5352 | doc | - | 0 |
+| `JSR223~setAttribute` | method | guarded class | 5389 | doc | - | 0 |
+| `JSR223~get` | method | guarded class | 5560 | doc | n/a | n/a |
+| `JSR223~set` | method | guarded class | 5716 | doc | n/a | n/a |
+| `FxGUIThread` | class | subclass abstractguithread | 6209 | doc | - | 0 |
+| `FxGUIThread~init` | method | guarded class | 6213 | doc | n/a | n/a |
+| `FxGUIThread~msgQueue` | attribute | get guarded class | 6218 | - | - | 0 |
+| `FxGUIThread~runnable` | attribute | get guarded class | 6219 | - | - | 2 |
+| `FxGUIThread~JavaGuiUtilityClz` | attribute | get guarded class | 6220 | - | - | 0 |
+| `FxGUIThread~waitingToRun` | attribute | guarded class | 6221 | - | - | 0 |
+| `FxGUIThread~isGuiThread` | method | guarded class | 6239 | doc | - | 0 |
+| `FxGUIThread~invokeOnGuiThread` | method | guarded class | 6248 | doc | - | 0 |
+| `AwtGUIThread` | class | subclass abstractguithread | 6269 | doc | - | 0 |
+| `AwtGUIThread~init` | method | guarded class | 6273 | doc | n/a | n/a |
+| `AwtGUIThread~msgQueue` | attribute | get guarded class | 6278 | - | - | 0 |
+| `AwtGUIThread~runnable` | attribute | get guarded class | 6279 | - | - | 2 |
+| `AwtGUIThread~JavaGuiUtilityClz` | attribute | get guarded class | 6280 | - | - | 0 |
+| `AwtGUIThread~waitingToRun` | attribute | guarded class | 6281 | - | - | 0 |
+| `AwtGUIThread~isGuiThread` | method | guarded class | 6297 | doc | - | 0 |
+| `AwtGUIThread~invokeOnGuiThread` | method | guarded class | 6306 | doc | - | 0 |
+| `Slot.Argument` | class | subclass directory | 6422 | doc | - | 0 |
+| `bsf.compile` | routine |  | 6440 | doc | - | 1 |
+| `bsf.iconv` | routine |  | 6545 | doc | - | 0 |
+| `bsf.contextClassLoader` | routine |  | 6577 | doc | - | 0 |
+| `ppJavaExceptionChain` | routine |  | 6668 | doc | - | 2 |
+| `id2x` | routine |  | 6727 | doc | - | 0 |
+| `bsf.initRAJinstance` | routine |  | 6745 | doc | - | 0 |
+| `BSF.ClipBoard` | class |  | 6796 | doc | - | 0 |
+| `BSF.ClipBoard~loadPeerClass` | method | package class | 6802 | doc | - | 0 |
+| `BSF.ClipBoard~defaultCodePage` | attribute | class | 6816 | comment | - | 0 |
+| `BSF.ClipBoard~clipboard` | method | class | 6822 | doc | - | 0 |
+| `BSF.ClipBoard~isEmpty` | method | class | 6830 | doc | - | 1 |
+| `BSF.ClipBoard~dataFlavors` | attribute | get class | 6843 | doc | - | 0 |
+| `BSF.ClipBoard~getDataFlavors` | method | class | 6851 | doc | - | 0 |
+| `BSF.ClipBoard~clear` | method | class | 6862 | doc | - | 2 |
+| `BSF.ClipBoard~image` | attribute | set class | 6876 | doc | - | 6 |
+| `BSF.ClipBoard~setImage` | method | class | 6888 | doc | - | 0 |
+| `BSF.ClipBoard~setImageWithoutAlpha` | method | class | 6906 | doc | - | 0 |
+| `BSF.ClipBoard~image` | attribute | get class | 6919 | doc | - | 6 |
+| `BSF.ClipBoard~getImage` | method | class | 6926 | doc | - | 0 |
+| `BSF.ClipBoard~string` | attribute | set class | 6943 | doc | n/a | n/a |
+| `BSF.ClipBoard~setString` | method | class | 6958 | doc | - | 0 |
+| `BSF.ClipBoard~string` | attribute | get class | 6978 | doc | n/a | n/a |
+| `BSF.ClipBoard~getString` | method | class | 6990 | doc | - | 2 |
 
 Environment entries set by this package:
 
 | Entry | Line | How |
 |---|---:|---|
-| `bsf.rii_id` | 988 | `.local~bsf.rii_id=` |
-| `bsf` | 1007 | `.environment~bsf=` |
-| `slot.argument` | 1008 | `.environment~slot.argument=` |
-| `bsf_error_message` | 1928 | `.local~bsf_error_message=` |
-| `className, new_class` | 2166 | `.environment~setEntry` |
-| `name4env,jClz` | 2779 | `.environment~setEntry` |
-| `dev.null` | 6734 | `.environment~dev.null=` |
+| `bsf.rii_id` | 997 | `.local~bsf.rii_id=` |
+| `bsf` | 1016 | `.environment~bsf=` |
+| `slot.argument` | 1017 | `.environment~slot.argument=` |
+| `bsf_error_message` | 1954 | `.local~bsf_error_message=` |
+| `className, new_class` | 2192 | `.environment~setEntry` |
+| `name4env,jClz` | 2805 | `.environment~setEntry` |
+| `dev.null` | 6760 | `.environment~dev.null=` |
 
 ### BSF_OnTheFly.cls
 
@@ -258,93 +258,98 @@ Environment entries set by this package:
 
 | Item | Kind | Flags | Line | Src | Refcard | Tests |
 |---|---|---|---:|---|---|---:|
-| `interpreter_extended` | routine |  | 164 | - | - | 0 |
-| `procedural_extended` | routine |  | 172 | - | - | 0 |
-| `rgf_util_extended` | routine |  | 177 | - | - | 0 |
-| `abbrev2` | routine |  | 187 | comment | - | 0 |
-| `changeStr2` | routine |  | 238 | comment | - | 0 |
-| `compare2` | routine |  | 330 | comment | - | 0 |
-| `countStr2` | routine |  | 372 | comment | - | 0 |
-| `delStr2` | routine |  | 407 | comment | - | 0 |
-| `delWord2` | routine |  | 477 | comment | - | 0 |
-| `lastPos2` | routine |  | 547 | comment | - | 0 |
-| `left2` | routine |  | 605 | comment | - | 0 |
-| `lower2` | routine |  | 647 | comment | - | 0 |
-| `overlay2` | routine |  | 725 | comment | - | 0 |
-| `Pos2` | routine |  | 810 | comment | - | 0 |
-| `right2` | routine |  | 866 | comment | - | 0 |
-| `sort2` | routine |  | 935 | comment | - | 0 |
-| `stableSort2` | routine |  | 1064 | comment | - | 0 |
-| `subchar2` | routine |  | 1175 | comment | - | 0 |
-| `substr2` | routine |  | 1225 | comment | - | 0 |
-| `subWord2` | routine |  | 1323 | comment | - | 0 |
-| `upper2` | routine |  | 1386 | comment | - | 0 |
-| `word2` | routine |  | 1460 | comment | - | 0 |
-| `wordIndex2` | routine |  | 1502 | comment | - | 0 |
-| `wordLength2` | routine |  | 1543 | comment | - | 0 |
-| `wordPos2` | routine |  | 1586 | comment | - | 0 |
-| `parseWords2` | routine |  | 1657 | comment | - | 0 |
-| `dump2` | routine |  | 1768 | comment | - | 2 |
-| `MessageComparator` | class | mixinclass comparator | 2044 | comment | - | 0 |
-| `MessageComparator~init` | method |  | 2046 | - | n/a | n/a |
-| `MessageComparator~cached_plain_compare` | method |  | 2245 | comment | - | 0 |
-| `MessageComparator~cached_plain_numeric_compare` | method |  | 2262 | - | - | 0 |
-| `MessageComparator~cached_plain_caseless_compare` | method |  | 2278 | - | - | 0 |
-| `MessageComparator~plain_compare` | method |  | 2295 | - | - | 0 |
-| `MessageComparator~plain_numeric_compare` | method |  | 2305 | - | - | 0 |
-| `MessageComparator~plain_caseless_compare` | method |  | 2314 | - | - | 0 |
-| `MessageComparator~multiple_messages_compare` | method |  | 2326 | - | - | 0 |
-| `NumberComparator` | class | mixinclass comparator | 2383 | comment | - | 0 |
-| `NumberComparator~init` | method |  | 2384 | - | n/a | n/a |
-| `NumberComparator~compare` | method |  | 2416 | comment | - | 3 |
-| `NumberComparator~stringComparator` | method |  | 2424 | - | - | 0 |
-| `NumberComparator~stringComparator=` | method |  | 2428 | - | - | 0 |
-| `NumberComparator~compareWithNonNumbers` | method |  | 2433 | - | - | 0 |
-| `NumberComparator~compareWithNonNumbersDescending` | method |  | 2446 | - | - | 0 |
-| `StringComparator` | class | mixinclass comparator | 2480 | comment | - | 0 |
-| `StringComparator~init` | method |  | 2481 | - | n/a | n/a |
-| `StringComparator~compare` | method | abstract | 2533 | - | - | 3 |
-| `StringColumnComparator` | class | mixinclass comparator | 2563 | comment | - | 0 |
-| `StringColumnComparator~init` | method |  | 2565 | - | n/a | n/a |
-| `pp2` | routine |  | 2719 | comment | - | 0 |
-| `ppIndex2` | routine |  | 2756 | comment | - | 0 |
-| `escape2` | routine |  | 2815 | comment | - | 0 |
-| `makeRelation2` | routine |  | 2877 | comment | - | 0 |
-| `enquote2` | routine |  | 2903 | comment | - | 0 |
-| `ppMethod2` | routine |  | 2917 | comment | - | 0 |
-| `StringOfWords` | class |  | 2967 | comment | - | 0 |
-| `StringOfWords~init` | method |  | 2974 | comment | n/a | n/a |
-| `StringOfWords~string` | attribute | get | 2995 | - | n/a | n/a |
-| `StringOfWords~string` | attribute | set | 2996 | - | n/a | n/a |
-| `StringOfWords~reference` | attribute | get | 3004 | - | yes | 4 |
-| `StringOfWords~reference` | attribute | set | 3005 | - | yes | 4 |
-| `StringOfWords~kind` | attribute | get | 3018 | comment | - | 0 |
-| `StringOfWords~kind` | attribute | set | 3019 | - | - | 0 |
-| `StringOfWords~positionArray` | attribute | get | 3039 | - | - | 0 |
-| `StringOfWords~wordArray` | attribute | get | 3052 | - | - | 0 |
-| `StringOfWords~makeArray` | method |  | 3064 | - | n/a | n/a |
-| `StringOfWords~delWord` | method |  | 3079 | comment | - | 0 |
-| `StringOfWords~subWord` | method |  | 3164 | comment | - | 0 |
-| `StringOfWords~word` | method |  | 3246 | - | - | 1 |
-| `StringOfWords~words` | method |  | 3274 | - | - | 0 |
-| `StringOfWords~wordIndex` | method |  | 3279 | - | - | 0 |
-| `StringOfWords~wordLength` | method |  | 3304 | - | - | 0 |
-| `StringOfWords~wordPos` | method |  | 3329 | - | - | 0 |
-| `ppCondition2` | routine |  | 3410 | comment | - | 6 |
-| `ppPackage2` | routine |  | 3484 | comment | - | 0 |
-| `id2x` | routine |  | 3548 | doc | - | 0 |
+| `interpreter_extended` | routine |  | 165 | - | - | 0 |
+| `procedural_extended` | routine |  | 173 | - | - | 0 |
+| `rgf_util_extended` | routine |  | 178 | - | - | 0 |
+| `abbrev2` | routine |  | 188 | comment | - | 0 |
+| `changeStr2` | routine |  | 239 | comment | - | 0 |
+| `compare2` | routine |  | 331 | comment | - | 0 |
+| `countStr2` | routine |  | 373 | comment | - | 0 |
+| `delStr2` | routine |  | 408 | comment | - | 0 |
+| `delWord2` | routine |  | 478 | comment | - | 0 |
+| `lastPos2` | routine |  | 548 | comment | - | 0 |
+| `left2` | routine |  | 606 | comment | - | 0 |
+| `lower2` | routine |  | 648 | comment | - | 0 |
+| `overlay2` | routine |  | 726 | comment | - | 0 |
+| `Pos2` | routine |  | 811 | comment | - | 0 |
+| `right2` | routine |  | 867 | comment | - | 0 |
+| `sort2` | routine |  | 936 | comment | - | 0 |
+| `stableSort2` | routine |  | 1065 | comment | - | 0 |
+| `subchar2` | routine |  | 1176 | comment | - | 0 |
+| `substr2` | routine |  | 1226 | comment | - | 0 |
+| `subWord2` | routine |  | 1324 | comment | - | 0 |
+| `upper2` | routine |  | 1387 | comment | - | 0 |
+| `word2` | routine |  | 1461 | comment | - | 0 |
+| `wordIndex2` | routine |  | 1503 | comment | - | 0 |
+| `wordLength2` | routine |  | 1544 | comment | - | 0 |
+| `wordPos2` | routine |  | 1587 | comment | - | 0 |
+| `parseWords2` | routine |  | 1658 | comment | - | 0 |
+| `dump2` | routine |  | 1769 | comment | - | 2 |
+| `MessageComparator` | class | mixinclass comparator | 2045 | comment | - | 0 |
+| `MessageComparator~init` | method |  | 2047 | - | n/a | n/a |
+| `MessageComparator~cached_plain_compare` | method |  | 2246 | comment | - | 0 |
+| `MessageComparator~cached_plain_numeric_compare` | method |  | 2263 | - | - | 0 |
+| `MessageComparator~cached_plain_caseless_compare` | method |  | 2279 | - | - | 0 |
+| `MessageComparator~plain_compare` | method |  | 2296 | - | - | 0 |
+| `MessageComparator~plain_numeric_compare` | method |  | 2306 | - | - | 0 |
+| `MessageComparator~plain_caseless_compare` | method |  | 2315 | - | - | 0 |
+| `MessageComparator~multiple_messages_compare` | method |  | 2327 | - | - | 0 |
+| `NumberComparator` | class | mixinclass comparator | 2384 | comment | - | 0 |
+| `NumberComparator~init` | method |  | 2385 | - | n/a | n/a |
+| `NumberComparator~compare` | method |  | 2417 | comment | - | 3 |
+| `NumberComparator~stringComparator` | method |  | 2425 | - | - | 0 |
+| `NumberComparator~stringComparator=` | method |  | 2429 | - | - | 0 |
+| `NumberComparator~compareWithNonNumbers` | method |  | 2434 | - | - | 0 |
+| `NumberComparator~compareWithNonNumbersDescending` | method |  | 2447 | - | - | 0 |
+| `StringComparator` | class | mixinclass comparator | 2481 | comment | - | 0 |
+| `StringComparator~init` | method |  | 2482 | - | n/a | n/a |
+| `StringComparator~compare` | method | abstract | 2534 | - | - | 3 |
+| `StringColumnComparator` | class | mixinclass comparator | 2564 | comment | - | 0 |
+| `StringColumnComparator~init` | method |  | 2566 | - | n/a | n/a |
+| `pp2` | routine |  | 2720 | comment | - | 0 |
+| `ppIndex2` | routine |  | 2757 | comment | - | 0 |
+| `escape2` | routine |  | 2816 | comment | - | 0 |
+| `makeRelation2` | routine |  | 2878 | comment | - | 0 |
+| `enquote2` | routine |  | 2904 | comment | - | 0 |
+| `ppMethod2` | routine |  | 2918 | comment | - | 0 |
+| `StringOfWords` | class |  | 2968 | comment | - | 0 |
+| `StringOfWords~init` | method |  | 2975 | comment | n/a | n/a |
+| `StringOfWords~string` | attribute | get | 2996 | - | n/a | n/a |
+| `StringOfWords~string` | attribute | set | 2997 | - | n/a | n/a |
+| `StringOfWords~reference` | attribute | get | 3005 | - | yes | 5 |
+| `StringOfWords~reference` | attribute | set | 3006 | - | yes | 5 |
+| `StringOfWords~kind` | attribute | get | 3019 | comment | - | 0 |
+| `StringOfWords~kind` | attribute | set | 3020 | - | - | 0 |
+| `StringOfWords~positionArray` | attribute | get | 3040 | - | - | 0 |
+| `StringOfWords~wordArray` | attribute | get | 3053 | - | - | 0 |
+| `StringOfWords~makeArray` | method |  | 3065 | - | n/a | n/a |
+| `StringOfWords~delWord` | method |  | 3080 | comment | - | 0 |
+| `StringOfWords~subWord` | method |  | 3165 | comment | - | 0 |
+| `StringOfWords~word` | method |  | 3247 | - | - | 4 |
+| `StringOfWords~words` | method |  | 3275 | - | - | 4 |
+| `StringOfWords~wordIndex` | method |  | 3280 | - | - | 0 |
+| `StringOfWords~wordLength` | method |  | 3305 | - | - | 0 |
+| `StringOfWords~wordPos` | method |  | 3330 | - | - | 0 |
+| `ppCondition2` | routine |  | 3411 | comment | - | 6 |
+| `ppPackage2` | routine |  | 3485 | comment | - | 0 |
+| `id2x` | routine |  | 3549 | doc | - | 0 |
 
 Environment entries set by this package:
 
 | Entry | Line | How |
 |---|---:|---|
-| `rgf.non.printable` | 155 | `.environment~rgf.non.printable=` |
-| `rgf.alpha.low` | 156 | `.environment~rgf.alpha.low=` |
-| `rgf.alpha.upper` | 157 | `.environment~rgf.alpha.upper=` |
-| `rgf.alpha` | 158 | `.environment~rgf.alpha=` |
-| `rgf.digits` | 159 | `.environment~rgf.digits=` |
-| `rgf.alphanumeric` | 160 | `.environment~rgf.alphanumeric=` |
-| `rgf.symbol.chars` | 162 | `.environment~rgf.symbol.chars=` |
+| `rgf.non.printable` | 156 | `.environment~rgf.non.printable=` |
+| `rgf.alpha.low` | 157 | `.environment~rgf.alpha.low=` |
+| `rgf.alpha.upper` | 158 | `.environment~rgf.alpha.upper=` |
+| `rgf.alpha` | 159 | `.environment~rgf.alpha=` |
+| `rgf.digits` | 160 | `.environment~rgf.digits=` |
+| `rgf.alphanumeric` | 161 | `.environment~rgf.alphanumeric=` |
+| `rgf.symbol.chars` | 163 | `.environment~rgf.symbol.chars=` |
+
+### runXSLT.rxj
+
+`bsf4oorexx.dev/bin/runXSLT.rxj`; 0 public items, 0 non-public. Requires: `BSF.CLS` (line 51).
+
 
 ### UNO.CLS
 
@@ -534,7 +539,7 @@ The native routine `BSF` passes its first argument to `RexxAndJava.javaCallBSF()
 |---|---|---|---:|---|---|---:|
 | `getFieldValue` |  | `GET_FIELD_VALUE` (44) | 3368 | yes | yes | 6 |
 | `invoke` |  | `INVOKE` (46) | 3630 | yes | yes | 20 |
-| `registerBean` | `NEW` | `REGISTER_BEAN` (47) | 4098 | yes | yes | 107 |
+| `registerBean` | `NEW` | `REGISTER_BEAN` (47) | 4098 | yes | yes | 119 |
 | `createArray` | `CREATEJAVAARRAY` | `CREATE_ARRAY_OBJECT` (50) | 2863 | yes | yes | 5 |
 | `arrayAt` |  | `ARRAY_AT` (51) | 2954 | yes | yes | 2 |
 | `arrayPut` |  | `ARRAY_PUT` (52) | 2962 | yes | yes | 3 |
@@ -549,7 +554,7 @@ The native routine `BSF` passes its first argument to `RexxAndJava.javaCallBSF()
 | `invokeJSO` |  | `INVOKE_JSO` (68) | 3632 | yes | - | 1 |
 | `getFieldValueJSO` |  | `GET_FIELD_VALUE_JSO` (69) | 3372 | yes | - | 3 |
 | `getStaticValueJSO` |  | `GET_STATIC_FIELD_VALUE_JSO` (70) | 3377 | yes | - | 3 |
-| `createArrayOf` | `CREATEJAVAARRAYOF` | `CREATE_ARRAY_OBJECT_OF` (72) | 2776 | yes | - | 17 |
+| `createArrayOf` | `CREATEJAVAARRAYOF` | `CREATE_ARRAY_OBJECT_OF` (72) | 2776 | yes | - | 19 |
 | `getRexxAndJava` | `GETRAJO` | `GET_REXX_AND_JAVA` (74) | 3333 | yes | - | 1 |
 | `getBSFManager` |  | `GET_BSF_MANAGER` (75) | 3316 | - | yes | 4 |
 | `getRexxEngine` |  | `GET_REXX_ENGINE` (76) | 3350 | yes | - | 1 |
@@ -584,7 +589,7 @@ The native routine `BSF` passes its first argument to `RexxAndJava.javaCallBSF()
 | `setPropertyValue` |  | `SET_PROPERTY_VALUE` (115) | 3489 | yes | yes | 0 |
 | `setPropertyValueStrict` |  | `SET_PROPERTY_VALUE_STRICT` (116) | 3490 | yes | yes | 0 |
 | `setRexxNullString` |  | `SET_REXX_NULL_STRING` (117) | 4266 | yes | yes | 3 |
-| `sleep` |  | `SLEEP` (118) | 4366 | yes | yes | 2 |
+| `sleep` |  | `SLEEP` (118) | 4366 | yes | yes | 3 |
 | `rexxReflectObject` |  | `REXX_REFLECT_OBJECT` (120) | 4687 | - | - | 3 |
 | `getBeanRefCount` |  | `GET_BEAN_REFCOUNT` (122) | 4742 | - | - | 1 |
 | `testPing` |  | `TEST_PING` (123) | 4765 | - | - | 0 |
@@ -597,10 +602,10 @@ Registered in the package table `bsf_external_functions[]`; `::requires "BSF4ooR
 
 | Routine | Table | Defined | Only if | Wrapped by | Refcard | Tests |
 |---|---:|---:|---|---|---|---:|
-| `BSF` | 9006 | 7242 |  | `xBSF` BSF.CLS:1047 | yes | 81 |
+| `BSF` | 9006 | 7242 |  | `xBSF` BSF.CLS:1056 | yes | 84 |
 | `BsfAttachToTID` | 9007 | 6511 |  |  | - | 3 |
-| `BsfCreateRexxProxy` | 9008 | 6586 |  | `xBsfCreateRexxProxy` BSF.CLS:1048 | yes | 18 |
-| `BsfRexxProxy` | 9009 | 6846 |  | `xBsfRexxProxy` BSF.CLS:1049 | yes | 8 |
+| `BsfCreateRexxProxy` | 9008 | 6586 |  | `xBsfCreateRexxProxy` BSF.CLS:1057 | yes | 18 |
+| `BsfRexxProxy` | 9009 | 6846 |  | `xBsfRexxProxy` BSF.CLS:1058 | yes | 8 |
 | `BsfDetach` | 9010 | 6519 |  |  | - | 3 |
 | `BsfDoUnregisterRexxObject` | 9012 | 6351 |  |  | - | 0 |
 | `BsfDropFuncs` | 9014 | 6277 |  |  | yes | 0 |
@@ -610,7 +615,7 @@ Registered in the package table `bsf_external_functions[]`; `::requires "BSF4ooR
 | `BsfInvokedBy` | 9018 | 4951 |  |  | yes | 1 |
 | `BsfJavaException` | 9019 | 7606 |  |  | yes | 0 |
 | `BsfLoadFuncs` | 9020 | 6254 |  |  | yes | 2 |
-| `BsfLoadJava` | 9021 | 5488 |  | `xBsfLoadJava` BSF.CLS:1051 | yes | 2 |
+| `BsfLoadJava` | 9021 | 5488 |  | `xBsfLoadJava` BSF.CLS:1060 | yes | 2 |
 | `BsfQueryAllFunctions` | 9022 | 6314 |  |  | yes | 1 |
 | `BsfQueryRegisteredFunctions` | 9023 | 6406 |  |  | yes | 1 |
 | `BsfShowErrorMessage` | 9024 | 6455 |  |  | yes | 11 |
@@ -620,9 +625,9 @@ Registered in the package table `bsf_external_functions[]`; `::requires "BSF4ooR
 | `BsfContextVariables` | 9029 | 7899 |  |  | yes | 2 |
 | `BsfGetRegistryObjects` | 9032 | 7863 | `#if defined (CONFIG_MAKE_OREXX_REGISTRY_ACCESSIBLE)` |  | - | 0 |
 | `BsfApplyHotFixCrash` | 9036 | 6380 | `#ifdef HOT_FIX_CRASH` |  | - | 0 |
-| `BsfUninit4JavaBean` | 9039 | 8101 |  | `xBsfUninit4JavaBean` BSF.CLS:1050 | - | 0 |
+| `BsfUninit4JavaBean` | 9039 | 8101 |  | `xBsfUninit4JavaBean` BSF.CLS:1059 | - | 0 |
 | `BsfTestPing` | 9040 | 8164 |  |  | - | 0 |
-| `BsfCommandHandler` | 9042 | 8223 |  |  | - | 4 |
+| `BsfCommandHandler` | 9042 | 8223 |  |  | - | 5 |
 
 ### 3.2 JNI functions (called by the Java side)
 
@@ -719,7 +724,7 @@ Source: `org/oorexx/datergf/DTC.java`:56; class Javadoc: yes.
 | `public static final int FEBRUARY` | field | 221 | yes | 0 |
 | `public static final int MARCH` | field | 224 | yes | 0 |
 | `public static final int APRIL` | field | 227 | yes | 0 |
-| `public static final int MAY` | field | 230 | yes | 36 |
+| `public static final int MAY` | field | 230 | yes | 37 |
 | `public static final int JUNE` | field | 233 | yes | 0 |
 | `public static final int JULY` | field | 236 | yes | 0 |
 | `public static final int AUGUST` | field | 239 | yes | 0 |
@@ -784,7 +789,7 @@ Source: `org/oorexx/datergf/DateFormatRGF.java`:147; class Javadoc: yes.
 | `public org.oorexx.datergf.DateFormatRGF()` | constructor | - | implicit | 0 |
 | `public static String format(String, Object)` | method | 478 | yes | 0 |
 | `protected static int verify(char, char[])` | method | 792 | yes | 0 |
-| `protected static int pos(char, String, int)` | method | 809 | yes | 4 |
+| `protected static int pos(char, String, int)` | method | 809 | yes | 7 |
 | `public static void localize()` | method | 847 | yes | 0 |
 | `public static void localize(Locale)` | method | 849 | - | 0 |
 | `protected static int findFirstDigit(String)` | method | 1126 | yes | 0 |
@@ -800,19 +805,19 @@ Source: `org/oorexx/datergf/DateRGF.java`:155; class Javadoc: -.
 | `public static char dateSeparator` | field | 190 | yes | 0 |
 | `protected transient int year` | field | 331 | yes | 0 |
 | `protected transient int month` | field | 341 | yes | 0 |
-| `protected transient int day` | field | 350 | yes | 0 |
+| `protected transient int day` | field | 350 | yes | 1 |
 | `protected transient int jdn` | field | 375 | yes | 0 |
 | `public org.oorexx.datergf.DateRGF()` | constructor | 382 | yes | 0 |
 | `public org.oorexx.datergf.DateRGF(int, int, int)` | constructor | 405 | yes | 0 |
 | `public static void main(String[])` | method | 414 | yes | n/a |
 | `public static org.oorexx.datergf.DateRGF valueOf(int, int)` | method | 554 | yes | n/a |
 | `public static org.oorexx.datergf.DateRGF valueOf(String)` | method | 624 | yes | n/a |
-| `public org.oorexx.datergf.DateRGF add(int)` | method | 705 | yes | 72 |
-| `public int subtract(org.oorexx.datergf.DateRGF)` | method | 731 | yes | 0 |
+| `public org.oorexx.datergf.DateRGF add(int)` | method | 705 | yes | 84 |
+| `public int subtract(org.oorexx.datergf.DateRGF)` | method | 731 | yes | 1 |
 | `public org.oorexx.datergf.DateRGF assign(org.oorexx.datergf.DateRGF)` | method | 745 | yes | 0 |
 | `protected void cD()` | method | 768 | yes | n/a |
 | `public int compareTo(Object)` | method | 787 | yes | 3 |
-| `public Object clone()` | method | 803 | yes | 0 |
+| `public Object clone()` | method | 803 | yes | 1 |
 | `public boolean equals(org.oorexx.datergf.DateRGF)` | method | 820 | yes | n/a |
 | `public int get(int)` | method | 933 | yes | n/a |
 | `public org.oorexx.datergf.DateRGF set(int, int)` | method | 1149 | yes | n/a |
@@ -850,17 +855,17 @@ Source: `org/oorexx/datergf/DateTimeRGF.java`:135; class Javadoc: yes.
 | Member | Kind | Line | Javadoc | Tests |
 |---|---|---:|---|---:|
 | `public static String version` | field | 143 | yes | n/a |
-| `public org.oorexx.datergf.DateRGF date` | field | 149 | yes | 40 |
+| `public org.oorexx.datergf.DateRGF date` | field | 149 | yes | 52 |
 | `public org.oorexx.datergf.TimeRGF time` | field | 154 | yes | 10 |
 | `public org.oorexx.datergf.DateTimeRGF()` | constructor | 159 | yes | 0 |
 | `public org.oorexx.datergf.DateTimeRGF(org.oorexx.datergf.DateRGF, org.oorexx.datergf.TimeRGF)` | constructor | 169 | yes | 0 |
 | `public org.oorexx.datergf.DateTimeRGF(int, int, int, int, int, int)` | constructor | 185 | yes | 0 |
 | `public org.oorexx.datergf.DateTimeRGF(int, int, int, int, int, int, int)` | constructor | 202 | yes | 0 |
-| `public org.oorexx.datergf.DateTimeRGF add(int, int)` | method | 235 | yes | 72 |
-| `public int[] subtract(org.oorexx.datergf.DateTimeRGF)` | method | 281 | yes | 0 |
+| `public org.oorexx.datergf.DateTimeRGF add(int, int)` | method | 235 | yes | 84 |
+| `public int[] subtract(org.oorexx.datergf.DateTimeRGF)` | method | 281 | yes | 1 |
 | `public org.oorexx.datergf.DateTimeRGF assign(org.oorexx.datergf.DateTimeRGF)` | method | 306 | yes | 0 |
 | `public int compareTo(Object)` | method | 324 | yes | 3 |
-| `public Object clone()` | method | 339 | yes | 0 |
+| `public Object clone()` | method | 339 | yes | 1 |
 | `public boolean equals(org.oorexx.datergf.DateTimeRGF)` | method | 358 | yes | n/a |
 | `public String toString()` | method | 370 | yes | n/a |
 | `public long toLong(int)` | method | 416 | yes | 0 |
@@ -882,7 +887,7 @@ Source: `org/oorexx/datergf/TimeRGF.java`:80; class Javadoc: yes.
 | `public static boolean showSecs` | field | 131 | yes | 0 |
 | `protected transient int hour` | field | 139 | yes | 0 |
 | `protected transient int minute` | field | 144 | yes | 0 |
-| `protected transient int second` | field | 149 | yes | 0 |
+| `protected transient int second` | field | 149 | yes | 4 |
 | `protected transient int millis` | field | 154 | yes | 0 |
 | `protected transient int raw_millis` | field | 180 | yes | 0 |
 | `public org.oorexx.datergf.TimeRGF()` | constructor | 187 | yes | 0 |
@@ -893,11 +898,11 @@ Source: `org/oorexx/datergf/TimeRGF.java`:80; class Javadoc: yes.
 | `public static org.oorexx.datergf.TimeRGF valueOf(String)` | method | 452 | yes | n/a |
 | `public org.oorexx.datergf.TimeRGF assign(org.oorexx.datergf.TimeRGF)` | method | 542 | yes | 0 |
 | `public int compareTo(Object)` | method | 564 | yes | 3 |
-| `public Object clone()` | method | 578 | yes | 0 |
+| `public Object clone()` | method | 578 | yes | 1 |
 | `public boolean equals(org.oorexx.datergf.TimeRGF)` | method | 595 | yes | n/a |
 | `public int get(int)` | method | 632 | yes | n/a |
 | `public org.oorexx.datergf.TimeRGF set(int, int)` | method | 689 | yes | n/a |
-| `public float subtract(org.oorexx.datergf.TimeRGF)` | method | 762 | yes | 0 |
+| `public float subtract(org.oorexx.datergf.TimeRGF)` | method | 762 | yes | 1 |
 | `public float toFloat()` | method | 794 | yes | 0 |
 | `public String toString()` | method | 832 | yes | n/a |
 | `public org.oorexx.datergf.TimeRGF update()` | method | 927 | yes | 0 |
@@ -911,12 +916,12 @@ Source: `bsf4oorexx.dev/source_java/JavaDrawingHandler.java`:322; class Javadoc:
 | `public static final String version` | field | 327 | - | n/a |
 | `public boolean bUseNames4canonical` | field | 616 | - | 0 |
 | `public boolean bUseInt4numbers` | field | 617 | - | 0 |
-| `public org.oorexx.handlers.jdor.JavaDrawingHandler()` | constructor | - | implicit | 0 |
-| `public Object handleCommand(Object, String, String)` | method | 719 | yes | 5 |
-| `public static String[] getNonBlankWords(String, ArrayList<int[]>)` | method | 5176 | yes | 0 |
-| `public static ArrayList<int[]> getWordBoundaries(String, int)` | method | 5202 | yes | 0 |
-| `public static boolean checkBooleanValue(String)` | method | 5246 | yes | 0 |
-| `public static boolean getBooleanValue(String)` | method | 5268 | yes | 0 |
+| `public org.oorexx.handlers.jdor.JavaDrawingHandler()` | constructor | - | implicit | 2 |
+| `public Object handleCommand(Object, String, String)` | method | 713 | yes | 5 |
+| `public static String[] getNonBlankWords(String, ArrayList<int[]>)` | method | 5207 | yes | 0 |
+| `public static ArrayList<int[]> getWordBoundaries(String, int)` | method | 5233 | yes | 0 |
+| `public static boolean checkBooleanValue(String)` | method | 5277 | yes | 0 |
+| `public static boolean getBooleanValue(String)` | method | 5299 | yes | 0 |
 
 #### `org.oorexx.misc.OldGreekAlphabetEnum` (class)
 
@@ -1039,9 +1044,9 @@ Source: `bsf4oorexx.dev/source_java/BsfSystemClipboard.java`:67; class Javadoc: 
 |---|---|---:|---|---:|
 | `public static final String version` | field | 69 | - | n/a |
 | `public BsfSystemClipboard()` | constructor | - | implicit | 0 |
-| `public static boolean isEmpty()` | method | 76 | yes | 0 |
+| `public static boolean isEmpty()` | method | 76 | yes | 1 |
 | `public static java.awt.datatransfer.DataFlavor[] getDataFlavors()` | method | 97 | yes | 0 |
-| `public static void clear()` | method | 112 | yes | 0 |
+| `public static void clear()` | method | 112 | yes | 2 |
 | `public static java.awt.Image setImageWithoutAlpha(java.awt.Image)` | method | 130 | yes | 0 |
 | `public static void setImage(java.awt.Image)` | method | 156 | - | 0 |
 | `public static java.awt.Image getImage()` | method | 216 | yes | 0 |
@@ -1120,7 +1125,7 @@ Source: `bsf4oorexx.dev/source_java/RexxAndJava.java`:6290; class Javadoc: yes.
 | Member | Kind | Line | Javadoc | Tests |
 |---|---|---:|---|---:|
 | `public RexxAndJava$RAJBean(String, Object)` | constructor | 6305 | - | 0 |
-| `public Object getName()` | method | 6319 | - | 10 |
+| `public Object getName()` | method | 6319 | - | 11 |
 | `public Object getJavaObject()` | method | 6323 | - | 0 |
 | `public int getRefCount()` | method | 6327 | - | 0 |
 | `public String toString()` | method | 6331 | - | n/a |
@@ -1167,7 +1172,7 @@ Source: `bsf4oorexx.dev/source_java/RexxCleanupRef.java`:196; class Javadoc: yes
 
 | Member | Kind | Line | Javadoc | Tests |
 |---|---|---:|---|---:|
-| `public static final RexxCleanupRef$RefKind TEST` | field | 196 | yes | 66 |
+| `public static final RexxCleanupRef$RefKind TEST` | field | 196 | yes | 71 |
 | `public static final RexxCleanupRef$RefKind REXX_ENGINE` | field | 196 | yes | 0 |
 | `public static final RexxCleanupRef$RefKind REXX_PROXY` | field | 196 | yes | 0 |
 | `public static final RexxCleanupRef$RefKind REXX_SCRIPT_ENGINE` | field | 196 | yes | 0 |
@@ -1376,7 +1381,7 @@ Source: `bsf4oorexx.dev/source_java/RexxHandler.java`:61; class Javadoc: -.
 | `public default void raiseException1(Object, long, String)` | method | 127 | yes | 0 |
 | `public default void raiseException2(Object, long, String, String)` | method | 143 | yes | 0 |
 | `public default Object getAllContextVariables(Object)` | method | 156 | yes | 0 |
-| `public default Object getContextVariable(Object, String)` | method | 169 | yes | 3 |
+| `public default Object getContextVariable(Object, String)` | method | 169 | yes | 4 |
 | `public default void setContextVariable(Object, String, Object)` | method | 181 | yes | 3 |
 | `public default void setContextVariableToNil(Object, String)` | method | 193 | yes | 3 |
 | `public default void dropContextVariable(Object, String)` | method | 205 | yes | 3 |
@@ -1528,37 +1533,37 @@ Source: `bsf4oorexx.dev/source_java/RexxScriptEngine.java`:1811; class Javadoc: 
 
 #### `org.rexxla.bsf.engines.rexx.RexxScriptEngineFactory` (class)
 
-Source: `bsf4oorexx.dev/source_java/RexxScriptEngineFactory.java`:86; class Javadoc: yes.
+Source: `bsf4oorexx.dev/source_java/RexxScriptEngineFactory.java`:90; class Javadoc: yes.
 
 | Member | Kind | Line | Javadoc | Tests |
 |---|---|---:|---|---:|
-| `public static final RexxScriptEngineFactory DEFAULT_REXX_SCRIPT_ENGINE_FACTORY` | field | 91 | yes | 0 |
-| `protected static final String ENGINE_NAME` | field | 93 | - | 0 |
-| `protected static final String ENGINE_VERSION` | field | 94 | - | 0 |
-| `protected static final List<String> EXTENSIONS` | field | 95 | - | 1 |
-| `protected static final String LANGUAGE_NAME` | field | 98 | - | 0 |
-| `protected static String LANGUAGE_VERSION` | field | 99 | - | 0 |
-| `protected static final String SHORT_NAME` | field | 101 | - | 0 |
-| `protected static final List<String> MIME_TYPES` | field | 103 | - | 0 |
-| `protected static final List<String> SCRIPT_ENGINE_SHORT_NAMES` | field | 112 | - | 0 |
-| `protected static final String THREADING` | field | 115 | - | 1 |
-| `public static boolean bSay4Output` | field | 124 | yes | 0 |
+| `public static final RexxScriptEngineFactory DEFAULT_REXX_SCRIPT_ENGINE_FACTORY` | field | 95 | yes | 0 |
+| `protected static final String ENGINE_NAME` | field | 97 | - | 0 |
+| `protected static final String ENGINE_VERSION` | field | 98 | - | 0 |
+| `protected static final List<String> EXTENSIONS` | field | 99 | - | 1 |
+| `protected static final String LANGUAGE_NAME` | field | 102 | - | 0 |
+| `protected static String LANGUAGE_VERSION` | field | 103 | - | 0 |
+| `protected static final String SHORT_NAME` | field | 105 | - | 0 |
+| `protected static final List<String> MIME_TYPES` | field | 107 | - | 0 |
+| `protected static final List<String> SCRIPT_ENGINE_SHORT_NAMES` | field | 116 | - | 0 |
+| `protected static final String THREADING` | field | 119 | - | 1 |
+| `public static boolean bSay4Output` | field | 128 | yes | 0 |
 | `public RexxScriptEngineFactory()` | constructor | - | implicit | 0 |
-| `public String getEngineName()` | method | 128 | yes | 1 |
-| `public String getEngineVersion()` | method | 134 | yes | 1 |
-| `public List<String> getExtensions()` | method | 141 | yes | 1 |
-| `public String getLanguageName()` | method | 147 | yes | 1 |
-| `public String getLanguageVersion()` | method | 153 | yes | 1 |
-| `public String getName()` | method | 168 | yes | 10 |
-| `public String getMethodCallSyntax(String, String, String...)` | method | 183 | yes | 1 |
-| `public List<String> getMimeTypes()` | method | 214 | yes | 1 |
-| `public List<String> getNames()` | method | 221 | yes | 1 |
-| `public String getOutputStatement(String)` | method | 231 | yes | 1 |
-| `public static String getStringLiteral(String)` | method | 248 | yes | 0 |
-| `public Object getParameter(String)` | method | 339 | yes | 1 |
-| `public String getProgram(String...)` | method | 381 | yes | 1 |
-| `public javax.script.ScriptEngine getScriptEngine()` | method | 417 | yes | 1 |
-| `public static String getGMTFormattedDateAsISO()` | method | 432 | yes | 0 |
+| `public String getEngineName()` | method | 132 | yes | 1 |
+| `public String getEngineVersion()` | method | 138 | yes | 1 |
+| `public List<String> getExtensions()` | method | 145 | yes | 1 |
+| `public String getLanguageName()` | method | 151 | yes | 1 |
+| `public String getLanguageVersion()` | method | 157 | yes | 1 |
+| `public String getName()` | method | 185 | yes | 11 |
+| `public String getMethodCallSyntax(String, String, String...)` | method | 200 | yes | 1 |
+| `public List<String> getMimeTypes()` | method | 231 | yes | 1 |
+| `public List<String> getNames()` | method | 238 | yes | 1 |
+| `public String getOutputStatement(String)` | method | 248 | yes | 1 |
+| `public static String getStringLiteral(String)` | method | 265 | yes | 0 |
+| `public Object getParameter(String)` | method | 356 | yes | 1 |
+| `public String getProgram(String...)` | method | 398 | yes | 1 |
+| `public javax.script.ScriptEngine getScriptEngine()` | method | 434 | yes | 1 |
+| `public static String getGMTFormattedDateAsISO()` | method | 449 | yes | 0 |
 
 #### `org.rexxla.bsf.engines.rexx.RexxStrictArgument` (class)
 
@@ -1583,7 +1588,7 @@ Source: `bsf4oorexx.dev/source_java/Supplier.java`:38; class Javadoc: -.
 | `public Object[] allIndexes()` | method | 73 | yes | 10 |
 | `public Object[] allItems()` | method | 101 | yes | 0 |
 | `public boolean available()` | method | 125 | yes | 10 |
-| `public void next()` | method | 132 | yes | 5 |
+| `public void next()` | method | 132 | yes | 6 |
 | `public Object item()` | method | 142 | yes | 7 |
 | `public Object index()` | method | 153 | yes | 12 |
 | `public Supplier supplier()` | method | 163 | yes | n/a |
@@ -1665,7 +1670,7 @@ Rony's copy of Apache BSF 2.4 (the `BSFManager` API through which Java programs 
 | `org.apache.bsf.test.BSFTest` | `org/apache/bsf/test/BSFTest.java:79` |
 | `org.apache.bsf.util.cf.CFDriver` | `org/apache/bsf/util/cf/CFDriver.java:68` |
 | `org.oorexx.datergf.DateRGF` | `org/oorexx/datergf/DateRGF.java:414` |
-| `org.oorexx.handlers.jdor.JavaDrawingHandler` | `bsf4oorexx.dev/source_java/JavaDrawingHandler.java:5723` |
+| `org.oorexx.handlers.jdor.JavaDrawingHandler` | `bsf4oorexx.dev/source_java/JavaDrawingHandler.java:5754` |
 | `org.rexxla.bsf.RexxDispatcher` | `bsf4oorexx.dev/source_java/RexxDispatcher.java:104` |
 | `org.rexxla.bsf.engines.rexx.AbstractDirectCommandHandler` | `bsf4oorexx.dev/source_java/AbstractDirectCommandHandler.java:22` |
 | `org.rexxla.bsf.engines.rexx.AbstractExitHandler` | `bsf4oorexx.dev/source_java/AbstractExitHandler.java:22` |

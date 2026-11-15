@@ -1,3 +1,32 @@
+2026-02-09:
+
+        -- jigsaw-dev, "Re: problems using --enable-native-access", 2026-02-04, tjwatson@us.ibm.com
+
+         Try using the JVM option:
+         -XX:+IgnoreUnrecognizedVMOptions
+
+        ... works on Java 8! :)
+
+        Add "-XX:+IgnoreUnrecognizedVMOptions --enable-native-access" to all launchers (rexxj?.*, rexx4b.rex?).
+
+
+2026-02-03:
+
+-- Bug?: WS2025/26, BP10, sample G10_T04_01 done.zip: ooRexx-Version bekommt nicht den Wert
+         des geänderten Attributs "gesamt" auf Engine-Ebene zurück!
+
+-- Bug?: JDOR-Handlerobjekt: toString liefert nicht das Ergebnis der Interface default-Methode
+         toString!!
+
+
+-- Weka: on data block: attribute returned .nil, timing or lookup problem??
+
+-- method references: add ability to get the method reference for e.g. String::print, String::new, ...
+
+
+
+
+
 ---
 
 2023-12-19: JavaFX-related (in OpenJDK):

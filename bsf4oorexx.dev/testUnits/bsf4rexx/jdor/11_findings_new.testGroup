@@ -1,0 +1,172 @@
+#!/usr/bin/env rexx
+/*
+   name:             11_findings_new.testGroup
+   author:           Josep Maria Blasco
+   version:          0.2.0
+   date:             2026-10-14
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          regression tests for the findings reported with this
+                     suite on 2026-10-14 and accepted by Rony the same day,
+                     fixed by the patch of 2026-10-14: they FAIL with r1125
+                     and with the patch of 2026-10-13
+   hint:             the letters refer to the findings of 2026-10-14. B (the
+                     static prefImageType) was declared intended and is
+                     tested in 01_basics; F (transform R) is solved in the
+                     documentation and tested in 05_transform; J is a
+                     documentation change, tested in 08_path2d
+*/
+
+  parse source . . fileSpec
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.jdor.findingsNew.testGroup)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"
+::requires "jdorTestSupport.cls"
+
+::class "jdor.findingsNew.testGroup" subclass ooTestCase public
+
+-- D. font: an unquoted (uppercased) name ignores fontSize and fontStyle ---------
+
+::method test_D_font_unquoted_name_uses_fontSize_and_fontStyle
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  fontSize 20
+  fontStyle BOLD
+  font f1 Serif                   -- unquoted on purpose: arrives as SERIF
+  font
+  self~assertEquals(20, rc~getSize)
+  self~assertEquals(1,  rc~getStyle)
+
+-- E. font: an unknown font name is accepted silently ----------------------------
+
+::method test_E_font_unknown_name_is_error
+  trace off
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  'font f NoSuchFontAtAll'
+  self~assertEquals(1, .rs, "an unknown font raises ERROR")
+  self~assertEquals(-13, rc, "could not be found, using Java's replacement font")
+
+-- H. clip x y w h returns the new arguments instead of the previous clip ---------
+
+::method test_H_clip_set_returns_previous
+  call jdorTest.fresh
+  address jdor
+  newImage 40 40
+  clip 10 10 20 20
+  self~assertSame(.nil, rc, "no previous clip")
+  clip 20 20 20 20
+  self~assertEquals("10 10 20 20", rc, "the previous clip")
+
+-- G. saveImage failure: RC -102 instead of the documented -16 --------------------
+
+::method test_G_saveImage_failure_returns_minus_16
+  trace off
+  call jdorTest.fresh
+  address jdor
+  newImage 10 10
+  'saveImage /nonexistent/dir/jdor_test.png'
+  self~assertEquals(-16, rc)
+
+-- I. shapeBounds: a Rexx variable referring to a Shape is not accepted -------------
+
+::method test_I_shapeBounds_rexx_variable
+  trace off
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  'shape tmpRect rect 1 2 3 4'   -- a Shape object, then held in a Rexx variable
+  sh = rc
+  'shapeBounds sh'                -- quoted: the handler must see the name
+  self~assertEquals(0, .rs, "documented: a Rexx variable that refers to a Shape")
+  parse var rc x y w h
+  self~assertTrue(x = 1 & y = 2 & w = 3 & h = 4, "got:" rc)
+
+-- L. pathWindingRule without arguments: an argument check that can never be true --
+
+::method test_L_pathWindingRule_without_arguments
+  trace off
+  call jdorTest.fresh
+  err = .array~new
+  address jdor with error append using (err)
+  newImage 20 20
+  pathWindingRule
+  address jdor with error normal
+  self~assertEquals(-102, rc)
+  self~assertEquals("this command needs exactly 1 or 2 arguments (the name of the shape and optionally the new winding rule argument), received 0 instead", -
+                    jdorTest.cause(err[1]))
+
+-- M. area commands: the canonical form is written before the operand is checked ----
+
+::method test_M_area_failed_operand_not_in_canonical_output
+  trace off
+  call jdorTest.fresh
+  out = .array~new
+  address jdor with output append using (out)
+  newImage 20 20
+  shape r rect 1 1 5 5
+  shape a area r
+  areaAdd a noSuchShape
+  address jdor with output normal
+  self~assertEquals(1, .rs)
+  self~assertEquals("-- ERROR (argument): [AREAADD A NOSUCHSHAPE]", out[out~last], "the error comment")
+  self~assertEquals("shape A Area R", out[out~last - 1], -
+                    "nothing else: a replayed macro should not repeat the failing command")
+
+-- K. pathWindingRule name newValue returns the previous rule ---------------------
+
+::method test_K_pathWindingRule_set_returns_previous
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  shape p path
+  pathWindingRule p 0
+  self~assertEquals(1, rc, "the previous rule: WIND_NON_ZERO")
+  pathWindingRule p wind_non_zero
+  self~assertEquals(0, rc, "the previous rule: WIND_EVEN_ODD")
+
+-- N. error messages of the shape commands --------------------------------------------
+
+::method nMessage                 -- nMessage(command): the message of the ERROR it raises
+  use strict arg command
+  trace off
+  err = .array~new
+  address jdor command with error append using (err)
+  self~assertEquals(-102, rc, command)
+  return jdorTest.cause(err[1])
+
+::method test_N_shape_command_messages
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  shape r rect 1 1 5 5
+  shape a area r
+  shape p path
+  noShape = 'no shape with name "noSuchShape" stored, nor a Rexx variable that refers to a Shape object'
+  self~assertEquals("this command needs exactly 1 argument (the name of the shape), received 0 instead", -
+                    self~nMessage("drawShape"))
+  self~assertEquals(noShape, self~nMessage("drawShape noSuchShape"),  "unset variable")
+  self~assertEquals(noShape, self~nMessage("fillShape noSuchShape"))
+  self~assertEquals(noShape, self~nMessage("clipShape noSuchShape"))
+  self~assertEquals(noShape, self~nMessage("shapeBounds noSuchShape"))
+  self~assertEquals(noShape, self~nMessage("areaAdd a noSuchShape"))
+  self~assertEquals(noShape, self~nMessage("pathIterator noSuchShape"))
+  self~assertEquals('no shape with name "9x" stored, nor a Rexx variable that refers to a Shape object', -
+                    self~nMessage("drawShape 9x"), "not a variable name")
+  self~assertEquals('no transform with name "noSuchT" stored, nor a Rexx variable that refers to an AffineTransform object', -
+                    self~nMessage("areaTransform a noSuchT"))
+  self~assertEquals('no Area shape with name "r" stored', self~nMessage("areaAdd r a"), "not an Area")
+  self~assertEquals("this command needs exactly 2 arguments (the name of the Path2D shape and the name of the transform), received 1 instead", -
+                    self~nMessage("pathTransform p"))
+  self~assertEquals("this command needs exactly 2 or 3 arguments (the name of the Path2D shape, the name of the shape or path iterator to append, and optionally the boolean connect argument), received 1 instead", -
+                    self~nMessage("pathAppend p"))

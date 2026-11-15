@@ -1,0 +1,556 @@
+#!/usr/bin/env rexx
+/*
+   name:             07_shapes_area.testGroup
+   author:           Josep Maria Blasco
+   version:          0.1.0
+   date:             2026-10-14
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          JDOR shapes: "shape" (query and the creation of every
+                     documented type, with its abbreviations), drawShape,
+                     fillShape and clipShape (and their aliases shapeDraw,
+                     shapeFill, shapeClip), shapeBounds, and the Area
+                     commands areaAdd/areaUnion, areaSubtract, areaIntersect,
+                     areaExclusiveOr/areaXor and areaTransform
+   hint:             bounds are compared as numbers, never as strings (Java
+                     returns values such as 20.000000000000004).
+                     Arcs are built in square boxes, so that these tests do
+                     not depend on finding 4 of 2026-10-13 (width and height
+                     swapped; fixed by the patch of 2026-10-14 and tested in
+                     10_findings).
+                     Curves keep their control points inside the box of their
+                     end points: otherwise getBounds2D depends on the Java
+                     version (tight bounds in recent JDKs).
+                     A Rexx variable named like a word of an unquoted command
+                     is substituted (a variable RED turns "color red" into a
+                     number): such commands are quoted.
+                     "clear" is a synonym of "reset" and does not erase the
+                     image: each pixel test draws on a fresh image
+*/
+
+  parse source . . fileSpec
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.jdor.shapesArea.testGroup)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"
+::requires "jdorTestSupport.cls"
+
+::class "jdor.shapesArea.testGroup" subclass ooTestCase public
+
+::method setUp                    -- a 60x60 image, no antialiasing, red
+  call jdorTest.fresh
+  address jdor
+  newImage 60 60
+  render aliasOff
+  color red
+
+::method assertInk                -- assertInk(x, y [, message]): pixel is red
+  use strict arg x, y, msg = ("pixel" x y "should be red")
+  self~assertEquals(jdorTest.argb(255, 0, 0), jdorTest.pixel(x, y), msg)
+
+::method assertEmpty              -- assertEmpty(x, y [, message]): pixel untouched
+  use strict arg x, y, msg = ("pixel" x y "should be empty")
+  self~assertEquals(0, jdorTest.pixel(x, y), msg)
+
+::method assertNumbers            -- assertNumbers(expected, actual [, message]): blank-delimited, numerically
+  use strict arg expected, actual, msg = ""
+  self~assertEquals(expected~words, actual~words, msg "(number of values:" actual")")
+  do i = 1 to expected~words
+    self~assertTrue(abs(expected~word(i) - actual~word(i)) < 1e-9, -
+      msg "value" i": expected" expected~word(i)", got" actual~word(i) "("actual")")
+  end
+
+::method assertBounds             -- assertBounds(shapeName, "x y w h" [, message])
+  use strict arg name, expected, msg = ("bounds of" name)
+  address jdor 'shapeBounds' name
+  self~assertEquals(0, .rs, msg "(.rs)")
+  self~assertNumbers(expected, rc, msg)
+
+::method assertError              -- assertError(command, expectedRC): ERROR condition, RC as given
+  use strict arg command, expected
+  trace off
+  address jdor command
+  self~assertEquals(expected, rc, command)
+  self~assertEquals(1, .rs, command "(.rs)")
+
+-- shape: creation of each type -------------------------------------------------------
+
+::method test_shape_rectangle_returns_and_registers
+  address jdor
+  shape r1 rect 10 20 30 40
+  self~assertEquals(0, .rs)
+  self~assertEquals(30, rc~getWidth, "the new shape is returned")
+  self~assertEquals(40, rc~getHeight)
+  self~assertBounds("r1", "10 20 30 40")
+
+::method test_shape_type_names_and_abbreviations
+  address jdor
+  names = "Rect Rectangle Rectangle2D rectangle2d"
+  do n over names~makeArray(" ")
+    'shape s' n '1 2 3 4'
+    self~assertEquals(0, .rs, n)
+    self~assertBounds("s", "1 2 3 4", n)
+  end
+  names = "Elli Ellipse Ellipse2D"
+  do n over names~makeArray(" ")
+    'shape s' n '1 2 3 4'
+    self~assertBounds("s", "1 2 3 4", n)
+  end
+  names = "Line Line2D"
+  do n over names~makeArray(" ")
+    'shape s' n '1 2 3 4'
+    self~assertBounds("s", "1 2 2 2", n)
+  end
+  names = "RoundRect RoundRectangle RoundRectangle2D"
+  do n over names~makeArray(" ")
+    'shape s' n '1 2 3 4 1 1'
+    self~assertBounds("s", "1 2 3 4", n)
+  end
+  names = "Quad QuadCurve QuadCurve2D"
+  do n over names~makeArray(" ")
+    'shape s' n '0 0 10 30 40 40'   -- control point inside the end points' box
+    self~assertBounds("s", "0 0 40 40", n)
+  end
+  names = "Cubic CubicCurve CubicCurve2D"
+  do n over names~makeArray(" ")
+    'shape s' n '0 0 10 30 30 10 40 40'
+    self~assertBounds("s", "0 0 40 40", n)
+  end
+  names = "Arc Arc2D"
+  do n over names~makeArray(" ")
+    'shape s' n '0 0 40 40 0 360 OPEN'
+    self~assertBounds("s", "0 0 40 40", n)
+  end
+  names = "Path Path2D"
+  do n over names~makeArray(" ")
+    'shape s' n
+    self~assertEquals(0, .rs, n)
+    self~assertEquals(1, rc~getWindingRule, n": WIND_NON_ZERO by default")
+  end
+
+::method test_shape_line_bounds
+  address jdor
+  shape l1 line 0 0 40 10
+  self~assertBounds("l1", "0 0 40 10")
+
+::method test_shape_polygon_array_strings
+  address jdor
+  'shape pg Polygon "(10,40,10)" "(10,10,40)" 3'
+  self~assertEquals(0, .rs)
+  self~assertEquals(3, rc~npoints)
+  self~assertBounds("pg", "10 10 30 30")
+
+::method test_shape_polygon_array_variables
+  address jdor
+  xs = bsf.createJavaArrayOf("int.class", 10, 40, 10)
+  ys = bsf.createJavaArrayOf("int.class", 10, 10, 40)
+  'shape pg polygon xs ys 3'     -- quoted: the handler must see the names
+  self~assertEquals(0, .rs)
+  self~assertBounds("pg", "10 10 30 30")
+
+::method test_shape_arc_from_bounds_rectangle
+  address jdor
+  shape box rect 10 10 40 40
+  shape a arc box 0 360 open
+  self~assertEquals(0, .rs)
+  self~assertBounds("a", "10 10 40 40")
+
+::method test_shape_arc_quadrant_bounds
+  address jdor
+  shape a arc 0 0 40 40 0 90 pie  -- degrees, counter-clockwise from 3 o'clock
+  self~assertBounds("a", "20 0 20 20", "first quadrant, including the centre")
+
+::method test_shape_arc_types_by_name_and_number
+  address jdor
+  types = "OPEN 0 CHORD 1 PIE 2 open chord pie"
+  do t over types~makeArray(" ")
+    'shape a arc 0 0 40 40 0 90' t
+    self~assertEquals(0, .rs, "type" t)
+  end
+
+::method test_shape_arc_open_chord_pie_pixels
+  address jdor
+  -- box 10..50, centre (30,30), radius 20; from 0 (50,30) to 90 degrees (30,10)
+  shape a arc 10 10 40 40 0 90 open
+  drawShape a
+  self~assertEmpty(40, 20, "OPEN: no chord")
+  self~assertEmpty(40, 30, "OPEN: no radius")
+  newImage 60 60
+  render aliasOff
+  color red
+  shape a arc 10 10 40 40 0 90 chord
+  drawShape a
+  self~assertInk(40, 20, "CHORD: the chord")
+  self~assertEmpty(40, 30, "CHORD: no radius")
+  newImage 60 60
+  render aliasOff
+  color red
+  shape a arc 10 10 40 40 0 90 pie
+  drawShape a
+  self~assertInk(40, 30, "PIE: first radius")
+  self~assertInk(30, 20, "PIE: second radius")
+  self~assertEmpty(40, 20, "PIE: no chord")
+
+::method test_shape_path_winding_rule_argument
+  address jdor
+  shape p path 0
+  self~assertEquals(0, rc~getWindingRule, "0 = WIND_EVEN_ODD")
+  shape p path wind_even_odd
+  self~assertEquals(0, rc~getWindingRule)
+  shape p path 1
+  self~assertEquals(1, rc~getWindingRule, "1 = WIND_NON_ZERO")
+  shape p path WIND_NON_ZERO
+  self~assertEquals(1, rc~getWindingRule)
+
+-- shape: query, names, errors --------------------------------------------------------
+
+::method test_shape_query_returns_registered
+  address jdor
+  shape r1 rect 1 2 3 4
+  shape r1
+  self~assertEquals(0, .rs)
+  self~assertEquals(3, rc~getWidth)
+
+::method test_shape_names_are_caseless
+  address jdor
+  'shape MixedCase rect 1 2 3 4'
+  'shape MIXEDCASE'
+  self~assertEquals(0, .rs)
+  self~assertEquals(3, rc~getWidth)
+  self~assertBounds("mixedcase", "1 2 3 4")
+
+::method test_shape_same_name_replaces
+  address jdor
+  shape s rect 1 2 3 4
+  shape s elli 0 0 10 10
+  self~assertBounds("s", "0 0 10 10")
+
+::method test_shape_query_unknown_is_error_17
+  self~assertError("shape noSuchShape", -17)
+
+::method test_shape_unknown_type_is_error_18
+  self~assertError("shape s noSuchType 1 2 3 4", -18)
+  self~assertError("shape s Poly 1 2 3", -18)    -- Polygon has no abbreviation
+
+::method test_shape_wrong_number_of_arguments
+  self~assertError("shape s area",                        -19)
+  self~assertError("shape s arc 0 0 10 10 0 90",          -21)
+  self~assertError("shape s cubic 0 0 1 1 2 2 3",         -23)
+  self~assertError("shape s rect 1 2 3",                  -24)
+  self~assertError("shape s elli 1 2 3 4 5",              -24)
+  self~assertError("shape s line 1 2 3",                  -24)
+  self~assertError("shape s quad 1 2 3 4 5",              -25)
+  self~assertError("shape s roundRect 1 2 3 4 5",         -25)
+  self~assertError("shape s path 0 1",                    -26)
+  self~assertError("shape",                               -102)
+
+::method test_shape_bad_arguments
+  self~assertError("shape s arc 0 0 10 10 0 90 3",        -102)  -- type 0, 1 or 2
+  self~assertError("shape s arc 0 0 10 10 0 90 round",    -102)
+  self~assertError("shape s arc noSuchRect 0 90 pie",     -22)
+  self~assertError("shape s path 2",                      -102)
+  self~assertError("shape s rect 1 2 three 4",            -102)
+  self~assertError('shape s polygon "(1,2)" "(1,2,3)" 3', -102)
+  self~assertError("shape s area noSuchShape",            -20)
+
+::method test_shape_failed_creation_keeps_old_shape
+  trace off
+  address jdor
+  shape s rect 1 2 3 4
+  shape s rect 1 2 3
+  self~assertEquals(1, .rs)
+  self~assertBounds("s", "1 2 3 4")
+
+-- drawShape, fillShape, clipShape ----------------------------------------------------
+
+::method test_fillShape_ellipse
+  address jdor
+  shape e elli 10 10 40 40
+  fillShape e
+  self~assertEquals(0, rc)
+  self~assertInk(30, 30, "centre")
+  self~assertInk(30, 12, "near the top")
+  self~assertEmpty(12, 12, "corner of the bounding box")
+
+::method test_drawShape_rectangle
+  address jdor
+  shape r rect 10 10 30 20
+  drawShape r
+  self~assertEquals(0, rc)
+  self~assertInk(20, 10, "top side")
+  self~assertInk(10, 20, "left side")
+  self~assertInk(40, 30, "bottom-right corner")
+  self~assertEmpty(25, 20, "interior")
+
+::method test_drawShape_line
+  address jdor
+  shape l line 10 10 50 10
+  drawShape l
+  self~assertInk(30, 10)
+  self~assertEmpty(30, 12)
+
+::method test_aliases_shapeDraw_shapeFill
+  address jdor
+  shape r rect 10 10 30 20
+  shapeDraw r
+  self~assertEquals(0, .rs)
+  self~assertInk(20, 10, "shapeDraw draws the border")
+  self~assertEmpty(25, 20, "but not the interior")
+  shapeFill r
+  self~assertEquals(0, .rs)
+  self~assertInk(25, 20, "shapeFill fills")
+
+::method test_fillShape_honours_transform
+  address jdor
+  translate 10 10
+  shape sq rect 0 0 5 5
+  fillShape sq
+  self~assertInk(12, 12, "drawn at the translated origin")
+  self~assertEmpty(2, 2, "not at the shape's own coordinates")
+
+::method test_fillShape_polygon
+  address jdor
+  'shape tri polygon "(10,40,10)" "(10,10,40)" 3'
+  fillShape tri
+  self~assertInk(15, 15, "inside the triangle")
+  self~assertEmpty(35, 35, "beyond the hypotenuse")
+
+::method test_fillShape_rexx_variable
+  address jdor
+  'shape tmpRect rect 10 10 10 10'   -- a Shape object, then held in a Rexx variable
+  sh = rc
+  'fillShape sh'                 -- quoted: the handler must see the name
+  self~assertEquals(0, .rs)
+  self~assertInk(15, 15)
+  self~assertEmpty(25, 25)
+
+::method test_registered_shape_wins_over_variable
+  address jdor
+  shape sh rect 30 30 10 10
+  'shape tmpRect rect 10 10 10 10'   -- a Shape object, then held in a Rexx variable
+  sh = rc
+  'fillShape sh'
+  self~assertInk(35, 35, "the registered shape")
+  self~assertEmpty(15, 15, "not the variable's")
+
+::method test_clipShape_ellipse
+  address jdor
+  shape c elli 10 10 40 40
+  clipShape c
+  self~assertEquals(0, .rs)
+  clip
+  self~assertEquals("10 10 40 40", rc, "clip returns the bounds of the clip shape")
+  moveTo 0 0
+  fillRect 60 60
+  self~assertInk(30, 30, "inside the ellipse")
+  self~assertEmpty(12, 12, "inside the bounds, outside the ellipse")
+  self~assertEmpty(2, 2, "outside the bounds")
+
+::method test_clipShape_intersects_with_current_clip
+  address jdor
+  clip 0 0 30 60
+  shape r rect 20 0 40 60
+  shapeClip r
+  self~assertEquals(0, .rs, "shapeClip is an alias of clipShape")
+  clip
+  self~assertEquals("20 0 10 60", rc)
+
+::method test_draw_fill_clip_errors
+  self~assertError("drawShape",               -102)
+  self~assertError("fillShape a b",           -102)
+  self~assertError("clipShape noSuchShape",   -102)
+  self~assertError("fillShape 9noSuchShape",  -102)
+
+-- shapeBounds ----------------------------------------------------------------------
+
+::method test_shapeBounds_returns_string
+  address jdor
+  shape e elli 1.5 2.5 10 20
+  shapeBounds e
+  self~assertEquals(0, .rs)
+  self~assertNumbers("1.5 2.5 10 20", rc)
+
+::method test_shapeBounds_errors
+  self~assertError("shapeBounds",             -102)
+  self~assertError("shapeBounds noSuchShape", -102)
+  self~assertError("shapeBounds a b",         -102)
+
+-- Area -------------------------------------------------------------------------------
+
+::method test_area_from_shape
+  address jdor
+  shape r rect 10 10 20 20
+  shape a area r
+  self~assertEquals(0, .rs)
+  self~assertTrue(rc~isRectangular, "an Area made from a rectangle is rectangular")
+  self~assertBounds("a", "10 10 20 20")
+
+::method test_area_from_area_is_a_copy
+  address jdor
+  shape r rect 10 10 20 20
+  shape a1 area r
+  shape a2 area a1
+  shape e elli 0 0 10 10
+  areaAdd a2 e
+  self~assertBounds("a1", "10 10 20 20", "the original is unchanged")
+  self~assertBounds("a2", "0 0 30 30",   "the copy changed")
+
+::method test_areaAdd_and_areaUnion
+  address jdor
+  shape r1 rect 10 10 20 20
+  shape r2 rect 20 20 20 20
+  shape a area r1
+  areaAdd a r2
+  self~assertEquals(0, .rs)
+  self~assertFalse(rc~isRectangular, "the changed Area is returned")
+  self~assertBounds("a", "10 10 30 30")
+  shape b area r1
+  areaUnion b r2
+  self~assertEquals(0, .rs, "areaUnion is an alias of areaAdd")
+  self~assertBounds("b", "10 10 30 30")
+  fillShape b
+  self~assertInk(15, 15)
+  self~assertInk(35, 35)
+  self~assertEmpty(35, 15, "outside both rectangles")
+
+::method test_areaSubtract
+  address jdor
+  shape r1 rect 10 10 20 20
+  shape r2 rect 20 20 20 20
+  shape a area r1
+  areaSubtract a r2
+  self~assertEquals(0, .rs)
+  self~assertBounds("a", "10 10 20 20")
+  fillShape a
+  self~assertInk(15, 15)
+  self~assertEmpty(25, 25, "subtracted")
+  self~assertEmpty(35, 35, "never part of it")
+
+::method test_areaIntersect
+  address jdor
+  shape r1 rect 10 10 20 20
+  shape r2 rect 20 20 20 20
+  shape a area r1
+  areaIntersect a r2
+  self~assertEquals(0, .rs)
+  self~assertBounds("a", "20 20 10 10")
+  self~assertTrue(rc~isRectangular)
+
+::method test_areaExclusiveOr_and_areaXor
+  address jdor
+  shape r1 rect 10 10 20 20
+  shape r2 rect 20 20 20 20
+  shape a area r1
+  areaExclusiveOr a r2
+  self~assertEquals(0, .rs)
+  self~assertBounds("a", "10 10 30 30")
+  fillShape a
+  self~assertInk(15, 15)
+  self~assertEmpty(25, 25, "in both: excluded")
+  self~assertInk(35, 35)
+  shape b area r1
+  areaXor b r2
+  self~assertEquals(0, .rs, "areaXor is an alias of areaExclusiveOr")
+  self~assertBounds("b", "10 10 30 30")
+
+::method test_area_subtract_itself_is_empty
+  address jdor
+  shape r rect 10 10 20 20
+  shape a area r
+  areaSubtract a r
+  self~assertTrue(rc~isEmpty)
+  self~assertBounds("a", "0 0 0 0")
+
+::method test_area_operand_may_be_an_area
+  address jdor
+  shape r1 rect 10 10 20 20
+  shape r2 rect 20 20 20 20
+  shape a area r1
+  shape b area r2
+  areaAdd a b
+  self~assertBounds("a", "10 10 30 30")
+
+::method test_area_operand_from_rexx_variable
+  address jdor
+  shape r rect 10 10 20 20
+  shape a area r
+  'shape tmpRect rect 50 50 5 5'   -- a Shape object, then held in a Rexx variable
+  sh = rc
+  'areaAdd a sh'
+  self~assertEquals(0, .rs)
+  self~assertBounds("a", "10 10 45 45")
+
+::method test_areaTransform
+  address jdor
+  shape r rect 10 10 20 20
+  shape a area r
+  transform t 5 6 1 1 0 0        -- a named transform: stored, not applied
+  areaTransform a t
+  self~assertEquals(0, .rs)
+  self~assertBounds("a", "15 16 20 20")
+  transform
+  self~assertNumbers("0 0 1 1 0 0", rc, "the current transform is unchanged")
+
+::method test_areaTransform_rexx_variable
+  address jdor
+  shape r rect 10 10 20 20
+  shape a area r
+  transform tmpT 0 0 2 2 0 0      -- a named transform (scale 2), then held in a Rexx variable
+  at = rc
+  'areaTransform a at'
+  self~assertEquals(0, .rs)
+  self~assertBounds("a", "20 20 40 40")
+
+::method test_area_errors
+  address jdor
+  shape r rect 10 10 20 20
+  shape a area r
+  self~assertError("areaAdd r a",               -102)  -- r is not an Area
+  self~assertError("areaAdd noSuchArea r",      -102)
+  self~assertError("areaAdd a noSuchShape",     -102)
+  self~assertError("areaAdd a",                 -102)
+  self~assertError("areaSubtract a r r",        -102)
+  self~assertError("areaTransform a noSuchT",   -102)
+  self~assertError("areaTransform a",           -102)
+  self~assertBounds("a", "10 10 20 20", "unchanged after the errors")
+
+-- canonical form ---------------------------------------------------------------------
+
+::method test_canonical_form_of_shapes
+  out = .array~new
+  address jdor with output append using (out)
+  shape r1 rect 10 20 30 40
+  shape a1 arc r1 0 90 1
+  shape e1 elli 0 0 40 10
+  shape p1 path 0
+  'shape pg polygon "(10,40,10)" "(10,10,40)" 3'
+  shape r1
+  shape ar area r1
+  areaXor ar e1
+  fillShape ar
+  shapeDraw r1
+  shapeBounds r1
+  address jdor with output normal
+  expected = .array~of(                                    -
+    "shape R1 Rectangle2D 10.0 20.0 30.0 40.0",            -
+    "shape A1 Arc2D R1 0.0 90.0 CHORD",                    -
+    "shape E1 Ellipse2D 0.0 0.0 40.0 10.0",                -
+    "shape P1 Path2D WIND_EVEN_ODD",                       -
+    "shape pg Polygon (10,40,10) (10,10,40) 3",            -
+    "shape R1",                                            -
+    "shape AR Area R1",                                    -
+    "areaExclusiveOr AR E1",                               -
+    "fillShape AR",                                        -
+    "drawShape R1",                                        -
+    "shapeBounds R1")
+  self~assertEquals(expected~items, out~items, out~toString(, "|"))
+  do i = 1 to expected~items
+    self~assertEquals(expected[i], out[i])
+  end

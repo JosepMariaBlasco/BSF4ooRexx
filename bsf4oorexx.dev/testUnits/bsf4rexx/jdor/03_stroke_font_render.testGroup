@@ -1,0 +1,326 @@
+#!/usr/bin/env rexx
+/*
+   name:             03_stroke_font_render.testGroup
+   author:           Josep Maria Blasco
+   version:          0.1.0
+   date:             2026-10-14
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          JDOR strokes, fonts (font, fontSize, fontStyle), rendering
+                     hints (render), stringBounds and drawString
+   hint:             font metrics depend on the platform and its fonts, so
+                     text is checked only in relative terms (width > 0, twice
+                     the text is twice as wide, leading blanks count). Font
+                     names are quoted on purpose: unquoted names currently
+                     ignore fontSize and fontStyle (see 11_findings_new)
+*/
+
+  parse source . . fileSpec
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.jdor.strokeFontRender.testGroup)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"
+::requires "jdorTestSupport.cls"
+
+::class "jdor.strokeFontRender.testGroup" subclass ooTestCase public
+
+-- stroke -----------------------------------------------------------------------
+
+::method test_stroke_default
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  stroke
+  self~assertEquals(1,  rc~getLineWidth)
+  self~assertEquals(2,  rc~getEndCap,   "CAP_SQUARE")
+  self~assertEquals(0,  rc~getLineJoin, "JOIN_MITER")
+  self~assertEquals(10, rc~getMiterLimit)
+
+::method test_stroke_define_width_returns_old
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  stroke s3 3
+  self~assertEquals(1, rc~getLineWidth, "previous")
+  stroke
+  self~assertEquals(3, rc~getLineWidth)
+
+::method test_stroke_define_cap_join_by_name
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  stroke s4 4 CAP_ROUND JOIN_BEVEL
+  stroke
+  self~assertEquals(4, rc~getLineWidth)
+  self~assertEquals(1, rc~getEndCap)
+  self~assertEquals(2, rc~getLineJoin)
+
+::method test_stroke_define_cap_join_miter_by_number
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  stroke s5 5 1 2 7
+  stroke
+  self~assertEquals(5, rc~getLineWidth)
+  self~assertEquals(1, rc~getEndCap)
+  self~assertEquals(2, rc~getLineJoin)
+  self~assertEquals(7, rc~getMiterLimit)
+
+::method test_stroke_define_dash_array_string
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  'stroke s6 2 0 0 10 "(4,2)" 1'
+  self~assertEquals(0, .rs)
+  stroke
+  self~assertEquals(2, rc~getLineWidth)
+  self~assertEquals(1, rc~getDashPhase)
+  da = rc~getDashArray
+  self~assertEquals(2, da~items)
+  self~assertEquals(4, da[1])
+  self~assertEquals(2, da[2])
+
+::method test_stroke_registered_by_name
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  stroke s3 3
+  stroke s7 7
+  stroke s3
+  stroke
+  self~assertEquals(3, rc~getLineWidth)
+
+::method test_stroke_unknown_name_is_error
+  trace off
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  stroke nope
+  self~assertEquals(-10, rc)
+  self~assertEquals(1, .rs)
+
+::method test_stroke_width_affects_pixels
+  call jdorTest.fresh
+  address jdor
+  newImage 60 60
+  render aliasOff
+  stroke s9 9
+  color red
+  moveTo 10 30
+  drawLine 50 30
+  self~assertEquals(jdorTest.argb(255, 0, 0), jdorTest.pixel(30, 30), "centre of the line")
+  self~assertEquals(jdorTest.argb(255, 0, 0), jdorTest.pixel(30, 27), "within the 9 px width")
+  self~assertEquals(0, jdorTest.pixel(30, 22), "beyond the width")
+
+-- fontSize, fontStyle ----------------------------------------------------------
+
+::method test_fontSize_query_and_set
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  fontSize
+  self~assertEquals(12, rc, "default")
+  fontSize 20
+  self~assertEquals(12, rc, "previous")
+  fontSize
+  self~assertEquals(20, rc)
+
+::method test_fontStyle_query_and_set
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  fontStyle
+  self~assertEquals(0, rc, "default PLAIN")
+  fontStyle BOLD
+  self~assertEquals(0, rc, "previous")
+  fontStyle
+  self~assertEquals(1, rc)
+  fontStyle 3
+  fontStyle
+  self~assertEquals(3, rc, "BOLDITALIC")
+
+::method test_fontStyle_unknown_is_error
+  trace off
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  fontStyle bogus
+  self~assertEquals(-102, rc)
+  self~assertEquals(1, .rs)
+
+-- font -------------------------------------------------------------------------
+
+::method test_font_default
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  font
+  self~assertEquals("Dialog", rc~getName)
+  self~assertEquals(12, rc~getSize)
+  self~assertEquals(0,  rc~getStyle)
+
+::method test_font_uses_fontSize_and_fontStyle
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  fontSize 20
+  fontStyle BOLD
+  'font f1 Serif'
+  font
+  self~assertEquals("Serif", rc~getFamily)
+  self~assertEquals(20, rc~getSize)
+  self~assertEquals(1,  rc~getStyle)
+
+::method test_font_name_with_style_and_size
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  'font f2 SansSerif-ITALIC-15'
+  font
+  self~assertEquals("SansSerif", rc~getFamily)
+  self~assertEquals(15, rc~getSize)
+  self~assertEquals(2,  rc~getStyle)
+
+::method test_font_name_with_size_blank_delimited
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  'font f3 Serif 18'
+  font
+  self~assertEquals("Serif", rc~getFamily)
+  self~assertEquals(18, rc~getSize)
+
+::method test_font_registered_by_name
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  fontSize 20
+  'font f1 Serif'
+  fontSize 30                   -- must not change the registered font
+  'font f2 SansSerif'
+  font f1
+  font
+  self~assertEquals("Serif", rc~getFamily)
+  self~assertEquals(20, rc~getSize)
+
+-- render -----------------------------------------------------------------------
+
+::method test_render_default
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  render
+  self~assertEquals("ALIASON TEXTALIASON", rc~upper)
+
+::method test_render_set_returns_old
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  render aliasOff textAliasOff
+  self~assertEquals("ALIASON TEXTALIASON", rc~upper, "previous")
+  render
+  self~assertEquals("ALIASOFF TEXTALIASOFF", rc~upper)
+
+::method test_render_one_value
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  render aliasDefault
+  render
+  self~assertEquals("ALIASDEFAULT TEXTALIASON", rc~upper)
+
+::method test_render_unknown_value_is_error
+  trace off
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  render bogus
+  self~assertEquals(-102, rc)
+  self~assertEquals(1, .rs)
+
+::method test_render_aliasOff_gives_pure_pixels
+  call jdorTest.fresh
+  address jdor
+  newImage 40 40
+  render aliasOff
+  color red
+  moveTo 5 5
+  fillOval 30 30
+  do y = 0 to 39 by 3
+    do x = 0 to 39 by 3
+      p = jdorTest.pixel(x, y)
+      self~assertTrue(p = 0 | p = jdorTest.argb(255, 0, 0), "pixel" x y "=" p "is neither empty nor pure red")
+    end
+  end
+
+-- stringBounds and drawString ----------------------------------------------------
+
+::method test_stringBounds_shape
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  stringBounds Hello
+  parse var rc x y w h
+  self~assertEquals(0, x)
+  self~assertTrue(y < 0, "y is above the baseline (negative): "y)
+  self~assertTrue(w > 0, "width: "w)
+  self~assertTrue(h > 0, "height: "h)
+
+::method test_stringBounds_twice_the_text
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  stringBounds Hello
+  parse var rc . . w1 h1
+  stringBounds HelloHello
+  parse var rc . . w2 h2
+  self~assertTrue(abs(w2 - 2 * w1) <= 1, "width" w2 "is about twice" w1)
+  self~assertEquals(h1, h2, "same height")
+
+::method test_stringBounds_leading_blanks_count
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  'stringBounds x'
+  parse var rc . . w1 .
+  'stringBounds   x'
+  parse var rc . . w2 .
+  self~assertTrue(w2 > w1, "leading blanks are part of the string:" w2 ">" w1)
+
+::method test_stringBounds_grows_with_fontSize
+  call jdorTest.fresh
+  address jdor
+  newImage 20 20
+  stringBounds Hello
+  parse var rc . . w1 h1
+  fontSize 24
+  'font big Dialog'
+  stringBounds Hello
+  parse var rc . . w2 h2
+  self~assertTrue(w2 > w1 & h2 > h1, "24 pt is bigger than 12 pt")
+
+::method test_drawString_draws_near_the_position
+  call jdorTest.fresh
+  address jdor
+  newImage 80 40
+  color black
+  render textAliasOff
+  moveTo 5 25                   -- the baseline
+  drawString XXXX
+  inked = 0
+  do y = 0 to 39
+    do x = 0 to 79
+      if jdorTest.pixel(x, y) \= 0 then do
+        inked += 1
+        self~assertTrue(x >= 5 & y <= 26, "ink at" x y "is right of x=5 and above the baseline")
+      end
+    end
+  end
+  self~assertTrue(inked > 0, "something was drawn")

@@ -8,7 +8,8 @@ it. The item-by-item tables are generated:
 `scripts/build.sh java`). This page is the overview, the method and what
 was found on the way.*
 
-Source: `main`, i.e. SVN `branches/850` r1125 (17/01/2026). The test
+Source: `main`, i.e. SVN `branches/850` r1131 (3/11/2026; r1125, 17/01/2026,
+until 15/11/2026). The test
 results referred to are in [`test-baseline.md`](test-baseline.md).
 
 ## 1. The layers
@@ -106,7 +107,11 @@ Other `main()` methods (test drivers inside library classes) are listed in
 Technical facts, each with its evidence; none of them is a judgement about
 the code, and none has been reported anywhere.
 
-1. **The published 850 is not exactly SVN r1125.** The latest published
+1. **The published 850 was not exactly SVN r1125.** (SVN r1130, 24/10/2026,
+   Rony G. Flatscher's refresh of that day, brought these changes in: `BSF.CLS`
+   and the four launchers now define `BSF_Medication`, and the version string
+   is `850.20261103` since r1131. The rest of this item describes r1125; the
+   tree has not been compared again with a published refresh.) The then latest published
    distribution, `BSF4ooRexx_install_v850-20260326-refresh.zip`, has a
    `BSF.CLS` with changes dated 04/02 to 23/02/2026 that SVN does not have
    (adding `-XX:+IgnoreUnrecognizedVMOptions` and
@@ -127,8 +132,8 @@ the code, and none has been reported anywhere.
    120 global functions (they differ in weak, inline symbols: 244 against
    11). So "compatible with 850" needs a reference version: the
    SVN tree, or a given published refresh.
-2. **Three version strings.** On this build, `.bsf4rexx~version` (BSF.CLS)
-   is `850.20260117`, `BsfVersion()` (native) `850.20240510`, and
+2. **Three version strings.** On this build (r1131), `.bsf4rexx~version` (BSF.CLS)
+   is `850.20261103` (`850.20260117` at r1125), `BsfVersion()` (native) `850.20240510`, and
    `BSF("version")` (Java) `850.20250827`: each layer carries its own date.
 3. **A JNI export without its Java declaration.** `BSF4ooRexx.cc` still
    defines `Java_org_rexxla_bsf_engines_rexx_RexxCleanupRef_jniRexxHaltInterpreterInstance`

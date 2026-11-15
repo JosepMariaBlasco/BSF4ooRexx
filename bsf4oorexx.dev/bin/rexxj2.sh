@@ -11,6 +11,8 @@
 #             2024-06-15, ---rgf, if PREPEND_LIBRARY_PATH is set export it to [DY]LD_LIBRARY_PATH
 #                          - if environment variable "BSF4Rexx_quiet" is set to 1, then do not
 #                            display informative (debug) information
+#             2026-02-11 rgf, define "BSF_Medication=-XX:+IgnoreUnrecognizedVMOptions --enable-native-access"
+#
 #    Remark:  Rexx script can retrieve all arguments as passed to Java via the BSFRegistry, including
 #             the name of the Rexx script to be invoked/dispatched
 #
@@ -20,7 +22,7 @@
 #
 #    license:
 #    ------------------------ Apache Version 2.0 license -------------------------
-#       Copyright 2006-2024 Rony G. Flatscher
+#       Copyright 2006-2026 Rony G. Flatscher
 #
 #       Licensed under the Apache License, Version 2.0 (the "License");
 #       you may not use this file except in compliance with the License.
@@ -70,4 +72,7 @@ then
    fi
 fi
 
-java $BSF4Rexx_JavaStartupOptions org.rexxla.bsf.RexxDispatcher $*
+# make sure that "--enable-native-access" does not cause the JVM to crash on earlier versions of Java
+BSF_Medication=-XX:+IgnoreUnrecognizedVMOptions --enable-native-access
+
+java $BSF4Rexx_JavaStartupOptions $BSF_Medication $BSF4Rexx_JavaStartupOptions org.rexxla.bsf.RexxDispatcher $*

@@ -11,11 +11,12 @@ it is without Josep Maria saying so.
 BSF4ooRexx, the bridge between ooRexx and Java (Rexx code using Java classes,
 and Java code running Rexx), imported on 20/10/2026 from its Subversion
 repository on SourceForge (<https://svn.code.sf.net/p/bsf4oorexx/code>),
-**with its whole history** (r1 to r1125). Branch by branch:
+**with its whole history** (r1 to r1125; r1126 to r1131 fetched with
+`git svn` and merged into `main` on 15/11/2026). Branch by branch:
 
 | Git | Subversion | Note |
 |---|---|---|
-| `main` | `branches/850` | where development lives (last SVN commit r1125, 17/01/2026); our commits go on top |
+| `main` | `branches/850` | where development lives (last SVN commit r1131, 3/11/2026); our commits go on top, and new SVN commits are merged in |
 | `trunk` | `trunk` | stopped at r1035 (23/12/2022) |
 | `461` | `branches/461` | |
 | `aseik`, `rgf` | `sandbox/aseik`, `sandbox/rgf` | the two authors' sandboxes |

@@ -1,0 +1,231 @@
+#!/usr/bin/env rexx
+/*
+   name:             10_findings.testGroup
+   author:           Josep Maria Blasco
+   version:          0.1.0
+   date:             2026-10-14
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          regression tests for the findings in JavaDrawingHandler.java
+                     100.20230718 (BSF4ooRexx850 r1125) reported on 2026-10-13
+                     while porting JDOR to ooRexx/WASM, and fixed by the patch
+                     sent with that report
+   hint:             with the unpatched r1125 handler, the tests named
+                     test_finding_N fail; with the patch they all pass.
+                     Findings 4 and 5 were a decision between documentation
+                     and code; Rony decided on 2026-10-14 that JDOR follows
+                     the order and meaning of the Java arguments. So 4
+                     (shape ... arc swapped width and height) is fixed by
+                     the patch of 2026-10-14 (its test fails with the patch
+                     of 2026-10-13), and 5 (drawImage with a source
+                     rectangle) keeps the code: the two values after the
+                     name are the second corner of the destination, as in
+                     Graphics.drawImage (the documentation changes).
+                     Finding 12 (winResizable .false) needs a display: not
+                     tested here.
+*/
+
+  parse source . . fileSpec
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.jdor.findings.testGroup)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"
+::requires "jdorTestSupport.cls"
+
+::class "jdor.findings.testGroup" subclass ooTestCase public
+
+-- 1. draw3DRect always filled ---------------------------------------------------
+
+::method test_finding_1_draw3DRect_draws_only_the_border
+  call jdorTest.fresh
+  address jdor
+  newImage 100 100
+  color red
+  moveTo 10 10
+  draw3DRect 50 30 .true
+  self~assertEquals(0, rc)
+  self~assertNotSame(0, jdorTest.pixel(10, 10), "top left corner of the border")
+  self~assertEquals(0, jdorTest.pixel(35, 25), "interior must stay empty")
+
+::method test_finding_1_fill3DRect_still_fills       -- control: the fix must not break fill3DRect
+  call jdorTest.fresh
+  address jdor
+  newImage 100 100
+  color red
+  moveTo 10 10
+  fill3DRect 50 30 .true
+  self~assertNotSame(0, jdorTest.pixel(35, 25), "interior must be filled")
+
+-- 2. reset after pushGC -------------------------------------------------------
+
+::method test_finding_2_reset_after_pushGC
+  trace off
+  call jdorTest.fresh
+  address jdor
+  newImage 50 50
+  pushGC
+  pushGC
+  reset
+  self~assertEquals(0, rc)
+  self~assertEquals(0, .rs)
+
+-- 3. paint with a registered colour -------------------------------------------
+
+-- With the real BSF4ooRexx bridge, r1125 only fails when a Rexx variable of
+-- that name exists and refers to .nil: getContextVariable then returns null
+-- and overwrites the registered colour. (For an unset variable or one that
+-- holds a string, the cast to Paint fails, the exception is swallowed, and
+-- the registered colour survives; the stub harness of the report returned
+-- null for unset variables, hence the broader description there.)
+::method test_finding_3_paint_registered_colour_variable_nil
+  trace off
+  call jdorTest.fresh
+  address jdor
+  newImage 50 50
+  color myRed 255 0 0
+  color black
+  myRed = .nil
+  'paint myRed'              -- quoted: the handler must see the name
+  self~assertEquals(0, .rs, "paint must use the registered colour")
+  paint
+  self~assertEquals(255, rc~getRed)
+  self~assertEquals(0,   rc~getGreen)
+  self~assertEquals(0,   rc~getBlue)
+
+::method test_finding_3_paint_registered_colour_no_variable   -- control
+  trace off
+  call jdorTest.fresh
+  address jdor
+  newImage 50 50
+  color myRed 255 0 0
+  color black
+  'paint myRed'
+  self~assertEquals(0, .rs)
+  paint
+  self~assertEquals(255, rc~getRed)
+
+-- 6. gradientPaint: canonical output ------------------------------------------
+
+::method test_finding_6_gradientPaint_canonical_output
+  call jdorTest.fresh
+  out = .array~new
+  address jdor with output append using (out)
+  newImage 50 50
+  gradientPaint g 0 0 red 10 10 blue
+  address jdor
+  self~assertEquals(2, out~items)
+  self~assertEquals("gradientPaint G 0.0 0.0 RED 10.0 10.0 BLUE", out[2])
+
+-- 7. copyArea: canonical output -----------------------------------------------
+
+::method test_finding_7_copyArea_canonical_output
+  call jdorTest.fresh
+  out = .array~new
+  address jdor with output append using (out)
+  newImage 50 50
+  copyArea 1 2 3 4
+  address jdor
+  self~assertEquals(2, out~items)
+  self~assertEquals("copyArea 1 2 3 4", out[2])
+
+-- 8. printPos without arguments -------------------------------------------------
+
+::method test_finding_8_printPos_query
+  trace off
+  call jdorTest.fresh
+  address jdor
+  newImage 50 50
+  printPos
+  self~assertEquals("0 0", rc, "query")
+  printPos 5 6
+  self~assertEquals("0 0", rc, "set returns the previous value")
+  printPos
+  self~assertEquals("5 6", rc, "query after set")
+
+-- 9. render: message for a bad second value ----------------------------------
+
+::method test_finding_9_render_bad_second_value_message
+  trace off
+  call jdorTest.fresh
+  err = .array~new
+  address jdor with error append using (err)
+  newImage 50 50
+  render aliasOn nonsense
+  address jdor
+  self~assertEquals(-102, rc)
+  self~assertEquals(1, err~items)
+  self~assertEquals('unknown value for argument # 2: "NONSENSE"', jdorTest.cause(err[1]))
+
+-- 10. winResizable before any window exists -------------------------------------
+
+::method test_finding_10_winResizable_query_without_window
+  trace off
+  call jdorTest.fresh
+  address jdor
+  newImage 50 50
+  winResizable
+  self~assertEquals(0, rc, "no window yet: not resizable")
+  self~assertEquals(0, .rs)
+
+-- 11. argument checks that could never be true --------------------------------
+
+::method test_finding_11_pathClose_without_name
+  trace off
+  call jdorTest.fresh
+  err = .array~new
+  address jdor with error append using (err)
+  newImage 50 50
+  pathClose
+  address jdor
+  self~assertEquals(-102, rc)
+  self~assertEquals("this command needs exactly 1 argument (the name of the Path2D shape), received 0 instead", -
+                    jdorTest.cause(err[1]))
+
+::method test_finding_11_pathIterator_without_arguments
+  trace off
+  call jdorTest.fresh
+  err = .array~new
+  address jdor with error append using (err)
+  newImage 50 50
+  pathIterator
+  address jdor
+  self~assertEquals(-102, rc)
+  self~assertEquals("this command needs exactly 1, 2 or 3 arguments (the name of the shape, optionally the name of a transform and the flatness), received 0 instead", -
+                    jdorTest.cause(err[1]))
+
+-- 4. shape ... arc: x y width height (fixed by the patch of 2026-10-14) ------------
+
+::method test_finding_4_arc_width_then_height
+  call jdorTest.fresh
+  address jdor
+  newImage 50 50
+  shape a arc 0 0 100 50 0 360 OPEN
+  shapeBounds a
+  parse var rc x y w h
+  self~assertTrue(x = 0 & y = 0 & w = 100 & h = 50, "as Arc2D.setArc: x y w h; got:" rc)
+
+-- 5. drawImage with a source rectangle: the destination's second corner -------------
+
+::method test_finding_5_drawImage_source_rectangle_uses_corners
+  call jdorTest.fresh
+  address jdor
+  newImage 30 20
+  render aliasOff
+  color red
+  fillRect 30 20
+  pushImage pic
+  newImage 40 40
+  moveTo 10 10
+  drawImage pic 30 30 0 0 30 20  -- destination (10,10)-(30,30), as Graphics.drawImage
+  self~assertEquals(0, .rs)
+  red = jdorTest.argb(255, 0, 0)
+  self~assertEquals(red, jdorTest.pixel(12, 12), "inside the destination")
+  self~assertEquals(red, jdorTest.pixel(28, 28), "inside the destination")
+  self~assertEquals(0, jdorTest.pixel(33, 33), "30 30 is a corner, not a size")
