@@ -1,0 +1,472 @@
+#!/usr/bin/env rexx
+/*
+   name:             08_path2d.testGroup
+   author:           Josep Maria Blasco
+   version:          0.1.0
+   date:             2026-10-14
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          JDOR Path2D shapes: pathMoveTo, pathLineTo, pathQuadTo,
+                     pathCurveTo, pathClose, pathCurrentPoint, pathReset,
+                     pathClone, pathTransform, pathWindingRule, pathAppend
+                     (of shapes and of path iterators, with and without
+                     connect) and pathIterator
+   hint:             pathCurrentPoint returns the last point of the path, as
+                     Java's Path2D.getCurrentPoint does, not "the position of
+                     the last pathMoveTo" as the documentation says (finding
+                     J: the documentation changes). What "pathWindingRule
+                     name newValue" returns (the previous rule, finding K)
+                     and pathWindingRule without arguments (finding L) are
+                     tested in 11_findings_new.
+                     Bounds are compared as numbers, never as strings
+*/
+
+  parse source . . fileSpec
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.jdor.path2d.testGroup)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"
+::requires "jdorTestSupport.cls"
+
+::class "jdor.path2d.testGroup" subclass ooTestCase public
+
+::method setUp                    -- a 60x60 image, no antialiasing, red
+  call jdorTest.fresh
+  address jdor
+  newImage 60 60
+  render aliasOff
+  color red
+
+::method assertInk                -- assertInk(x, y [, message]): pixel is red
+  use strict arg x, y, msg = ("pixel" x y "should be red")
+  self~assertEquals(jdorTest.argb(255, 0, 0), jdorTest.pixel(x, y), msg)
+
+::method assertEmpty              -- assertEmpty(x, y [, message]): pixel untouched
+  use strict arg x, y, msg = ("pixel" x y "should be empty")
+  self~assertEquals(0, jdorTest.pixel(x, y), msg)
+
+::method assertNumbers            -- assertNumbers(expected, actual [, message]): blank-delimited, numerically
+  use strict arg expected, actual, msg = ""
+  self~assertEquals(expected~words, actual~words, msg "(number of values:" actual")")
+  do i = 1 to expected~words
+    self~assertTrue(abs(expected~word(i) - actual~word(i)) < 1e-9, -
+      msg "value" i": expected" expected~word(i)", got" actual~word(i) "("actual")")
+  end
+
+::method assertBounds             -- assertBounds(shapeName, "x y w h" [, message])
+  use strict arg name, expected, msg = ("bounds of" name)
+  address jdor 'shapeBounds' name
+  self~assertEquals(0, .rs, msg "(.rs)")
+  self~assertNumbers(expected, rc, msg)
+
+::method assertError              -- assertError(command, expectedRC): ERROR condition, RC as given
+  use strict arg command, expected = (-102)
+  trace off
+  address jdor command
+  self~assertEquals(expected, rc, command)
+  self~assertEquals(1, .rs, command "(.rs)")
+
+::method triangle                 -- registers path TRI: (10,10) -> (40,10) -> (10,40), not closed
+  address jdor
+  shape tri path
+  pathMoveTo tri 10 10
+  pathLineTo tri 40 10
+  pathLineTo tri 10 40
+
+-- building a path ----------------------------------------------------------------------
+
+::method test_new_path_is_empty
+  address jdor
+  shape p path
+  pathCurrentPoint p
+  self~assertEquals(0, .rs)
+  self~assertSame(.nil, rc, "no current point yet")
+  self~assertBounds("p", "0 0 0 0")
+
+::method test_segments_return_zero
+  address jdor
+  shape p path
+  pathMoveTo p 1 2
+  self~assertEquals(0, rc, "pathMoveTo")
+  pathLineTo p 3 4
+  self~assertEquals(0, rc, "pathLineTo")
+  pathQuadTo p 5 6 7 8
+  self~assertEquals(0, rc, "pathQuadTo")
+  pathCurveTo p 9 10 11 12 13 14
+  self~assertEquals(0, rc, "pathCurveTo")
+  pathClose p
+  self~assertEquals(0, rc, "pathClose")
+  self~assertEquals(0, .rs)
+
+::method test_pathMoveTo_sets_current_point
+  address jdor
+  shape p path
+  pathMoveTo p 1.5 2
+  pathCurrentPoint p
+  self~assertNumbers("1.5 2", rc)
+  pathMoveTo p 3 4               -- a second moveTo replaces the first
+  pathCurrentPoint p
+  self~assertNumbers("3 4", rc)
+
+::method test_current_point_is_the_last_point
+  address jdor
+  shape p path
+  pathMoveTo p 5 5
+  pathLineTo p 25 5
+  pathCurrentPoint p
+  self~assertNumbers("25 5", rc, "after pathLineTo (finding J)")
+  pathQuadTo p 30 10 20 30
+  pathCurrentPoint p
+  self~assertNumbers("20 30", rc, "after pathQuadTo")
+  pathCurveTo p 1 2 3 4 5 50
+  pathCurrentPoint p
+  self~assertNumbers("5 50", rc, "after pathCurveTo")
+
+::method test_pathClose_returns_to_last_moveTo
+  address jdor
+  self~triangle
+  pathClose tri
+  pathCurrentPoint tri
+  self~assertNumbers("10 10", rc)
+
+::method test_lines_bounds
+  address jdor
+  self~triangle
+  self~assertBounds("tri", "10 10 30 30")
+
+::method test_curves_bounds
+  address jdor
+  shape p path
+  pathMoveTo p 0 0
+  pathQuadTo p 10 30 40 40        -- control points inside the end points' box
+  pathCurveTo p 45 45 50 50 50 50
+  self~assertBounds("p", "0 0 50 50")
+
+-- drawing a path ---------------------------------------------------------------------
+
+::method test_draw_open_path
+  address jdor
+  self~triangle
+  drawShape tri
+  self~assertInk(25, 10, "first side")
+  self~assertInk(25, 25, "second side")
+  self~assertEmpty(10, 25, "not closed: no third side")
+
+::method test_draw_closed_path
+  address jdor
+  self~triangle
+  pathClose tri
+  drawShape tri
+  self~assertInk(10, 25, "closing side")
+  self~assertEmpty(15, 15, "interior")
+
+::method test_fill_path
+  address jdor
+  self~triangle
+  fillShape tri                  -- filling closes the path implicitly
+  self~assertInk(15, 15, "interior")
+  self~assertEmpty(35, 35, "outside")
+
+-- pathReset, pathClone ------------------------------------------------------------------
+
+::method test_pathReset
+  address jdor
+  self~triangle
+  pathReset tri
+  self~assertEquals(0, .rs)
+  pathCurrentPoint tri
+  self~assertSame(.nil, rc)
+  self~assertBounds("tri", "0 0 0 0")
+  pathMoveTo tri 1 1             -- still usable
+  pathLineTo tri 3 5
+  self~assertBounds("tri", "1 1 2 4")
+
+::method test_pathClone_returns_independent_copy
+  address jdor
+  self~triangle
+  pathClone tri
+  self~assertEquals(0, .rs)
+  copy = rc
+  pathLineTo tri 50 50
+  shape probe path               -- the copy's bounds, through a registered path
+  'pathAppend probe copy 0'
+  self~assertBounds("probe", "10 10 30 30", "the copy does not change with the original")
+  self~assertBounds("tri", "10 10 40 40")
+
+::method test_pathClone_registers_under_new_name
+  address jdor
+  self~triangle
+  pathClone tri tri2
+  self~assertEquals(0, .rs)
+  pathReset tri
+  self~assertBounds("tri2", "10 10 30 30", "the clone is registered")
+  pathLineTo tri2 50 50
+  self~assertBounds("tri2", "10 10 40 40", "and is a Path2D")
+  self~assertBounds("tri",  "0 0 0 0")
+
+-- pathTransform -------------------------------------------------------------------------
+
+::method test_pathTransform_named
+  address jdor
+  self~triangle
+  transform t 5 6 1 1 0 0        -- a named transform: stored, not applied
+  pathTransform tri t
+  self~assertEquals(0, rc)
+  self~assertEquals(0, .rs)
+  self~assertBounds("tri", "15 16 30 30")
+  pathCurrentPoint tri
+  self~assertNumbers("15 46", rc, "the current point is transformed too")
+  transform
+  self~assertNumbers("0 0 1 1 0 0", rc, "the current transform is unchanged")
+
+::method test_pathTransform_rexx_variable
+  address jdor
+  self~triangle
+  transform tmpT 0 0 2 2 0 0      -- a named transform (scale 2), then held in a Rexx variable
+  at = rc
+  'pathTransform tri at'
+  self~assertEquals(0, .rs)
+  self~assertBounds("tri", "20 20 60 60")
+
+-- pathWindingRule -----------------------------------------------------------------------
+
+::method test_pathWindingRule_query_and_set
+  address jdor
+  shape p path
+  pathWindingRule p
+  self~assertEquals(1, rc, "default: WIND_NON_ZERO")
+  pathWindingRule p 0
+  self~assertEquals(0, .rs)
+  pathWindingRule p
+  self~assertEquals(0, rc)
+  pathWindingRule p wind_non_zero
+  pathWindingRule p
+  self~assertEquals(1, rc)
+  pathWindingRule p WIND_EVEN_ODD
+  pathWindingRule p
+  self~assertEquals(0, rc)
+  pathWindingRule p 1
+  pathWindingRule p
+  self~assertEquals(1, rc)
+
+::method test_pathWindingRule_effect_on_fill
+  address jdor
+  shape outer rect 10 10 40 40
+  shape inner rect 20 20 20 20
+  shape ring path 0
+  pathAppend ring outer 0
+  pathAppend ring inner 0
+  fillShape ring
+  self~assertInk(15, 15, "WIND_EVEN_ODD: the ring")
+  self~assertEmpty(30, 30, "WIND_EVEN_ODD: the hole")
+  newImage 60 60
+  render aliasOff
+  color red
+  pathWindingRule ring 1
+  fillShape ring
+  self~assertInk(30, 30, "WIND_NON_ZERO: no hole (same direction)")
+
+::method test_pathWindingRule_errors
+  address jdor
+  shape p path
+  shape r rect 1 1 1 1
+  self~assertError("pathWindingRule p 2")
+  self~assertError("pathWindingRule p wind_sideways")
+  self~assertError("pathWindingRule p 0 1")
+  self~assertError("pathWindingRule r")
+  self~assertError("pathWindingRule noSuchPath")
+
+-- pathAppend ----------------------------------------------------------------------------
+
+::method test_pathAppend_connects_by_default
+  address jdor
+  shape p path
+  pathMoveTo p 50 5
+  shape small rect 5 50 5 5
+  pathAppend p small
+  self~assertEquals(0, rc)
+  self~assertEquals(0, .rs)
+  drawShape p
+  self~assertInk(30, 25, "a line from (50,5) to the rectangle's first point (5,50)")
+  self~assertBounds("p", "5 5 45 50")
+
+::method test_pathAppend_without_connect
+  address jdor
+  shape p path
+  pathMoveTo p 50 5
+  shape small rect 5 50 5 5
+  pathAppend p small 0
+  drawShape p
+  self~assertEmpty(30, 25, "no connecting line")
+  self~assertInk(7, 50, "the rectangle")
+
+::method test_pathAppend_connect_values
+  address jdor
+  shape small rect 5 50 5 5
+  values = "1 0 true false .true .false TRUE .FALSE"
+  do v over values~makeArray(" ")
+    shape p path
+    pathMoveTo p 50 5
+    'pathAppend p small' v
+    self~assertEquals(0, .rs, "connect" v)
+  end
+  self~assertError("pathAppend p small maybe")
+  self~assertError("pathAppend p small yes")
+
+::method test_pathAppend_rexx_variable_shape
+  address jdor
+  shape p path
+  'shape tmpRect rect 10 10 10 10'   -- a Shape object, then held in a Rexx variable
+  sh = rc
+  'pathAppend p sh'
+  self~assertEquals(0, .rs)
+  self~assertBounds("p", "10 10 10 10")
+
+::method test_pathAppend_to_empty_path_has_no_line
+  address jdor
+  shape p path
+  shape small rect 10 10 10 10
+  pathAppend p small             -- nothing to connect to
+  self~assertBounds("p", "10 10 10 10")
+
+-- pathIterator --------------------------------------------------------------------------
+
+::method test_pathIterator_returns_iterator
+  address jdor
+  shape r rect 10 10 20 20
+  pathIterator r
+  self~assertEquals(0, .rs)
+  self~assertFalse(rc~isDone, "a fresh iterator")
+  self~assertEquals(1, rc~getWindingRule, "a rectangle iterates WIND_NON_ZERO")
+
+::method test_pathIterator_append_to_path
+  address jdor
+  shape r rect 10 10 20 20
+  pathIterator r
+  it = rc
+  shape p path
+  'pathAppend p it'              -- quoted: the handler must see the name
+  self~assertEquals(0, .rs)
+  self~assertBounds("p", "10 10 20 20")
+
+::method test_pathIterator_with_transform
+  address jdor
+  shape r rect 10 10 20 20
+  transform t 5 6 1 1 0 0
+  pathIterator r t
+  self~assertEquals(0, .rs)
+  it = rc
+  shape p path
+  'pathAppend p it'
+  self~assertBounds("p", "15 16 20 20")
+  self~assertBounds("r", "10 10 20 20", "the shape itself is unchanged")
+
+::method test_pathIterator_with_transform_and_flatness
+  address jdor
+  shape e elli 0 0 10 10
+  transform t 5 6 1 1 0 0
+  pathIterator e t 0.5
+  self~assertEquals(0, .rs)
+  it = rc
+  shape p path
+  'pathAppend p it 0'
+  self~assertBounds("p", "5 6 10 10")
+
+::method test_pathIterator_of_rexx_variable_shape
+  address jdor
+  'shape tmpRect rect 10 10 10 10'   -- a Shape object, then held in a Rexx variable
+  sh = rc
+  'pathIterator sh'
+  self~assertEquals(0, .rs)
+  self~assertFalse(rc~isDone)
+
+::method test_pathIterator_errors
+  address jdor
+  shape r rect 10 10 20 20
+  self~assertError("pathIterator noSuchShape")
+  self~assertError("pathIterator r noSuchTransform")
+  self~assertError("pathIterator r t flat")
+  self~assertError("pathIterator r a b c")
+
+-- errors common to the path commands ------------------------------------------------------
+
+::method test_path_commands_need_a_path
+  address jdor
+  shape r rect 1 1 1 1
+  shape p path
+  do command over .array~of("pathMoveTo r 1 1", "pathLineTo r 1 1", "pathQuadTo r 1 1 2 2", -
+      "pathCurveTo r 1 1 2 2 3 3", "pathClose r", "pathReset r", "pathCurrentPoint r", -
+      "pathClone r", "pathTransform r t", "pathAppend r p", "pathWindingRule r")
+    self~assertError(command)
+  end
+  self~assertError("pathLineTo noSuchPath 1 1")
+
+::method test_path_commands_wrong_number_of_arguments
+  address jdor
+  shape p path
+  transform t 1 0 1 1 0 0
+  do command over .array~of("pathMoveTo p 1", "pathLineTo p 1 2 3", "pathQuadTo p 1 2 3", -
+      "pathCurveTo p 1 2 3 4 5", "pathClose", "pathClose p p", "pathReset", "pathCurrentPoint", -
+      "pathClone", "pathClone p a b", "pathTransform p", "pathTransform p t t", "pathAppend p", -
+      "pathAppend p p 1 1")
+    self~assertError(command)
+  end
+
+::method test_path_commands_bad_arguments
+  address jdor
+  shape p path
+  self~assertError("pathMoveTo p one 2")
+  self~assertError("pathTransform p noSuchTransform")
+  self~assertError("pathAppend p noSuchShape")
+
+-- canonical form ----------------------------------------------------------------------------
+
+::method test_canonical_form_of_path_commands
+  address jdor transform t 1 0 1 1 0 0   -- before redirecting: its canonical form is not under test
+  out = .array~new
+  address jdor with output append using (out)
+  shape p path 1
+  pathMoveTo p 1.5 2
+  pathLineTo p 3 4
+  pathQuadTo p 1 2 3 4
+  pathCurveTo p 1 2 3 4 5 6
+  pathClose p
+  pathCurrentPoint p
+  pathClone p q
+  shape r rect 0 0 1 1
+  pathAppend p r
+  pathAppend p r false
+  pathTransform p t
+  pathWindingRule p
+  pathWindingRule p wind_even_odd
+  pathIterator r t 0.5
+  pathReset p
+  address jdor with output normal
+  expected = .array~of(                                    -
+    "shape P Path2D WIND_NON_ZERO",                        -
+    "pathMoveTo P 1.5 2.0",                                -
+    "pathLineTo P 3.0 4.0",                                -
+    "pathQuadTo P 1.0 2.0 3.0 4.0",                        -
+    "pathCurveTo P 1.0 2.0 3.0 4.0 5.0 6.0",               -
+    "pathClose P",                                         -
+    "pathCurrentPoint P",                                  -
+    "pathClone P Q",                                       -
+    "shape R Rectangle2D 0.0 0.0 1.0 1.0",                 -
+    "pathAppend P R .true",                                -
+    "pathAppend P R .false",                               -
+    "pathTransform P T",                                   -
+    "pathWindingRule P",                                   -
+    "pathWindingRule P WIND_EVEN_ODD",                     -
+    "pathIterator R T 0.5",                                -
+    "pathReset P")
+  self~assertEquals(expected~items, out~items, out~toString(, "|"))
+  do i = 1 to expected~items
+    self~assertEquals(expected[i], out[i])
+  end

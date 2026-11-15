@@ -962,14 +962,18 @@ value.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
-    <td class="argument"> imageNickName width height srcX1 srcY1 srcX2 srcY2 [bkgColor]
+    <td class="argument"> imageNickName dstX2 dstY2 srcX1 srcY1 srcX2 srcY2 [bkgColor]
     <td> <em>imageNickName</em> denotes the name of an image stored in the
          internal image registry or the name of a Rexx variable referring
          to an image.
-         Draws as much of the image as possible scaled to the
-         <em>width</em> and <em>height</em> in pixels, using from the image the rectangle
-         with the first corner with the coordinate <em>srcX1</em> and <em>srcY1</em> and
-         the second corner with the coordinate <em>srcX2</em> and <em>srcY2</em>.
+         Draws the rectangle of the image with the first corner at the coordinate
+         <em>srcX1</em> and <em>srcY1</em> and the second corner at the coordinate
+         <em>srcX2</em> and <em>srcY2</em>, scaled to the destination rectangle with
+         the first corner at the current position and the second corner at the
+         coordinate <em>dstX2</em> and <em>dstY2</em>, as the Java method
+         <em>drawImage(img, dx1, dy1, dx2, dy2, sx1, sy1, sx2, sy2, ...)</em> does.
+         <br><em>Note:</em> unlike in the form with <em>width height</em> above,
+         <em>dstX2</em> and <em>dstY2</em> are a coordinate, not a size.
 
          <br>Optional <em>bkgColor</em> is the <em>colorNickName</em> of a previously stored color.
 
@@ -2120,12 +2124,13 @@ value.
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
-    <td class="argument"> R[ESET]
+    <td class="argument"> RESET
     <td> The current transform settings of the current <em>gc</em> (<em>Graphics2D</em>)
         will be reset such that <em>translateX</em>,
         <em>translateY</em>, <em>shearX</em>, <em>shearY</em> get set to <em>0.0</em> and
-        <em>scaleX</em> and <em>scaleY</em> to <em>1.0</em>. It is only necessary to supply
-        the first letter.
+        <em>scaleX</em> and <em>scaleY</em> to <em>1.0</em>. The word <em>RESET</em> needs
+        to be supplied in full: any other word (e.g. <em>R</em>) is taken as the name of a
+        transform.
 
 
     <tr class="ArgumentRowColor"><td><!-- table row -->
@@ -2892,8 +2897,9 @@ resulting command with arguments to the Rexx command handler.
     <tr class="CommandRowColumn"><!-- table row -->
     <td class="cmdNr">
     <td class="command" id="cmdPathCurrentPoint"> &quot;pathCurrentPoint&quot;
-    <td colspan="3"> Returns the current point (the position of the last <em>pathMoveTo</em>)
-        of the named <em>Path2D</em> shape.
+    <td colspan="3"> Returns the current point of the named <em>Path2D</em> shape: the last
+        point of the path (after a <em>pathClose</em>, the position of the last
+        <em>pathMoveTo</em>), cf. the Java method <em>Path2D.getCurrentPoint()</em>.
 
         <!-- -------------------------------------- -->
     <tr class="ArgumentRowColor"><td><!-- table row -->
@@ -2902,7 +2908,7 @@ resulting command with arguments to the Rexx command handler.
     <td> <em>pNickName</em> denotes the name of a <em>Path2D</em>
          shape, which current point gets returned.
          <br>
-         <em>Note:</em> if no <em>pathMoveTo</em> was issued yet, then <em>.nil</em>
+         <em>Note:</em> if the path is empty (no <em>pathMoveTo</em> was issued yet), then <em>.nil</em>
                         gets returned, otherwise a blank delimited Rexx string in
                         the form of: &quot;<em>x y</em>&quot;.
 
@@ -3018,10 +3024,11 @@ resulting command with arguments to the Rexx command handler.
     <tr class="ArgumentRowColor"><td><!-- table row -->
     <td>
     <td class="argument"> pNickName [newValue]
-    <td> Returns or sets the <em>winding rule</em> of the <em>Path2D</em> shape
+    <td> Returns the <em>winding rule</em> of the <em>Path2D</em> shape
          denoted by <em>pNickName</em>. If <em>newValue</em> is supplied, it
          needs to be <em>WIND_EVEN_ODD</em> or <em>0</em>, alternatively
-         <em>WIND_NON_ZERO</em> or <em>1</em>.
+         <em>WIND_NON_ZERO</em> or <em>1</em>: it becomes the new winding rule,
+         and the previous one gets returned.
 
 
     </table>

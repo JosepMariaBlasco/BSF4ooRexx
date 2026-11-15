@@ -39,9 +39,9 @@ set CLASSPATH=%CLASSPATH%;%ooo_classes%\unoil.jar;%ooo_classes%\ridl.jar;%ooo_cl
 set CLASSPATH=%CLASSPATH%;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet.jsp.jar;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet-3.0.0.v201112011016.jar
 
 @rem do not forget to set the version date in bsf4oorexx.dev\bin\BSF.CLS accordingly as well!
-set releaseDate=20260117
-set runDate=20260117
-set doc_date=20260117
+set releaseDate=20261103
+set runDate=20261103
+set doc_date=20261103
 
 @rem values to use for creating the BSF jarfile
 @rem set bsfDate=20090910
@@ -269,6 +269,7 @@ copy %path2dev%\bin\rexxcUtil.rex                  bsf4oorexx\
 copy %path2dev%\bin\rgf_util2.rex                  bsf4oorexx\
 copy %path2dev%\bin\libBS*                         bsf4oorexx\
 copy %path2dev%\bin\UNO*                           bsf4oorexx\
+copy %path2dev%\bin\runXSLT.rxj                    bsf4oorexx\
 
 copy %path2dev%\images\windows                     bsf4oorexx\install\images\windows
 copy %path2dev%\images\windows\windows6            bsf4oorexx\install\images\windows\windows6

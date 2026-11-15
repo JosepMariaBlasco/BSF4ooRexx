@@ -68,9 +68,16 @@ return testResult
 
 
       -- normal burden: (default)
-      --   712 threads: nrJavaThreads=23;nrRexxThreads=29;say "total threads:" (1+(nrJavaThreads+nrJavaThreads*(1+nrRexxThreads)))
+      --   714 threads: nrJavaThreads=23;nrRexxThreads=29;say "total threads:" (1+(nrJavaThreads+nrJavaThreads*(1+nrRexxThreads)))
+/*
     nrJavaThreads=23
     nrRexxThreads=29
+*/
+
+      -- heavy burden: (tested 2026-03-11 against Java 25, which allows more threads than Java 8)
+      --  2,761 threads: nrJavaThreads=46;nrRexxThreads=58;say "total threads:" (1+(nrJavaThreads+nrJavaThreads*(1+nrRexxThreads)))
+    nrJavaThreads=46
+    nrRexxThreads=58
 /*
 */
 
@@ -79,6 +86,14 @@ return testResult
 /*
     nrJavaThreads=50
     nrRexxThreads=50
+*/
+
+
+      -- heavier burden:
+      -- 5,776 threads: nrJavaThreads=50;nrRexxThreads=50;say "total threads:" (1+(nrJavaThreads+nrJavaThreads*(1+nrRexxThreads)))
+/*
+    nrJavaThreads=75
+    nrRexxThreads=75
 */
 
       -- extreme burden: added 2018-10-02, rgf: after fix in BSF4ooRexx even this heavy stress runs stable

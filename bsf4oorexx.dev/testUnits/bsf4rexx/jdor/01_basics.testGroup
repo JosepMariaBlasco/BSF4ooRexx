@@ -1,0 +1,315 @@
+#!/usr/bin/env rexx
+/*
+   name:             01_basics.testGroup
+   author:           Josep Maria Blasco
+   version:          0.1.0
+   date:             2026-10-14
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          JDOR basics: images, image types, the current position
+                     and its aliases, comment commands, reset/clear, sleep,
+                     assignRC, rounding of arguments, and the RC/.RS
+                     conventions for errors and failures
+   hint:             reference: jdor_doc.html and JavaDrawingHandler.java
+                     100.20230718 (BSF4ooRexx850 r1125 + the findings patch)
+*/
+
+  parse source . . fileSpec
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.jdor.basics.testGroup)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"
+::requires "jdorTestSupport.cls"
+
+::class "jdor.basics.testGroup" subclass ooTestCase public
+
+-- preferredImageType is global: it is shared by every handler in the process
+-- (in Java a static field; Rony, 2026-10-14: intended). Restore the default
+-- after each test so that no other test inherits a changed value.
+::method tearDown
+  address jdor 'preferredImageType 2'
+
+-- newImage ---------------------------------------------------------------------
+
+::method test_newImage_default
+  call jdorTest.fresh
+  address jdor
+  newImage
+  self~assertEquals(0, rc)
+  imageSize
+  self~assertEquals("500 500", rc, "default size")
+  imageType
+  self~assertEquals(2, rc, "default type is TYPE_INT_ARGB (2)")
+
+::method test_newImage_size
+  call jdorTest.fresh
+  address jdor
+  newImage 100 80
+  imageSize
+  self~assertEquals("100 80", rc)
+
+::method test_newImage_size_and_type
+  call jdorTest.fresh
+  address jdor
+  newImage 30 20 1
+  imageSize
+  self~assertEquals("30 20", rc)
+  imageType
+  self~assertEquals(1, rc, "TYPE_INT_RGB")
+
+::method test_newImage_alias_new
+  call jdorTest.fresh
+  address jdor
+  new 40 30
+  imageSize
+  self~assertEquals("40 30", rc)
+
+::method test_newImage_rounds_size
+  call jdorTest.fresh
+  address jdor
+  newImage 7.6 3.2
+  imageSize
+  self~assertEquals("8 3", rc)
+
+::method test_newImage_negative_size_is_error
+  trace off
+  call jdorTest.fresh
+  address jdor
+  'newImage -5 10'           -- quoted: unquoted, Rexx would subtract
+  self~assertEquals(-102, rc)
+  self~assertEquals(1, .rs, ".RS 1 = error")
+
+::method test_newImage_bad_type_is_error
+  trace off
+  call jdorTest.fresh
+  address jdor
+  newImage 10 10 99
+  self~assertEquals(-102, rc)
+  self~assertEquals(1, .rs)
+
+-- preferredImageType -----------------------------------------------------------
+
+::method test_preferredImageType_is_global
+  call jdorTest.fresh "JDORA"
+  call jdorTest.fresh "JDORB"
+  address jdora 'preferredImageType 1'
+  address jdorb 'preferredImageType'
+  self~assertEquals(1, rc, "shared by all the handlers of the process (finding B: intended)")
+  address jdora 'preferredImageType 2'
+
+::method test_preferredImageType_default
+  call jdorTest.fresh
+  address jdor
+  preferredImageType
+  self~assertEquals(2, rc)
+
+::method test_preferredImageType_set_returns_old
+  call jdorTest.fresh
+  address jdor
+  preferredImageType 1
+  self~assertEquals(2, rc, "returns the previous value")
+  preferredImageType
+  self~assertEquals(1, rc)
+
+::method test_preferredImageType_used_by_newImage
+  call jdorTest.fresh
+  address jdor
+  preferredImageType 1
+  newImage 10 10
+  imageType
+  self~assertEquals(1, rc)
+
+::method test_preferredImageType_by_name
+  call jdorTest.fresh
+  address jdor
+  preferredImageType 1
+  preferredImageType TYPE_INT_ARGB
+  preferredImageType
+  self~assertEquals(2, rc)
+
+::method test_preferredImageType_bad_name_is_error
+  trace off
+  call jdorTest.fresh
+  address jdor
+  preferredImageType bogus
+  self~assertEquals(-102, rc)
+  self~assertEquals(1, .rs)
+
+-- current position and its aliases ---------------------------------------------
+
+::method test_position_initial
+  call jdorTest.fresh
+  address jdor
+  newImage 50 50
+  position
+  self~assertEquals("0 0", rc)
+
+::method test_position_set_returns_old
+  call jdorTest.fresh
+  address jdor
+  newImage 50 50
+  moveTo 3 4
+  self~assertEquals("0 0", rc)
+  moveTo 5 6
+  self~assertEquals("3 4", rc)
+
+::method test_position_one_argument_sets_both
+  call jdorTest.fresh
+  address jdor
+  newImage 50 50
+  moveTo 7
+  position
+  self~assertEquals("7 7", rc)
+
+::method test_position_aliases
+  call jdorTest.fresh
+  address jdor
+  newImage 50 50
+  do alias over "goto", "location", "moveTo", "pos", "position"
+    address jdor alias 11 12
+    address jdor alias
+    self~assertEquals("11 12", rc, alias)
+    address jdor alias 0 0
+  end
+
+::method test_position_rounds
+  call jdorTest.fresh
+  address jdor
+  newImage 50 50
+  moveTo 1.6 2.4
+  position
+  self~assertEquals("2 2", rc)
+
+::method test_position_not_a_number_is_error
+  trace off
+  call jdorTest.fresh
+  address jdor
+  newImage 50 50
+  moveTo a b
+  self~assertEquals(-102, rc)
+  self~assertEquals(1, .rs)
+
+-- comment commands -------------------------------------------------------------
+
+::method test_comment_commands
+  call jdorTest.fresh
+  address jdor
+  newImage 50 50
+  moveTo 9 9
+  do c over '- ; / " '' . : ! ? _'~makeArray(" ")
+    address jdor c || "moveTo 1 1"
+    self~assertEquals(0, rc, "comment starting with" c)
+    self~assertEquals(0, .rs)
+  end
+  position
+  self~assertEquals("9 9", rc, "comments must not execute")
+
+-- case and blanks --------------------------------------------------------------
+
+::method test_command_names_are_caseless
+  call jdorTest.fresh
+  address jdor
+  'NEWIMAGE 12 13'
+  'imagesize'
+  self~assertEquals("12 13", rc)
+
+::method test_extra_blanks_are_ignored
+  call jdorTest.fresh
+  address jdor
+  'newImage   14    15'
+  imageSize
+  self~assertEquals("14 15", rc)
+
+-- reset / clear ----------------------------------------------------------------
+
+::method test_reset_position_and_font_size
+  call jdorTest.fresh
+  address jdor
+  newImage 50 50
+  moveTo 5 5
+  fontSize 20
+  reset
+  self~assertEquals(0, rc)
+  position
+  self~assertEquals("0 0", rc)
+  fontSize
+  self~assertEquals(12, rc)
+
+::method test_clear_is_alias_of_reset
+  call jdorTest.fresh
+  address jdor
+  newImage 50 50
+  moveTo 5 5
+  clear
+  self~assertEquals(0, rc)
+  position
+  self~assertEquals("0 0", rc)
+
+::method test_reset_empties_gc_stack
+  trace off
+  call jdorTest.fresh
+  address jdor
+  newImage 50 50
+  pushGC
+  reset
+  self~assertEquals(0, rc, "finding 2: reset after pushGC")
+  popGC
+  self~assertEquals(-15, rc, "the GC stack is empty after reset")
+
+-- sleep, assignRC --------------------------------------------------------------
+
+::method test_sleep
+  call jdorTest.fresh
+  address jdor
+  sleep 0
+  self~assertEquals(0, rc)
+  sleep 0.001
+  self~assertEquals(0, rc)
+
+::method test_assignRC
+  call jdorTest.fresh
+  address jdor
+  newImage 40 30
+  imageSize
+  'assignRC dims'
+  self~assertEquals("40 30", dims)
+
+-- errors and failures ----------------------------------------------------------
+
+::method test_unknown_command_is_failure
+  trace off
+  call jdorTest.fresh
+  address jdor
+  bogusCommand 1 2
+  self~assertEquals(-1, rc)
+  self~assertEquals(-1, .rs, ".RS -1 = failure")
+
+::method test_error_raises_ERROR_condition
+  call jdorTest.fresh
+  address jdor
+  newImage 10 10
+  signal on error name trapped
+  moveTo a b
+  self~fail("ERROR condition not raised")
+  return
+trapped:
+  self~assertEquals(-102, rc)
+  self~assertEquals("ERROR", condition("C"))
+
+::method test_failure_raises_FAILURE_condition
+  call jdorTest.fresh
+  address jdor
+  signal on failure name trapped
+  bogusCommand
+  self~fail("FAILURE condition not raised")
+  return
+trapped:
+  self~assertEquals(-1, rc)
+  self~assertEquals("FAILURE", condition("C"))

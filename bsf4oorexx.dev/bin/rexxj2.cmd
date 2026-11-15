@@ -6,6 +6,8 @@ rem   Changed: 2007-02-03, ---rgf, renamed file, changed year-range
 rem            2010-06-10, ---rgf, honor environment variable 'BSF4Rexx.JavaStartupOptions', if set
 rem            2022-08-03, ---rgf, simplify invocation
 rem            2026-01-11, ---rgf, honor BSF4Rexx_quiet
+rem            2026-02-11 rgf, define "BSF_Medication=-XX:+IgnoreUnrecognizedVMOptions --enable-native-access"
+
 rem   Remark:  Rexx script can retrieve all arguments as passed to Java via the BSFRegistry, including
 rem            the name of the Rexx script to be invoked/dispatched
 rem
@@ -38,8 +40,11 @@ if not "%BSF4Rexx_quiet%" == "1" (
 )
 
 :invokenormal
+   rem make sure that "--enable-native-access" does not cause the JVM to crash on earlier versions of Java
+   set BSF_Medication=-XX:+IgnoreUnrecognizedVMOptions --enable-native-access
+
    rem  just use the default Java runtime settings
-   java %BSF4Rexx_JavaStartupOptions% org.rexxla.bsf.RexxDispatcher %*
+   java %BSF_Medication% %BSF4Rexx_JavaStartupOptions% org.rexxla.bsf.RexxDispatcher %*
 goto end
 
 :end

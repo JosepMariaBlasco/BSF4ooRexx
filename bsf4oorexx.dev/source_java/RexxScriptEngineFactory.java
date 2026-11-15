@@ -73,13 +73,17 @@ import org.rexxla.bsf.engines.rexx.RexxEngine;
 
         - 2025-08-27, ---rgf, - reflect that RexxEngine got changed and now uses as 'id' value
                                 the ooRexx interpreter instance identifier
+
+        - 2026-03-23, ---rgf, - make sure for levelgetLanguageLevel(), that the native cached Java
+                                method IDs got initialized already by creating explicitly a RexxEngine
+                                and let it apply some Rexx code
 */
 
 
 /** Class that implements the <code>javax.script.ScriptEngineFactory</code> interface for the ooRexx support.
  *
  * @author Rony G. Flatscher
- * @version 100.20220806
+ * @version 102.20260323
  * @since   2015-05-11
  *
  */
@@ -91,7 +95,7 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
     final public static RexxScriptEngineFactory DEFAULT_REXX_SCRIPT_ENGINE_FACTORY=new RexxScriptEngineFactory();
 
     final protected static String       ENGINE_NAME      ="Open Object Rexx (ooRexx)";
-    final protected static String       ENGINE_VERSION   ="101.20250827";
+    final protected static String       ENGINE_VERSION   ="102.20260323";
     final protected static List<String> EXTENSIONS       = Arrays.asList("rex", "rexx", "orx", "cls",
                                                                 "rxj", "rexxj", "jrexx",
                                                                 "rxo" );
@@ -152,13 +156,26 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
     /** Returns the version of the scripting language supported by this ScriptEngine. */
     public String getLanguageVersion()
     {
-if (bDebug) System.err.println("RexxScriptEngineFactory.getLanguageVersion() ...");
+if (bDebug) System.err.println("RexxScriptEngineFactory.getLanguageVersion(), LANGUAGE_VERSION=["+LANGUAGE_VERSION+"] ...");
 
         // use RexxEngine to get the current ooRexx version string
         if (LANGUAGE_VERSION==null)
         {
-            LANGUAGE_VERSION=RexxEngine.getLanguageVersionString();
+            // rgf, 2026-03-23: make sure we create a RexxEngine instance to have the native JNI pointers initialized
+            BSFManager mgr       =new BSFManager();     // create an instance of BSFManager
+            try {
+                BSFEngine  rexxEngine=mgr.loadScriptingEngine("rexx");  // load the Rexx engine
+                // Rexx code to run (just one line)
+                rexxEngine.apply ("RexxScriptEngineFactory.getLanguageVersion", 0, 0, "return 42", null, null);
+            }
+            catch (BSFException be)
+            {
+                System.err.println("RexxScriptFactory.getLanguageVersion(), exception: "+be);
+                be.printStackTrace();
+            }
 
+            // use RexxEngine.getLanguageVersionString()
+            LANGUAGE_VERSION=RexxEngine.getLanguageVersionString();
         }
 if (bDebug) System.err.println("RexxScriptEngineFactory.getLanguageVersion()=LANGUAGE_VERSION=["+LANGUAGE_VERSION+"]");
         return LANGUAGE_VERSION;
