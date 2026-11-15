@@ -41,6 +41,14 @@ needs Windows: every group that runs passes on Linux with no display.
 The jar and the test helpers are compiled with `javac --release 8`, and the
 whole suite also passes on a Java 8 runtime.
 
+**`rgf_multithreading/80` can fail now and then on Java 8.** SVN r1130
+raised its default load from 714 threads to 2,761 (`nrJavaThreads=46`,
+`nrRexxThreads=58`; the comment says it was tested on Java 25, "which allows
+more threads than Java 8"). On 15/11/2026 it failed once (1 test, 1
+failure) in four Java 8 jobs of the CI (run 43729115525, `additions`;
+passed on rerun) and passed 48 times out of 48 here on OpenJDK 8 with
+`--display none`. A red CI on that group alone is that; rerun the job.
+
 **The locale matters on Java 8, not on Java 21.** With no `LANG` (POSIX
 locale), Java 8's default charset is ASCII, and four groups that send a
 `char` `'ß'` through a Rexx proxy and back get it back changed (4 errors
