@@ -1,6 +1,8 @@
 # BSF4ooRexx 850: test baseline
 
-*20/10/2026. Build: `main` (SVN `branches/850` r1125) with
+*20/10/2026; since 15/11/2026 on SVN `branches/850` r1131, which adds the
+11 JDOR groups (r1128). Build: `main` (SVN `branches/850` r1125, r1131 since
+15/11/2026) with
 [`scripts/build.sh`](../scripts/build.sh); ooRexx 5.3.0 r13278; OpenJDK
 21.0.12.1 (classes compiled with `javac --release 8`); Ubuntu 24.04 x86_64.
 Rechecked with the same results, with and without `--legacy-lib-name`, on
@@ -23,18 +25,18 @@ Runner: [`scripts/run-tests.sh`](../scripts/run-tests.sh).*
 
 ## Summary
 
-The 67 test groups of `bsf4oorexx.dev/testUnits/bsf4rexx/` (ooRexxUnit),
-run one by one:
+The 78 test groups of `bsf4oorexx.dev/testUnits/bsf4rexx/` (ooRexxUnit; 67
+until SVN r1128 added `jdor/`), run one by one:
 
 | Pass | Groups ok | Tests | Failures | Errors | Did not run |
 |---|---:|---:|---:|---:|---|
-| Virtual display (Xvfb) | 65 / 67 | 992 | 0 | 0 | 2 (see below) |
-| No display at all (`DISPLAY` unset) | 65 / 67 | 992 | 0 | 0 | the same 2 |
-| Virtual display, library also offered under its pre-850 name | **67 / 67** | **1013** | 0 | 0 | none |
-| The same on **Java 8** (OpenJDK 1.8.0_504), UTF-8 locale (`LANG=C.UTF-8`) | **67 / 67** | 1013 | 0 | 0 | none |
-| The same on Java 8, POSIX locale (no `LANG`) | 63 / 67 | 1013 | 0 | 16 | none |
+| Virtual display (Xvfb) | 76 / 78 | 1237 | 0 | 0 | 2 (see below) |
+| No display at all (`DISPLAY` unset) | 76 / 78 | 1237 | 0 | 0 | the same 2 |
+| Virtual display, library also offered under its pre-850 name | **78 / 78** | **1258** | 0 | 0 | none |
+| The same on **Java 8** (OpenJDK 1.8.0_504), UTF-8 locale (`LANG=C.UTF-8`) | **67 / 67** | 1013 | 0 | 0 | none (measured before `jdor/`; the CI runs this pass on every push) |
+| The same on Java 8, POSIX locale (no `LANG`) | 63 / 67 | 1013 | 0 | 16 | none (measured before `jdor/`) |
 
-273,246 assertions in the third pass. No group needs a display, and none
+278,827 assertions in the third pass (273,246 before `jdor/`). No group needs a display, and none
 needs Windows: every group that runs passes on Linux with no display.
 The jar and the test helpers are compiled with `javac --release 8`, and the
 whole suite also passes on a Java 8 runtime.
@@ -90,7 +92,7 @@ whatever that charset is.
   (`--legacy-lib-name`) both pass (7 and 14 tests). The other 65 groups use
   `::requires BSF.CLS` or the library's 850 name.
 - The published `BSF4ooRexx_testUnits.zip` (SourceForge, `GA/`) has the
-  same 67 groups; it also carries a few scratch scripts that are not in SVN.
+  same 67 groups (no `jdor/`); it also carries a few scratch scripts that are not in SVN.
 
 ## Per group
 
@@ -103,6 +105,17 @@ whatever that charset is.
 | `java8/plain/Do_over.testGroup` | 6 | 150 | ok | ok | ok |
 | `java8/plain/FieldTestUnit.testGroup` | 13 | 575 | ok | ok | ok |
 | `java8/plain/InvokeTestUnit.testGroup` | 7 | 750 | ok | ok | ok |
+| `jdor/01_basics.testGroup` | 30 | 71 | ok | ok | ok |
+| `jdor/02_color_paint.testGroup` | 27 | 47 | ok | ok | ok |
+| `jdor/03_stroke_font_render.testGroup` | 26 | 346 | ok | ok | ok |
+| `jdor/04_draw_fill.testGroup` | 19 | 59 | ok | ok | ok |
+| `jdor/05_transform.testGroup` | 18 | 126 | ok | ok | ok |
+| `jdor/06_stacks_images_clip.testGroup` | 17 | 42 | ok | ok | ok |
+| `jdor/07_shapes_area.testGroup` | 44 | 452 | ok | ok | ok |
+| `jdor/08_path2d.testGroup` | 33 | 292 | ok | ok | ok |
+| `jdor/09_redirection.testGroup` | 8 | 25 | ok | ok | ok |
+| `jdor/10_findings.testGroup` | 14 | 33 | ok | ok | ok |
+| `jdor/11_findings_new.testGroup` | 9 | 40 | ok | ok | ok |
 | `lex/oo/Array.testGroup` | 174 | 174 | ok | ok | ok |
 | `lex/oo/Bean.testGroup` | 15 | 17 | ok | ok | ok |
 | `lex/oo/FieldValue.testGroup` | 20 | 20 | ok | ok | ok |
