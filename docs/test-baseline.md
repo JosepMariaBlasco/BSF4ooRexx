@@ -33,7 +33,7 @@ until SVN r1128 added `jdor/`), run one by one:
 | Virtual display (Xvfb) | 76 / 78 | 1237 | 0 | 0 | 2 (see below) |
 | No display at all (`DISPLAY` unset) | 76 / 78 | 1237 | 0 | 0 | the same 2 |
 | Virtual display, library also offered under its pre-850 name | **78 / 78** | **1258** | 0 | 0 | none |
-| The same on **Java 8** (OpenJDK 1.8.0_504), UTF-8 locale (`LANG=C.UTF-8`) | **67 / 67** | 1013 | 0 | 0 | none (measured before `jdor/`; the CI runs this pass on every push) |
+| The same on **Java 8** (OpenJDK 1.8.0_504), UTF-8 locale (`LANG=C.UTF-8`) | **78 / 78** | 1258 | 0 | 0 | none (measured 15/11/2026 by the CI, OpenJDK 1.8.0_512, run 43728543986; 67 / 67 and 1013 before `jdor/`) |
 | The same on Java 8, POSIX locale (no `LANG`) | 63 / 67 | 1013 | 0 | 16 | none (measured before `jdor/`) |
 
 278,827 assertions in the third pass (273,246 before `jdor/`). No group needs a display, and none
