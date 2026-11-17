@@ -20,7 +20,8 @@ r13331, and on ooRexx r13344 (31/10/2026: #2130, #2131, #2132, #2108,
 on ooRexx r13379 (5/11/2026: #2075, #2134, #2136, #2084, #2018, #1317,
 #2137, #2138, #2009, #2011, #2014, #1890) with test/trunk r13380, and on
 ooRexx r13514 (15/11/2026: CATCH clauses, RFE #31, and about forty fixes)
-with test/trunk r13515.
+with test/trunk r13515, and on ooRexx r13532 (17/11/2026: FINALLY, RFE #31;
+BEEP, DIRECTORY and FILESPEC built in, RFE #890) with test/trunk r13533.
 Runner: [`scripts/run-tests.sh`](../scripts/run-tests.sh).*
 
 ## Summary
@@ -76,7 +77,8 @@ whatever that charset is.
   the current framework from ooRexx's SVN (`test/trunk`: `testOORexx.rex`,
   `worker.rex`, `ooTest.frm`, `framework/*.cls`) at the same revision as
   the interpreter, except since 25/10/2026, when the family pins it apart:
-  test/trunk r13515 with the interpreter at r13514 (r13380 with r13379,
+  test/trunk r13533 with the interpreter at r13532 (r13515 with r13514,
+  r13380 with r13379,
   r13359 with r13358,
   r13347 with r13346,
   r13344 with r13344,
